@@ -1,36 +1,13 @@
 'use client';
 
-import { Calculator, Package, Plus, Trash2 } from 'lucide-react';
+import { Calculator, Package, Plus } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import React, { useCallback, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 
-import { SupplierPriceSelector } from '@/components/factory-shipments/supplier-price-selector';
-import { IntelligentProductInput } from '@/components/sales-orders/intelligent-product-input';
+import { FactoryShipmentItemCards } from '@/components/factory-shipments/form-sections/factory-shipment-item-cards';
 import { SupplierSelector } from '@/components/suppliers/supplier-selector';
 import { Button } from '@/components/ui/button';
-import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
 import { getLatestPrice } from '@/hooks/use-price-history';
 import type { BlurHandlerFactory } from '@/lib/hooks/useFormErrorHandling';
@@ -38,7 +15,6 @@ import type { ItemPricingResult } from '@/lib/services/factory-shipment-pricing-
 import type { FactoryShipmentOrderItem } from '@/lib/types/factory-shipment';
 import type { PriceHistoryData } from '@/lib/types/price-history';
 import type { Product } from '@/lib/types/product';
-import { COST_PRICE_STEP, roundCostPrice } from '@/lib/utils/cost-price';
 import { toPieceOrSheetLabel } from '@/lib/utils/inventory-unit-conversion';
 import type { FactoryShipmentOrderFormData } from '@/lib/validations/factory-shipment';
 
@@ -62,8 +38,8 @@ interface ItemsTableProps {
 }
 
 /**
- * 厂家发货订单产品明细表格
- * 使用表格形式展示和编辑产品明细，提高数据录入效率
+ * 厂家发货订单产品明细
+ * 使用分行录单卡片，避免“表格里塞表单”带来的压迫感
  */
 export const ItemsTable = React.memo<ItemsTableProps>(
   ({
@@ -341,12 +317,15 @@ export const ItemsTable = React.memo<ItemsTableProps>(
             <Package className="h-4 w-4" />
             产品明细
           </div>
+          <div className="text-xs leading-5 text-[hsl(var(--color-text-secondary))]">
+            先选产品，再补批次、数量和价格。系统会自动带出产品编码、名称、规格和历史售价，录单时只需要盯住当前这一行。
+          </div>
           <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
-            <div className="flex flex-1 flex-col gap-2 lg:flex-row lg:items-end">
+            <div className="flex flex-1 flex-col gap-2 xl:flex-row xl:items-end">
               <div className="w-full max-w-sm space-y-1">
-                <div className="text-sm font-medium">常用供应商</div>
+                <div className="text-sm font-medium">本单常用供应商</div>
                 <div className="text-xs text-[hsl(var(--color-text-secondary))]">
-                  适合同一厂家连续录单，新增行会自动带出，也可一键填充。
+                  同一厂家连续录单时可先选这里，新增明细会自动带出，也可以批量补到空白行。
                 </div>
                 <SupplierSelector
                   value={defaultSupplierId}
@@ -354,12 +333,12 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                   placeholder="选择常用供应商"
                 />
               </div>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="grid gap-2 sm:grid-cols-2 xl:flex xl:flex-wrap xl:items-center">
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
-                  className="h-9"
+                  className="h-9 w-full"
                   onClick={() => handleApplyDefaultSupplier('blank')}
                   disabled={!defaultSupplierId || fields.length === 0}
                 >
@@ -369,7 +348,7 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                   type="button"
                   size="sm"
                   variant="outline"
-                  className="h-9"
+                  className="h-9 w-full"
                   onClick={() => handleApplyDefaultSupplier('all')}
                   disabled={!defaultSupplierId || fields.length === 0}
                 >
@@ -377,13 +356,13 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                 </Button>
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="grid gap-2 sm:grid-cols-2 xl:flex xl:flex-wrap xl:items-center">
               <Button
                 type="button"
                 onClick={handleCalculatePricing}
                 size="sm"
                 variant="outline"
-                className="h-9"
+                className="h-9 w-full"
                 disabled={isCalculating || fields.length === 0}
               >
                 <Calculator className="mr-1 h-3 w-3" />
@@ -394,7 +373,7 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                 onClick={() => onAddItem(defaultSupplierId)}
                 size="sm"
                 variant="outline"
-                className="h-9"
+                className="h-9 w-full"
               >
                 <Plus className="mr-1 h-3 w-3" />
                 添加产品
@@ -403,493 +382,18 @@ export const ItemsTable = React.memo<ItemsTableProps>(
           </div>
         </div>
 
-        {/* 表格 */}
-        <div className="overflow-x-auto rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50 hover:bg-muted/50">
-                <TableHead className="text-foreground w-[50px] border-r px-2 py-3 text-center font-semibold">
-                  序号
-                </TableHead>
-                <TableHead className="text-foreground w-[180px] border-r px-3 py-3 font-semibold">
-                  产品信息 <span className="text-destructive">*</span>
-                </TableHead>
-                <TableHead className="text-foreground w-[160px] border-r px-3 py-3 font-semibold">
-                  供应商 <span className="text-destructive">*</span>
-                </TableHead>
-                <TableHead className="text-foreground w-[180px] border-r px-3 py-3 font-semibold">
-                  规格
-                </TableHead>
-                <TableHead className="text-foreground w-[100px] border-r px-3 py-3 font-semibold">
-                  批次
-                </TableHead>
-                <TableHead className="text-foreground w-[90px] border-r px-3 py-3 text-right font-semibold">
-                  装箱数
-                </TableHead>
-                <TableHead className="text-foreground w-[90px] border-r px-3 py-3 text-right font-semibold">
-                  数量 <span className="text-destructive">*</span>
-                </TableHead>
-                <TableHead className="text-foreground w-[70px] border-r px-3 py-3 text-center font-semibold">
-                  单位
-                </TableHead>
-                <TableHead className="text-foreground w-[100px] border-r px-3 py-3 text-right font-semibold">
-                  进货价
-                </TableHead>
-                <TableHead className="text-foreground w-[100px] border-r px-3 py-3 text-right font-semibold">
-                  销售价 <span className="text-destructive">*</span>
-                </TableHead>
-                <TableHead className="text-foreground w-[100px] border-r px-3 py-3 text-right font-semibold">
-                  金额
-                </TableHead>
-                <TableHead className="text-foreground w-[150px] border-r px-3 py-3 font-semibold">
-                  备注
-                </TableHead>
-                <TableHead className="text-foreground w-[60px] px-2 py-3 text-center font-semibold">
-                  操作
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {fields.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={13} className="h-32 text-center">
-                    <div className="text-muted-foreground flex flex-col items-center gap-2">
-                      <Package className="h-8 w-8" />
-                      <p>暂无产品明细，请点击「添加产品」开始填写</p>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                fields.map((field, index) => (
-                  <TableRow key={field.id} className="hover:bg-muted/30">
-                    {/* 序号 */}
-                    <TableCell className="border-r px-2 py-3 text-center font-medium">
-                      {index + 1}
-                    </TableCell>
-
-                    {/* 产品信息（产品编码 + 名称） */}
-                    <TableCell className="border-r px-3 py-3">
-                      <div className="flex flex-col gap-2">
-                        <IntelligentProductInput
-                          form={form}
-                          index={index}
-                          products={products}
-                          onProductChange={handleProductChange(index)}
-                          placeholder="搜索产品或添加临时产品"
-                          // 客户直发：允许直接添加临时产品
-                          enableTemporaryProducts
-                        />
-                        {/* 产品编码 */}
-                        <FormField
-                          control={form.control}
-                          name={`items.${index}.productCode`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormControl>
-                                <Input
-                                  {...field}
-                                  value={field.value || ''}
-                                  placeholder="产品编码"
-                                  className="h-8 font-mono text-[11px] text-[hsl(var(--color-text-secondary))]"
-                                />
-                              </FormControl>
-                              <FormMessage className="text-xs" />
-                            </FormItem>
-                          )}
-                        />
-                        {/* 产品名称 */}
-                        <FormField
-                          control={form.control}
-                          name={`items.${index}.displayName`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormControl>
-                                <Input
-                                  {...field}
-                                  value={field.value || ''}
-                                  placeholder="产品名称"
-                                  className="text-muted-foreground h-8 text-xs"
-                                />
-                              </FormControl>
-                              <FormMessage className="text-xs" />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </TableCell>
-
-                    {/* 供应商 */}
-                    <TableCell className="border-r px-3 py-3">
-                      <FormField
-                        control={form.control}
-                        name={`items.${index}.supplierId`}
-                        render={({ field }) => (
-                          <SupplierPriceSelector
-                            form={form}
-                            index={index}
-                            value={field.value}
-                            onChange={field.onChange}
-                            showLabel={false}
-                            onBlur={
-                              getBlurHandler
-                                ? getBlurHandler(
-                                    `items.${index}.supplierId`,
-                                    field.onBlur
-                                  )
-                                : field.onBlur
-                            }
-                          />
-                        )}
-                      />
-                    </TableCell>
-
-                    {/* 规格 */}
-                    <TableCell className="border-r px-3 py-3">
-                      <FormField
-                        control={form.control}
-                        name={`items.${index}.specification`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Input
-                                {...field}
-                                value={field.value || ''}
-                                placeholder="规格"
-                                className="h-9 text-sm"
-                              />
-                            </FormControl>
-                            <FormMessage className="text-xs" />
-                          </FormItem>
-                        )}
-                      />
-                    </TableCell>
-
-                    {/* 批次 */}
-                    <TableCell className="border-r px-3 py-3">
-                      <FormField
-                        control={form.control}
-                        name={`items.${index}.batchNumber`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Input
-                                {...field}
-                                value={field.value || ''}
-                                placeholder="批次号"
-                                className="h-9 text-sm"
-                              />
-                            </FormControl>
-                            <FormMessage className="text-xs" />
-                          </FormItem>
-                        )}
-                      />
-                    </TableCell>
-
-                    {/* 每件片数 */}
-                    <TableCell className="border-r px-3 py-3">
-                      <FormField
-                        control={form.control}
-                        name={`items.${index}.piecesPerUnit`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                min="1"
-                                step="1"
-                                {...field}
-                                value={
-                                  field.value === undefined ||
-                                  field.value === null
-                                    ? ''
-                                    : field.value
-                                }
-                                onChange={e => {
-                                  const value = e.target.value;
-                                  if (value === '') {
-                                    field.onChange(undefined);
-                                    return;
-                                  }
-                                  const parsed = Number.parseInt(value, 10);
-                                  field.onChange(
-                                    Number.isNaN(parsed) ? undefined : parsed
-                                  );
-                                }}
-                                placeholder="片/件"
-                                className="h-9 text-right text-sm"
-                              />
-                            </FormControl>
-                            <FormMessage className="text-xs" />
-                          </FormItem>
-                        )}
-                      />
-                    </TableCell>
-
-                    {/* 数量 */}
-                    <TableCell className="border-r px-3 py-3">
-                      <FormField
-                        control={form.control}
-                        name={`items.${index}.quantity`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Input
-                                {...field}
-                                value={field.value || ''}
-                                onChange={e =>
-                                  field.onChange(
-                                    parseFloat(e.target.value) || 0
-                                  )
-                                }
-                                placeholder="数量"
-                                className="h-9 text-right text-sm font-medium"
-                              />
-                            </FormControl>
-                            <FormMessage className="text-xs" />
-                          </FormItem>
-                        )}
-                      />
-                    </TableCell>
-
-                    {/* 单位 */}
-                    <TableCell className="border-r px-3 py-3">
-                      <FormField
-                        control={form.control}
-                        name={`items.${index}.unit`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Select
-                                value={field.value || '片'}
-                                onValueChange={newUnit => {
-                                  const oldUnit = field.value || '片';
-                                  const piecesPerUnit =
-                                    Number(
-                                      form.getValues(
-                                        `items.${index}.piecesPerUnit`
-                                      ) || 0
-                                    ) || 0;
-                                  const currentSalePrice =
-                                    Number(
-                                      form.getValues(
-                                        `items.${index}.unitPrice`
-                                      ) || 0
-                                    ) || 0;
-                                  const currentCostPrice =
-                                    Number(
-                                      form.getValues(
-                                        `items.${index}.unitCost`
-                                      ) || 0
-                                    ) || 0;
-
-                                  // 只有在片/件之间切换且有每件片数时才做换算
-                                  if (
-                                    piecesPerUnit > 0 &&
-                                    oldUnit !== newUnit &&
-                                    (oldUnit === '片' || oldUnit === '件') &&
-                                    (newUnit === '片' || newUnit === '件')
-                                  ) {
-                                    // 片 -> 件：价格 * 每件片数
-                                    if (oldUnit === '片' && newUnit === '件') {
-                                      if (currentSalePrice > 0) {
-                                        form.setValue(
-                                          `items.${index}.unitPrice`,
-                                          Number(
-                                            (
-                                              currentSalePrice * piecesPerUnit
-                                            ).toFixed(2)
-                                          )
-                                        );
-                                      }
-                                      if (currentCostPrice > 0) {
-                                        form.setValue(
-                                          `items.${index}.unitCost`,
-                                          roundCostPrice(
-                                            currentCostPrice * piecesPerUnit
-                                          )
-                                        );
-                                      }
-                                    }
-
-                                    // 件 -> 片：价格 / 每件片数
-                                    if (oldUnit === '件' && newUnit === '片') {
-                                      if (currentSalePrice > 0) {
-                                        form.setValue(
-                                          `items.${index}.unitPrice`,
-                                          Number(
-                                            (
-                                              currentSalePrice / piecesPerUnit
-                                            ).toFixed(4)
-                                          )
-                                        );
-                                      }
-                                      if (currentCostPrice > 0) {
-                                        form.setValue(
-                                          `items.${index}.unitCost`,
-                                          roundCostPrice(
-                                            currentCostPrice / piecesPerUnit
-                                          )
-                                        );
-                                      }
-                                    }
-                                  }
-
-                                  field.onChange(newUnit);
-                                }}
-                              >
-                                <SelectTrigger className="h-9 text-sm">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="片">片</SelectItem>
-                                  <SelectItem value="件">件</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </FormControl>
-                            <FormMessage className="text-xs" />
-                          </FormItem>
-                        )}
-                      />
-                    </TableCell>
-
-                    {/* 单价 */}
-                    <TableCell className="border-r px-3 py-3">
-                      <FormField
-                        control={form.control}
-                        name={`items.${index}.unitCost`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                step={COST_PRICE_STEP}
-                                min="0"
-                                {...field}
-                                value={
-                                  field.value === undefined ||
-                                  Number.isNaN(field.value)
-                                    ? ''
-                                    : field.value
-                                }
-                                onChange={e => {
-                                  const value = e.target.value;
-                                  field.onChange(
-                                    value === ''
-                                      ? undefined
-                                      : Number.parseFloat(value)
-                                  );
-                                }}
-                                placeholder="进货价"
-                                className="h-9 text-right text-sm"
-                              />
-                            </FormControl>
-                            <FormMessage className="text-xs" />
-                          </FormItem>
-                        )}
-                      />
-                    </TableCell>
-
-                    {/* 销售价 */}
-                    <TableCell className="border-r px-3 py-3">
-                      <FormField
-                        control={form.control}
-                        name={`items.${index}.unitPrice`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Input
-                                type="text"
-                                inputMode="decimal"
-                                {...field}
-                                value={
-                                  field.value === undefined ||
-                                  Number.isNaN(field.value as number)
-                                    ? ''
-                                    : field.value
-                                }
-                                placeholder="销售单价"
-                                className="h-9 text-right text-sm"
-                                onChange={event => {
-                                  const value = event.target.value;
-                                  // 允许输入数字、小数点、空字符串
-                                  if (
-                                    value === '' ||
-                                    /^\d*\.?\d*$/.test(value)
-                                  ) {
-                                    // 允许空值，不立即转换为数字，避免打小数点时被截断
-                                    field.onChange(value === '' ? '' : value);
-                                  }
-                                }}
-                                onFocus={event => {
-                                  // 聚焦时自动选中内容，方便覆盖输入
-                                  event.target.select();
-                                }}
-                                onBlur={event => {
-                                  const value = event.target.value;
-                                  // 失焦时统一转换为数字
-                                  if (!value || value === '.') {
-                                    field.onChange(0);
-                                  } else {
-                                    const parsed = Number.parseFloat(value);
-                                    field.onChange(
-                                      Number.isNaN(parsed) ? 0 : parsed
-                                    );
-                                  }
-                                  field.onBlur();
-                                }}
-                              />
-                            </FormControl>
-                            <FormMessage className="text-xs" />
-                          </FormItem>
-                        )}
-                      />
-                    </TableCell>
-
-                    {/* 金额（自动计算） */}
-                    <TableCell className="border-r px-3 py-3 text-right font-medium">
-                      <span className="text-xs">
-                        ￥{calculateItemAmount(index).toFixed(2)}
-                      </span>
-                    </TableCell>
-                    <TableCell className="border-r px-3 py-3">
-                      <FormField
-                        control={form.control}
-                        name={`items.${index}.remarks`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Input
-                                {...field}
-                                value={field.value || ''}
-                                placeholder="备注"
-                                className="h-9 text-sm"
-                              />
-                            </FormControl>
-                            <FormMessage className="text-xs" />
-                          </FormItem>
-                        )}
-                      />
-                    </TableCell>
-                    <TableCell className="px-3 py-3 text-center">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-red-500 hover:bg-red-50 hover:text-red-600"
-                        onClick={() => onRemoveItem(index)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+        <FactoryShipmentItemCards
+          form={form}
+          products={products}
+          fields={fields}
+          onRemoveItem={onRemoveItem}
+          onProductChange={handleProductChange}
+          calculateItemAmount={calculateItemAmount}
+          getBlurHandler={getBlurHandler}
+        />
 
         {/* 底部汇总栏 */}
-        <div className="bg-muted/10 flex items-center justify-end gap-8 rounded-lg border px-6 py-4">
+        <div className="bg-muted/10 flex flex-col gap-3 rounded-lg border px-4 py-4 sm:flex-row sm:items-center sm:justify-end sm:gap-8 sm:px-6">
           <div className="text-sm">
             <span className="text-muted-foreground mr-2">总数量:</span>
             <span className="font-medium">
@@ -941,7 +445,7 @@ export const ItemsTable = React.memo<ItemsTableProps>(
               })()}
             </span>
           </div>
-          <div className="flex items-baseline text-sm">
+          <div className="flex items-baseline text-sm sm:justify-end">
             <span className="text-muted-foreground mr-2">预计总金额:</span>
             <span className="font-mono text-xl font-bold text-orange-600">
               ￥

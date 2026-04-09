@@ -85,7 +85,7 @@ function buildFilterUpdates(
     case 'sortBy':
       return {
         ...base,
-        sortBy: (value as SalesOrderQueryParams['sortBy']) || 'createdAt',
+        sortBy: (value as SalesOrderQueryParams['sortBy']) || 'orderDate',
       };
     case 'sortOrder':
       return {

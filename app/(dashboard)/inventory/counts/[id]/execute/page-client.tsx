@@ -297,12 +297,16 @@ export function ExecuteCountPageClient({
             <p className="text-muted-foreground">{initialData.countNumber}</p>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2 sm:justify-end">
-          <Button variant="outline" onClick={handleSubmit}>
+        <div className="grid gap-2 sm:grid-cols-2 xl:flex xl:justify-end">
+          <Button
+            variant="outline"
+            onClick={handleSubmit}
+            className="w-full xl:w-auto"
+          >
             <Save className="mr-2 h-4 w-4" />
             保存数据
           </Button>
-          <Button onClick={handleComplete}>
+          <Button onClick={handleComplete} className="w-full xl:w-auto">
             <CheckCircle className="mr-2 h-4 w-4" />
             完成盘点
           </Button>
@@ -315,7 +319,7 @@ export function ExecuteCountPageClient({
           <CardTitle>基本信息</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             <div>
               <div className="text-muted-foreground text-sm">盘点名称</div>
               <div className="font-medium">{initialData.countName}</div>
@@ -347,11 +351,12 @@ export function ExecuteCountPageClient({
         <CardHeader>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>盘点明细</CardTitle>
-            <div className="flex flex-wrap gap-2 sm:justify-end">
+            <div className="grid gap-2 sm:grid-cols-2 xl:flex xl:justify-end">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleSetSystemQuantity}
+                className="w-full xl:w-auto"
               >
                 全部设为系统数量
               </Button>
@@ -359,6 +364,7 @@ export function ExecuteCountPageClient({
                 variant="outline"
                 size="sm"
                 onClick={handleClearQuantities}
+                className="w-full xl:w-auto"
               >
                 清空实际数量
               </Button>
@@ -367,15 +373,15 @@ export function ExecuteCountPageClient({
         </CardHeader>
         <CardContent>
           {/* 桌面端表格 */}
-          <div className="hidden rounded-md border md:block">
-            <Table>
+          <div className="hidden overflow-x-auto rounded-md border lg:block">
+            <Table className="min-w-[1180px] [&_th]:whitespace-nowrap">
               <TableHeader>
                 <TableRow>
-                  <TableHead>产品编码</TableHead>
-                  <TableHead>产品名称</TableHead>
-                  <TableHead>规格型号</TableHead>
+                  <TableHead className="whitespace-nowrap">产品编码</TableHead>
+                  <TableHead className="whitespace-nowrap">产品名称</TableHead>
+                  <TableHead className="whitespace-nowrap">规格型号</TableHead>
                   <TableHead className="text-right">每件片数</TableHead>
-                  <TableHead>批次号</TableHead>
+                  <TableHead className="whitespace-nowrap">批次号</TableHead>
                   <TableHead className="text-right">系统数量</TableHead>
                   <TableHead className="text-right">实际数量</TableHead>
                   <TableHead className="text-right">差异数量</TableHead>
@@ -395,10 +401,14 @@ export function ExecuteCountPageClient({
 
                   return (
                     <TableRow key={item.id}>
-                      <TableCell className="font-medium">
+                      <TableCell className="font-medium whitespace-nowrap">
                         {item.product?.code || '-'}
                       </TableCell>
-                      <TableCell>{item.product?.name || '-'}</TableCell>
+                      <TableCell className="min-w-[180px]">
+                        <div className="max-w-[220px] truncate">
+                          {item.product?.name || '-'}
+                        </div>
+                      </TableCell>
                       <TableCell className="whitespace-nowrap">
                         {(() => {
                           const variantLabel =
@@ -414,13 +424,15 @@ export function ExecuteCountPageClient({
                           );
                         })()}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right whitespace-nowrap">
                         {item.product?.piecesPerUnit &&
                         item.product.piecesPerUnit > 0
                           ? `${item.product.piecesPerUnit}片/件`
                           : '-'}
                       </TableCell>
-                      <TableCell>{item.batchNumber || '-'}</TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {item.batchNumber || '-'}
+                      </TableCell>
                       <TableCell className="text-right whitespace-nowrap">
                         {(() => {
                           const ppu = item.product?.piecesPerUnit ?? 0;
@@ -441,7 +453,7 @@ export function ExecuteCountPageClient({
                           );
                         })()}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right whitespace-nowrap">
                         <div className="flex justify-end">
                           <Input
                             type="number"
@@ -491,14 +503,14 @@ export function ExecuteCountPageClient({
                       </TableCell>
                       {hasFinancePermission && (
                         <>
-                          <TableCell className="text-right">
+                          <TableCell className="text-right whitespace-nowrap">
                             {formatCostPrice(item.unitCost, {
                               withSymbol: false,
                               fallback: '-',
                             })}
                           </TableCell>
                           <TableCell
-                            className={`text-right ${
+                            className={`text-right whitespace-nowrap ${
                               totalCost !== null && totalCost !== 0
                                 ? totalCost > 0
                                   ? 'text-green-600'
@@ -510,7 +522,7 @@ export function ExecuteCountPageClient({
                           </TableCell>
                         </>
                       )}
-                      <TableCell>
+                      <TableCell className="whitespace-nowrap">
                         <Badge variant={getStatusBadgeVariant(item.status)}>
                           {COUNT_ITEM_STATUS_LABELS[item.status]}
                         </Badge>
@@ -523,7 +535,7 @@ export function ExecuteCountPageClient({
           </div>
 
           {/* 移动端卡片列表 */}
-          <div className="space-y-3 md:hidden">
+          <div className="space-y-3 lg:hidden">
             {initialData.items?.map(item => {
               const diff = calculateDifference(item);
               const totalCost = calculateTotalCost(item);

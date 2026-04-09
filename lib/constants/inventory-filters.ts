@@ -31,6 +31,7 @@ export const OUTBOUND_REASON_OPTIONS: FilterOption[] = [
   { value: 'normal_outbound', label: '正常出库' },
   { value: 'manual_outbound', label: '手动出库' },
   { value: 'sales_outbound', label: '销售出库' },
+  { value: 'sample_outbound', label: '样品出库' },
   { value: 'adjust_outbound', label: '调整出库' },
   { value: 'transfer', label: '调拨出库' },
   { value: 'damage', label: '报损出库' },

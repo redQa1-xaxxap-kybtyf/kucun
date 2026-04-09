@@ -8,6 +8,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
 import type { FactoryShipmentOrder } from '@/lib/types/factory-shipment';
 import { csrfFetch } from '@/lib/utils/csrf';
+import {
+  createFriendlyApiError,
+  extractApiErrorMessage,
+} from '@/lib/utils/user-friendly-error';
 import type {
   CreateFactoryShipmentOrderData,
   FactoryShipmentOrderListParams,
@@ -69,18 +73,17 @@ async function throwFactoryShipmentError(
 
   if (response.status === 422 && isValidationErrorPayload(payload)) {
     throw new FactoryShipmentValidationError(
-      payload?.error || payload?.message || '数据验证失败',
+      extractApiErrorMessage(payload, '数据验证失败'),
       payload?.details ?? [],
       response.status
     );
   }
 
-  const message =
-    payload?.error ||
-    payload?.message ||
-    `${fallbackMessage}: ${response.statusText || `HTTP ${response.status}`}`;
+  const fallbackText = response.statusText
+    ? `${fallbackMessage}: ${response.statusText}`
+    : `${fallbackMessage}: HTTP ${response.status}`;
 
-  throw new Error(message);
+  throw new Error(extractApiErrorMessage(payload, fallbackText));
 }
 
 // API 调用函数
@@ -135,8 +138,7 @@ export async function getFactoryShipmentOrders(
   const response = await fetch(`/api/factory-shipments?${searchParams}`);
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || '获取厂家发货订单列表失败');
+    throw await createFriendlyApiError(response, '获取厂家发货订单列表失败');
   }
 
   return response.json();
@@ -151,8 +153,7 @@ export async function getFactoryShipmentOrder(
   const response = await fetch(`/api/factory-shipments/${id}`);
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || '获取厂家发货订单详情失败');
+    throw await createFriendlyApiError(response, '获取厂家发货订单详情失败');
   }
 
   return response.json();
@@ -217,8 +218,7 @@ export async function updateFactoryShipmentOrderStatus(
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || error.message || '更新厂家发货订单状态失败');
+    throw await createFriendlyApiError(response, '更新厂家发货订单状态失败');
   }
 
   const result = await response.json();
@@ -244,8 +244,7 @@ export async function updateFactoryShipmentOrderContainerNumber(
   );
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || '更新集装箱号失败');
+    throw await createFriendlyApiError(response, '更新集装箱号失败');
   }
 
   return response.json();
@@ -260,8 +259,7 @@ export async function deleteFactoryShipmentOrder(id: string): Promise<void> {
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || '删除厂家发货订单失败');
+    throw await createFriendlyApiError(response, '删除厂家发货订单失败');
   }
 }
 
@@ -274,8 +272,7 @@ export async function cancelFactoryShipmentOrder(id: string): Promise<void> {
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || '取消厂家发货订单失败');
+    throw await createFriendlyApiError(response, '取消厂家发货订单失败');
   }
 }
 
@@ -513,8 +510,7 @@ export async function updateFactoryShipmentOrderShippingCompany(
   );
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || '更新船公司名称失败');
+    throw await createFriendlyApiError(response, '更新船公司名称失败');
   }
 
   const result = await response.json();
@@ -536,7 +532,9 @@ export async function triggerFactoryShipmentShippingQuery(id: string): Promise<{
   const payload = await response.json();
 
   if (!response.ok) {
-    throw new Error(payload.error || '手动查询失败，请稍后重试');
+    throw new Error(
+      extractApiErrorMessage(payload, '手动查询失败，请稍后重试')
+    );
   }
 
   return {

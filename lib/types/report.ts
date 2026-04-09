@@ -68,6 +68,18 @@ export interface AnnualSampleMetrics extends SampleMetrics {
   topCustomers: SampleCustomerMetrics[];
 }
 
+export interface PurchaseDamageBreakdown {
+  quantity: number; // 破损片数
+  amount: number; // 破损参考金额
+}
+
+export interface PurchaseDamageMetrics {
+  totalQuantity: number; // 采购破损总片数
+  totalAmount: number; // 采购破损总金额
+  supplierClaim: PurchaseDamageBreakdown; // 报工厂赔付
+  internalLoss: PurchaseDamageBreakdown; // 内部承担
+}
+
 // ==================== 月度报表类型 ====================
 
 /**
@@ -166,6 +178,7 @@ export interface MonthlyReport {
   sample: SampleMetrics; // 样品数据
   expenses: MonthlyExpenses; // 支出数据
   costs: MonthlyCosts; // 成本数据
+  purchaseDamage: PurchaseDamageMetrics; // 采购到货破损
   receivables: MonthlyReceivables; // 应收应付数据
   profit: MonthlyProfit; // 利润数据
   factoryShipmentProfit: MonthlyFactoryShipmentProfit; // 厂家发货利润数据
@@ -257,6 +270,7 @@ export interface AnnualReport {
   period: ReportPeriod; // 报表周期
   summary: AnnualSummary; // 年度汇总
   sample: AnnualSampleMetrics; // 年度样品统计
+  purchaseDamage: PurchaseDamageMetrics; // 采购到货破损
   monthlyTrend: MonthlyTrendData[]; // 月度趋势 (12个月)
   quarterlyData: QuarterlyData[]; // 季度数据 (4个季度)
   expenseDistribution: ExpenseDistribution[]; // 费用分布

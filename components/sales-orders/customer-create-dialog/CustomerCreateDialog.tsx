@@ -31,6 +31,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { createCustomer, customerQueryKeys } from '@/lib/api/customers';
 import type { Customer } from '@/lib/types/customer';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 import {
   customerCreateSchema as CreateCustomerSchema,
   type CustomerCreateFormData as CreateCustomerData,
@@ -223,7 +224,7 @@ function useCustomerCreateDialogController({
     onError: error => {
       toast({
         title: '创建失败',
-        description: error instanceof Error ? error.message : '创建失败',
+        description: getFriendlyErrorMessage(error, '创建客户失败，请稍后重试'),
         variant: 'destructive',
       });
     },

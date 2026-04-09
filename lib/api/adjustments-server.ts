@@ -75,7 +75,13 @@ function buildAdjustmentWhereClause(queryParams: {
  * 构建调整记录排序配置
  */
 function buildAdjustmentOrderBy(
-  sortBy: 'createdAt' | 'adjustmentNumber' | 'quantity' | 'reason' | undefined,
+  sortBy:
+    | 'createdAt'
+    | 'adjustmentNumber'
+    | 'quantity'
+    | 'adjustQuantity'
+    | 'reason'
+    | undefined,
   sortOrder: 'asc' | 'desc' | undefined
 ): Record<string, 'asc' | 'desc'> {
   const orderBy: Record<string, 'asc' | 'desc'> = {};
@@ -85,8 +91,8 @@ function buildAdjustmentOrderBy(
     orderBy.createdAt = finalSortOrder;
   } else if (sortBy === 'adjustmentNumber') {
     orderBy.adjustmentNumber = finalSortOrder;
-  } else if (sortBy === 'quantity') {
-    // Map 'quantity' from query to 'adjustQuantity' in database
+  } else if (sortBy === 'quantity' || sortBy === 'adjustQuantity') {
+    // 兼容 quantity / adjustQuantity 两种查询字段名
     orderBy.adjustQuantity = finalSortOrder;
   } else if (sortBy === 'reason') {
     orderBy.reason = finalSortOrder;
@@ -166,7 +172,12 @@ export async function getAdjustmentsServer(searchParams: URLSearchParams) {
   // 构建查询条件和排序
   const where = buildAdjustmentWhereClause(filters);
   const orderBy = buildAdjustmentOrderBy(
-    sortBy as 'createdAt' | 'adjustmentNumber' | 'quantity' | 'reason',
+    sortBy as
+      | 'createdAt'
+      | 'adjustmentNumber'
+      | 'quantity'
+      | 'adjustQuantity'
+      | 'reason',
     sortOrder
   );
 

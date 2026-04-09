@@ -4,12 +4,75 @@
 import type { Prisma } from '@prisma/client';
 import { endOfMonth, parseISO, startOfMonth, subMonths } from 'date-fns';
 
+import { buildDateTimeRangeFromDateStrings } from '@/lib/api/date-range';
 import { prisma } from '@/lib/db';
 import type {
   PaymentStatus,
   ReceivableItem,
   ReceivableSummary,
 } from '@/lib/services/receivables-types';
+
+const AUTO_RECEIVABLE_CONFIRMATION_PREFIX = '系统自动生成：销售订单';
+const AUTO_RECEIVABLE_CONFIRMATION_KEYWORD = '确认应收';
+const FINANCE_EPSILON = 0.000001;
+
+export function isAutoReceivableConfirmationRemark(
+  remarks?: string | null
+): boolean {
+  if (!remarks) {
+    return false;
+  }
+
+  return (
+    remarks.startsWith(AUTO_RECEIVABLE_CONFIRMATION_PREFIX) &&
+    remarks.includes(AUTO_RECEIVABLE_CONFIRMATION_KEYWORD)
+  );
+}
+
+export function isAutoReceivableConfirmationPayment(payment: {
+  remarks?: string | null;
+  actualPaymentAmount?: unknown;
+}): boolean {
+  return (
+    isAutoReceivableConfirmationRemark(payment.remarks) &&
+    Math.abs(Number(payment.actualPaymentAmount ?? 0)) <= FINANCE_EPSILON
+  );
+}
+
+export function buildExcludeAutoReceivableConfirmationWhere(): Prisma.PaymentRecordWhereInput {
+  return {
+    NOT: {
+      AND: [
+        {
+          remarks: {
+            startsWith: AUTO_RECEIVABLE_CONFIRMATION_PREFIX,
+          },
+        },
+        {
+          remarks: {
+            contains: AUTO_RECEIVABLE_CONFIRMATION_KEYWORD,
+          },
+        },
+        {
+          actualPaymentAmount: {
+            equals: 0,
+          },
+        },
+      ],
+    },
+  };
+}
+
+function buildReceivableActualPaymentWhere(
+  orderIds: string[]
+): Prisma.PaymentRecordWhereInput {
+  return {
+    salesOrderId: { in: orderIds },
+    status: { in: ['confirmed', 'pending'] },
+    paymentType: 'order_payment',
+    ...buildExcludeAutoReceivableConfirmationWhere(),
+  };
+}
 
 // ============ 计算类 ============
 export function calculatePaymentStatus(
@@ -149,7 +212,7 @@ export async function calculateReceivablesSummary(
 ): Promise<ReceivableSummary> {
   // 获取全量订单基础数据（不分页）
   const allOrders = await fetchReceivableBaseOrders(where, {
-    createdAt: 'desc',
+    orderDate: 'desc',
   });
   const allOrderIds = allOrders.map(order => order.id);
 
@@ -234,14 +297,12 @@ export function buildWhereConditions(params: {
     where.customerId = params.customerId;
   }
 
-  if (params.startDate || params.endDate) {
-    where.createdAt = {};
-    if (params.startDate) where.createdAt.gte = new Date(params.startDate);
-    if (params.endDate) {
-      const endDate = new Date(params.endDate);
-      endDate.setHours(23, 59, 59, 999);
-      where.createdAt.lte = endDate;
-    }
+  const dateRange = buildDateTimeRangeFromDateStrings(
+    params.startDate,
+    params.endDate
+  );
+  if (dateRange) {
+    where.orderDate = dateRange;
   }
 
   return where;
@@ -262,14 +323,14 @@ export function buildOrderBy(
   const orderByMap: Record<string, Prisma.SalesOrderOrderByWithRelationInput> =
     {
       // 订单创建日期（默认）
-      orderDate: { createdAt: sortOrder },
+      orderDate: { orderDate: sortOrder },
       createdAt: { createdAt: sortOrder },
 
       // 订单更新日期
       updatedAt: { updatedAt: sortOrder },
 
       // 到期日期（目前订单模型没有独立到期日字段，使用创建时间近似排序）
-      dueDate: { createdAt: sortOrder },
+      dueDate: { orderDate: sortOrder },
 
       // 订单编号
       orderNumber: { orderNumber: sortOrder },
@@ -289,7 +350,7 @@ export function buildOrderBy(
       remainingAmount: { totalAmount: sortOrder },
     };
 
-  return orderByMap[sortBy] ?? { createdAt: sortOrder };
+  return orderByMap[sortBy] ?? { orderDate: sortOrder };
 }
 
 export function transformToReceivable(order: {
@@ -298,6 +359,7 @@ export function transformToReceivable(order: {
   customerId: string;
   totalAmount: number;
   roundingAdjustment: number | null;
+  orderDate?: Date | null;
   createdAt: Date;
   customer: { id: string; name: string; phone: string | null };
   payments: Array<{
@@ -305,15 +367,18 @@ export function transformToReceivable(order: {
     roundingAmount: number | null;
     paymentDate: Date;
     status: string;
+    remarks?: string | null;
   }>;
   prepaymentUsages?: Array<{
     appliedAmount: number;
   }>;
 }): ReceivableItem {
+  const actualPayments =
+    order.payments?.filter(p => !isAutoReceivableConfirmationPayment(p)) || [];
   const confirmedPayments =
-    order.payments?.filter(p => p.status === 'confirmed') || [];
+    actualPayments.filter(p => p.status === 'confirmed') || [];
   const pendingPayments =
-    order.payments?.filter(p => p.status === 'pending') || [];
+    actualPayments.filter(p => p.status === 'pending') || [];
 
   const confirmedActual =
     confirmedPayments.reduce(
@@ -341,6 +406,7 @@ export function transformToReceivable(order: {
   const orderDue = totalAmountNum + orderRounding;
   const paidAgainstOrder = confirmedActual + confirmedRounding;
   const pendingAgainstOrder = pendingActual + pendingRounding;
+  const businessOrderDate = order.orderDate ?? order.createdAt;
   const prepaymentApplied =
     order.prepaymentUsages?.reduce(
       (sum, usage) => sum + usage.appliedAmount,
@@ -352,11 +418,11 @@ export function transformToReceivable(order: {
   const paymentStatus = calculatePaymentStatus(
     paidTotal,
     orderDue,
-    order.createdAt,
+    businessOrderDate,
     pendingAgainstOrder
   );
 
-  const lastPayment = order.payments?.sort(
+  const lastPayment = [...actualPayments].sort(
     (a, b) => b.paymentDate.getTime() - a.paymentDate.getTime()
   )[0];
 
@@ -366,7 +432,7 @@ export function transformToReceivable(order: {
     customerId: order.customerId,
     customerName: order.customer.name,
     customerPhone: order.customer.phone || undefined,
-    orderDate: order.createdAt.toISOString(),
+    orderDate: businessOrderDate.toISOString(),
     totalAmount: totalAmountNum,
     roundingAdjustment: orderRounding,
     paymentRoundingAmount: confirmedRounding,
@@ -387,6 +453,7 @@ export interface BaseReceivableOrder {
   customerId: string;
   totalAmount: Prisma.Decimal | number | null;
   roundingAdjustment: Prisma.Decimal | number | null;
+  orderDate: Date | null;
   createdAt: Date;
 }
 
@@ -418,6 +485,7 @@ export async function fetchReceivableBaseOrders(
     customerId: true,
     totalAmount: true,
     roundingAdjustment: true,
+    orderDate: true,
     createdAt: true,
   } satisfies Prisma.SalesOrderSelect;
 
@@ -472,11 +540,7 @@ export async function aggregatePaymentsByOrder(
         batches.map(batch =>
           prisma.paymentRecord.groupBy({
             by: ['salesOrderId', 'status'],
-            where: {
-              salesOrderId: { in: batch },
-              status: { in: ['confirmed', 'pending'] },
-              paymentType: 'order_payment',
-            },
+            where: buildReceivableActualPaymentWhere(batch),
             _sum: { actualPaymentAmount: true, roundingAmount: true },
           })
         )
@@ -553,6 +617,7 @@ export function createSummaryReceivables(
     const pendingActual = amounts.pending.actual;
     const pendingRounding = amounts.pending.rounding;
     const prepaymentApplied = amounts.prepaymentApplied ?? 0;
+    const businessOrderDate = order.orderDate ?? order.createdAt;
 
     // ✅ P1修复: 剩余金额只扣除已确认的收款和抹零
     // 待确认的抹零不参与剩余金额计算，仅用于状态展示
@@ -564,7 +629,7 @@ export function createSummaryReceivables(
     const statusDerived = calculatePaymentStatus(
       paidTotal,
       orderDue,
-      order.createdAt,
+      businessOrderDate,
       pendingAgainstOrder
     );
 
@@ -574,7 +639,7 @@ export function createSummaryReceivables(
       customerId: order.customerId,
       customerName: '',
       customerPhone: undefined,
-      orderDate: order.createdAt.toISOString(),
+      orderDate: businessOrderDate.toISOString(),
       totalAmount,
       roundingAdjustment,
       paymentRoundingAmount: confirmedRounding, // 只包含已确认的抹零
@@ -620,6 +685,7 @@ export async function fetchReceivableDetails(orderIds: string[]) {
       customerId: true,
       totalAmount: true,
       roundingAdjustment: true,
+      orderDate: true,
       createdAt: true,
       customer: { select: { id: true, name: true, phone: true } },
       prepaymentUsages: {
@@ -628,15 +694,13 @@ export async function fetchReceivableDetails(orderIds: string[]) {
         },
       },
       payments: {
-        where: {
-          status: { in: ['confirmed', 'pending'] },
-          paymentType: 'order_payment',
-        },
+        where: buildReceivableActualPaymentWhere(orderIds),
         select: {
           actualPaymentAmount: true,
           roundingAmount: true,
           paymentDate: true,
           status: true,
+          remarks: true,
         },
         orderBy: { paymentDate: 'desc' },
       },

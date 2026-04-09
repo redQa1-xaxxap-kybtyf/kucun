@@ -12,6 +12,7 @@ import { publishFinanceEvent } from '@/lib/events';
 import { logger } from '@/lib/logger';
 import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 import { getSystemMode } from '@/lib/services/system-mode-service';
+import { buildExcludeAutoReceivableConfirmationWhere } from '@/lib/services/receivables-helpers';
 import { generatePaymentNumber } from '@/lib/utils/payment-number-generator';
 import { shouldCreateReceivableForOrder } from '@/lib/utils/sample-order';
 import {
@@ -143,6 +144,8 @@ export const GET = withAuth(
         }
         where.paymentDate = paymentDateFilter;
       }
+
+      Object.assign(where, buildExcludeAutoReceivableConfirmationWhere());
 
       // ✅ P1修复: 构建动态排序条件
       const orderByMap: Record<
@@ -297,8 +300,11 @@ export const POST = withAuth(
             isSampleOrder: true,
             sampleSettlementType: true,
             payments: {
-              // ✅ 应收校验只计入已确认/已冲抵的收款，避免把“待确认/系统应收占位”误算为已收
-              where: { status: { in: ['confirmed', 'applied'] } },
+              // ✅ 应收校验只计入真实已确认/已冲抵的收款，排除系统自动生成的应收建账占位记录
+              where: {
+                status: { in: ['confirmed', 'applied'] },
+                ...buildExcludeAutoReceivableConfirmationWhere(),
+              },
               select: { paymentAmount: true },
             },
             prepaymentUsages: {

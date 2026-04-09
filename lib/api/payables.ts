@@ -18,6 +18,7 @@ import type {
   UpdatePaymentOutRecordData,
 } from '@/lib/types/payable';
 import { csrfFetch } from '@/lib/utils/csrf';
+import { createFriendlyApiError } from '@/lib/utils/user-friendly-error';
 
 // API基础URL
 const PAYABLES_API_BASE = '/api/finance/payables';
@@ -40,7 +41,7 @@ export const payablesApi = {
       credentials: 'include',
     });
     if (!response.ok) {
-      throw new Error(`获取应付款记录失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '获取应付款记录失败');
     }
 
     const result = await response.json();
@@ -56,7 +57,7 @@ export const payablesApi = {
       credentials: 'include',
     });
     if (!response.ok) {
-      throw new Error(`获取应付款记录详情失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '获取应付款记录详情失败');
     }
 
     const result = await response.json();
@@ -80,7 +81,7 @@ export const payablesApi = {
     });
 
     if (!response.ok) {
-      throw new Error(`创建应付款记录失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '创建应付款记录失败');
     }
 
     const result = await response.json();
@@ -105,7 +106,7 @@ export const payablesApi = {
     });
 
     if (!response.ok) {
-      throw new Error(`更新应付款记录失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '更新应付款记录失败');
     }
 
     const result = await response.json();
@@ -123,7 +124,7 @@ export const payablesApi = {
     });
 
     if (!response.ok) {
-      throw new Error(`删除应付款记录失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '删除应付款记录失败');
     }
 
     const result = await response.json();
@@ -137,7 +138,7 @@ export const payablesApi = {
       credentials: 'include',
     });
     if (!response.ok) {
-      throw new Error(`获取应付款统计失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '获取应付款统计失败');
     }
 
     const result = await response.json();
@@ -163,7 +164,7 @@ export const payablesApi = {
       credentials: 'include',
     });
     if (!response.ok) {
-      throw new Error(`获取付款记录失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '获取付款记录失败');
     }
 
     const result = await response.json();
@@ -179,7 +180,7 @@ export const payablesApi = {
       credentials: 'include',
     });
     if (!response.ok) {
-      throw new Error(`获取付款记录详情失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '获取付款记录详情失败');
     }
 
     const result = await response.json();
@@ -203,7 +204,7 @@ export const payablesApi = {
     });
 
     if (!response.ok) {
-      throw new Error(`创建付款记录失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '创建付款记录失败');
     }
 
     const result = await response.json();
@@ -228,7 +229,7 @@ export const payablesApi = {
     });
 
     if (!response.ok) {
-      throw new Error(`更新付款记录失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '更新付款记录失败');
     }
 
     const result = await response.json();
@@ -246,7 +247,7 @@ export const payablesApi = {
     });
 
     if (!response.ok) {
-      throw new Error(`删除付款记录失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '删除付款记录失败');
     }
 
     const result = await response.json();

@@ -7,6 +7,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import type { ApiResponse, PaginatedResponse } from '@/lib/types/api';
 import type { Product, ProductQueryParams } from '@/lib/types/product';
 import { csrfFetch } from '@/lib/utils/csrf';
+import { createFriendlyApiError } from '@/lib/utils/user-friendly-error';
 import type {
   ProductCreateFormData,
   ProductUpdateFormData,
@@ -92,7 +93,7 @@ export async function getProducts(
   });
 
   if (!response.ok) {
-    throw new Error(`获取产品列表失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '获取产品列表失败');
   }
 
   const apiResponse: ApiResponse<PaginatedResponse<Product>> =
@@ -121,7 +122,7 @@ export async function getProduct(id: string): Promise<Product> {
     if (response.status === 404) {
       throw new Error('产品不存在');
     }
-    throw new Error(`获取产品详情失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '获取产品详情失败');
   }
 
   const data: ApiResponse<Product> = await response.json();
@@ -153,24 +154,7 @@ export async function createProduct(
   });
 
   if (!response.ok) {
-    let errorMessage = `创建产品失败: ${response.statusText}`;
-
-    try {
-      const errorBody = await response.json();
-      if (errorBody?.error) {
-        errorMessage = `创建产品失败: ${errorBody.error}`;
-      }
-      if (Array.isArray(errorBody?.details) && errorBody.details.length > 0) {
-        const firstDetail = errorBody.details[0];
-        if (firstDetail?.message) {
-          errorMessage = `${errorMessage} (${firstDetail.message})`;
-        }
-      }
-    } catch {
-      // 忽略解析错误，保留原始状态码消息
-    }
-
-    throw new Error(errorMessage);
+    throw await createFriendlyApiError(response, '创建产品失败');
   }
 
   const data: ApiResponse<Product> = await response.json();
@@ -272,25 +256,7 @@ export async function updateProduct(
     if (response.status === 404) {
       throw new Error('产品不存在');
     }
-
-    let errorMessage = `更新产品失败: ${response.statusText}`;
-
-    try {
-      const errorBody = await response.json();
-      if (errorBody?.error) {
-        errorMessage = `更新产品失败: ${errorBody.error}`;
-      }
-      if (Array.isArray(errorBody?.details) && errorBody.details.length > 0) {
-        const firstDetail = errorBody.details[0];
-        if (firstDetail?.message) {
-          errorMessage = `${errorMessage} (${firstDetail.message})`;
-        }
-      }
-    } catch {
-      // 忽略解析错误，保留原始状态码消息
-    }
-
-    throw new Error(errorMessage);
+    throw await createFriendlyApiError(response, '更新产品失败');
   }
 
   const data: ApiResponse<Product> = await response.json();
@@ -319,22 +285,10 @@ export async function deleteProduct(id: string): Promise<void> {
   });
 
   if (!response.ok) {
-    // 尝试读取API返回的错误信息
-    let errorMessage = `删除产品失败: ${response.statusText}`;
-
-    try {
-      const errorData: ApiResponse<void> = await response.json();
-      if (errorData.error) {
-        errorMessage = errorData.error;
-      }
-    } catch {
-      // JSON解析失败,使用默认错误信息
-      if (response.status === 404) {
-        errorMessage = '产品不存在';
-      }
+    if (response.status === 404) {
+      throw new Error('产品不存在');
     }
-
-    throw new Error(errorMessage);
+    throw await createFriendlyApiError(response, '删除产品失败');
   }
 
   const data: ApiResponse<void> = await response.json();

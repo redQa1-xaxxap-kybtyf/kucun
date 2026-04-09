@@ -37,6 +37,7 @@ import {
   getPreviousMonth,
   type ReportVisibility,
 } from './report-helpers';
+import { getPurchaseDamageMetricsForPeriod } from './report-purchase-damage-service';
 import { getSampleMetrics } from './report-sample-helpers';
 
 const REPORT_QUERY_BATCH_SIZE = 1000;
@@ -563,6 +564,7 @@ export async function getMonthlyReport(
     sample,
     expenses,
     costsRaw,
+    purchaseDamage,
     receivables,
     factoryShipmentProfit,
     adjustments,
@@ -571,6 +573,7 @@ export async function getMonthlyReport(
     getSampleMetrics(startDate, endDate, visibility),
     getMonthlyExpenses(year, month, visibility),
     getMonthlyCosts(year, month, visibility),
+    getPurchaseDamageMetricsForPeriod(startDate, endDate),
     getMonthlyReceivables(year, month, visibility),
     getMonthlyFactoryShipmentProfit(year, month, visibility),
     getReportAdjustments(startDate, endDate, visibility),
@@ -625,6 +628,7 @@ export async function getMonthlyReport(
     sample,
     expenses,
     costs,
+    purchaseDamage,
     receivables,
     profit,
     factoryShipmentProfit,
@@ -635,10 +639,8 @@ export async function getMonthlyReport(
   // 如果需要环比数据
   if (includeComparison) {
     const { year: prevYear, month: prevMonth } = getPreviousMonth(year, month);
-    const { startDate: prevStartDate, endDate: prevEndDate } = getMonthDateRange(
-      prevYear,
-      prevMonth
-    );
+    const { startDate: prevStartDate, endDate: prevEndDate } =
+      getMonthDateRange(prevYear, prevMonth);
     const [
       prevRevenueRaw,
       prevExpenses,

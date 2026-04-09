@@ -26,6 +26,7 @@ import type {
 import { formatCurrency as formatCurrencyValue } from '@/lib/utils';
 import { csrfFetch } from '@/lib/utils/csrf';
 import { formatTimeAgo } from '@/lib/utils/datetime';
+import { createFriendlyApiError } from '@/lib/utils/user-friendly-error';
 
 // API基础URL
 const API_BASE = '/api/dashboard';
@@ -67,7 +68,7 @@ export const dashboardApi = {
 
     const response = await fetch(`${API_BASE}?${params}`);
     if (!response.ok) {
-      throw new Error(`获取仪表盘数据失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '获取仪表盘数据失败');
     }
 
     const result: DashboardApiResponse = await response.json();
@@ -84,7 +85,7 @@ export const dashboardApi = {
   ): Promise<BusinessOverview> => {
     const response = await fetch(`${API_BASE}/overview?timeRange=${timeRange}`);
     if (!response.ok) {
-      throw new Error(`获取业务概览失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '获取业务概览失败');
     }
 
     const result = await response.json();
@@ -99,7 +100,7 @@ export const dashboardApi = {
   getInventoryAlerts: async (): Promise<InventoryAlert[]> => {
     const response = await fetch(`${API_BASE}/alerts`);
     if (!response.ok) {
-      throw new Error(`获取库存预警失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '获取库存预警失败');
     }
 
     const result = await response.json();
@@ -114,7 +115,7 @@ export const dashboardApi = {
   getTodoItems: async (): Promise<TodoItem[]> => {
     const response = await fetch(`${API_BASE}/todos`);
     if (!response.ok) {
-      throw new Error(`获取待办事项失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '获取待办事项失败');
     }
 
     const result = await response.json();
@@ -131,7 +132,7 @@ export const dashboardApi = {
       `${API_BASE}/sales-trend?timeRange=${timeRange}`
     );
     if (!response.ok) {
-      throw new Error(`获取销售趋势失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '获取销售趋势失败');
     }
 
     const result = await response.json();
@@ -150,7 +151,7 @@ export const dashboardApi = {
       `${API_BASE}/inventory-trend?timeRange=${timeRange}`
     );
     if (!response.ok) {
-      throw new Error(`获取库存趋势失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '获取库存趋势失败');
     }
 
     const result = await response.json();
@@ -173,7 +174,7 @@ export const dashboardApi = {
       `${API_BASE}/product-ranking?timeRange=${timeRange}&limit=${limit}`
     );
     if (!response.ok) {
-      throw new Error(`获取产品排行失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '获取产品排行失败');
     }
 
     const result = await response.json();
@@ -192,7 +193,7 @@ export const dashboardApi = {
       `${API_BASE}/customer-ranking?timeRange=${timeRange}`
     );
     if (!response.ok) {
-      throw new Error(`获取客户排行失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '获取客户排行失败');
     }
 
     const result = await response.json();
@@ -207,7 +208,7 @@ export const dashboardApi = {
   getQuickActions: async (): Promise<QuickAction[]> => {
     const response = await fetch(`${API_BASE}/quick-actions`);
     if (!response.ok) {
-      throw new Error(`获取快速操作失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '获取快速操作失败');
     }
 
     const result = await response.json();
@@ -228,7 +229,7 @@ export const dashboardApi = {
     });
 
     if (!response.ok) {
-      throw new Error(`标记待办事项完成失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '标记待办事项完成失败');
     }
 
     const result = await response.json();
@@ -247,7 +248,7 @@ export const dashboardApi = {
     });
 
     if (!response.ok) {
-      throw new Error(`忽略预警失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '忽略预警失败');
     }
 
     const result = await response.json();

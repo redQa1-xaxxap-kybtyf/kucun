@@ -66,7 +66,7 @@ import {
   type SalesOrderQueryParams,
   type SalesOrderStatus,
 } from '@/lib/types/sales-order';
-import { formatDateTime } from '@/lib/utils/datetime';
+import { formatDate, formatDateTime } from '@/lib/utils/datetime';
 
 const NON_CANCELABLE_STATUSES: SalesOrderStatus[] = [
   'shipped',
@@ -127,10 +127,10 @@ export function ERPSalesOrderList({
   const statusFilterValue = initialParams?.status ?? undefined;
   const normalizedStatus = statusFilterValue;
   const isPrioritySorted = React.useMemo(() => {
-    const sortBy = initialParams?.sortBy || 'createdAt';
+    const sortBy = initialParams?.sortBy || 'orderDate';
 
     return (
-      sortBy === 'createdAt' &&
+      sortBy === 'orderDate' &&
       (!normalizedStatus || normalizedStatus === 'pending')
     );
   }, [initialParams?.sortBy, normalizedStatus]);
@@ -240,7 +240,7 @@ export function ERPSalesOrderList({
       search: initialParams?.search,
       status: normalizedStatus,
       customerId: initialParams?.customerId,
-      sortBy: initialParams?.sortBy || 'createdAt',
+      sortBy: initialParams?.sortBy || 'orderDate',
       sortOrder: initialParams?.sortOrder || 'desc',
       startDate: initialParams?.startDate,
       endDate: initialParams?.endDate,
@@ -699,6 +699,7 @@ export function ERPSalesOrderList({
             key: 'sortBy',
             label: '排序方式',
             options: [
+              { label: '销售日期', value: 'orderDate' },
               { label: '创建时间', value: 'createdAt' },
               { label: '订单金额', value: 'totalAmount' },
               { label: '发货时间', value: 'shippedAt' },
@@ -710,7 +711,7 @@ export function ERPSalesOrderList({
         ]}
         filterValues={{
           status: statusFilterValue || 'all',
-          sortBy: initialParams?.sortBy || 'createdAt',
+          sortBy: initialParams?.sortBy || 'orderDate',
         }}
         onFilterChange={handleFilterChange}
         // 日期范围筛选
@@ -789,21 +790,41 @@ export function ERPSalesOrderList({
       {/* 数据表格 */}
       <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
         {/* 桌面端：表格视图，支持横向滚动 */}
-        <div className="hidden md:block">
+        <div className="hidden xl:block">
           <div className="overflow-x-auto">
-            <Table>
+            <Table className="min-w-[1280px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead>订单号</TableHead>
-                  <TableHead>客户名称</TableHead>
-                  <TableHead>客户地址</TableHead>
-                  <TableHead>状态</TableHead>
-                  <TableHead className="text-right">订单金额</TableHead>
-                  <TableHead>收款状态</TableHead>
-                  <TableHead>发货时间</TableHead>
-                  <TableHead>创建时间</TableHead>
-                  <TableHead>更新时间</TableHead>
-                  <TableHead className="w-24">操作</TableHead>
+                  <TableHead className="w-[180px] min-w-[180px] whitespace-nowrap">
+                    订单号
+                  </TableHead>
+                  <TableHead className="w-[180px] min-w-[180px] whitespace-nowrap">
+                    客户名称
+                  </TableHead>
+                  <TableHead className="w-[240px] min-w-[240px] whitespace-nowrap">
+                    客户地址
+                  </TableHead>
+                  <TableHead className="w-[180px] min-w-[180px] whitespace-nowrap">
+                    状态
+                  </TableHead>
+                  <TableHead className="w-[120px] min-w-[120px] text-right whitespace-nowrap">
+                    订单金额
+                  </TableHead>
+                  <TableHead className="w-[120px] min-w-[120px] whitespace-nowrap">
+                    收款状态
+                  </TableHead>
+                  <TableHead className="w-[140px] min-w-[140px] whitespace-nowrap">
+                    发货时间
+                  </TableHead>
+                  <TableHead className="w-[120px] min-w-[120px] whitespace-nowrap">
+                    销售日期
+                  </TableHead>
+                  <TableHead className="w-[120px] min-w-[120px] whitespace-nowrap">
+                    更新时间
+                  </TableHead>
+                  <TableHead className="w-24 min-w-[96px] whitespace-nowrap">
+                    操作
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -848,7 +869,7 @@ export function ERPSalesOrderList({
                       role="button"
                       tabIndex={0}
                     >
-                      <TableCell className="h-8 text-xs">
+                      <TableCell className="h-8 min-w-[180px] text-xs">
                         <div className="flex flex-col gap-1">
                           <span className="font-mono font-semibold text-[hsl(var(--color-primary))] transition-colors hover:text-[hsl(var(--color-primary-hover))]">
                             <CopyableText text={order.orderNumber} />
@@ -886,7 +907,7 @@ export function ERPSalesOrderList({
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="h-8 text-xs">
+                      <TableCell className="h-8 min-w-[180px] text-xs">
                         <div className="flex flex-col gap-1">
                           <span className="font-medium text-[hsl(var(--color-text-primary))]">
                             {order.customer?.name || '-'}
@@ -896,16 +917,21 @@ export function ERPSalesOrderList({
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell className="h-8 text-xs text-[hsl(var(--color-text-secondary))]">
+                      <TableCell
+                        className="h-8 max-w-[240px] text-xs text-[hsl(var(--color-text-secondary))]"
+                        title={order.customer?.address || '-'}
+                      >
                         {order.customer?.address ? (
-                          <span>{order.customer?.address}</span>
+                          <span className="block truncate">
+                            {order.customer?.address}
+                          </span>
                         ) : (
                           <span className="text-[hsl(var(--color-text-tertiary))]">
                             -
                           </span>
                         )}
                       </TableCell>
-                      <TableCell className="h-8 text-xs">
+                      <TableCell className="h-8 min-w-[180px] text-xs">
                         <div className="flex items-center gap-2">
                           {getStatusBadge(order.status)}
                           {order.status === 'confirmed' && (
@@ -924,13 +950,13 @@ export function ERPSalesOrderList({
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="h-8 text-right text-xs font-semibold text-[hsl(var(--color-success))]">
+                      <TableCell className="h-8 text-right text-xs font-semibold whitespace-nowrap text-[hsl(var(--color-success))]">
                         {formatAmount(order.totalAmount)}
                       </TableCell>
-                      <TableCell className="h-8 text-xs">
+                      <TableCell className="h-8 text-xs whitespace-nowrap">
                         {getPaymentStatusBadge(order)}
                       </TableCell>
-                      <TableCell className="h-8 text-xs text-[hsl(var(--color-text-secondary))]">
+                      <TableCell className="h-8 text-xs whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
                         {order.shippedAt ? (
                           <span className="font-medium text-[hsl(var(--color-primary))]">
                             {formatDateTime(order.shippedAt)}
@@ -941,10 +967,10 @@ export function ERPSalesOrderList({
                           </span>
                         )}
                       </TableCell>
-                      <TableCell className="h-8 text-xs text-[hsl(var(--color-text-secondary))]">
-                        <RelativeTime date={order.createdAt} />
+                      <TableCell className="h-8 text-xs whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
+                        {formatDate(order.orderDate || order.createdAt)}
                       </TableCell>
-                      <TableCell className="h-8 text-xs text-[hsl(var(--color-text-secondary))]">
+                      <TableCell className="h-8 text-xs whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
                         <RelativeTime date={order.updatedAt} />
                       </TableCell>
                       <TableCell className="h-8 text-xs">
@@ -1063,7 +1089,7 @@ export function ERPSalesOrderList({
         </div>
 
         {/* 移动端：卡片视图 */}
-        <div className="space-y-3 px-3 py-3 md:hidden">
+        <div className="space-y-3 px-3 py-3 xl:hidden">
           {isInitialLoading ? (
             Array.from({ length: 6 }).map((_, index) => (
               <div
@@ -1157,7 +1183,8 @@ export function ERPSalesOrderList({
                         {getPaymentStatusBadge(order)}
                       </div>
                       <div className="mt-1 break-all text-[hsl(var(--color-text-tertiary))] sm:break-normal">
-                        创建时间：{formatDateTime(order.createdAt)}
+                        销售日期：
+                        {formatDate(order.orderDate || order.createdAt)}
                       </div>
                     </div>
                   </div>
@@ -1276,8 +1303,7 @@ export function ERPSalesOrderList({
               <AlertDialogTitle>确认撤回为草稿</AlertDialogTitle>
             </div>
             <AlertDialogDescription className="pt-4 text-sm leading-6 text-[hsl(var(--color-text-secondary))]">
-              确定要将订单{' '}
-              <strong>{orderPendingWithdraw?.orderNumber}</strong>{' '}
+              确定要将订单 <strong>{orderPendingWithdraw?.orderNumber}</strong>{' '}
               撤回为草稿吗？
               <br />
               撤回后可重新修改订单，系统会同步释放预留库存并关闭当前待收记录。

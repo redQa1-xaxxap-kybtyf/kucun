@@ -12,6 +12,12 @@ import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import {
+  BatchPurchaseInboundSection,
+  createBatchPurchaseInboundRow,
+  type BatchPurchaseInboundRow,
+  type BatchPurchaseInboundRowErrors,
+} from '@/components/inventory/forms/batch-purchase-inbound-section';
+import {
   InboundCostField,
   InboundPurchaseDamageSection,
   InboundQuantityFields,
@@ -24,6 +30,7 @@ import { InboundFormToolbar } from '@/components/inventory/forms/inbound-form-to
 import { InboundProductSection } from '@/components/inventory/forms/inbound-product-section';
 import { OpeningBalanceConfirmDialog } from '@/components/inventory/opening-balance-confirm-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
@@ -35,13 +42,20 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useBatchInboundFormSubmit } from '@/hooks/use-batch-inbound-form-submit';
 import {
-  calculateFinalQuantity,
+  calculateAcceptedInboundQuantity,
   useInboundForm,
   useProductSelection,
 } from '@/hooks/use-inbound-form';
 import { useInboundFormSubmit } from '@/hooks/use-inbound-form-submit';
-import type { InboundFormData, ProductOption } from '@/lib/types/inbound';
+import { useCreateBatchInboundRecords } from '@/lib/api/inbound';
+import {
+  INBOUND_REASON_LABELS,
+  type InboundFormData,
+  type ProductOption,
+} from '@/lib/types/inbound';
+import { createInboundSchema } from '@/lib/validations/inbound';
 
 interface ERPInboundFormProps {
   onSuccess?: () => void;
@@ -60,8 +74,23 @@ interface ERPInboundFormProps {
 export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
   const [showProductPrompt, setShowProductPrompt] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showReasonSwitcher, setShowReasonSwitcher] = useState(false);
+  const [showSingleOptionalFields, setShowSingleOptionalFields] =
+    useState(false);
+  const [showPurchaseDamageSection, setShowPurchaseDamageSection] =
+    useState(false);
   const [pendingFormData, setPendingFormData] =
     useState<InboundFormData | null>(null);
+  const [isBatchPurchaseMode, setIsBatchPurchaseMode] = useState(false);
+  const [batchRows, setBatchRows] = useState<BatchPurchaseInboundRow[]>([
+    createBatchPurchaseInboundRow(),
+  ]);
+  const [batchSelectedProducts, setBatchSelectedProducts] = useState<
+    Record<string, ProductOption | null>
+  >({});
+  const [batchRowErrors, setBatchRowErrors] = useState<
+    Record<string, BatchPurchaseInboundRowErrors>
+  >({});
   const searchParams = useSearchParams();
 
   // 检测是否为期初入库操作
@@ -79,8 +108,37 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
     watchedPiecesPerUnit,
     watchedDamagedInputQuantity,
   } = useInboundForm({
-    initialReason: isOpeningBalance ? 'opening_balance' : 'other',
+    initialReason: isOpeningBalance ? 'opening_balance' : 'purchase',
   });
+  const watchedReason = form.watch('reason');
+  const watchedDamageHandling = form.watch('damageHandling');
+  const watchedDamageRemarks = form.watch('damageRemarks');
+  const hasPurchaseDamage =
+    watchedDamagedInputQuantity > 0 ||
+    Boolean(watchedDamageHandling) ||
+    Boolean(watchedDamageRemarks?.trim());
+  const shouldShowPurchaseDamageTools =
+    watchedReason === 'purchase' && !isBatchPurchaseMode;
+  const isPurchaseDamageSectionVisible =
+    shouldShowPurchaseDamageTools &&
+    (showPurchaseDamageSection || hasPurchaseDamage);
+  const shouldShowSingleOptionalFields =
+    !isBatchPurchaseMode &&
+    (showSingleOptionalFields || watchedInputUnit === 'units');
+  const batchCreateMutation = useCreateBatchInboundRecords();
+  const currentPageTitle = isOpeningBalance
+    ? '期初库存录入'
+    : watchedReason === 'purchase'
+      ? '手工采购入库'
+      : INBOUND_REASON_LABELS[watchedReason];
+  const currentPageDescription = isOpeningBalance
+    ? '录入期初库存数量与成本，提交后直接写入库存。'
+    : watchedReason === 'purchase'
+      ? isBatchPurchaseMode
+        ? '同一供应商到货时，可一次登记多条产品明细。'
+        : '先填写供应商、产品、批次、数量和成本。'
+      : '请按本次业务类型填写入库信息，提交后会生成对应的入库记录。';
+  const submitLabel = isOpeningBalance ? '确认录入期初库存' : '确认提交入库';
 
   // 产品选择逻辑
   const { handleProductSelect, handleReset } = useProductSelection(
@@ -101,6 +159,204 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
     onSuccess,
     skipConfirm: true,
   });
+  const { handleSubmit: submitBatchInbound, isSubmitting: isBatchSubmitting } =
+    useBatchInboundFormSubmit({
+      createMutation: batchCreateMutation,
+      onSuccess,
+    });
+
+  const generateIdempotencyKey = () =>
+    typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+  const resetPurchaseDamageFields = () => {
+    form.setValue('damagedInputQuantity', undefined, {
+      shouldDirty: false,
+      shouldValidate: false,
+    });
+    form.setValue('damagedQuantity', undefined, {
+      shouldDirty: false,
+      shouldValidate: false,
+    });
+    form.setValue('damageHandling', undefined, {
+      shouldDirty: false,
+      shouldValidate: false,
+    });
+    form.setValue('damageRemarks', '', {
+      shouldDirty: false,
+      shouldValidate: false,
+    });
+  };
+
+  const handlePurchaseDamageToggle = () => {
+    if (isPurchaseDamageSectionVisible) {
+      setShowPurchaseDamageSection(false);
+      resetPurchaseDamageFields();
+      return;
+    }
+
+    setShowPurchaseDamageSection(true);
+  };
+
+  const handleBatchRowChange = <K extends keyof BatchPurchaseInboundRow>(
+    rowId: string,
+    field: K,
+    value: BatchPurchaseInboundRow[K]
+  ) => {
+    setBatchRows(current =>
+      current.map(row =>
+        row.id === rowId
+          ? {
+              ...row,
+              [field]: value,
+              ...(field === 'damagedInputQuantity' &&
+              (!value || Number(value) <= 0)
+                ? {
+                    damageHandling: undefined,
+                    damageRemarks: '',
+                  }
+                : {}),
+            }
+          : row
+      )
+    );
+
+    setBatchRowErrors(current => ({
+      ...current,
+      [rowId]: {
+        ...current[rowId],
+        [field]: undefined,
+      },
+    }));
+  };
+
+  const handleBatchProductSelect = (
+    rowId: string,
+    productId: string,
+    product?: ProductOption
+  ) => {
+    setBatchRows(current =>
+      current.map(row =>
+        row.id === rowId
+          ? {
+              ...row,
+              productId,
+              piecesPerUnit: product?.piecesPerUnit ?? row.piecesPerUnit,
+            }
+          : row
+      )
+    );
+
+    setBatchSelectedProducts(current => ({
+      ...current,
+      [rowId]: product ?? null,
+    }));
+
+    setBatchRowErrors(current => ({
+      ...current,
+      [rowId]: {
+        ...current[rowId],
+        productId: undefined,
+      },
+    }));
+  };
+
+  const handleAddBatchRow = () => {
+    setBatchRows(current => [...current, createBatchPurchaseInboundRow()]);
+  };
+
+  const handleRemoveBatchRow = (rowId: string) => {
+    setBatchRows(current =>
+      current.length === 1 ? current : current.filter(row => row.id !== rowId)
+    );
+
+    setBatchSelectedProducts(current => {
+      const next = { ...current };
+      delete next[rowId];
+      return next;
+    });
+
+    setBatchRowErrors(current => {
+      const next = { ...current };
+      delete next[rowId];
+      return next;
+    });
+  };
+
+  const handleBatchSubmit = async () => {
+    const supplierId = form.getValues('supplierId')?.trim();
+    const commonRemarks = form.getValues('remarks')?.trim();
+
+    if (!supplierId) {
+      form.setError('supplierId', {
+        type: 'manual',
+        message: '请选择供应商',
+      });
+      return;
+    }
+
+    const nextErrors: Record<string, BatchPurchaseInboundRowErrors> = {};
+    const records = batchRows.flatMap(row => {
+      const quantities = calculateAcceptedInboundQuantity({
+        reason: 'purchase',
+        inputQuantity: row.inputQuantity,
+        damagedInputQuantity: row.damagedInputQuantity,
+        inputUnit: row.inputUnit,
+        piecesPerUnit: row.piecesPerUnit,
+      });
+
+      const parsed = createInboundSchema.safeParse({
+        idempotencyKey: generateIdempotencyKey(),
+        productId: row.productId,
+        inputQuantity: row.inputQuantity,
+        inputUnit: row.inputUnit,
+        quantity: quantities.quantity,
+        unitCost: row.unitCost,
+        reason: 'purchase' as const,
+        supplierId,
+        remarks: commonRemarks || undefined,
+        batchNumber: row.batchNumber.trim(),
+        piecesPerUnit: row.piecesPerUnit,
+        weight: row.weight,
+        damagedInputQuantity: row.damagedInputQuantity,
+        damagedQuantity: quantities.damagedQuantity,
+        damageHandling: row.damageHandling,
+        damageRemarks: row.damageRemarks.trim() || undefined,
+      });
+
+      if (!parsed.success) {
+        const rowFieldErrors: BatchPurchaseInboundRowErrors = {};
+
+        parsed.error.issues.forEach(issue => {
+          const field = issue.path[0];
+          if (
+            typeof field === 'string' &&
+            !rowFieldErrors[field as keyof BatchPurchaseInboundRowErrors]
+          ) {
+            rowFieldErrors[field as keyof BatchPurchaseInboundRowErrors] =
+              issue.message;
+          }
+        });
+
+        nextErrors[row.id] = rowFieldErrors;
+        return [];
+      }
+
+      return [parsed.data];
+    });
+
+    setBatchRowErrors(nextErrors);
+
+    if (Object.keys(nextErrors).length > 0 || records.length === 0) {
+      return;
+    }
+
+    await submitBatchInbound({
+      batchIdempotencyKey: generateIdempotencyKey(),
+      records,
+    });
+  };
 
   // ✅ 使用 React Hook Form 的 handleSubmit，并在这里处理期初入库二次确认逻辑
   const handleFormSubmit = form.handleSubmit(
@@ -129,6 +385,13 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
   );
 
   const handleToolbarSubmit = () => {
+    if (isBatchPurchaseMode) {
+      handleBatchSubmit().catch(() => {
+        // submitBatchInbound 已处理错误提示
+      });
+      return;
+    }
+
     if (!form.getValues('productId')) {
       setShowProductPrompt(true);
       form.setFocus('productId');
@@ -154,7 +417,13 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
   const handleFormReset = () => {
     setShowProductPrompt(false);
     setShowConfirmDialog(false);
+    setShowReasonSwitcher(false);
+    setShowSingleOptionalFields(false);
+    setShowPurchaseDamageSection(false);
     setPendingFormData(null);
+    setBatchRows([createBatchPurchaseInboundRow()]);
+    setBatchSelectedProducts({});
+    setBatchRowErrors({});
     handleReset();
   };
 
@@ -176,39 +445,32 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
     setPendingFormData(null);
   };
 
-  const watchedReason = form.watch('reason');
-  const showPurchaseDamageSection = watchedReason === 'purchase';
-
-  // 实时计算并更新最终片数
+  // 实时计算并更新到货破损与合格入库片数
   useEffect(() => {
-    if (watchedInputQuantity > 0 && watchedPiecesPerUnit > 0) {
-      const finalQuantity = calculateFinalQuantity(
-        watchedInputQuantity,
-        watchedInputUnit,
-        watchedPiecesPerUnit
-      );
-      form.setValue('quantity', finalQuantity);
-    } else {
-      form.setValue('quantity', undefined); // ✅ 修改：设置为 undefined 而不是 0
-    }
-  }, [watchedInputQuantity, watchedInputUnit, watchedPiecesPerUnit, form]);
+    const { quantity, damagedQuantity } = calculateAcceptedInboundQuantity({
+      reason: watchedReason,
+      inputQuantity:
+        watchedInputQuantity > 0 ? watchedInputQuantity : undefined,
+      damagedInputQuantity:
+        watchedDamagedInputQuantity > 0
+          ? watchedDamagedInputQuantity
+          : undefined,
+      inputUnit: watchedInputUnit,
+      piecesPerUnit: watchedPiecesPerUnit,
+    });
 
-  useEffect(() => {
-    const damagedQuantity =
-      watchedDamagedInputQuantity > 0
-        ? calculateFinalQuantity(
-            watchedDamagedInputQuantity,
-            watchedInputUnit,
-            watchedPiecesPerUnit
-          )
-        : undefined;
-
+    form.setValue('quantity', quantity, {
+      shouldDirty: false,
+      shouldValidate: false,
+    });
     form.setValue('damagedQuantity', damagedQuantity, {
       shouldDirty: false,
       shouldValidate: false,
     });
   }, [
+    watchedReason,
     watchedDamagedInputQuantity,
+    watchedInputQuantity,
     watchedInputUnit,
     watchedPiecesPerUnit,
     form,
@@ -219,32 +481,35 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
       return;
     }
 
-    form.setValue('damagedInputQuantity', undefined, {
-      shouldDirty: false,
-      shouldValidate: false,
-    });
-    form.setValue('damagedQuantity', undefined, {
-      shouldDirty: false,
-      shouldValidate: false,
-    });
-    form.setValue('damageHandling', undefined, {
-      shouldDirty: false,
-      shouldValidate: false,
-    });
-    form.setValue('damageRemarks', '', {
-      shouldDirty: false,
-      shouldValidate: false,
-    });
-  }, [watchedReason, form]);
+    setShowPurchaseDamageSection(false);
+    resetPurchaseDamageFields();
+  }, [watchedReason]);
+
+  useEffect(() => {
+    if (watchedReason !== 'purchase' && isBatchPurchaseMode) {
+      setIsBatchPurchaseMode(false);
+    }
+  }, [isBatchPurchaseMode, watchedReason]);
+
+  useEffect(() => {
+    if (!hasPurchaseDamage) {
+      return;
+    }
+
+    setShowPurchaseDamageSection(true);
+  }, [hasPurchaseDamage]);
 
   return (
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="space-y-4">
         {/* 页面标题卡片 */}
         <InboundFormToolbar
-          isSubmitting={isSubmitting}
+          isSubmitting={isSubmitting || isBatchSubmitting}
           onReset={handleFormReset}
           onSubmit={handleToolbarSubmit}
+          title={currentPageTitle}
+          description={currentPageDescription}
+          submitLabel={submitLabel}
         />
 
         {/* 期初入库提示 Banner */}
@@ -262,8 +527,20 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="p-6">
             <Form {...form}>
-              <form onSubmit={handleFormSubmit} className="space-y-6">
-                {/* 1️⃣ 入库原因 */}
+              <form
+                onSubmit={
+                  isBatchPurchaseMode
+                    ? event => {
+                        event.preventDefault();
+                        handleBatchSubmit().catch(() => {
+                          // submitBatchInbound 已处理错误提示
+                        });
+                      }
+                    : handleFormSubmit
+                }
+                className="space-y-6"
+              >
+                {/* 1️⃣ 入库类型 */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-500 shadow-inner">
@@ -271,19 +548,127 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                     </div>
                     <div className="space-y-0.5">
                       <h3 className="text-base font-black tracking-tight text-slate-900">
-                        1. 业务归置
+                        1. 入库类型
                       </h3>
-                      <p className="text-[10px] font-bold text-slate-400">
-                        设定本次入库的业务凭据与类型
+                      <p className="text-xs text-slate-500">
+                        默认按采购入库开始录单，需要时再切换其他入库类型。
                       </p>
                     </div>
                   </div>
                   <div className="rounded-2xl border border-slate-100 bg-slate-50/30 p-6">
-                    <InboundReasonField form={form} />
+                    {watchedReason === 'purchase' && (
+                      <div className="space-y-4">
+                        <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                          <div className="space-y-2">
+                            <div className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-700">
+                              当前类型：采购入库
+                            </div>
+                            <p className="text-sm text-slate-500">
+                              先填写本次收货的基础信息，需要时再补充其他内容。
+                            </p>
+                          </div>
+                          {!isOpeningBalance && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() =>
+                                setShowReasonSwitcher(current => !current)
+                              }
+                              className="border-dashed"
+                            >
+                              {showReasonSwitcher
+                                ? '收起类型切换'
+                                : '切换其他入库类型'}
+                            </Button>
+                          )}
+                        </div>
+                        {(showReasonSwitcher ||
+                          watchedReason !== 'purchase') && (
+                          <div className="border-t border-slate-100/70 pt-4">
+                            <InboundReasonField form={form} />
+                          </div>
+                        )}
+                        <div className="border-t border-slate-100/70 pt-4">
+                          <p className="text-sm font-black text-slate-700">
+                            录单方式
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            单产品适合日常收货，批量录入适合同一供应商一次到多种货。
+                          </p>
+                          <div className="mt-3 grid gap-3 md:grid-cols-2">
+                            <Button
+                              type="button"
+                              variant={
+                                isBatchPurchaseMode ? 'outline' : 'default'
+                              }
+                              className="justify-start"
+                              onClick={() => {
+                                setIsBatchPurchaseMode(false);
+                                setShowProductPrompt(false);
+                              }}
+                            >
+                              单产品录入
+                            </Button>
+                            <Button
+                              type="button"
+                              variant={
+                                isBatchPurchaseMode ? 'default' : 'outline'
+                              }
+                              className="justify-start"
+                              onClick={() => {
+                                setIsBatchPurchaseMode(true);
+                                setShowProductPrompt(false);
+                              }}
+                            >
+                              批量多产品录入
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {watchedReason !== 'purchase' && !isOpeningBalance && (
+                      <div className="space-y-4">
+                        <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                          <div className="space-y-2">
+                            <div className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700">
+                              当前类型：{INBOUND_REASON_LABELS[watchedReason]}
+                            </div>
+                            <p className="text-sm text-slate-500">
+                              当前已切换为非采购入库，页面会保留统一校验和库存入账逻辑。
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() =>
+                              setShowReasonSwitcher(current => !current)
+                            }
+                            className="border-dashed"
+                          >
+                            {showReasonSwitcher
+                              ? '收起类型切换'
+                              : '切换其他入库类型'}
+                          </Button>
+                        </div>
+                        <div className="border-t border-slate-100/70 pt-4">
+                          <InboundReasonField form={form} />
+                        </div>
+                      </div>
+                    )}
+                    {isOpeningBalance && (
+                      <div className="space-y-2">
+                        <div className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-sm font-semibold text-amber-700">
+                          当前类型：期初库存
+                        </div>
+                        <p className="text-sm text-slate-500">
+                          期初库存录入不需要再切换入库类型，直接填写数量和成本即可。
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* 2️⃣ 产品与供应商 */}
+                {/* 2️⃣ 供应商与产品 */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-500 shadow-inner">
@@ -291,79 +676,117 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                     </div>
                     <div className="space-y-0.5">
                       <h3 className="text-base font-black tracking-tight text-slate-900">
-                        2. 标的与关系
+                        2. 供应商与产品
                       </h3>
-                      <p className="text-[10px] font-bold text-slate-400">
-                        选择入库产品与对应联络供应商
+                      <p className="text-xs text-slate-500">
+                        先确认供应商，再录入产品明细，符合采购员常用录单顺序。
                       </p>
                     </div>
                   </div>
                   <div className="space-y-6 rounded-2xl border border-slate-100 bg-slate-50/30 p-6">
-                    <InboundProductSection
-                      form={form}
-                      selectedProduct={selectedProduct}
-                      onProductSelect={handleProductSelectWithPrompt}
-                      showProductPrompt={showProductPrompt}
-                    />
-                    <div className="border-t border-slate-100/50 pt-4">
-                      <InboundSupplierField form={form} />
-                    </div>
-                  </div>
-                </div>
-
-                {/* 3️⃣ 数量规格与批次 */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-500 shadow-inner">
-                      <BarChart3 className="h-5 w-5" />
-                    </div>
-                    <div className="space-y-0.5">
-                      <h3 className="text-base font-black tracking-tight text-slate-900">
-                        3. 交付效期
-                      </h3>
-                      <p className="text-[10px] font-bold text-slate-400">
-                        录入产品批次、色号及具体的入库数量
-                      </p>
-                    </div>
-                  </div>
-                  <div className="space-y-6 rounded-2xl border border-slate-100 bg-slate-50/30 p-6">
-                    {/* 批次号 */}
-                    <FormField
-                      control={form.control}
-                      name="batchNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm font-black text-slate-700">
-                            产品批次/色号 *
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="请输入具体批次号或产品色号"
-                              className="h-10 border-slate-200 bg-white/50 focus:bg-white"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormDescription className="text-[10px] font-bold text-slate-400 italic">
-                            行业规范：同一项目必须强制使用完全一致的批次/色号以防色差
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
+                    <InboundSupplierField form={form} />
+                    <div className="border-t border-slate-100/50 pt-6">
+                      {isBatchPurchaseMode ? (
+                        <BatchPurchaseInboundSection
+                          rows={batchRows}
+                          selectedProducts={batchSelectedProducts}
+                          rowErrors={batchRowErrors}
+                          onAddRow={handleAddBatchRow}
+                          onRemoveRow={handleRemoveBatchRow}
+                          onProductSelect={handleBatchProductSelect}
+                          onFieldChange={handleBatchRowChange}
+                        />
+                      ) : (
+                        <InboundProductSection
+                          form={form}
+                          selectedProduct={selectedProduct}
+                          onProductSelect={handleProductSelectWithPrompt}
+                          showProductPrompt={showProductPrompt}
+                        />
                       )}
-                    />
-
-                    {/* 入库数量、单位、最终片数 */}
-                    <div className="border-t border-slate-100/50 pt-4">
-                      <InboundQuantityFields form={form} />
-                    </div>
-
-                    {/* 每件片数、每件重量 */}
-                    <div className="border-t border-slate-100/50 pt-4">
-                      <InboundSpecificationFields form={form} />
                     </div>
                   </div>
                 </div>
 
-                {showPurchaseDamageSection && (
+                {!isBatchPurchaseMode && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-500 shadow-inner">
+                        <BarChart3 className="h-5 w-5" />
+                      </div>
+                      <div className="space-y-0.5">
+                        <h3 className="text-base font-black tracking-tight text-slate-900">
+                          3. 批次与数量
+                        </h3>
+                        <p className="text-xs text-slate-500">
+                          这一屏只处理批次、数量和必要换算，减少无关设置干扰。
+                        </p>
+                      </div>
+                    </div>
+                    <div className="space-y-6 rounded-2xl border border-slate-100 bg-slate-50/30 p-6">
+                      <FormField
+                        control={form.control}
+                        name="batchNumber"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-semibold text-slate-700">
+                              批次号/色号 *
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="请输入本次到货批次号或色号"
+                                className="h-10 border-slate-200 bg-white/50 focus:bg-white"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormDescription className="text-xs text-slate-500">
+                              同一项目请尽量使用一致批次，方便后续追溯和避免色差。
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="border-t border-slate-100/50 pt-4">
+                        <InboundQuantityFields form={form} />
+                      </div>
+
+                      <div className="rounded-2xl border border-dashed border-slate-200 bg-white/70 p-4">
+                        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                          <div>
+                            <p className="text-sm font-semibold text-slate-800">
+                              更多设置
+                            </p>
+                            <p className="mt-1 text-xs text-slate-500">
+                              装箱数、重量这类信息只在需要时填写；按件录入时会自动展开。
+                            </p>
+                          </div>
+                          {watchedInputUnit !== 'units' && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() =>
+                                setShowSingleOptionalFields(current => !current)
+                              }
+                              className="border-dashed"
+                            >
+                              {shouldShowSingleOptionalFields
+                                ? '收起更多设置'
+                                : '展开更多设置'}
+                            </Button>
+                          )}
+                        </div>
+                        {shouldShowSingleOptionalFields && (
+                          <div className="mt-4 border-t border-slate-100 pt-4">
+                            <InboundSpecificationFields form={form} />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {shouldShowPurchaseDamageTools && (
                   <div className="space-y-4">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600 shadow-inner">
@@ -373,37 +796,76 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                         <h3 className="text-base font-black tracking-tight text-slate-900">
                           4. 到货破损
                         </h3>
-                        <p className="text-[10px] font-bold text-slate-400">
-                          只登记到货即发现的破损，库存仅计入合格数量
+                        <p className="text-xs text-slate-500">
+                          大多数收货没有破损时可以直接跳过，有破损再登记。
                         </p>
                       </div>
                     </div>
-                    <InboundPurchaseDamageSection form={form} />
+                    <div className="rounded-2xl border border-amber-100 bg-amber-50/40 p-4">
+                      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                        <div>
+                          <p className="text-sm font-semibold text-amber-900">
+                            {isPurchaseDamageSectionVisible
+                              ? '已开启到货破损登记'
+                              : '本次到货没有破损，可直接继续'}
+                          </p>
+                          <p className="mt-1 text-xs text-amber-800">
+                            只有收货当场确认的破损才需要登记，系统会自动从到货数量中扣减。
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant={
+                            isPurchaseDamageSectionVisible
+                              ? 'outline'
+                              : 'default'
+                          }
+                          onClick={handlePurchaseDamageToggle}
+                          className={
+                            isPurchaseDamageSectionVisible
+                              ? 'border-amber-200'
+                              : ''
+                          }
+                        >
+                          {isPurchaseDamageSectionVisible
+                            ? '清空破损信息'
+                            : '登记到货破损'}
+                        </Button>
+                      </div>
+                      {isPurchaseDamageSectionVisible && (
+                        <div className="mt-4 border-t border-amber-200/70 pt-4">
+                          <InboundPurchaseDamageSection form={form} />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
-                {/* 4️⃣ / 5️⃣ 成本信息 */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-500 shadow-inner">
-                      <DollarSign className="h-5 w-5" />
+                {!isBatchPurchaseMode && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-500 shadow-inner">
+                        <DollarSign className="h-5 w-5" />
+                      </div>
+                      <div className="space-y-0.5">
+                        <h3 className="text-base font-black tracking-tight text-slate-900">
+                          {isPurchaseDamageSectionVisible
+                            ? '5. 成本信息'
+                            : '4. 成本信息'}
+                        </h3>
+                        <p className="text-xs text-slate-500">
+                          单位成本和金额拆开显示，便于录入时快速核对。
+                        </p>
+                      </div>
                     </div>
-                    <div className="space-y-0.5">
-                      <h3 className="text-base font-black tracking-tight text-slate-900">
-                        {showPurchaseDamageSection ? '5. 价值核算' : '4. 价值核算'}
-                      </h3>
-                      <p className="text-[10px] font-bold text-slate-400">
-                        核算入库资产的单位成本与总价值
-                      </p>
+                    <div className="rounded-2xl border border-slate-100 bg-slate-50/30 p-6">
+                      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+                        <InboundCostField form={form} />
+                        <InboundTotalCostField form={form} />
+                      </div>
                     </div>
                   </div>
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50/30 p-6">
-                    <div className="grid grid-cols-2 gap-6">
-                      <InboundCostField form={form} />
-                      <InboundTotalCostField form={form} />
-                    </div>
-                  </div>
-                </div>
+                )}
 
                 {/* 5️⃣ / 6️⃣ 备注 */}
                 <div className="space-y-4">
@@ -413,10 +875,16 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                     </div>
                     <div className="space-y-0.5">
                       <h3 className="text-base font-black tracking-tight text-slate-900">
-                        {showPurchaseDamageSection ? '6. 备注存证' : '5. 备注存证'}
+                        {isBatchPurchaseMode
+                          ? '3. 备注'
+                          : isPurchaseDamageSectionVisible
+                            ? '6. 备注'
+                            : '5. 备注'}
                       </h3>
-                      <p className="text-[10px] font-bold text-slate-400">
-                        记录本次入库的特殊变动或说明事项
+                      <p className="text-xs text-slate-500">
+                        {isBatchPurchaseMode
+                          ? '这里填写本次批量入库的公共说明，提交时会同步到每一条记录。'
+                          : '补充记录到货说明、临时沟通结果等，没有备注也可以直接提交。'}
                       </p>
                     </div>
                   </div>
@@ -426,12 +894,12 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                       name="remarks"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-black text-slate-700">
-                            附加备注信息
+                          <FormLabel className="text-sm font-semibold text-slate-700">
+                            备注信息
                           </FormLabel>
                           <FormControl>
                             <Textarea
-                              placeholder="系统将自动关联当前操作人与时间戳，如有特殊说明请在此记录..."
+                              placeholder="例如：司机已电话确认到货；本批次先入库后补单。"
                               className="min-h-[100px] resize-none border-slate-200 bg-white/50 focus:bg-white"
                               {...field}
                             />

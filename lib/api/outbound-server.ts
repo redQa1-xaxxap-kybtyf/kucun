@@ -26,6 +26,7 @@ type OutboundWhereClause = {
 
 const OUTBOUND_REASON_TYPE_MAP: Record<string, OutboundRecord['type']> = {
   sales_outbound: 'sales_outbound',
+  sample_outbound: 'sample_outbound',
   adjust_outbound: 'adjust_outbound',
   transfer: 'adjust_outbound',
   damage: 'adjust_outbound',

@@ -19,6 +19,7 @@ export const receivablesParamsSchema = z.object({
   // 排序字段
   sortBy: z
     .enum([
+      'orderDate',
       'createdAt',
       'updatedAt',
       'dueDate',
@@ -28,7 +29,7 @@ export const receivablesParamsSchema = z.object({
       'paidAmount',
       'remainingAmount',
     ])
-    .default('createdAt'),
+    .default('orderDate'),
 
   // 排序顺序
   sortOrder: z.enum(['asc', 'desc']).default('desc'),

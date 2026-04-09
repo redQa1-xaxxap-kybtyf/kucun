@@ -22,6 +22,7 @@ const statusValues = [
 
 const sortByValues = [
   'orderNumber',
+  'orderDate',
   'createdAt',
   'updatedAt',
   'totalAmount',
@@ -45,7 +46,7 @@ export const salesOrderParamsConfig: Record<
   customerId: { type: 'string', default: '' },
   userId: { type: 'string', default: '' },
 
-  sortBy: { type: 'enum', values: sortByValues, default: 'createdAt' },
+  sortBy: { type: 'enum', values: sortByValues, default: 'orderDate' },
   sortOrder: { type: 'enum', values: sortOrderValues, default: 'desc' },
 
   page: { type: 'number', default: 1, min: 1 },

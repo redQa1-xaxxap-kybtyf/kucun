@@ -25,6 +25,7 @@ import type {
   UpdateReturnOrderFormData,
   UpdateReturnStatusFormData,
 } from '@/lib/validations/return-order';
+import { createFriendlyApiError } from '@/lib/utils/user-friendly-error';
 
 // API 基础路径
 const API_BASE = '/api/return-orders';
@@ -51,7 +52,7 @@ export async function getReturnOrders(
   const response = await fetch(`${API_BASE}?${searchParams.toString()}`);
 
   if (!response.ok) {
-    throw new Error(`获取退货订单列表失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '获取退货订单列表失败');
   }
 
   return response.json();
@@ -64,7 +65,7 @@ export async function getReturnOrder(id: string): Promise<ReturnOrderResponse> {
   const response = await fetch(`${API_BASE}/${id}`);
 
   if (!response.ok) {
-    throw new Error(`获取退货订单详情失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '获取退货订单详情失败');
   }
 
   return response.json();
@@ -85,31 +86,7 @@ export async function createReturnOrder(
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    const errorMessage =
-      errorData.error ||
-      errorData.message ||
-      `创建退货订单失败: ${response.statusText}`;
-
-    // 如果有详细的验证错误，追加到错误消息中
-    if (errorData.details && Array.isArray(errorData.details)) {
-      const detailsMessage = errorData.details
-        .map((detail: unknown) => {
-          if (
-            detail &&
-            typeof detail === 'object' &&
-            'message' in detail &&
-            typeof (detail as { message?: unknown }).message === 'string'
-          ) {
-            return (detail as { message: string }).message;
-          }
-          return String(detail);
-        })
-        .join(', ');
-      throw new Error(`${errorMessage}: ${detailsMessage}`);
-    }
-
-    throw new Error(errorMessage);
+    throw await createFriendlyApiError(response, '创建退货订单失败');
   }
 
   return response.json();
@@ -131,10 +108,7 @@ export async function updateReturnOrder(
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.message || `更新退货订单失败: ${response.statusText}`
-    );
+    throw await createFriendlyApiError(response, '更新退货订单失败');
   }
 
   return response.json();
@@ -168,10 +142,7 @@ export async function updateReturnOrderStatus(
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.message || `更新退货订单状态失败: ${response.statusText}`
-    );
+    throw await createFriendlyApiError(response, '更新退货订单状态失败');
   }
 
   return response.json();
@@ -193,10 +164,7 @@ export async function approveReturnOrder(
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.message || `审核退货订单失败: ${response.statusText}`
-    );
+    throw await createFriendlyApiError(response, '审核退货订单失败');
   }
 
   return response.json();
@@ -213,10 +181,7 @@ export async function deleteReturnOrder(
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.message || `删除退货订单失败: ${response.statusText}`
-    );
+    throw await createFriendlyApiError(response, '删除退货订单失败');
   }
 
   return response.json();
@@ -233,10 +198,7 @@ export async function duplicateReturnOrder(
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.message || `复制退货订单失败: ${response.statusText}`
-    );
+    throw await createFriendlyApiError(response, '复制退货订单失败');
   }
 
   return response.json();
@@ -257,10 +219,7 @@ export async function batchReturnOrderOperation(
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.message || `批量操作失败: ${response.statusText}`
-    );
+    throw await createFriendlyApiError(response, '批量操作失败');
   }
 
   return response.json();
@@ -273,7 +232,7 @@ export async function getReturnOrderStats(): Promise<ReturnOrderStatsResponse> {
   const response = await fetch(`${API_BASE}/stats`);
 
   if (!response.ok) {
-    throw new Error(`获取退货统计失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '获取退货统计失败');
   }
 
   return response.json();
@@ -297,7 +256,7 @@ export async function getSalesOrderReturnableItems(
   );
 
   if (!response.ok) {
-    throw new Error(`获取可退货明细失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '获取可退货明细失败');
   }
 
   return response.json();
@@ -320,7 +279,7 @@ export async function exportReturnOrders(
   const response = await fetch(`${API_BASE}/export?${searchParams.toString()}`);
 
   if (!response.ok) {
-    throw new Error(`导出退货订单失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '导出退货订单失败');
   }
 
   return response.blob();

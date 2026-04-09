@@ -20,6 +20,7 @@ describe('receivables SSoT regression', () => {
         customerId: 'c-1',
         totalAmount: 100,
         roundingAdjustment: 0,
+        orderDate: new Date('2025-01-09T00:00:00Z'),
         createdAt: new Date('2025-01-10T00:00:00Z'),
       },
     ];
@@ -35,6 +36,7 @@ describe('receivables SSoT regression', () => {
     expect(summary[0].paidAmount).toBe(30);
     expect(summary[0].remainingAmount).toBe(70);
     expect(summary[0].paymentStatus).toBe('partial');
+    expect(summary[0].orderDate).toBe('2025-01-09T00:00:00.000Z');
 
     const detail = transformToReceivable({
       id: 'o-prepay-2',
@@ -42,6 +44,7 @@ describe('receivables SSoT regression', () => {
       customerId: 'c-1',
       totalAmount: 100,
       roundingAdjustment: 0,
+      orderDate: new Date('2025-01-08T00:00:00Z'),
       createdAt: new Date('2025-01-11T00:00:00Z'),
       customer: { id: 'c-1', name: '客户A', phone: null },
       payments: [],
@@ -51,5 +54,49 @@ describe('receivables SSoT regression', () => {
     expect(detail.paidAmount).toBe(50);
     expect(detail.remainingAmount).toBe(50);
     expect(detail.paymentStatus).toBe('partial');
+    expect(detail.orderDate).toBe('2025-01-08T00:00:00.000Z');
+  });
+
+  it('系统自动确认应收占位记录不应计入真实收款口径', () => {
+    const detail = transformToReceivable({
+      id: 'o-auto-1',
+      orderNumber: 'SO-AUTO-1',
+      customerId: 'c-1',
+      totalAmount: 100,
+      roundingAdjustment: -2,
+      createdAt: new Date('2025-01-12T00:00:00Z'),
+      customer: { id: 'c-1', name: '客户A', phone: null },
+      payments: [
+        {
+          actualPaymentAmount: 0,
+          roundingAmount: -2,
+          paymentDate: new Date('2025-01-15T00:00:00Z'),
+          status: 'confirmed',
+          remarks: '系统自动生成：销售订单 SO-AUTO-1 确认应收',
+        },
+        {
+          actualPaymentAmount: 40,
+          roundingAmount: 0,
+          paymentDate: new Date('2025-01-13T00:00:00Z'),
+          status: 'confirmed',
+          remarks: '首笔实收',
+        },
+        {
+          actualPaymentAmount: 10,
+          roundingAmount: 0,
+          paymentDate: new Date('2025-01-14T00:00:00Z'),
+          status: 'pending',
+          remarks: '待确认实收',
+        },
+      ],
+      prepaymentUsages: [],
+    } as any);
+
+    expect(detail.paidAmount).toBe(40);
+    expect(detail.paymentRoundingAmount).toBe(0);
+    expect(detail.pendingAmount).toBe(10);
+    expect(detail.remainingAmount).toBe(58);
+    expect(detail.paymentStatus).toBe('pending');
+    expect(detail.lastPaymentDate).toBe('2025-01-14T00:00:00.000Z');
   });
 });

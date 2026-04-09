@@ -96,20 +96,20 @@ export function InventoryAdjustTable({
   return (
     <>
       {/* 桌面端表格视图 */}
-      <div className="hidden md:block">
-        <Table>
+      <div className="hidden overflow-x-auto xl:block">
+        <Table className="min-w-[960px] [&_th]:whitespace-nowrap">
           <TableHeader>
             <TableRow>
-              <TableHead>产品信息</TableHead>
-              <TableHead>批次号</TableHead>
-              <TableHead>当前库存</TableHead>
-              <TableHead>最后更新</TableHead>
+              <TableHead className="whitespace-nowrap">产品信息</TableHead>
+              <TableHead className="whitespace-nowrap">批次号</TableHead>
+              <TableHead className="whitespace-nowrap">当前库存</TableHead>
+              <TableHead className="whitespace-nowrap">最后更新</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {inventoryRecords.map(record => (
               <TableRow key={record.id}>
-                <TableCell>
+                <TableCell className="min-w-[260px]">
                   <div className="flex flex-col">
                     <span className="font-medium">
                       {record.product?.name || '未知产品'}
@@ -157,13 +157,15 @@ export function InventoryAdjustTable({
                     )}
                   </div>
                 </TableCell>
-                <TableCell>
+                <TableCell className="whitespace-nowrap">
                   {record.batchNumber || (
                     <span className="text-muted-foreground">无批次</span>
                   )}
                 </TableCell>
-                <TableCell>{renderStockDisplay(record)}</TableCell>
-                <TableCell>
+                <TableCell className="whitespace-nowrap">
+                  {renderStockDisplay(record)}
+                </TableCell>
+                <TableCell className="whitespace-nowrap">
                   <div className="text-sm">{formatDate(record.updatedAt)}</div>
                 </TableCell>
               </TableRow>
@@ -173,7 +175,7 @@ export function InventoryAdjustTable({
       </div>
 
       {/* 移动端卡片视图 */}
-      <div className="space-y-3 md:hidden">
+      <div className="space-y-3 xl:hidden">
         {inventoryRecords.map(record => (
           <div
             key={record.id}

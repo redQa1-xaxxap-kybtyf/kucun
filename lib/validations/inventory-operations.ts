@@ -14,9 +14,17 @@ export const outboundCreateSchema = z
       .string()
       .uuid('幂等性键格式不正确')
       .describe('幂等性键,防止重复操作'),
-    type: z.enum(['normal_outbound', 'sales_outbound', 'adjust_outbound'], {
-      message: '请选择正确的出库类型',
-    }),
+    type: z.enum(
+      [
+        'normal_outbound',
+        'sales_outbound',
+        'sample_outbound',
+        'adjust_outbound',
+      ],
+      {
+        message: '请选择正确的出库类型',
+      }
+    ),
     productId: baseValidations.productId,
     batchNumber: baseValidations.batchNumber,
     quantity: baseValidations.quantity,
@@ -37,14 +45,17 @@ export const outboundCreateSchema = z
   })
   .refine(
     data => {
-      // 销售出库需要客户
-      if (data.type === 'sales_outbound' && !data.customerId) {
+      // 销售/样品出库需要客户
+      if (
+        (data.type === 'sales_outbound' || data.type === 'sample_outbound') &&
+        !data.customerId
+      ) {
         return false;
       }
       return true;
     },
     {
-      message: '销售出库需要选择客户',
+      message: '销售/样品出库需要选择客户',
       path: ['customerId'],
     }
   );

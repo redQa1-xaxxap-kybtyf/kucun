@@ -57,6 +57,12 @@ describe('opening-balance-correction utility（件价修正回归）', () => {
     expect(parseOpeningBalanceUnitCostInput('96件价', 4)).toBe(24);
   });
 
+  test('切到按件录入后，纯数字应按件价解释；明确片价后缀仍应优先按片处理', () => {
+    expect(parseOpeningBalanceUnitCostInput('96', 4, 'unit')).toBe(24);
+    expect(parseOpeningBalanceUnitCostInput('24片价', 4, 'unit')).toBe(24);
+    expect(parseOpeningBalanceUnitCostInput('96件价', 4, 'piece')).toBe(24);
+  });
+
   test('按件解析单位成本时缺少装箱数必须报错', () => {
     expect(() => parseOpeningBalanceUnitCostInput('96元/件', 0)).toThrow(
       '按件录入的单位成本需要先维护每件片数后才能换算'

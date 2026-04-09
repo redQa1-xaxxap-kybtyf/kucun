@@ -26,6 +26,7 @@ import type {
   StatementStatistics,
 } from '@/lib/types/statement';
 import { csrfFetch } from '@/lib/utils/csrf';
+import { createFriendlyApiError } from '@/lib/utils/user-friendly-error';
 import type { ProcessRefundInput } from '@/lib/validations/refund';
 
 // 导入统一的类型定义，遵循唯一真理源原则
@@ -103,7 +104,7 @@ export const financeApi = {
 
     const response = await fetch(`${API_BASE}/receivables?${params}`);
     if (!response.ok) {
-      throw new Error(`获取应收账款失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '获取应收账款失败');
     }
 
     const result = await response.json();
@@ -117,7 +118,7 @@ export const financeApi = {
   getReceivablesStatistics: async (): Promise<PaymentStatistics> => {
     const response = await fetch(`${API_BASE}/receivables/statistics`);
     if (!response.ok) {
-      throw new Error(`获取应收账款统计失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '获取应收账款统计失败');
     }
 
     const result = await response.json();
@@ -139,7 +140,7 @@ export const financeApi = {
 
     const response = await fetch(`${API_BASE}/refunds?${params}`);
     if (!response.ok) {
-      throw new Error(`获取退款记录失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '获取退款记录失败');
     }
 
     const result = await response.json();
@@ -153,7 +154,7 @@ export const financeApi = {
   getRefund: async (id: string): Promise<RefundRecordDetail> => {
     const response = await fetch(`${API_BASE}/refunds/${id}`);
     if (!response.ok) {
-      throw new Error(`获取退款详情失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '获取退款详情失败');
     }
 
     const result = await response.json();
@@ -174,7 +175,7 @@ export const financeApi = {
     });
 
     if (!response.ok) {
-      throw new Error(`创建退款记录失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '创建退款记录失败');
     }
 
     const result = await response.json();
@@ -198,7 +199,7 @@ export const financeApi = {
     });
 
     if (!response.ok) {
-      throw new Error(`更新退款记录失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '更新退款记录失败');
     }
 
     const result = await response.json();
@@ -222,7 +223,7 @@ export const financeApi = {
     });
 
     if (!response.ok) {
-      throw new Error(`处理退款失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '处理退款失败');
     }
 
     const result = await response.json();
@@ -236,7 +237,7 @@ export const financeApi = {
   getRefundsStatistics: async (): Promise<RefundStatistics> => {
     const response = await fetch(`${API_BASE}/refunds/statistics`);
     if (!response.ok) {
-      throw new Error(`获取退款统计失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '获取退款统计失败');
     }
 
     const result = await response.json();
@@ -260,7 +261,7 @@ export const financeApi = {
 
     const response = await fetch(`${API_BASE}/statements?${params}`);
     if (!response.ok) {
-      throw new Error(`获取往来账单失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '获取往来账单失败');
     }
 
     const result: StatementListResponse = await response.json();
@@ -274,7 +275,7 @@ export const financeApi = {
   getStatement: async (id: string): Promise<AccountStatementDetail> => {
     const response = await fetch(`${API_BASE}/statements/${id}`);
     if (!response.ok) {
-      throw new Error(`获取账单详情失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '获取账单详情失败');
     }
 
     const result = await response.json();
@@ -288,7 +289,7 @@ export const financeApi = {
   getStatementsStatistics: async (): Promise<StatementStatistics> => {
     const response = await fetch(`${API_BASE}/statements/statistics`);
     if (!response.ok) {
-      throw new Error(`获取账单统计失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '获取账单统计失败');
     }
 
     const result = await response.json();
@@ -311,7 +312,7 @@ export const financeApi = {
 
     const response = await fetch(`${API_BASE}/statements/aging?${params}`);
     if (!response.ok) {
-      throw new Error(`获取账龄分析失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '获取账龄分析失败');
     }
 
     const result = await response.json();
@@ -337,7 +338,7 @@ export const financeApi = {
       `${API_BASE}/statements/${id}/reconciliation?${params}`
     );
     if (!response.ok) {
-      throw new Error(`生成对账单失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '生成对账单失败');
     }
 
     const result = await response.json();

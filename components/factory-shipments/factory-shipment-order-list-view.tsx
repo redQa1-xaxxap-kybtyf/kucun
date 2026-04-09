@@ -161,45 +161,51 @@ function FactoryShipmentOrderTable({
   return (
     <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
       {/* 桌面端：表格视图，支持横向滚动 */}
-      <div className="hidden md:block">
+      <div className="hidden xl:block">
         <div className="overflow-x-auto">
-          <Table>
+          <Table className="min-w-[1540px]">
             <TableHeader className="card-shadow-light">
               <TableRow>
-                <TableHead className="w-[130px] min-w-[130px]">
+                <TableHead className="w-[130px] min-w-[130px] whitespace-nowrap">
                   订单编号
                 </TableHead>
-                <TableHead className="min-w-[120px]">客户</TableHead>
-                <TableHead className="hidden min-w-[220px] md:table-cell">
+                <TableHead className="min-w-[120px] whitespace-nowrap">
+                  客户
+                </TableHead>
+                <TableHead className="hidden min-w-[220px] whitespace-nowrap xl:table-cell">
                   客户地址
                 </TableHead>
-                <TableHead className="w-[140px] min-w-[140px]">
+                <TableHead className="w-[140px] min-w-[140px] whitespace-nowrap">
                   集装箱号码
                 </TableHead>
-                <TableHead className="min-w-[120px]">船运公司</TableHead>
-                <TableHead className="w-[130px] min-w-[130px]">
+                <TableHead className="min-w-[120px] whitespace-nowrap">
+                  船运公司
+                </TableHead>
+                <TableHead className="w-[130px] min-w-[130px] whitespace-nowrap">
                   运输状态
                 </TableHead>
-                <TableHead className="w-[140px] min-w-[140px]">状态</TableHead>
-                <TableHead className="w-[110px] min-w-[110px] text-right">
+                <TableHead className="w-[140px] min-w-[140px] whitespace-nowrap">
+                  状态
+                </TableHead>
+                <TableHead className="w-[110px] min-w-[110px] text-right whitespace-nowrap">
                   订单金额
                 </TableHead>
-                <TableHead className="w-[110px] min-w-[110px] text-right">
+                <TableHead className="w-[110px] min-w-[110px] text-right whitespace-nowrap">
                   应收金额
                 </TableHead>
-                <TableHead className="w-[110px] min-w-[110px] text-right">
+                <TableHead className="w-[110px] min-w-[110px] text-right whitespace-nowrap">
                   应付金额
                 </TableHead>
-                <TableHead className="hidden w-[110px] min-w-[110px] lg:table-cell">
+                <TableHead className="hidden w-[110px] min-w-[110px] whitespace-nowrap xl:table-cell">
                   发货时间
                 </TableHead>
-                <TableHead className="hidden w-[110px] min-w-[110px] xl:table-cell">
+                <TableHead className="hidden w-[110px] min-w-[110px] whitespace-nowrap 2xl:table-cell">
                   预计到达
                 </TableHead>
-                <TableHead className="hidden w-[110px] min-w-[110px] md:table-cell">
+                <TableHead className="hidden w-[110px] min-w-[110px] whitespace-nowrap xl:table-cell">
                   创建时间
                 </TableHead>
-                <TableHead className="w-[80px] min-w-[80px] text-center">
+                <TableHead className="w-[80px] min-w-[80px] text-center whitespace-nowrap">
                   操作
                 </TableHead>
               </TableRow>
@@ -220,7 +226,7 @@ function FactoryShipmentOrderTable({
       </div>
 
       {/* 移动端：卡片视图 */}
-      <div className="space-y-3 px-3 py-3 md:hidden">
+      <div className="space-y-3 px-3 py-3 xl:hidden">
         {orders.map(order => {
           const handleCardClick = () => {
             if (onOrderSelect) {

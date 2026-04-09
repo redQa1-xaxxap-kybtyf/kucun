@@ -16,6 +16,7 @@ const paymentStatusValues = [
 ] as const satisfies PaymentStatus[];
 
 const sortByValues = [
+  'orderDate',
   'createdAt',
   'updatedAt',
   'dueDate',
@@ -42,7 +43,7 @@ export const receivablesParamsConfig: Record<
     default: undefined,
   },
 
-  sortBy: { type: 'enum', values: sortByValues, default: 'createdAt' },
+  sortBy: { type: 'enum', values: sortByValues, default: 'orderDate' },
   sortOrder: { type: 'enum', values: sortOrderValues, default: 'desc' },
 
   page: { type: 'number', default: 1, min: 1 },

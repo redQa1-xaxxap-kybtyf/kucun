@@ -10,6 +10,7 @@ import type {
   ProductVariantUpdateInput,
 } from '@/lib/types/product';
 import { csrfFetch } from '@/lib/utils/csrf';
+import { createFriendlyApiError } from '@/lib/utils/user-friendly-error';
 
 const API_BASE = '/api/product-variants';
 
@@ -34,7 +35,7 @@ export async function getProductVariants(
   const response = await fetch(`${API_BASE}?productId=${productId}`);
 
   if (!response.ok) {
-    throw new Error(`获取产品变体失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '获取产品变体失败');
   }
 
   const data: ApiResponse<ProductVariant[]> = await response.json();
@@ -53,7 +54,7 @@ export async function getProductVariant(id: string): Promise<ProductVariant> {
   const response = await fetch(`${API_BASE}/${id}`);
 
   if (!response.ok) {
-    throw new Error(`获取产品变体详情失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '获取产品变体详情失败');
   }
 
   const data: ApiResponse<ProductVariant> = await response.json();
@@ -84,7 +85,7 @@ export async function createProductVariant(
   });
 
   if (!response.ok) {
-    throw new Error(`创建产品变体失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '创建产品变体失败');
   }
 
   const data: ApiResponse<ProductVariant> = await response.json();
@@ -114,7 +115,7 @@ export async function updateProductVariant(
   });
 
   if (!response.ok) {
-    throw new Error(`更新产品变体失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '更新产品变体失败');
   }
 
   const data: ApiResponse<ProductVariant> = await response.json();
@@ -138,7 +139,7 @@ export async function deleteProductVariant(id: string): Promise<void> {
   });
 
   if (!response.ok) {
-    throw new Error(`删除产品变体失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '删除产品变体失败');
   }
 
   const data: ApiResponse<void> = await response.json();
@@ -164,7 +165,7 @@ export async function batchCreateProductVariants(
   });
 
   if (!response.ok) {
-    throw new Error(`批量创建产品变体失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '批量创建产品变体失败');
   }
 
   const data: ApiResponse<ProductVariant[]> = await response.json();
@@ -192,7 +193,7 @@ export async function generateSKU(
   });
 
   if (!response.ok) {
-    throw new Error(`生成SKU失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '生成SKU失败');
   }
 
   const data: ApiResponse<{ sku: string }> = await response.json();
@@ -222,7 +223,7 @@ export async function checkSKUAvailability(
   const response = await fetch(`${API_BASE}/check-sku?${params.toString()}`);
 
   if (!response.ok) {
-    throw new Error(`检查SKU可用性失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '检查SKU可用性失败');
   }
 
   const data: ApiResponse<{ available: boolean }> = await response.json();
@@ -249,7 +250,7 @@ export async function getVariantInventorySummary(variantId: string): Promise<{
   const response = await fetch(`${API_BASE}/${variantId}/inventory-summary`);
 
   if (!response.ok) {
-    throw new Error(`获取变体库存汇总失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '获取变体库存汇总失败');
   }
 
   const data: ApiResponse<{

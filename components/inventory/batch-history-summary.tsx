@@ -24,7 +24,7 @@ export function BatchHistorySummary({
   summary: BatchSummaryData;
 }) {
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
       {/* 期初库存 */}
       <SummaryItem
         title="期初库存"

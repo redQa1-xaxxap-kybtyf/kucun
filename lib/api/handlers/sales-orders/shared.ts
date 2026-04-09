@@ -149,6 +149,7 @@ export function mapOrderBaseFields<
     roundingAdjustment?: Prisma.Decimal | number | null;
     prepaymentAmount?: Prisma.Decimal | number | null;
     remarks: string | null;
+    orderDate?: Date | null;
     shippedAt: Date | null;
     createdAt: Date;
     updatedAt: Date;
@@ -188,6 +189,7 @@ export function mapOrderBaseFields<
     prepaymentAmount: toNumber(order.prepaymentAmount),
     // 其他字段
     remarks: order.remarks ?? undefined,
+    orderDate: toISOString(order.orderDate ?? order.createdAt),
     shippedAt: toISOString(order.shippedAt),
     createdAt: order.createdAt.toISOString(),
     updatedAt: order.updatedAt.toISOString(),

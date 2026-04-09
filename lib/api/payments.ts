@@ -21,6 +21,7 @@ import type {
 import { formatCurrency as formatCurrencyValue } from '@/lib/utils';
 import { csrfFetch } from '@/lib/utils/csrf';
 import { formatTimeAgo } from '@/lib/utils/datetime';
+import { createFriendlyApiError } from '@/lib/utils/user-friendly-error';
 
 // API基础URL
 const API_BASE = '/api/payments';
@@ -78,7 +79,7 @@ export const paymentsApi = {
 
     const response = await fetch(`${API_BASE}?${params}`);
     if (!response.ok) {
-      throw new Error(`获取收款记录失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '获取收款记录失败');
     }
 
     const result: PaymentRecordListResponse = await response.json();
@@ -93,7 +94,7 @@ export const paymentsApi = {
   getPaymentRecord: async (id: string): Promise<PaymentRecordDetail> => {
     const response = await fetch(`${API_BASE}/${id}`);
     if (!response.ok) {
-      throw new Error(`获取收款记录详情失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '获取收款记录详情失败');
     }
 
     const result: PaymentRecordResponse = await response.json();
@@ -117,7 +118,7 @@ export const paymentsApi = {
     });
 
     if (!response.ok) {
-      throw new Error(`创建收款记录失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '创建收款记录失败');
     }
 
     const result: PaymentRecordResponse = await response.json();
@@ -142,7 +143,7 @@ export const paymentsApi = {
     });
 
     if (!response.ok) {
-      throw new Error(`更新收款记录失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '更新收款记录失败');
     }
 
     const result: PaymentRecordResponse = await response.json();
@@ -160,7 +161,7 @@ export const paymentsApi = {
     });
 
     if (!response.ok) {
-      throw new Error(`删除收款记录失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '删除收款记录失败');
     }
 
     const result = await response.json();
@@ -183,7 +184,7 @@ export const paymentsApi = {
     });
 
     if (!response.ok) {
-      throw new Error(`确认收款失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '确认收款失败');
     }
 
     const result: PaymentRecordResponse = await response.json();
@@ -205,7 +206,7 @@ export const paymentsApi = {
     });
 
     if (!response.ok) {
-      throw new Error(`取消收款失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '取消收款失败');
     }
 
     const result: PaymentRecordResponse = await response.json();
@@ -252,7 +253,7 @@ export const paymentsApi = {
 
     const response = await fetch(`${API_BASE}/accounts-receivable?${params}`);
     if (!response.ok) {
-      throw new Error(`获取应收账款失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '获取应收账款失败');
     }
 
     const result: AccountsReceivableResponse = await response.json();
@@ -287,7 +288,7 @@ export const paymentsApi = {
 
     const response = await fetch(`${API_BASE}/statistics?${params}`);
     if (!response.ok) {
-      throw new Error(`获取收款统计失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '获取收款统计失败');
     }
 
     const result: PaymentStatisticsResponse = await response.json();
@@ -304,7 +305,7 @@ export const paymentsApi = {
   ): Promise<PaymentRecordDetail[]> => {
     const response = await fetch(`${API_BASE}/sales-order/${salesOrderId}`);
     if (!response.ok) {
-      throw new Error(`获取销售订单收款记录失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '获取销售订单收款记录失败');
     }
 
     const result = await response.json();
@@ -321,7 +322,7 @@ export const paymentsApi = {
   ): Promise<PaymentRecordDetail[]> => {
     const response = await fetch(`${API_BASE}/customer/${customerId}`);
     if (!response.ok) {
-      throw new Error(`获取客户收款记录失败: ${response.statusText}`);
+      throw await createFriendlyApiError(response, '获取客户收款记录失败');
     }
 
     const result = await response.json();

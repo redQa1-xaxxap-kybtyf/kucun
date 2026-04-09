@@ -7,6 +7,10 @@
  */
 
 import { showError } from './toast-helper';
+import {
+  getFriendlyErrorMessage,
+  normalizeUserFacingErrorMessage,
+} from './user-friendly-error';
 
 /**
  * 应用错误类
@@ -197,7 +201,10 @@ export function handleApiError(error: unknown): AppError {
   if (error instanceof Response) {
     const code = getErrorCodeFromStatus(error.status);
     return new AppError(
-      ERROR_MESSAGES[code] || error.statusText,
+      normalizeUserFacingErrorMessage(
+        error.statusText || `HTTP ${error.status}`,
+        ERROR_MESSAGES[code] || ERROR_MESSAGES[ErrorCode.UNKNOWN]
+      ),
       code,
       error.status
     );
@@ -206,7 +213,7 @@ export function handleApiError(error: unknown): AppError {
   // 标准 Error 对象
   if (error instanceof Error) {
     return new AppError(
-      error.message || ERROR_MESSAGES[ErrorCode.UNKNOWN],
+      getFriendlyErrorMessage(error, ERROR_MESSAGES[ErrorCode.UNKNOWN]),
       ErrorCode.UNKNOWN
     );
   }
@@ -218,7 +225,10 @@ export function handleApiError(error: unknown): AppError {
     // 检查是否有 message 字段
     if (typeof err.message === 'string') {
       return new AppError(
-        err.message,
+        normalizeUserFacingErrorMessage(
+          err.message,
+          ERROR_MESSAGES[ErrorCode.UNKNOWN]
+        ),
         typeof err.code === 'string' ? err.code : ErrorCode.UNKNOWN,
         typeof err.statusCode === 'number' ? err.statusCode : undefined,
         err.details
@@ -228,7 +238,10 @@ export function handleApiError(error: unknown): AppError {
     // 检查是否有 error 字段
     if (typeof err.error === 'string') {
       return new AppError(
-        err.error,
+        normalizeUserFacingErrorMessage(
+          err.error,
+          ERROR_MESSAGES[ErrorCode.UNKNOWN]
+        ),
         typeof err.code === 'string' ? err.code : ErrorCode.UNKNOWN
       );
     }
@@ -236,7 +249,10 @@ export function handleApiError(error: unknown): AppError {
 
   // 字符串类型错误
   if (typeof error === 'string') {
-    return new AppError(error, ErrorCode.UNKNOWN);
+    return new AppError(
+      normalizeUserFacingErrorMessage(error, ERROR_MESSAGES[ErrorCode.UNKNOWN]),
+      ErrorCode.UNKNOWN
+    );
   }
 
   // 未知类型错误
@@ -313,29 +329,7 @@ export function handleValidationError(error: unknown): AppError {
  * ```
  */
 export function getErrorMessage(error: unknown): string {
-  if (error instanceof AppError) {
-    return error.message;
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  if (typeof error === 'string') {
-    return error;
-  }
-
-  if (typeof error === 'object' && error !== null) {
-    const err = error as Record<string, unknown>;
-    if (typeof err.message === 'string') {
-      return err.message;
-    }
-    if (typeof err.error === 'string') {
-      return err.error;
-    }
-  }
-
-  return ERROR_MESSAGES[ErrorCode.UNKNOWN];
+  return getFriendlyErrorMessage(error, ERROR_MESSAGES[ErrorCode.UNKNOWN]);
 }
 
 /**
@@ -434,7 +428,15 @@ export function getUserFriendlyError(error: unknown, context?: string): string {
   const details = getErrorDetails(error);
 
   if (context) {
-    return `${context}失败：${details.message}`;
+    const normalizedContext = context.replace(/失败$/, '');
+    if (
+      details.message.startsWith(context) ||
+      details.message.startsWith(normalizedContext)
+    ) {
+      return details.message;
+    }
+
+    return `${normalizedContext}失败：${details.message}`;
   }
 
   return details.message;

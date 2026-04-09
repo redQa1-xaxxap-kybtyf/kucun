@@ -206,8 +206,8 @@ export function CountList({ filters }: CountListProps) {
   return (
     <>
       {/* 桌面端表格视图 */}
-      <div className="hidden overflow-x-auto rounded-md border md:block">
-        <Table>
+      <div className="hidden overflow-x-auto rounded-md border xl:block">
+        <Table className="min-w-[820px] [&_th]:whitespace-nowrap">
           <TableHeader>
             <TableRow>
               <TableHead>盘点编号</TableHead>
@@ -232,18 +232,26 @@ export function CountList({ filters }: CountListProps) {
                 completedItems: number;
               }) => (
                 <TableRow key={count.id}>
-                  <TableCell className="font-medium">
+                  <TableCell className="font-medium whitespace-nowrap">
                     {count.countNumber}
                   </TableCell>
-                  <TableCell>{count.countName}</TableCell>
-                  <TableCell>{COUNT_TYPE_LABELS[count.countType]}</TableCell>
-                  <TableCell>
+                  <TableCell className="min-w-[180px]">
+                    <div className="max-w-[220px] truncate">
+                      {count.countName}
+                    </div>
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {COUNT_TYPE_LABELS[count.countType]}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">
                     <Badge variant={getStatusBadgeVariant(count.status)}>
                       {COUNT_STATUS_LABELS[count.status]}
                     </Badge>
                   </TableCell>
-                  <TableCell>{formatDate(count.planDate)}</TableCell>
-                  <TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {formatDate(count.planDate)}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">
                     {count.totalItems > 0
                       ? `${count.completedItems}/${count.totalItems}`
                       : '-'}
@@ -291,7 +299,7 @@ export function CountList({ filters }: CountListProps) {
       </div>
 
       {/* 移动端卡片视图 */}
-      <div className="space-y-3 md:hidden">
+      <div className="space-y-3 xl:hidden">
         {counts.map(
           (count: {
             id: string;

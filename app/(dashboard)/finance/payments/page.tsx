@@ -8,6 +8,7 @@ import type { Metadata } from 'next';
 
 import { prisma } from '@/lib/db';
 import { queryKeys } from '@/lib/queryKeys';
+import { buildExcludeAutoReceivableConfirmationWhere } from '@/lib/services/receivables-helpers';
 import { getSystemMode } from '@/lib/services/system-mode-service';
 import type {
   PaymentMethod,
@@ -150,10 +151,10 @@ async function getPaymentsData(searchParams: {
     whereConditions.paymentDate = paymentDateFilter;
   }
 
-  // 仅显示有实际收款的记录，避免展示系统自动生成的应收占位记录
-  whereConditions.actualPaymentAmount = {
-    gt: 0,
-  };
+  Object.assign(
+    whereConditions,
+    buildExcludeAutoReceivableConfirmationWhere()
+  );
 
   // 查询收款记录
   const [payments, total] = await Promise.all([

@@ -1,6 +1,6 @@
 {
   "name": "kucun",
-  "version": "1.0.92",
+  "version": "1.0.93",
   "description": "瓷砖行业库存管理工具",
   "private": true,
   "scripts": {
@@ -54,6 +54,7 @@
     "download-geoip": "node scripts/download-geoip.js",
     "test:ip-location": "tsx scripts/test-ip-location.ts",
     "test:queue": "dotenv -e .env -- tsx scripts/test-queue-integration.ts",
+    "repair:purchase-damage-inbound": "tsx scripts/repair-purchase-damage-inbound.ts",
     "worker:start": "tsx scripts/start-queue-workers.ts",
     "pm2:start": "pm2 start ecosystem.config.js --env production",
     "pm2:start:cluster": "pm2 start ecosystem.cluster.config.js --env production",

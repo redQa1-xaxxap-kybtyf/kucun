@@ -21,7 +21,7 @@ export function OutboundPageHeader() {
       <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-rose-500/5 blur-3xl" />
       <div className="absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-orange-500/5 blur-3xl" />
 
-      <div className="relative z-10 flex flex-col gap-6 p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
+      <div className="relative z-10 flex flex-col gap-6 p-6 sm:p-8 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex items-start gap-5 sm:items-center">
           <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-600 to-orange-600 shadow-xl shadow-rose-500/10">
             <PackageX className="h-8 w-8 text-white" />
@@ -36,12 +36,12 @@ export function OutboundPageHeader() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="grid gap-3 md:grid-cols-2 xl:flex xl:w-auto xl:flex-wrap">
           {/* 出库历史/报表入口 - 预留 */}
           <Button
             variant="outline"
             size="lg"
-            className="h-12 border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900"
+            className="h-12 w-full border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900"
             onClick={() => router.push('/inventory/outbound/history')}
           >
             <History className="mr-2 h-4 w-4" />
@@ -51,7 +51,7 @@ export function OutboundPageHeader() {
           {/* 新增出库按钮 */}
           <Button
             size="lg"
-            className="h-12 bg-rose-600 text-white shadow-lg shadow-rose-500/20 transition-all hover:scale-105 hover:bg-rose-700 active:scale-95"
+            className="h-12 w-full bg-rose-600 text-white shadow-lg shadow-rose-500/20 transition-all hover:bg-rose-700"
             onClick={() => router.push('/inventory/outbound/create')}
           >
             <Plus className="mr-2 h-4 w-4" />

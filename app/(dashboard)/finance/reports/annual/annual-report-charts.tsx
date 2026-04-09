@@ -46,15 +46,15 @@ export function AnnualReportCharts({ report }: { report: AnnualReport }) {
   return (
     <>
       {/* 核心趋势分析图表 */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 xl:grid-cols-2">
         {/* 月度趋势图 */}
         <Card className="overflow-hidden border-slate-100 shadow-sm">
-          <CardHeader className="border-b border-slate-100 bg-slate-50/50 px-6 py-4">
+          <CardHeader className="border-b border-slate-100 bg-slate-50/50 px-4 py-4 sm:px-6">
             <CardTitle className="text-sm font-black tracking-wider text-slate-700 uppercase">
               第一部分：月度营业趋势
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <ResponsiveContainer width="100%" height={320}>
               <LineChart data={report.monthlyTrend}>
                 <CartesianGrid
@@ -115,12 +115,12 @@ export function AnnualReportCharts({ report }: { report: AnnualReport }) {
 
         {/* 季度对比分析 */}
         <Card className="overflow-hidden border-slate-100 shadow-sm">
-          <CardHeader className="border-b border-slate-100 bg-slate-50/50 px-6 py-4">
+          <CardHeader className="border-b border-slate-100 bg-slate-50/50 px-4 py-4 sm:px-6">
             <CardTitle className="text-sm font-black tracking-wider text-slate-700 uppercase">
               第二部分：季度经营对比
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <ResponsiveContainer width="100%" height={320}>
               <BarChart data={report.quarterlyData} barGap={8}>
                 <CartesianGrid
@@ -177,17 +177,17 @@ export function AnnualReportCharts({ report }: { report: AnnualReport }) {
       </div>
 
       {/* 厂家发货与费用分布看板 */}
-      <div className="grid gap-6 lg:grid-cols-5">
+      <div className="grid gap-6 xl:grid-cols-5">
         {/* 厂家发货汇总 - 占据3栏 */}
-        <div className="flex flex-col rounded-2xl border border-blue-100 bg-blue-50/50 p-6 lg:col-span-3">
-          <div className="mb-6 flex items-center justify-between">
+        <div className="flex flex-col rounded-2xl border border-blue-100 bg-blue-50/50 p-4 sm:p-6 xl:col-span-3">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="flex items-center gap-2 text-sm font-black tracking-widest text-slate-800 uppercase">
               <Package className="h-4 w-4 text-blue-500" />
               厂家直发业务年度报告
             </h2>
           </div>
 
-          <div className="mb-6 grid grid-cols-2 gap-4">
+          <div className="mb-6 grid gap-4 sm:grid-cols-2">
             <div className="rounded-xl border border-blue-100 bg-white p-4 shadow-sm">
               <div className="text-[10px] font-black tracking-wider text-blue-400 uppercase">
                 客户货利润
@@ -247,13 +247,13 @@ export function AnnualReportCharts({ report }: { report: AnnualReport }) {
         </div>
 
         {/* 费用分布 - 占据2栏 */}
-        <Card className="border-slate-100 shadow-sm lg:col-span-2">
-          <CardHeader className="border-b border-slate-50 px-6 py-4">
+        <Card className="border-slate-100 shadow-sm xl:col-span-2">
+          <CardHeader className="border-b border-slate-50 px-4 py-4 sm:px-6">
             <CardTitle className="text-xs font-black tracking-widest text-slate-500 uppercase">
               费用支出结构
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="h-[220px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -272,7 +272,9 @@ export function AnnualReportCharts({ report }: { report: AnnualReport }) {
                       />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                  <Tooltip
+                    formatter={(value: number) => formatCurrency(value)}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -305,4 +307,3 @@ export function AnnualReportCharts({ report }: { report: AnnualReport }) {
     </>
   );
 }
-

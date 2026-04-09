@@ -43,6 +43,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
 import {
   correctOpeningBalanceImportBatch,
   deleteOpeningBalanceImportBatch,
@@ -50,12 +51,10 @@ import {
   type OpeningBalanceImportBatchDetail,
 } from '@/lib/api/initial-stock';
 import { queryKeys } from '@/lib/queryKeys';
-import {
-  formatCostPrice,
-  roundCostPrice,
-} from '@/lib/utils/cost-price';
+import { formatCostPrice, roundCostPrice } from '@/lib/utils/cost-price';
 import {
   buildOpeningBalanceSavedValuePreview,
+  type OpeningBalanceUnitCostEntryMode,
   type OpeningBalanceSavedQuantityMode,
   parseOpeningBalanceUnitCostInput,
 } from '@/lib/utils/opening-balance-correction';
@@ -118,6 +117,18 @@ function formatUnitCostInput(unitCost?: number) {
   return typeof unitCost === 'number' && Number.isFinite(unitCost)
     ? formatCostPrice(unitCost, { withSymbol: false })
     : '';
+}
+
+function getUnitCostInputPlaceholder(mode: OpeningBalanceUnitCostEntryMode) {
+  return mode === 'unit'
+    ? '按件录入时可直接填 96，也支持 24片价'
+    : '支持 24、24片价、96元/件';
+}
+
+function getUnitCostInputHelperText(mode: OpeningBalanceUnitCostEntryMode) {
+  return mode === 'unit'
+    ? '当前按件录入：直接填 96 会按件价换算并保存为单片成本；若某行本身就是片价，可明确写 24片价。'
+    : '当前按片录入：直接填 24 会按单片成本保存；若手里拿的是件价，也支持写 96元/件 自动换算。';
 }
 
 function buildQuantityInputs(detail: OpeningBalanceImportBatchDetail) {
@@ -218,6 +229,10 @@ export function OpeningBalanceImportBatchActions({
   >({});
   const [savedQuantityMode, setSavedQuantityMode] =
     React.useState<OpeningBalanceSavedQuantityMode>('piece');
+  const [unitCostEntryMode, setUnitCostEntryMode] =
+    React.useState<OpeningBalanceUnitCostEntryMode>('piece');
+  const [bulkUnitCostText, setBulkUnitCostText] = React.useState('');
+  const [bulkPasteOpen, setBulkPasteOpen] = React.useState(false);
 
   const detailQuery = useQuery({
     queryKey: ['inventory', 'opening-balance-import-batch', batchId],
@@ -237,6 +252,9 @@ export function OpeningBalanceImportBatchActions({
   React.useEffect(() => {
     if (!open) {
       setSavedQuantityMode('piece');
+      setUnitCostEntryMode('piece');
+      setBulkUnitCostText('');
+      setBulkPasteOpen(false);
     }
   }, [open]);
 
@@ -308,7 +326,117 @@ export function OpeningBalanceImportBatchActions({
     setQuantityInputs(buildQuantityInputs(detailQuery.data));
     setUnitCostInputs(buildUnitCostInputs(detailQuery.data));
     setSavedQuantityMode('piece');
+    setBulkUnitCostText('');
+    setBulkPasteOpen(false);
   }, [detailQuery.data]);
+
+  const handleApplyBulkUnitCosts = React.useCallback(() => {
+    const detail = detailQuery.data;
+    if (!detail) {
+      return;
+    }
+
+    const targetRecords = detail.records.filter(record => record.canCorrect);
+    if (targetRecords.length === 0) {
+      showWarning('当前没有可填入的记录', {
+        description: '这批记录都已进入后续业务流程，不能再批量改价。',
+      });
+      return;
+    }
+
+    const normalizedLines = bulkUnitCostText
+      .replace(/\r\n?/gu, '\n')
+      .split('\n');
+    while (
+      normalizedLines.length > 0 &&
+      normalizedLines[normalizedLines.length - 1]?.trim() === ''
+    ) {
+      normalizedLines.pop();
+    }
+
+    if (normalizedLines.every(line => line.trim() === '')) {
+      showWarning('请先粘贴单价列', {
+        description: '支持直接粘贴 Excel 单列价格，一行对应一条可更正记录。',
+      });
+      return;
+    }
+
+    const updates: Record<string, string> = {};
+    let appliedCount = 0;
+    let blankCount = 0;
+
+    for (
+      let index = 0;
+      index < normalizedLines.length && index < targetRecords.length;
+      index += 1
+    ) {
+      const rawLine = normalizedLines[index] ?? '';
+      const trimmedLine = rawLine.trim();
+
+      if (!trimmedLine) {
+        blankCount += 1;
+        continue;
+      }
+
+      const record = targetRecords[index];
+
+      try {
+        parseOpeningBalanceUnitCostInput(
+          trimmedLine,
+          record.piecesPerUnit,
+          unitCostEntryMode
+        );
+      } catch (error) {
+        showError('批量粘贴单价失败', {
+          description: `第 ${index + 1} 行（${record.productCode}）：${
+            error instanceof Error ? error.message : '格式不正确'
+          }`,
+        });
+        return;
+      }
+
+      updates[record.id] = trimmedLine;
+      appliedCount += 1;
+    }
+
+    if (appliedCount === 0) {
+      showWarning('没有可填入的单价', {
+        description:
+          '当前粘贴内容都是空行，系统已保留原值。若只想改部分行，可保留其他行为空。',
+      });
+      return;
+    }
+
+    setUnitCostInputs(current => ({
+      ...current,
+      ...updates,
+    }));
+    setBulkUnitCostText('');
+    setBulkPasteOpen(false);
+
+    const extraLines = Math.max(
+      normalizedLines.length - targetRecords.length,
+      0
+    );
+    const remainingLines = Math.max(
+      targetRecords.length - normalizedLines.length,
+      0
+    );
+    const messageParts = [`已按当前表格顺序填入 ${appliedCount} 行单价`];
+
+    if (blankCount > 0) {
+      messageParts.push(`空白 ${blankCount} 行保留原值`);
+    }
+    if (extraLines > 0) {
+      messageParts.push(`多出的 ${extraLines} 行已忽略`);
+    } else if (remainingLines > 0) {
+      messageParts.push(`剩余 ${remainingLines} 行保留原值`);
+    }
+
+    showSuccess('单价列已填入', {
+      description: `${messageParts.join('，')}。`,
+    });
+  }, [bulkUnitCostText, detailQuery.data, unitCostEntryMode]);
 
   const applyCurrentUnitConversion = React.useCallback(
     (
@@ -325,7 +453,10 @@ export function OpeningBalanceImportBatchActions({
         return false;
       }
 
-      const preview = getCurrentUnitConversionPreview(record, savedQuantityMode);
+      const preview = getCurrentUnitConversionPreview(
+        record,
+        savedQuantityMode
+      );
       if (!preview) {
         if (!options.silent) {
           showWarning('当前记录不能自动换算', {
@@ -420,7 +551,8 @@ export function OpeningBalanceImportBatchActions({
         const parsedUnitCost = normalizedUnitCostInput
           ? parseOpeningBalanceUnitCostInput(
               normalizedUnitCostInput,
-              record.piecesPerUnit
+              record.piecesPerUnit,
+              unitCostEntryMode
             )
           : undefined;
         const currentUnitCost =
@@ -594,6 +726,125 @@ export function OpeningBalanceImportBatchActions({
                 </div>
               </div>
 
+              <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="text-xs font-medium text-slate-600">
+                        单价输入口径
+                      </div>
+                      <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1">
+                        <Button
+                          type="button"
+                          variant={
+                            unitCostEntryMode === 'piece'
+                              ? 'secondary'
+                              : 'ghost'
+                          }
+                          size="sm"
+                          className="h-7 px-3 text-xs"
+                          onClick={() => setUnitCostEntryMode('piece')}
+                          disabled={
+                            correctMutation.isPending ||
+                            deleteMutation.isPending
+                          }
+                        >
+                          按片录入
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={
+                            unitCostEntryMode === 'unit' ? 'secondary' : 'ghost'
+                          }
+                          size="sm"
+                          className="h-7 px-3 text-xs"
+                          onClick={() => setUnitCostEntryMode('unit')}
+                          disabled={
+                            correctMutation.isPending ||
+                            deleteMutation.isPending
+                          }
+                        >
+                          按件录入
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="text-xs leading-5 text-slate-500">
+                      {unitCostEntryMode === 'unit'
+                        ? '价格都不一样时，切到“按件录入”后，直接填 96/88/120 这类件价即可；系统会统一换算成单片成本保存。'
+                        : '默认按片录入；如果个别行拿到的是件价，仍可直接写 96元/件 或 96件价。'}
+                    </div>
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="bg-white"
+                    onClick={() => setBulkPasteOpen(current => !current)}
+                    disabled={
+                      correctMutation.isPending || deleteMutation.isPending
+                    }
+                  >
+                    {bulkPasteOpen ? '收起单价粘贴区' : '批量粘贴单价列'}
+                  </Button>
+                </div>
+
+                {bulkPasteOpen ? (
+                  <div className="mt-3 rounded-lg border border-dashed border-slate-200 bg-white p-3">
+                    <div className="space-y-2">
+                      <div className="text-xs font-medium text-slate-700">
+                        直接粘贴 Excel 单列价格
+                      </div>
+                      <div className="text-xs leading-5 text-slate-500">
+                        一行对应当前表格里一条“可批量更正”的记录，按上到下顺序填入。空行会保留原值。
+                      </div>
+                      <Textarea
+                        aria-label="批量粘贴单价列"
+                        value={bulkUnitCostText}
+                        onChange={event =>
+                          setBulkUnitCostText(event.target.value)
+                        }
+                        disabled={
+                          correctMutation.isPending || deleteMutation.isPending
+                        }
+                        placeholder={
+                          unitCostEntryMode === 'unit'
+                            ? '例如：\n96\n88.5\n120'
+                            : '例如：\n24\n22.125\n30'
+                        }
+                        className="min-h-[140px] text-sm"
+                      />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="bg-blue-600 text-white hover:bg-blue-700"
+                          onClick={handleApplyBulkUnitCosts}
+                          disabled={
+                            correctMutation.isPending ||
+                            deleteMutation.isPending
+                          }
+                        >
+                          按顺序填入当前批次
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setBulkUnitCostText('')}
+                          disabled={
+                            correctMutation.isPending ||
+                            deleteMutation.isPending
+                          }
+                        >
+                          清空粘贴内容
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
               <div className="overflow-x-auto rounded-xl border border-slate-200">
                 <Table>
                   <TableHeader>
@@ -620,154 +871,158 @@ export function OpeningBalanceImportBatchActions({
 
                       return (
                         <TableRow key={record.id}>
-                        <TableCell className="align-top">
-                          <div className="font-mono text-xs font-bold text-slate-600">
-                            {record.recordNumber}
-                          </div>
-                        </TableCell>
-                        <TableCell className="align-top">
-                          <div className="space-y-1">
-                            <div className="text-sm font-semibold text-slate-900">
-                              {record.productCode}
+                          <TableCell className="align-top">
+                            <div className="font-mono text-xs font-bold text-slate-600">
+                              {record.recordNumber}
                             </div>
-                            <div className="text-xs text-slate-500">
-                              {record.productName}
-                              {record.colorCode ? ` / ${record.colorCode}` : ''}
-                            </div>
-                            <div className="text-[11px] text-slate-400">
-                              {record.specification || '—'}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="align-top">
-                          <Badge
-                            variant="outline"
-                            className="border-amber-100 bg-amber-50 text-amber-700"
-                          >
-                            {record.batchNumber || '—'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="align-top text-sm font-semibold text-slate-900">
-                          <div>
-                            {formatQuantityDisplay(
-                              record.quantity,
-                              record.piecesPerUnit
-                            )}
-                          </div>
-                          <div className="text-[11px] text-slate-400">
-                            {record.piecesPerUnit > 0
-                              ? `${record.piecesPerUnit}片/件`
-                              : '未维护装箱数'}
-                          </div>
-                        </TableCell>
-                        <TableCell className="align-top">
-                          <Input
-                            value={quantityInputs[record.id] ?? ''}
-                            onChange={event =>
-                              setQuantityInputs(current => ({
-                                ...current,
-                                [record.id]: event.target.value,
-                              }))
-                            }
-                            disabled={
-                              !record.canCorrect || correctMutation.isPending
-                            }
-                            placeholder={
-                              record.piecesPerUnit > 0
-                                ? '支持 460、460片、115件、115件+2片'
-                                : '请输入正确片数'
-                            }
-                            className="min-w-48"
-                          />
-                          {record.canCorrect && conversionPreview ? (
-                            <div className="mt-2 flex flex-wrap items-center gap-2">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 px-2 text-[11px] text-blue-700 hover:bg-blue-50 hover:text-blue-800"
-                                onClick={() =>
-                                  applyCurrentUnitConversion(record)
-                                }
-                                disabled={correctMutation.isPending}
-                              >
-                                按当前件口径换算
-                              </Button>
-                              <span className="text-[11px] text-slate-400">
-                                将当前保存值换算为{' '}
-                                {formatQuantityDisplay(
-                                  conversionPreview.quantity,
-                                  record.piecesPerUnit
-                                )}
-                              </span>
-                            </div>
-                          ) : record.canCorrect ? (
-                            <div className="mt-2 text-[11px] text-slate-400">
-                              当前保存值按片数看待。若这条记录当时把“件数”直接存进了系统，再切到“其实是件数”执行换算。
-                            </div>
-                          ) : null}
-                          {record.warningMessage ? (
-                            <div className="mt-1 text-[11px] text-amber-600">
-                              {record.warningMessage}
-                            </div>
-                          ) : null}
-                        </TableCell>
-                        <TableCell className="align-top text-sm font-semibold text-slate-900">
-                          <div>
-                            {formatCostPrice(record.unitCost, {
-                              fallback: '—',
-                            })}
-                          </div>
-                          <div className="text-[11px] text-slate-400">
-                            总成本 {formatAmount(record.totalCost)}
-                          </div>
-                        </TableCell>
-                        <TableCell className="align-top">
-                          <Input
-                            value={unitCostInputs[record.id] ?? ''}
-                            onChange={event =>
-                              setUnitCostInputs(current => ({
-                                ...current,
-                                [record.id]: event.target.value,
-                              }))
-                            }
-                            disabled={
-                              !record.canCorrect || correctMutation.isPending
-                            }
-                            placeholder="支持 24、24片价、96元/件"
-                            inputMode="decimal"
-                            className="min-w-36"
-                          />
-                          <div className="mt-1 text-[11px] text-slate-400">
-                            统一保存片成本；也支持直接输入件价自动换算
-                          </div>
-                        </TableCell>
-                        <TableCell className="align-top">
-                          {record.canCorrect ? (
-                            <div className="space-y-1 text-xs">
-                              <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
-                                可批量更正数量/成本
-                              </Badge>
-                              {record.canDelete ? (
-                                <div className="text-emerald-600">
-                                  也可整批删除
-                                </div>
-                              ) : record.blockedReason ? (
-                                <div className="max-w-72 text-amber-700">
-                                  {record.blockedReason}
-                                </div>
-                              ) : null}
-                            </div>
-                          ) : (
-                            <div className="space-y-1 text-xs">
-                              <Badge variant="secondary">当前不可处理</Badge>
-                              <div className="max-w-72 text-rose-700">
-                                {record.blockedReason ||
-                                  '这条记录暂时不能按导入批次处理'}
+                          </TableCell>
+                          <TableCell className="align-top">
+                            <div className="space-y-1">
+                              <div className="text-sm font-semibold text-slate-900">
+                                {record.productCode}
+                              </div>
+                              <div className="text-xs text-slate-500">
+                                {record.productName}
+                                {record.colorCode
+                                  ? ` / ${record.colorCode}`
+                                  : ''}
+                              </div>
+                              <div className="text-[11px] text-slate-400">
+                                {record.specification || '—'}
                               </div>
                             </div>
-                          )}
-                        </TableCell>
+                          </TableCell>
+                          <TableCell className="align-top">
+                            <Badge
+                              variant="outline"
+                              className="border-amber-100 bg-amber-50 text-amber-700"
+                            >
+                              {record.batchNumber || '—'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="align-top text-sm font-semibold text-slate-900">
+                            <div>
+                              {formatQuantityDisplay(
+                                record.quantity,
+                                record.piecesPerUnit
+                              )}
+                            </div>
+                            <div className="text-[11px] text-slate-400">
+                              {record.piecesPerUnit > 0
+                                ? `${record.piecesPerUnit}片/件`
+                                : '未维护装箱数'}
+                            </div>
+                          </TableCell>
+                          <TableCell className="align-top">
+                            <Input
+                              value={quantityInputs[record.id] ?? ''}
+                              onChange={event =>
+                                setQuantityInputs(current => ({
+                                  ...current,
+                                  [record.id]: event.target.value,
+                                }))
+                              }
+                              disabled={
+                                !record.canCorrect || correctMutation.isPending
+                              }
+                              placeholder={
+                                record.piecesPerUnit > 0
+                                  ? '支持 460、460片、115件、115件+2片'
+                                  : '请输入正确片数'
+                              }
+                              className="min-w-48"
+                            />
+                            {record.canCorrect && conversionPreview ? (
+                              <div className="mt-2 flex flex-wrap items-center gap-2">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 px-2 text-[11px] text-blue-700 hover:bg-blue-50 hover:text-blue-800"
+                                  onClick={() =>
+                                    applyCurrentUnitConversion(record)
+                                  }
+                                  disabled={correctMutation.isPending}
+                                >
+                                  按当前件口径换算
+                                </Button>
+                                <span className="text-[11px] text-slate-400">
+                                  将当前保存值换算为{' '}
+                                  {formatQuantityDisplay(
+                                    conversionPreview.quantity,
+                                    record.piecesPerUnit
+                                  )}
+                                </span>
+                              </div>
+                            ) : record.canCorrect ? (
+                              <div className="mt-2 text-[11px] text-slate-400">
+                                当前保存值按片数看待。若这条记录当时把“件数”直接存进了系统，再切到“其实是件数”执行换算。
+                              </div>
+                            ) : null}
+                            {record.warningMessage ? (
+                              <div className="mt-1 text-[11px] text-amber-600">
+                                {record.warningMessage}
+                              </div>
+                            ) : null}
+                          </TableCell>
+                          <TableCell className="align-top text-sm font-semibold text-slate-900">
+                            <div>
+                              {formatCostPrice(record.unitCost, {
+                                fallback: '—',
+                              })}
+                            </div>
+                            <div className="text-[11px] text-slate-400">
+                              总成本 {formatAmount(record.totalCost)}
+                            </div>
+                          </TableCell>
+                          <TableCell className="align-top">
+                            <Input
+                              value={unitCostInputs[record.id] ?? ''}
+                              onChange={event =>
+                                setUnitCostInputs(current => ({
+                                  ...current,
+                                  [record.id]: event.target.value,
+                                }))
+                              }
+                              disabled={
+                                !record.canCorrect || correctMutation.isPending
+                              }
+                              placeholder={getUnitCostInputPlaceholder(
+                                unitCostEntryMode
+                              )}
+                              inputMode="decimal"
+                              className="min-w-36"
+                            />
+                            <div className="mt-1 text-[11px] text-slate-400">
+                              {getUnitCostInputHelperText(unitCostEntryMode)}
+                            </div>
+                          </TableCell>
+                          <TableCell className="align-top">
+                            {record.canCorrect ? (
+                              <div className="space-y-1 text-xs">
+                                <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
+                                  可批量更正数量/成本
+                                </Badge>
+                                {record.canDelete ? (
+                                  <div className="text-emerald-600">
+                                    也可整批删除
+                                  </div>
+                                ) : record.blockedReason ? (
+                                  <div className="max-w-72 text-amber-700">
+                                    {record.blockedReason}
+                                  </div>
+                                ) : null}
+                              </div>
+                            ) : (
+                              <div className="space-y-1 text-xs">
+                                <Badge variant="secondary">当前不可处理</Badge>
+                                <div className="max-w-72 text-rose-700">
+                                  {record.blockedReason ||
+                                    '这条记录暂时不能按导入批次处理'}
+                                </div>
+                              </div>
+                            )}
+                          </TableCell>
                         </TableRow>
                       );
                     })}

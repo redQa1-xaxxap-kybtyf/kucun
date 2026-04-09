@@ -231,19 +231,19 @@ export function OrderItemsSection({
     <>
       <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] shadow-md">
         <CardContent className="space-y-4 p-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex items-center gap-2 text-sm font-medium text-[hsl(var(--color-text-primary))]">
               <Package className="h-4 w-4" />
               订单明细
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-stretch gap-2">
               {supplierId && (
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => setShowHistoricalDialog(true)}
-                  className="h-8 gap-1"
+                  className="h-8 w-full gap-1 sm:w-auto"
                   disabled={isSubmitting}
                 >
                   <Clock className="h-3 w-3" />
@@ -255,7 +255,7 @@ export function OrderItemsSection({
                 variant="outline"
                 size="sm"
                 onClick={onAddItem}
-                className="h-8 gap-1"
+                className="h-8 w-full gap-1 sm:w-auto"
                 disabled={
                   isSubmitting || (orderType === 'TRANSFER' && !supplierId)
                 }
@@ -285,31 +285,35 @@ export function OrderItemsSection({
             </div>
           ) : (
             <div className="overflow-x-auto rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
-              <Table>
+              <Table
+                className={
+                  orderType === 'TRANSFER' ? 'min-w-[1680px]' : 'min-w-[1360px]'
+                }
+              >
                 <TableHeader>
                   <TableRow className="bg-muted/40">
-                    <TableHead className="min-w-[200px] border-r border-[hsl(var(--color-border-primary))] px-3 py-2 text-xs font-medium text-[hsl(var(--color-text-secondary))]">
+                    <TableHead className="min-w-[200px] border-r border-[hsl(var(--color-border-primary))] px-3 py-2 text-xs font-medium whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
                       产品编码
                     </TableHead>
-                    <TableHead className="min-w-[140px] border-r border-[hsl(var(--color-border-primary))] px-3 py-2 text-xs font-medium text-[hsl(var(--color-text-secondary))]">
+                    <TableHead className="min-w-[140px] border-r border-[hsl(var(--color-border-primary))] px-3 py-2 text-xs font-medium whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
                       产品名称
                     </TableHead>
                     <TableHead className="min-w-[90px] border-r border-[hsl(var(--color-border-primary))] px-3 py-2 text-xs font-medium whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
                       装箱数
                     </TableHead>
-                    <TableHead className="min-w-[180px] border-r border-[hsl(var(--color-border-primary))] px-3 py-2 text-xs font-medium text-[hsl(var(--color-text-secondary))]">
+                    <TableHead className="min-w-[180px] border-r border-[hsl(var(--color-border-primary))] px-3 py-2 text-xs font-medium whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
                       批次号
                     </TableHead>
-                    <TableHead className="min-w-[150px] border-r border-[hsl(var(--color-border-primary))] px-3 py-2 text-xs font-medium text-[hsl(var(--color-text-secondary))]">
+                    <TableHead className="min-w-[150px] border-r border-[hsl(var(--color-border-primary))] px-3 py-2 text-xs font-medium whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
                       规格
                     </TableHead>
-                    <TableHead className="min-w-[80px] border-r border-[hsl(var(--color-border-primary))] px-3 py-2 text-xs font-medium text-[hsl(var(--color-text-secondary))]">
+                    <TableHead className="min-w-[80px] border-r border-[hsl(var(--color-border-primary))] px-3 py-2 text-xs font-medium whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
                       单位
                     </TableHead>
-                    <TableHead className="min-w-[100px] border-r border-[hsl(var(--color-border-primary))] px-3 py-2 text-xs font-medium text-[hsl(var(--color-text-secondary))]">
+                    <TableHead className="min-w-[100px] border-r border-[hsl(var(--color-border-primary))] px-3 py-2 text-xs font-medium whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
                       数量
                     </TableHead>
-                    <TableHead className="min-w-[100px] border-r border-[hsl(var(--color-border-primary))] px-3 py-2 text-xs font-medium text-[hsl(var(--color-text-secondary))]">
+                    <TableHead className="min-w-[100px] border-r border-[hsl(var(--color-border-primary))] px-3 py-2 text-xs font-medium whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
                       销售单价
                     </TableHead>
                     {orderType === 'TRANSFER' && (
@@ -322,13 +326,13 @@ export function OrderItemsSection({
                         </TableHead>
                       </>
                     )}
-                    <TableHead className="min-w-[100px] border-r border-[hsl(var(--color-border-primary))] px-3 py-2 text-xs font-medium text-[hsl(var(--color-text-secondary))]">
+                    <TableHead className="min-w-[100px] border-r border-[hsl(var(--color-border-primary))] px-3 py-2 text-xs font-medium whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
                       金额
                     </TableHead>
-                    <TableHead className="min-w-[150px] border-r border-[hsl(var(--color-border-primary))] px-3 py-2 text-xs font-medium text-[hsl(var(--color-text-secondary))]">
+                    <TableHead className="min-w-[150px] border-r border-[hsl(var(--color-border-primary))] px-3 py-2 text-xs font-medium whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
                       备注
                     </TableHead>
-                    <TableHead className="min-w-[80px] px-3 py-2 text-center text-xs font-medium text-[hsl(var(--color-text-secondary))]">
+                    <TableHead className="min-w-[80px] px-3 py-2 text-center text-xs font-medium whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
                       操作
                     </TableHead>
                   </TableRow>

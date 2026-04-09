@@ -6,6 +6,7 @@ import type {
   CustomerStatementQuery,
   CustomerStatementStatistics,
 } from '@/lib/types/customer-statement';
+import { createFriendlyApiError } from '@/lib/utils/user-friendly-error';
 
 const CUSTOMER_STATEMENTS_API_BASE = '/api/finance/customer-statements';
 const CUSTOMER_STATEMENTS_STATISTICS_API = `${CUSTOMER_STATEMENTS_API_BASE}/statistics`;
@@ -65,7 +66,7 @@ async function handleResponse<T>(
   fallbackError: string
 ): Promise<T> {
   if (!response.ok) {
-    throw new Error(`${fallbackError}: ${response.statusText}`);
+    throw await createFriendlyApiError(response, fallbackError);
   }
 
   const payload = await response.json();

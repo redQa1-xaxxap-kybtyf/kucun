@@ -16,6 +16,7 @@ export type InboundType =
 export type OutboundType =
   | 'normal_outbound'
   | 'sales_outbound'
+  | 'sample_outbound'
   | 'adjust_outbound';
 
 // 入库记录类型
@@ -167,6 +168,7 @@ export const INBOUND_TYPE_LABELS: Record<InboundType, string> = {
 export const OUTBOUND_TYPE_LABELS: Record<OutboundType, string> = {
   normal_outbound: '正常出库',
   sales_outbound: '销售出库',
+  sample_outbound: '样品出库',
   adjust_outbound: '调整出库',
 };
 
@@ -174,6 +176,7 @@ export const OUTBOUND_REASON_LABELS: Record<string, string> = {
   normal_outbound: '正常出库',
   manual_outbound: '手动出库',
   sales_outbound: '销售出库',
+  sample_outbound: '样品出库',
   adjust_outbound: '调整出库',
   transfer: '调拨出库',
   damage: '报损出库',
@@ -201,6 +204,7 @@ export const OUTBOUND_TYPE_VARIANTS: Record<
 > = {
   normal_outbound: 'info',
   sales_outbound: 'success',
+  sample_outbound: 'secondary',
   adjust_outbound: 'warning',
 };
 
@@ -290,7 +294,12 @@ export interface AdjustmentQueryParams {
   page?: number;
   limit?: number;
   search?: string;
-  sortBy?: 'createdAt' | 'adjustmentNumber' | 'adjustQuantity' | 'reason';
+  sortBy?:
+    | 'createdAt'
+    | 'adjustmentNumber'
+    | 'quantity'
+    | 'adjustQuantity'
+    | 'reason';
   sortOrder?: 'asc' | 'desc';
   productId?: string;
   variantId?: string;
@@ -410,7 +419,7 @@ export const ADJUSTMENT_STATUS_VARIANTS: Record<
 export const ADJUSTMENT_SORT_OPTIONS = [
   { value: 'createdAt', label: '调整时间' },
   { value: 'adjustmentNumber', label: '调整单号' },
-  { value: 'adjustQuantity', label: '调整数量' },
+  { value: 'quantity', label: '调整数量' },
   { value: 'reason', label: '调整原因' },
 ] as const;
 

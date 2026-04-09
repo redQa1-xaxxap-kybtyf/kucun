@@ -421,15 +421,15 @@ export function FactoryShipmentOrderForm({
 
         {/* 操作按钮 */}
         <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] bg-gradient-to-r from-[hsl(var(--color-bg-secondary))] to-[hsl(var(--color-bg-primary))] shadow-md">
-          <CardContent className="p-8">
-            <div className="flex items-center justify-between gap-4">
+          <CardContent className="p-5 lg:p-6 xl:p-8">
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
               <Button
                 type="button"
                 variant="outline"
                 size="lg"
                 onClick={onCancel}
                 disabled={isLoading}
-                className="min-w-[120px] shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md"
+                className="w-full min-w-[120px] shadow-sm transition-all duration-200 hover:shadow-md sm:w-auto"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 返回
@@ -439,20 +439,20 @@ export function FactoryShipmentOrderForm({
                   type="submit"
                   size="lg"
                   disabled={isLoading}
-                  className="min-w-[160px] shadow-md transition-all duration-200 hover:scale-[1.02] hover:shadow-lg"
+                  className="w-full min-w-[160px] shadow-md transition-all duration-200 hover:shadow-lg sm:w-auto"
                 >
                   <Save className="mr-2 h-4 w-4" />
                   {isLoading ? '保存中...' : '保存修改'}
                 </Button>
               ) : (
-                <div className="flex items-center gap-3">
+                <div className="grid gap-3 sm:grid-cols-2 xl:flex xl:items-center">
                   <Button
                     type="submit"
                     variant="outline"
                     size="lg"
                     disabled={isLoading}
                     onClick={() => handleSubmitIntent('draft')}
-                    className="min-w-[140px] shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md"
+                    className="w-full min-w-[140px] shadow-sm transition-all duration-200 hover:shadow-md"
                   >
                     <Save className="mr-2 h-4 w-4" />
                     {isLoading && submitIntent === 'draft'
@@ -464,7 +464,7 @@ export function FactoryShipmentOrderForm({
                     size="lg"
                     disabled={isLoading}
                     onClick={() => handleSubmitIntent('confirm')}
-                    className="min-w-[160px] shadow-md transition-all duration-200 hover:scale-[1.02] hover:shadow-lg"
+                    className="w-full min-w-[160px] shadow-md transition-all duration-200 hover:shadow-lg"
                   >
                     <Save className="mr-2 h-4 w-4" />
                     {isLoading && submitIntent === 'confirm'

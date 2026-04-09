@@ -78,8 +78,8 @@ export function CountItemsTable({
   return (
     <>
       {/* 桌面端表格视图 */}
-      <div className="hidden overflow-x-auto rounded-md border md:block">
-        <Table>
+      <div className="hidden overflow-x-auto rounded-md border xl:block">
+        <Table className="min-w-[1120px] [&_th]:whitespace-nowrap">
           <TableHeader>
             <TableRow>
               <TableHead>产品编码</TableHead>
@@ -105,10 +105,14 @@ export function CountItemsTable({
           <TableBody>
             {items.map(item => (
               <TableRow key={item.id}>
-                <TableCell className="font-medium">
+                <TableCell className="font-medium whitespace-nowrap">
                   {item.product?.code || '-'}
                 </TableCell>
-                <TableCell>{item.product?.name || '-'}</TableCell>
+                <TableCell className="min-w-[180px]">
+                  <div className="max-w-[220px] truncate">
+                    {item.product?.name || '-'}
+                  </div>
+                </TableCell>
                 <TableCell className="whitespace-nowrap">
                   {(() => {
                     const variantLabel =
@@ -125,13 +129,15 @@ export function CountItemsTable({
                     );
                   })()}
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right whitespace-nowrap">
                   {item.product?.piecesPerUnit && item.product.piecesPerUnit > 0
                     ? `${item.product.piecesPerUnit}片/件`
                     : '-'}
                 </TableCell>
-                <TableCell>{item.batchNumber || '-'}</TableCell>
-                <TableCell className="text-right">
+                <TableCell className="whitespace-nowrap">
+                  {item.batchNumber || '-'}
+                </TableCell>
+                <TableCell className="text-right whitespace-nowrap">
                   {(() => {
                     const ppu = item.product?.piecesPerUnit ?? 0;
                     // 仅在每件片数>1时进行“约X件”的换算，避免 1 片/件 时产生误导
@@ -143,7 +149,7 @@ export function CountItemsTable({
                       : `${item.systemQuantity}片`;
                   })()}
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right whitespace-nowrap">
                   {(() => {
                     if (
                       item.actualQuantity === null ||
@@ -194,7 +200,7 @@ export function CountItemsTable({
                 </TableCell>
                 {hasFinancePermission && (
                   <>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right whitespace-nowrap">
                       {formatCostPrice(item.unitCost, {
                         withSymbol: false,
                         fallback: '-',
@@ -213,7 +219,7 @@ export function CountItemsTable({
                     </TableCell>
                   </>
                 )}
-                <TableCell>
+                <TableCell className="whitespace-nowrap">
                   <Badge variant={getStatusBadgeVariant(item.status)}>
                     {COUNT_ITEM_STATUS_LABELS[item.status]}
                   </Badge>
@@ -249,7 +255,7 @@ export function CountItemsTable({
       </div>
 
       {/* 移动端卡片视图 */}
-      <div className="space-y-3 md:hidden">
+      <div className="space-y-3 xl:hidden">
         {items.map(item => {
           const ppu = item.product?.piecesPerUnit ?? 0;
           const systemDisplay =

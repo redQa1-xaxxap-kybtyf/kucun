@@ -14,6 +14,10 @@ import type {
   UpdateCategoryData,
 } from '@/lib/types/category-unified';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
+import {
+  createFriendlyApiError,
+  extractApiErrorMessage,
+} from '@/lib/utils/user-friendly-error';
 // 重新导出类型以保持向后兼容
 export type {
   Category,
@@ -220,51 +224,12 @@ export async function updateCategoryStatus(
  * 将 API 错误响应转换为 Error 对象
  */
 async function createApiError(response: Response): Promise<Error> {
-  const fallbackMessage = `HTTP error! status: ${response.status}`;
-
-  try {
-    const errorData = await response.json();
-    const message = extractErrorMessage(errorData, fallbackMessage);
-    return new Error(message);
-  } catch {
-    return new Error(fallbackMessage);
-  }
+  return createFriendlyApiError(response, '分类操作失败');
 }
 
 /**
  * 提取 API 错误响应中的可读信息
  */
 function extractErrorMessage(errorData: unknown, fallback: string): string {
-  if (!errorData || typeof errorData !== 'object') {
-    return fallback;
-  }
-
-  const errorObject = errorData as {
-    error?: unknown;
-    message?: unknown;
-  };
-
-  if (typeof errorObject.error === 'string' && errorObject.error.length > 0) {
-    return errorObject.error;
-  }
-
-  if (
-    errorObject.error &&
-    typeof errorObject.error === 'object' &&
-    typeof (errorObject.error as { message?: unknown }).message === 'string'
-  ) {
-    const nestedMessage = (errorObject.error as { message?: string }).message;
-    if (nestedMessage && nestedMessage.length > 0) {
-      return nestedMessage;
-    }
-  }
-
-  if (
-    typeof errorObject.message === 'string' &&
-    errorObject.message.length > 0
-  ) {
-    return errorObject.message;
-  }
-
-  return fallback;
+  return extractApiErrorMessage(errorData, fallback);
 }

@@ -7,6 +7,10 @@ import { prisma } from '@/lib/db';
 import { publishFinanceEvent } from '@/lib/events';
 import { logger } from '@/lib/logger';
 import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
+import {
+  buildExcludeAutoReceivableConfirmationWhere,
+  isAutoReceivableConfirmationPayment,
+} from '@/lib/services/receivables-helpers';
 
 const serializeError = (error: unknown) =>
   error instanceof Error
@@ -70,6 +74,13 @@ export const POST = withAuth(
         );
       }
 
+      if (isAutoReceivableConfirmationPayment(payment)) {
+        return NextResponse.json(
+          { success: false, error: '系统应收建账记录不能手工确认收款' },
+          { status: 400 }
+        );
+      }
+
       if (payment.status === 'cancelled') {
         return NextResponse.json(
           { success: false, error: '已取消的收款记录无法确认' },
@@ -126,6 +137,7 @@ export const POST = withAuth(
               where: {
                 salesOrderId: updatedPayment.salesOrderId,
                 status: { in: ['confirmed', 'applied'] },
+                ...buildExcludeAutoReceivableConfirmationWhere(),
               },
               _sum: { paymentAmount: true, roundingAmount: true },
             });

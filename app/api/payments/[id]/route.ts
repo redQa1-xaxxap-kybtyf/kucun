@@ -4,6 +4,8 @@ import { resolveParams } from '@/lib/api/middleware';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { getPaymentDetailRecord } from '@/lib/services/payment-detail-service';
+import { isAutoReceivableConfirmationPayment } from '@/lib/services/receivables-helpers';
 import { parseLocalDateString } from '@/lib/utils/datetime';
 import { updatePaymentRecordSchema } from '@/lib/validations/payment';
 
@@ -22,36 +24,7 @@ export const GET = withAuth(
       const { id } = await resolveParams(context.params);
       paymentId = id;
 
-      // 查询收款记录
-      const payment = await prisma.paymentRecord.findUnique({
-        where: { id },
-        include: {
-          customer: {
-            select: {
-              id: true,
-              name: true,
-              phone: true,
-              address: true,
-            },
-          },
-          salesOrder: {
-            select: {
-              id: true,
-              orderNumber: true,
-              totalAmount: true,
-              status: true,
-              createdAt: true,
-            },
-          },
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
-        },
-      });
+      const payment = await getPaymentDetailRecord(id);
 
       if (!payment) {
         return NextResponse.json(
@@ -60,17 +33,9 @@ export const GET = withAuth(
         );
       }
 
-      const serializedPayment = {
-        ...payment,
-        paymentAmount: Number(payment.paymentAmount),
-        actualPaymentAmount: Number(payment.actualPaymentAmount),
-        roundingAmount: Number(payment.roundingAmount),
-        appliedAmount: Number(payment.appliedAmount),
-      };
-
       return NextResponse.json({
         success: true,
-        data: serializedPayment,
+        data: payment,
       });
     } catch (error) {
       logger.error(
@@ -106,13 +71,25 @@ export const PUT = withAuth(
       // 验证收款记录是否存在
       const existingPayment = await prisma.paymentRecord.findUnique({
         where: { id },
-        select: { id: true, status: true },
+        select: {
+          id: true,
+          status: true,
+          remarks: true,
+          actualPaymentAmount: true,
+        },
       });
 
       if (!existingPayment) {
         return NextResponse.json(
           { success: false, error: '收款记录不存在' },
           { status: 404 }
+        );
+      }
+
+      if (isAutoReceivableConfirmationPayment(existingPayment)) {
+        return NextResponse.json(
+          { success: false, error: '系统应收建账记录不允许手工修改' },
+          { status: 400 }
         );
       }
 
@@ -246,13 +223,25 @@ export const DELETE = withAuth(
       // 验证收款记录是否存在
       const existingPayment = await prisma.paymentRecord.findUnique({
         where: { id },
-        select: { id: true, status: true },
+        select: {
+          id: true,
+          status: true,
+          remarks: true,
+          actualPaymentAmount: true,
+        },
       });
 
       if (!existingPayment) {
         return NextResponse.json(
           { success: false, error: '收款记录不存在' },
           { status: 404 }
+        );
+      }
+
+      if (isAutoReceivableConfirmationPayment(existingPayment)) {
+        return NextResponse.json(
+          { success: false, error: '系统应收建账记录不允许手工删除' },
+          { status: 400 }
         );
       }
 

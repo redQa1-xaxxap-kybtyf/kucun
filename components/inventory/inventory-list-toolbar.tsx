@@ -76,7 +76,7 @@ export function InventoryListToolbar({
               className="h-11 gap-2 shadow-md transition-all hover:scale-105 hover:shadow-lg"
             >
               <Plus className="h-5 w-5" />
-              产品入库
+              采购入库
             </Button>
           </div>
         </div>

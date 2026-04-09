@@ -40,6 +40,7 @@ const sortableFields: Record<
   keyof Prisma.SalesOrderOrderByWithRelationInput
 > = {
   orderNumber: 'orderNumber',
+  orderDate: 'orderDate',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   totalAmount: 'totalAmount',
@@ -48,7 +49,7 @@ const sortableFields: Record<
 };
 
 const DEFAULT_SORT_FIELD: keyof Prisma.SalesOrderOrderByWithRelationInput =
-  'createdAt';
+  'orderDate';
 const DEFAULT_SORT_ORDER: Prisma.SortOrder = 'desc';
 const DEFAULT_PRIORITY_STATUS_GROUPS = [
   ['draft'],
@@ -139,7 +140,7 @@ const buildWhere = (
 
   const dateRange = buildDateTimeRangeFromDateStrings(startDate, endDate);
   if (dateRange) {
-    where.createdAt = dateRange;
+    where.orderDate = dateRange;
   }
 
   return where;
@@ -164,7 +165,7 @@ const buildInGroupOrderBy = (
   const sortOrder = params.sortOrder ?? DEFAULT_SORT_ORDER;
 
   return [
-    { createdAt: sortOrder },
+    { orderDate: sortOrder },
     { id: sortOrder },
   ] satisfies Prisma.SalesOrderOrderByWithRelationInput[];
 };
@@ -173,7 +174,7 @@ const shouldUsePrioritizedStatusOrdering = (params: SalesOrderQueryParams) => {
   const sortField = params.sortBy ?? DEFAULT_SORT_FIELD;
 
   return (
-    sortField === 'createdAt' &&
+    sortField === 'orderDate' &&
     (params.status === undefined || params.status === 'pending')
   );
 };

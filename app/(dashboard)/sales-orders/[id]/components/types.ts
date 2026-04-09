@@ -39,6 +39,7 @@ export interface SalesOrderDetail {
   refundedAmount?: number;
   refundPendingAmount?: number;
   remarks?: string;
+  orderDate?: string;
   shippedAt?: string;
   createdAt: string;
   updatedAt: string;
@@ -91,6 +92,7 @@ export interface SalesOrderDetail {
     remarks?: string;
   }>;
   paymentRecords: PaymentRecord[];
+  receivableConfirmationRecord?: PaymentRecord;
   returnOrders: Array<{
     id: string;
     returnNumber: string;

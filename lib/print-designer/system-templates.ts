@@ -400,24 +400,36 @@ function createBusinessTemplate(config: BusinessTemplateConfig): PrintTemplate {
   });
 
   elements.push(
-    createTableElement(cursor++, 'items', 12, 70, 186, 118, config.tableColumns, {
-      minRows: 8,
-      showSummary: true,
-      summaryColumns: Array.from(
-        new Set(
-          config.tableColumns
-            .filter(column =>
-              ['number', 'currency'].includes(column.format ?? 'text')
-            )
-            .map(column => column.key)
-            .filter(key =>
-              ['quantity', 'returnQuantity', 'damagedQuantity', 'subtotal'].includes(
-                key
+    createTableElement(
+      cursor++,
+      'items',
+      12,
+      70,
+      186,
+      118,
+      config.tableColumns,
+      {
+        minRows: 8,
+        showSummary: true,
+        summaryColumns: Array.from(
+          new Set(
+            config.tableColumns
+              .filter(column =>
+                ['number', 'currency'].includes(column.format ?? 'text')
               )
-            )
-        )
-      ),
-    })
+              .map(column => column.key)
+              .filter(key =>
+                [
+                  'quantity',
+                  'returnQuantity',
+                  'damagedQuantity',
+                  'subtotal',
+                ].includes(key)
+              )
+          )
+        ),
+      }
+    )
   );
 
   config.footerMetrics.forEach((item, index) => {
@@ -441,15 +453,23 @@ function createBusinessTemplate(config: BusinessTemplateConfig): PrintTemplate {
 
   if (config.remarkField) {
     elements.push(
-      ...createLabeledField(cursor, '备注说明', config.remarkField, 12, 212, 160, {
-        labelWidth: 20,
-        valueHeight: 14,
-        fallback: '',
-        valueStyle: {
-          fontSize: 9,
-          lineHeight: 1.35,
-        },
-      })
+      ...createLabeledField(
+        cursor,
+        '备注说明',
+        config.remarkField,
+        12,
+        212,
+        160,
+        {
+          labelWidth: 20,
+          valueHeight: 14,
+          fallback: '',
+          valueStyle: {
+            fontSize: 9,
+            lineHeight: 1.35,
+          },
+        }
+      )
     );
     cursor += 2;
   }
@@ -547,11 +567,19 @@ function createReportTemplate(
 
   topFields.forEach((item, index) => {
     elements.push(
-      ...createLabeledField(cursor, item.label, item.field, 14 + index * 68, 24, 40, {
-        labelWidth: 18,
-        format: item.format,
-        fallback: '',
-      })
+      ...createLabeledField(
+        cursor,
+        item.label,
+        item.field,
+        14 + index * 68,
+        24,
+        40,
+        {
+          labelWidth: 18,
+          format: item.format,
+          fallback: '',
+        }
+      )
     );
     cursor += 2;
   });
@@ -894,6 +922,15 @@ function buildMonthlyReportTemplate() {
         y: 76,
         items: [
           { label: '运费', field: 'expenses.byType.shipping' },
+          {
+            label: '月破损片数',
+            field: 'purchaseDamage.totalQuantity',
+            format: 'number',
+          },
+          {
+            label: '月破损金额',
+            field: 'purchaseDamage.totalAmount',
+          },
           { label: '工资', field: 'expenses.byType.labor' },
           { label: '营业费', field: 'expenses.byType.operating' },
           { label: '管理费', field: 'expenses.byType.management' },
@@ -997,6 +1034,15 @@ function buildAnnualReportTemplate() {
             field: 'inventoryTurnover.turnoverRate',
             format: 'number',
           },
+          {
+            label: '年破损片数',
+            field: 'purchaseDamage.totalQuantity',
+            format: 'number',
+          },
+          {
+            label: '年破损金额',
+            field: 'purchaseDamage.totalAmount',
+          },
         ],
       },
     ],
@@ -1011,7 +1057,14 @@ function buildAnnualReportTemplate() {
         minRows: 4,
         columns: [
           createColumn('ar-month', 'monthLabel', '月份', 14),
-          createColumn('ar-revenue', 'revenue', '收入', 22, 'right', 'currency'),
+          createColumn(
+            'ar-revenue',
+            'revenue',
+            '收入',
+            22,
+            'right',
+            'currency'
+          ),
           createColumn('ar-cost', 'cost', '成本', 22, 'right', 'currency'),
           createColumn(
             'ar-expenses',
@@ -1042,8 +1095,22 @@ function buildAnnualReportTemplate() {
         minRows: 2,
         columns: [
           createColumn('ar-quarter', 'quarterLabel', '季度', 16),
-          createColumn('ar-q-revenue', 'revenue', '收入', 24, 'right', 'currency'),
-          createColumn('ar-q-profit', 'profit', '利润', 24, 'right', 'currency'),
+          createColumn(
+            'ar-q-revenue',
+            'revenue',
+            '收入',
+            24,
+            'right',
+            'currency'
+          ),
+          createColumn(
+            'ar-q-profit',
+            'profit',
+            '利润',
+            24,
+            'right',
+            'currency'
+          ),
           createColumn(
             'ar-q-margin',
             'profitMargin',
@@ -1052,15 +1119,30 @@ function buildAnnualReportTemplate() {
             'right',
             'number'
           ),
-          createColumn('ar-q-expenses', 'expenses', '费用', 18, 'right', 'currency'),
+          createColumn(
+            'ar-q-expenses',
+            'expenses',
+            '费用',
+            18,
+            'right',
+            'currency'
+          ),
         ],
       },
     ],
     [
       { label: '统计年度', field: 'period.label' },
       { label: '导出日期', field: 'reportMeta.exportDate', format: 'date_cn' },
-      { label: '同比收入(%)', field: 'yearOverYear.revenue.changeRate', format: 'number' },
-      { label: '同比利润(%)', field: 'yearOverYear.profit.changeRate', format: 'number' },
+      {
+        label: '同比收入(%)',
+        field: 'yearOverYear.revenue.changeRate',
+        format: 'number',
+      },
+      {
+        label: '同比利润(%)',
+        field: 'yearOverYear.profit.changeRate',
+        format: 'number',
+      },
     ]
   );
 }
@@ -1145,9 +1227,23 @@ function buildProfitLossTemplate() {
         minRows: 3,
         columns: [
           createColumn('pl-date', 'dateLabel', '时间', 14),
-          createColumn('pl-revenue', 'revenue', '收入', 22, 'right', 'currency'),
+          createColumn(
+            'pl-revenue',
+            'revenue',
+            '收入',
+            22,
+            'right',
+            'currency'
+          ),
           createColumn('pl-cost', 'cost', '成本', 22, 'right', 'currency'),
-          createColumn('pl-expense', 'expense', '费用', 18, 'right', 'currency'),
+          createColumn(
+            'pl-expense',
+            'expense',
+            '费用',
+            18,
+            'right',
+            'currency'
+          ),
           createColumn('pl-profit', 'profit', '利润', 22, 'right', 'currency'),
         ],
       },
@@ -1175,7 +1271,10 @@ function buildProfitLossTemplate() {
   );
 }
 
-const SYSTEM_TEMPLATE_BUILDERS: Record<SystemTemplateType, () => PrintTemplate> = {
+const SYSTEM_TEMPLATE_BUILDERS: Record<
+  SystemTemplateType,
+  () => PrintTemplate
+> = {
   'sales-order': buildSalesOrderTemplate,
   'purchase-order': buildPurchaseOrderTemplate,
   'factory-shipment': buildFactoryShipmentTemplate,

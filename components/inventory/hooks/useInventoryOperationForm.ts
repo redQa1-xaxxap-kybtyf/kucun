@@ -90,6 +90,7 @@ const generateIdempotencyKey = () =>
 const OUTBOUND_TYPE_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'normal_outbound', label: '正常出库' },
   { value: 'sales_outbound', label: '销售出库' },
+  { value: 'sample_outbound', label: '样品出库' },
   { value: 'adjust_outbound', label: '调整出库' },
 ];
 

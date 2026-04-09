@@ -114,7 +114,7 @@ export function PaymentsOutTableList({
   return (
     <div className="space-y-4">
       {/* 桌面端：宽表格 + 横向滚动 */}
-      <div className="hidden overflow-x-auto rounded-md border xl:block">
+      <div className="hidden overflow-x-auto rounded-md border 2xl:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -147,7 +147,7 @@ export function PaymentsOutTableList({
       </div>
 
       {/* 移动端：卡片列表 */}
-      <div className="grid gap-3 lg:grid-cols-2 xl:hidden">
+      <div className="grid gap-3 xl:grid-cols-2 2xl:hidden">
         {payments.map(payment => (
           <PaymentOutCard
             key={payment.id}
@@ -305,7 +305,7 @@ function PaymentOutCard({
               <CopyableText text={payment.paymentNumber} />
             </span>
           </div>
-          <div className="text-sm font-medium leading-5 break-words">
+          <div className="text-sm leading-5 font-medium break-words">
             {payment.supplier.name}
           </div>
           {payment.supplier.phone && (

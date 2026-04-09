@@ -136,7 +136,7 @@ export function InboundProductSection({
       {/* 选中产品信息展示 */}
       {selectedProduct && (
         <div className="rounded-md border border-green-300 bg-green-50/50 p-3">
-          <div className="grid grid-cols-6 gap-x-4 gap-y-2 text-xs">
+          <div className="grid grid-cols-1 gap-x-4 gap-y-3 text-xs sm:grid-cols-2 xl:grid-cols-6">
             <div className="flex flex-col gap-0.5">
               <span className="text-gray-600">产品名称</span>
               <span className="font-semibold text-gray-900">
@@ -179,7 +179,7 @@ export function InboundProductSection({
               </span>
             </div>
             {batchSpecs.length > 0 && (
-              <div className="col-span-5 flex flex-col gap-1.5 border-t border-green-200 pt-2">
+              <div className="flex flex-col gap-1.5 border-t border-green-200 pt-3 sm:col-span-2 xl:col-span-6">
                 <span className="font-medium text-gray-600">现有批次参考</span>
                 <p className="text-muted-foreground text-xs">
                   如果现有入库数量和现有批次相同可直接选择，新增批次请直接输入。
@@ -211,7 +211,7 @@ export function InboundProductSection({
                         className={cn(
                           'flex items-center gap-2 rounded border px-3 py-1.5 text-left transition',
                           selectedBatchNumber === spec.batchNumber
-                            ? 'border-[hsl(var(--color-primary))] bg-[hsl(var(--color-primary-light))] ring-1 ring-[hsl(var(--color-primary))]/25 shadow-sm'
+                            ? 'border-[hsl(var(--color-primary))] bg-[hsl(var(--color-primary-light))] shadow-sm ring-1 ring-[hsl(var(--color-primary))]/25'
                             : 'border-slate-200 bg-white text-slate-700 hover:border-[hsl(var(--color-primary))]/60 hover:bg-slate-50'
                         )}
                       >

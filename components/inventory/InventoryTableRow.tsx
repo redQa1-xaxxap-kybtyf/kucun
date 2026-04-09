@@ -222,14 +222,16 @@ function InventoryRowView({
           </div>
         )}
       </TableCell>
-      <TableCell className="font-medium text-[hsl(var(--color-primary))]">
+      <TableCell className="font-medium whitespace-nowrap text-[hsl(var(--color-primary))]">
         {item.product?.code ? <CopyableText text={item.product.code} /> : '-'}
       </TableCell>
       <TableCell className="max-w-[260px] truncate font-medium">
         {item.product?.name || '-'}
       </TableCell>
-      <TableCell>{formattedSpecification}</TableCell>
-      <TableCell className="font-medium">
+      <TableCell className="whitespace-nowrap">
+        {formattedSpecification}
+      </TableCell>
+      <TableCell className="font-medium whitespace-nowrap">
         <div className="flex flex-col gap-0.5">
           {packaging > 0 ? (
             <>
@@ -249,21 +251,21 @@ function InventoryRowView({
           ) : null}
         </div>
       </TableCell>
-      <TableCell className="font-mono">
+      <TableCell className="font-mono whitespace-nowrap">
         {item.batchNumber ? <CopyableText text={item.batchNumber} /> : '-'}
       </TableCell>
-      <TableCell className="text-right font-semibold text-[hsl(var(--color-success))] tabular-nums">
+      <TableCell className="text-right font-semibold whitespace-nowrap text-[hsl(var(--color-success))] tabular-nums">
         {quantityDisplay}
       </TableCell>
-      <TableCell className="text-right font-medium text-[hsl(var(--color-warning))] tabular-nums">
+      <TableCell className="text-right font-medium whitespace-nowrap text-[hsl(var(--color-warning))] tabular-nums">
         {reservedDisplay}
       </TableCell>
-      <TableCell className="text-right font-medium text-[hsl(var(--color-primary))] tabular-nums">
+      <TableCell className="text-right font-medium whitespace-nowrap text-[hsl(var(--color-primary))] tabular-nums">
         {availableDisplay}
       </TableCell>
       {/* 成本信息（仅财务权限可见）- 合并显示 */}
       {hasFinancePermission && (
-        <TableCell className="text-right tabular-nums">
+        <TableCell className="text-right whitespace-nowrap tabular-nums">
           {item.unitCost !== null && item.unitCost !== undefined ? (
             <div className="space-y-0.5">
               <div className="text-xs text-[hsl(var(--color-text-secondary))]">
@@ -278,11 +280,11 @@ function InventoryRowView({
           )}
         </TableCell>
       )}
-      <TableCell>{stockBadge}</TableCell>
-      <TableCell className="text-xs">
+      <TableCell className="whitespace-nowrap">{stockBadge}</TableCell>
+      <TableCell className="text-xs whitespace-nowrap">
         <RelativeTime date={item.updatedAt} />
       </TableCell>
-      <TableCell>
+      <TableCell className="whitespace-nowrap">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0">

@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client';
 import { ZodError } from 'zod';
 
 import { env } from '@/lib/env';
+import { formatDuplicateFieldMessage } from '@/lib/utils/user-friendly-error';
 
 /**
  * 统一错误类型枚举
@@ -162,7 +163,7 @@ export function handlePrismaError(error: unknown): ApiError {
     if (error.code === 'P2002') {
       const target = error.meta?.target;
       const fields = Array.isArray(target) ? target : target ? [target] : [];
-      return ApiError.badRequest(`${fields.join(', ')} 已存在`, {
+      return ApiError.badRequest(formatDuplicateFieldMessage(fields), {
         code: error.code,
         fields,
       });

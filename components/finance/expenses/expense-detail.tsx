@@ -32,8 +32,7 @@ interface ExpenseDetailClientProps {
 }
 
 const ExpenseDeleteDialog = dynamic(
-  () =>
-    import('./expense-delete-dialog').then(mod => mod.ExpenseDeleteDialog),
+  () => import('./expense-delete-dialog').then(mod => mod.ExpenseDeleteDialog),
   {
     ssr: false,
     loading: () => (
@@ -142,7 +141,7 @@ export function ExpenseDetailClient({
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* 操作按钮区域 */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="ghost"
@@ -187,11 +186,11 @@ export function ExpenseDetailClient({
       {/* 基本信息卡片 */}
       <Card className="card-shadow-medium border border-[hsl(var(--color-border-primary))]">
         <CardHeader className="bg-[hsl(var(--color-bg-secondary))]">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="text-xl font-bold text-[hsl(var(--color-text-primary))]">
               基本信息
             </CardTitle>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Badge variant={getExpenseTypeBadgeVariant(expense.expenseType)}>
                 {EXPENSE_TYPE_LABELS[expense.expenseType]}
               </Badge>
@@ -203,15 +202,15 @@ export function ExpenseDetailClient({
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6 pt-6">
+        <CardContent className="space-y-4 pt-4 sm:space-y-6 sm:pt-6">
           {/* 费用金额 - 突出显示 */}
-          <div className="rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 p-6 dark:from-green-950/20 dark:to-emerald-950/20">
+          <div className="rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 p-4 sm:p-6 dark:from-green-950/20 dark:to-emerald-950/20">
             <div className="mb-2 text-sm font-medium text-[hsl(var(--color-text-secondary))]">
               费用金额
             </div>
             <div className="flex items-center gap-3">
               <ChineseYuan className="h-6 w-6 text-green-600" />
-              <div className="text-4xl font-bold text-green-600">
+              <div className="text-3xl font-bold text-green-600 sm:text-4xl">
                 {formatCurrency(expense.expenseAmount)}
               </div>
             </div>

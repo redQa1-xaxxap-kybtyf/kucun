@@ -11,6 +11,7 @@ import type {
   CustomerUpdateInput,
 } from '@/lib/types/customer';
 import { csrfFetch } from '@/lib/utils/csrf';
+import { createFriendlyApiError } from '@/lib/utils/user-friendly-error';
 
 /**
  * API基础URL
@@ -51,7 +52,7 @@ export async function getCustomers(
   const response = await fetch(`${API_BASE}?${searchParams.toString()}`);
 
   if (!response.ok) {
-    throw new Error(`获取客户列表失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '获取客户列表失败');
   }
 
   const result = await response.json();
@@ -77,7 +78,7 @@ export async function getCustomer(id: string): Promise<Customer> {
     if (response.status === 404) {
       throw new Error('客户不存在');
     }
-    throw new Error(`获取客户详情失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '获取客户详情失败');
   }
 
   const data: ApiResponse<Customer> = await response.json();
@@ -108,7 +109,7 @@ export async function createCustomer(
   });
 
   if (!response.ok) {
-    throw new Error(`创建客户失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '创建客户失败');
   }
 
   const data: ApiResponse<Customer> = await response.json();
@@ -143,7 +144,7 @@ export async function updateCustomer(
     if (response.status === 404) {
       throw new Error('客户不存在');
     }
-    throw new Error(`更新客户失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '更新客户失败');
   }
 
   const data: ApiResponse<Customer> = await response.json();
@@ -171,7 +172,7 @@ export async function deleteCustomer(id: string): Promise<void> {
     if (response.status === 404) {
       throw new Error('客户不存在');
     }
-    throw new Error(`删除客户失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '删除客户失败');
   }
 
   const data: ApiResponse<void> = await response.json();
@@ -209,7 +210,7 @@ export async function searchCustomersLightweight(
   });
 
   if (!response.ok) {
-    throw new Error(`搜索客户失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '搜索客户失败');
   }
 
   const data: ApiResponse<Customer[]> = await response.json();

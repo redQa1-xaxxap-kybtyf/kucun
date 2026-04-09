@@ -83,6 +83,46 @@ function PaymentItem({ payment }: { payment: PaymentRecord }) {
   );
 }
 
+function ReceivableConfirmationNote({
+  payment,
+}: {
+  payment: PaymentRecord;
+}) {
+  const status =
+    STATUS_MAP[payment.status as keyof typeof STATUS_MAP] ?? STATUS_MAP.pending;
+
+  return (
+    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-black tracking-widest text-slate-500 uppercase">
+              系统应收建账
+            </span>
+            <Badge variant={status.variant} className="rounded-lg px-2 py-0.5 font-bold">
+              {status.label}
+            </Badge>
+          </div>
+          <p className="text-sm font-medium text-slate-700">
+            {payment.paymentNumber}
+          </p>
+          <p className="text-[11px] text-slate-500">
+            该记录仅用于确认订单应收已建立，不代表客户已付款。
+          </p>
+          <p className="text-[10px] text-slate-400">
+            建账时间：{payment.paymentDate ? formatDateTime(payment.paymentDate) : '—'}
+          </p>
+          {payment.remarks && (
+            <p className="text-[10px] text-slate-400 italic">
+              备注：{payment.remarks}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PaymentsSummary({ order }: { order: SalesOrderDetail }) {
   const receivableEnabled = shouldCreateReceivableForOrder(order);
   const receivableTotal = getSalesOrderReceivableTotal(order);
@@ -179,11 +219,11 @@ export function PaymentsCard({ order }: { order: SalesOrderDetail }) {
           <div className="space-y-1.5">
             <CardTitle className="flex items-center gap-2.5 text-sm font-black tracking-widest text-slate-900 uppercase">
               <Receipt className="h-4 w-4 text-blue-600" />
-              收款往来明细
+              真实收款与核销明细
             </CardTitle>
             <p className="text-[11px] font-medium text-slate-500">
               {receivableEnabled
-                ? '跟进订单生命周期内的所有现金及转账核销记录。'
+                ? '只展示真实收款与预收冲抵，系统应收建账会单独提示。'
                 : `${SAMPLE_ORDER_LABEL}当前按免费结算，不会进入客户应收。`}
             </p>
           </div>
@@ -198,12 +238,19 @@ export function PaymentsCard({ order }: { order: SalesOrderDetail }) {
 
       <CardContent className="space-y-5">
         <PaymentsSummary order={order} />
+        {order.receivableConfirmationRecord && (
+          <ReceivableConfirmationNote
+            payment={order.receivableConfirmationRecord}
+          />
+        )}
 
         {!hasPayments ? (
           <div className="text-muted-foreground flex flex-col items-center justify-center rounded-2xl border border-dashed border-blue-200 bg-slate-50 py-12 text-center text-sm">
             <Wallet className="mb-2 h-10 w-10 text-blue-500" />
             {receivableEnabled
-              ? '暂无收款记录，可前往财务模块补录。'
+              ? order.receivableConfirmationRecord
+                ? '暂无真实收款记录，当前仅完成系统应收建账。'
+                : '暂无收款记录，可前往财务模块补录。'
               : '免费样品单默认不生成收款记录。'}
           </div>
         ) : (

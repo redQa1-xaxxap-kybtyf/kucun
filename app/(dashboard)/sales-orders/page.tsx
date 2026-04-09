@@ -50,10 +50,11 @@ export default async function SalesOrdersPage({
   const sortBy =
     (params.sortBy as
       | 'orderNumber'
+      | 'orderDate'
       | 'createdAt'
       | 'updatedAt'
       | 'totalAmount'
-      | 'status') || 'createdAt';
+      | 'status') || 'orderDate';
   const sortOrder = (params.sortOrder as 'asc' | 'desc') || 'desc';
   const startDate = (params.startDate as string) || undefined;
   const endDate = (params.endDate as string) || undefined;
@@ -66,6 +67,7 @@ export default async function SalesOrdersPage({
     search,
     status,
     customerId,
+    userId: (params.userId as string) || '',
     sortBy,
     sortOrder,
     startDate,

@@ -99,6 +99,7 @@ export interface SalesOrder {
   prepaymentAmount?: number; // 预收款冲抵金额
 
   remarks?: string;
+  orderDate?: string;
   shippedAt?: string;
   createdAt: string;
   updatedAt: string;
@@ -132,6 +133,7 @@ export interface SalesOrderQueryParams {
   search?: string;
   sortBy?:
     | 'orderNumber'
+    | 'orderDate'
     | 'createdAt'
     | 'updatedAt'
     | 'totalAmount'
@@ -177,6 +179,7 @@ export interface SalesOrderCreateInput {
   status?: SalesOrderStatus;
   orderType?: SalesOrderType;
   transferMode?: TransferFulfillmentMode;
+  orderDate?: string;
   isSampleOrder?: boolean;
   sampleSettlementType?: SampleSettlementType;
   supplierId?: string;
@@ -196,6 +199,7 @@ export interface SalesOrderUpdateInput {
   status?: SalesOrderStatus;
   orderType?: SalesOrderType;
   transferMode?: TransferFulfillmentMode;
+  orderDate?: string;
   isSampleOrder?: boolean;
   sampleSettlementType?: SampleSettlementType;
   supplierId?: string;
@@ -327,6 +331,7 @@ export const SALES_ORDER_STATUS_TRANSITIONS: Record<
 
 // 排序选项
 export const SALES_ORDER_SORT_OPTIONS = [
+  { value: 'orderDate', label: '销售日期' },
   { value: 'createdAt', label: '创建时间' },
   { value: 'updatedAt', label: '更新时间' },
   { value: 'orderNumber', label: '订单号' },
@@ -340,6 +345,7 @@ export const SALES_ORDER_FIELD_LABELS = {
   customer: '客户',
   user: '销售员',
   status: '订单状态',
+  orderDate: '销售日期',
   transferMode: '调货履约模式',
   roundingAdjustment: '抹零金额',
   totalAmount: '订单金额',

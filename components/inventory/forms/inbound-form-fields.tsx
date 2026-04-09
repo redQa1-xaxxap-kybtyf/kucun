@@ -47,8 +47,11 @@ function parseOptionalNumber(value: string): number | undefined {
 }
 
 export function InboundQuantityFields({ form }: InboundFormFieldsProps) {
+  const reason = form.watch('reason');
+  const isPurchase = reason === 'purchase';
+
   return (
-    <div className="grid grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
       {/* 入库数量 */}
       <FormField
         control={form.control}
@@ -56,7 +59,7 @@ export function InboundQuantityFields({ form }: InboundFormFieldsProps) {
         render={({ field }) => (
           <FormItem>
             <FormLabel className="text-sm font-semibold text-gray-900">
-              入库数量 *
+              {isPurchase ? '到货数量 *' : '入库数量 *'}
             </FormLabel>
             <FormControl>
               <Input
@@ -74,6 +77,11 @@ export function InboundQuantityFields({ form }: InboundFormFieldsProps) {
                 }
               />
             </FormControl>
+            {isPurchase ? (
+              <FormDescription className="text-xs text-gray-500">
+                先填到货总量；如有破损，系统会自动扣减并计算合格入库片数。
+              </FormDescription>
+            ) : null}
             <FormMessage />
           </FormItem>
         )}
@@ -86,7 +94,7 @@ export function InboundQuantityFields({ form }: InboundFormFieldsProps) {
         render={({ field }) => (
           <FormItem>
             <FormLabel className="text-sm font-semibold text-gray-900">
-              入库单位 *
+              录入单位 *
             </FormLabel>
             <Select onValueChange={field.onChange} defaultValue={field.value}>
               <FormControl>
@@ -114,7 +122,7 @@ export function InboundQuantityFields({ form }: InboundFormFieldsProps) {
         render={({ field }) => (
           <FormItem>
             <FormLabel className="text-sm font-medium text-gray-600">
-              最终片数
+              {isPurchase ? '合格入库片数' : '最终入库片数'}
             </FormLabel>
             <FormControl>
               <Input
@@ -135,37 +143,51 @@ export function InboundQuantityFields({ form }: InboundFormFieldsProps) {
 }
 
 export function InboundSpecificationFields({ form }: InboundFormFieldsProps) {
+  const inputUnit = form.watch('inputUnit');
+  const requiresPiecesPerUnit = inputUnit === 'units';
+
   return (
-    <div className="grid grid-cols-2 gap-4">
-      {/* 每件片数 */}
-      <FormField
-        control={form.control}
-        name="piecesPerUnit"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel className="text-sm font-semibold text-gray-900">
-              装箱数 *
-            </FormLabel>
-            <FormControl>
-              <Input
-                type="number"
-                min="1"
-                step="1"
-                placeholder="请输入装箱数"
-                className="h-9"
-                name={field.name}
-                ref={field.ref}
-                value={field.value ?? ''}
-                onBlur={field.onBlur}
-                onChange={event =>
-                  field.onChange(parseOptionalNumber(event.target.value))
-                }
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      {requiresPiecesPerUnit ? (
+        <FormField
+          control={form.control}
+          name="piecesPerUnit"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-sm font-semibold text-gray-900">
+                装箱数 *
+              </FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  min="1"
+                  step="1"
+                  placeholder="请输入每件多少片"
+                  className="h-9"
+                  name={field.name}
+                  ref={field.ref}
+                  value={field.value ?? ''}
+                  onBlur={field.onBlur}
+                  onChange={event =>
+                    field.onChange(parseOptionalNumber(event.target.value))
+                  }
+                />
+              </FormControl>
+              <FormDescription className="text-xs text-gray-500">
+                当前按件录入，系统需要用装箱数折算成片数。
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      ) : (
+        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/80 p-4">
+          <p className="text-sm font-semibold text-slate-700">装箱数</p>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            当前按片录入，不需要填写装箱数。需要按件录入时，再把上方录入单位切换为“件”。
+          </p>
+        </div>
+      )}
 
       {/* 每件重量 */}
       <FormField
@@ -173,15 +195,15 @@ export function InboundSpecificationFields({ form }: InboundFormFieldsProps) {
         name="weight"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="text-sm font-black text-slate-700">
-              每件重量 (kg) *
+            <FormLabel className="text-sm font-semibold text-slate-700">
+              每件重量 (kg)
             </FormLabel>
             <FormControl>
               <Input
                 type="number"
                 min="0.01"
                 step="0.01"
-                placeholder="请输入每件重量"
+                placeholder="可选，不填也能提交"
                 className="h-9"
                 name={field.name}
                 ref={field.ref}
@@ -221,7 +243,7 @@ export function InboundReasonField({ form }: InboundFormFieldsProps) {
       render={({ field }) => (
         <FormItem>
           <FormLabel className="text-sm font-semibold text-gray-900">
-            入库原因 *
+            入库类型 *
           </FormLabel>
           <Select onValueChange={field.onChange} defaultValue={field.value}>
             <FormControl>
@@ -251,7 +273,7 @@ export function InboundCostField({ form }: InboundFormFieldsProps) {
       name="unitCost"
       render={({ field }) => (
         <FormItem>
-          <FormLabel className="text-sm font-black text-slate-700">
+          <FormLabel className="text-sm font-semibold text-slate-700">
             单位成本 (元/片) *
           </FormLabel>
           <FormControl>
@@ -271,7 +293,7 @@ export function InboundCostField({ form }: InboundFormFieldsProps) {
             />
           </FormControl>
           <FormDescription className="text-xs text-gray-500">
-            请填写每片的成本。例如：每件100元，装箱数10，则单位成本为10元
+            按合格入库片数自动计算本次入库金额。
           </FormDescription>
           <FormMessage />
         </FormItem>
@@ -316,6 +338,10 @@ export function InboundSupplierField({ form }: InboundFormFieldsProps) {
 export function InboundTotalCostField({ form }: InboundFormFieldsProps) {
   const watchedQuantity = form.watch('quantity');
   const watchedUnitCost = form.watch('unitCost');
+  const watchedReason = form.watch('reason');
+  const watchedDamagedQuantity = form.watch('damagedQuantity') ?? 0;
+  const hasPurchaseDamage =
+    watchedReason === 'purchase' && watchedDamagedQuantity > 0;
 
   const totalCost = useMemo(() => {
     if (!watchedQuantity || !watchedUnitCost) return 0;
@@ -328,8 +354,8 @@ export function InboundTotalCostField({ form }: InboundFormFieldsProps) {
       name="totalCost"
       render={() => (
         <FormItem>
-          <FormLabel className="text-sm font-black text-slate-500">
-            合规总价 (元)
+          <FormLabel className="text-sm font-semibold text-slate-500">
+            {hasPurchaseDamage ? '合格入库金额 (元)' : '预计入库金额 (元)'}
           </FormLabel>
           <FormControl>
             <Input
@@ -340,7 +366,9 @@ export function InboundTotalCostField({ form }: InboundFormFieldsProps) {
             />
           </FormControl>
           <FormDescription className="text-xs text-gray-500">
-            自动计算：数量 × 单价
+            {hasPurchaseDamage
+              ? '系统按合格入库片数计算，破损金额单独参考。'
+              : '系统自动计算：入库片数 × 单位成本。'}
           </FormDescription>
         </FormItem>
       )}
@@ -348,9 +376,7 @@ export function InboundTotalCostField({ form }: InboundFormFieldsProps) {
   );
 }
 
-export function InboundPurchaseDamageSection({
-  form,
-}: InboundFormFieldsProps) {
+export function InboundPurchaseDamageSection({ form }: InboundFormFieldsProps) {
   const reason = form.watch('reason');
   const inputUnit = form.watch('inputUnit');
   const acceptedQuantity = form.watch('quantity') ?? 0;
@@ -377,13 +403,10 @@ export function InboundPurchaseDamageSection({
   }
 
   return (
-    <div className="space-y-4 rounded-2xl border border-amber-200 bg-amber-50/70 p-6">
-      <div className="rounded-2xl border border-amber-200 bg-white/70 p-4">
-        <p className="text-sm font-black text-amber-900">采购到货破损登记</p>
-        <p className="mt-1 text-xs font-medium text-amber-800">
-          这里只登记到货当下已发现的破损。系统只把上方“入库数量”写入库存，破损数量仅用于采购追责与财务跟踪。
-        </p>
-      </div>
+    <div className="space-y-4 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 sm:p-5">
+      <p className="text-sm leading-6 font-medium text-amber-900">
+        这里只登记收货当场已经确认的破损。系统会自动从到货数量中扣减破损数量，库存只记合格数量。
+      </p>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <FormField
@@ -411,7 +434,8 @@ export function InboundPurchaseDamageSection({
                 />
               </FormControl>
               <FormDescription className="text-xs text-amber-700">
-                与上方入库单位保持一致，当前按“{inputUnit === 'units' ? '件' : '片'}”录入
+                与上方录入单位保持一致，当前按“
+                {inputUnit === 'units' ? '件' : '片'}”填写。
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -476,7 +500,7 @@ export function InboundPurchaseDamageSection({
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
         <div className="rounded-xl border border-white/70 bg-white/80 p-4">
           <p className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
             合格入库
@@ -510,12 +534,12 @@ export function InboundPurchaseDamageSection({
         name="damageRemarks"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="text-sm font-black text-slate-700">
+            <FormLabel className="text-sm font-semibold text-slate-700">
               破损说明
             </FormLabel>
             <FormControl>
               <Textarea
-                placeholder="例如：角裂 2 件，报工厂补偿；外箱破损 1 件，不报工厂。"
+                placeholder="例如：外箱破损 1 件，报工厂赔付。"
                 className="min-h-[88px] resize-none border-amber-200 bg-white/80"
                 {...field}
               />
@@ -530,7 +554,7 @@ export function InboundPurchaseDamageSection({
 
 export function InboundOptionalFields({ form }: InboundFormFieldsProps) {
   return (
-    <div className="grid grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       {/* 批次号 - ✅ 修复：设为必填 */}
       <FormField
         control={form.control}

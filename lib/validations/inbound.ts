@@ -8,6 +8,7 @@ import {
   COST_PRICE_MAX,
   COST_PRICE_MAX_LABEL,
   hasAtMostCostPriceDecimals,
+  roundCostPrice,
 } from '@/lib/utils/cost-price';
 
 export type { InboundReason } from '@/lib/types/inbound';
@@ -31,6 +32,73 @@ export const inboundDamageHandlingSchema = z.enum([
   'supplier_claim',
   'internal_loss',
 ] as const);
+
+type InboundQuantityCalculationInput = {
+  reason: string;
+  inputQuantity?: number;
+  damagedInputQuantity?: number;
+  inputUnit: z.infer<typeof inboundUnitSchema>;
+  piecesPerUnit?: number;
+};
+
+function convertInputQuantityToPieces(
+  quantity: number | undefined,
+  inputUnit: z.infer<typeof inboundUnitSchema>,
+  piecesPerUnit?: number
+): number | undefined {
+  if (quantity === undefined || quantity === null || quantity <= 0) {
+    return undefined;
+  }
+
+  if (inputUnit === 'pieces') {
+    return quantity;
+  }
+
+  if (
+    inputUnit === 'units' &&
+    typeof piecesPerUnit === 'number' &&
+    piecesPerUnit > 0
+  ) {
+    return quantity * piecesPerUnit;
+  }
+
+  return undefined;
+}
+
+function resolveExpectedDamagedQuantity(
+  data: Pick<
+    InboundQuantityCalculationInput,
+    'damagedInputQuantity' | 'inputUnit' | 'piecesPerUnit'
+  >
+): number | undefined {
+  return convertInputQuantityToPieces(
+    data.damagedInputQuantity,
+    data.inputUnit,
+    data.piecesPerUnit
+  );
+}
+
+function resolveExpectedInboundQuantity(
+  data: InboundQuantityCalculationInput
+): number | undefined {
+  const inputQuantityInPieces = convertInputQuantityToPieces(
+    data.inputQuantity,
+    data.inputUnit,
+    data.piecesPerUnit
+  );
+
+  if (inputQuantityInPieces === undefined) {
+    return undefined;
+  }
+
+  if (data.reason !== 'purchase') {
+    return inputQuantityInPieces;
+  }
+
+  return (
+    inputQuantityInPieces - (resolveExpectedDamagedQuantity(data) ?? 0)
+  );
+}
 
 // 创建入库记录验证规则
 export const createInboundSchema = z
@@ -249,8 +317,8 @@ export const createInboundSchema = z
   .refine(
     data =>
       data.reason !== 'purchase' ||
-      ((Boolean(data.purchaseOrderId) && Boolean(data.purchaseOrderItemId)) ||
-        (!data.purchaseOrderId && !data.purchaseOrderItemId)),
+      (Boolean(data.purchaseOrderId) && Boolean(data.purchaseOrderItemId)) ||
+      (!data.purchaseOrderId && !data.purchaseOrderItemId),
     {
       message: '采购入库必须关联采购订单与明细',
       path: ['purchaseOrderId'],
@@ -267,14 +335,14 @@ export const createInboundSchema = z
   )
   .refine(
     data =>
-      data.inputUnit === 'units'
-        ? typeof data.piecesPerUnit === 'number' &&
-          typeof data.inputQuantity === 'number' &&
-          data.quantity === data.inputQuantity * data.piecesPerUnit
-        : typeof data.inputQuantity === 'number' &&
-          data.quantity === data.inputQuantity,
+      (() => {
+        const expectedQuantity = resolveExpectedInboundQuantity(data);
+        return expectedQuantity === undefined
+          ? true
+          : data.quantity === expectedQuantity;
+      })(),
     {
-      message: '最终片数与录入数量/装箱数不一致，请刷新后重试',
+      message: '最终片数与到货数量/装箱数/破损数量不一致，请刷新后重试',
       path: ['quantity'],
     }
   )
@@ -290,14 +358,36 @@ export const createInboundSchema = z
     data =>
       (data.damagedInputQuantity ?? 0) <= 0
         ? (data.damagedQuantity ?? 0) <= 0
-        : data.inputUnit === 'units'
-          ? typeof data.piecesPerUnit === 'number' &&
-            data.damagedQuantity ===
-              (data.damagedInputQuantity ?? 0) * data.piecesPerUnit
-          : data.damagedQuantity === data.damagedInputQuantity,
+        : (() => {
+            const expectedDamagedQuantity = resolveExpectedDamagedQuantity(data);
+            return expectedDamagedQuantity === undefined
+              ? true
+              : data.damagedQuantity === expectedDamagedQuantity;
+          })(),
     {
       message: '破损片数与录入数量/装箱数不一致，请刷新后重试',
       path: ['damagedQuantity'],
+    }
+  )
+  .refine(
+    data =>
+      data.reason !== 'purchase' ||
+      (() => {
+        const inputQuantityInPieces = convertInputQuantityToPieces(
+          data.inputQuantity,
+          data.inputUnit,
+          data.piecesPerUnit
+        );
+        const damagedQuantityInPieces = resolveExpectedDamagedQuantity(data) ?? 0;
+
+        return (
+          inputQuantityInPieces === undefined ||
+          damagedQuantityInPieces <= inputQuantityInPieces
+        );
+      })(),
+    {
+      message: '到货破损数量不能大于到货数量',
+      path: ['damagedInputQuantity'],
     }
   );
 
@@ -308,6 +398,14 @@ export const updateInboundSchema = z.object({
     .min(1, '数量必须大于等于1片')
     .max(999999, '数量不能超过999999片')
     .int('数量必须是整数')
+    .optional(),
+
+  unitCost: z
+    .number()
+    .min(0, '单位成本必须大于等于0')
+    .max(COST_PRICE_MAX, `单位成本不能超过 ${COST_PRICE_MAX_LABEL}`)
+    .refine(hasAtMostCostPriceDecimals, '单位成本最多保留3位小数')
+    .transform(value => roundCostPrice(value))
     .optional(),
 
   reason: inboundReasonSchema.optional(),
@@ -433,6 +531,10 @@ export const inboundQuerySchema = z.object({
 
 // 批量入库验证规则
 export const batchInboundSchema = z.object({
+  batchIdempotencyKey: z
+    .string()
+    .min(1, '批量幂等性键不能为空')
+    .max(100, '批量幂等性键过长'),
   records: z
     .array(createInboundSchema)
     .min(1, '至少需要一条入库记录')
@@ -701,10 +803,10 @@ export const inboundFormSchema = z
   .refine(
     data =>
       data.reason !== 'purchase' ||
-      (((data.purchaseOrderId ?? '').trim().length > 0 &&
+      ((data.purchaseOrderId ?? '').trim().length > 0 &&
         (data.purchaseOrderItemId ?? '').trim().length > 0) ||
-        ((data.purchaseOrderId ?? '').trim().length === 0 &&
-          (data.purchaseOrderItemId ?? '').trim().length === 0)),
+      ((data.purchaseOrderId ?? '').trim().length === 0 &&
+        (data.purchaseOrderItemId ?? '').trim().length === 0),
     {
       message: '采购入库必须关联采购订单与明细',
       path: ['purchaseOrderId'],
@@ -732,14 +834,14 @@ export const inboundFormSchema = z
   )
   .refine(
     data =>
-      data.inputUnit === 'units'
-        ? typeof data.piecesPerUnit === 'number' &&
-          typeof data.inputQuantity === 'number' &&
-          data.quantity === data.inputQuantity * data.piecesPerUnit
-        : typeof data.inputQuantity === 'number' &&
-          data.quantity === data.inputQuantity,
+      (() => {
+        const expectedQuantity = resolveExpectedInboundQuantity(data);
+        return expectedQuantity === undefined
+          ? true
+          : data.quantity === expectedQuantity;
+      })(),
     {
-      message: '最终片数与录入数量/装箱数不一致，请刷新后重试',
+      message: '最终片数与到货数量/装箱数/破损数量不一致，请刷新后重试',
       path: ['quantity'],
     }
   )
@@ -755,14 +857,36 @@ export const inboundFormSchema = z
     data =>
       (data.damagedInputQuantity ?? 0) <= 0
         ? (data.damagedQuantity ?? 0) <= 0
-        : data.inputUnit === 'units'
-          ? typeof data.piecesPerUnit === 'number' &&
-            data.damagedQuantity ===
-              (data.damagedInputQuantity ?? 0) * data.piecesPerUnit
-          : data.damagedQuantity === data.damagedInputQuantity,
+        : (() => {
+            const expectedDamagedQuantity = resolveExpectedDamagedQuantity(data);
+            return expectedDamagedQuantity === undefined
+              ? true
+              : data.damagedQuantity === expectedDamagedQuantity;
+          })(),
     {
       message: '破损片数与录入数量/装箱数不一致，请刷新后重试',
       path: ['damagedQuantity'],
+    }
+  )
+  .refine(
+    data =>
+      data.reason !== 'purchase' ||
+      (() => {
+        const inputQuantityInPieces = convertInputQuantityToPieces(
+          data.inputQuantity,
+          data.inputUnit,
+          data.piecesPerUnit
+        );
+        const damagedQuantityInPieces = resolveExpectedDamagedQuantity(data) ?? 0;
+
+        return (
+          inputQuantityInPieces === undefined ||
+          damagedQuantityInPieces <= inputQuantityInPieces
+        );
+      })(),
+    {
+      message: '到货破损数量不能大于到货数量',
+      path: ['damagedInputQuantity'],
     }
   );
 

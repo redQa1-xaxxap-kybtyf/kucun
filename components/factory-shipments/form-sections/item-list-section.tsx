@@ -21,7 +21,7 @@ interface ItemListSectionProps {
 
 /**
  * 厂家发货订单产品明细列表
- * 使用表格形式展示和编辑产品明细
+ * 使用分行录单形式展示和编辑产品明细
  */
 export function ItemListSection({
   form,
@@ -55,7 +55,7 @@ export function ItemListSection({
           产品明细
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-8">
+      <CardContent className="p-5 lg:p-6 xl:p-8">
         <ItemsTable
           form={form}
           products={products}

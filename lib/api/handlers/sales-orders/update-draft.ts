@@ -9,6 +9,7 @@ import {
   ensureCompanyExpenses,
   type CompanyFeeItemLike,
 } from '@/lib/services/expense-service';
+import { parseLocalDateString } from '@/lib/utils/datetime';
 import { DEFAULT_SAMPLE_SETTLEMENT_TYPE } from '@/lib/utils/sample-order';
 
 import {
@@ -136,6 +137,10 @@ export async function updateSalesOrderDraft(
         status: updateData.status || 'draft',
         orderType,
         transferMode,
+        orderDate:
+          updateData.orderDate === undefined
+            ? undefined
+            : parseLocalDateString(updateData.orderDate) ?? undefined,
         isSampleOrder:
           updateData.isSampleOrder === undefined
             ? undefined
@@ -258,6 +263,7 @@ function selectUpdatedOrder() {
     status: true,
     orderType: true,
     transferMode: true,
+    orderDate: true,
     isSampleOrder: true,
     sampleSettlementType: true,
     supplierId: true,

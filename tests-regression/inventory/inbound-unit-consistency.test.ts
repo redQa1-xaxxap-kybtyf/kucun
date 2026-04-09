@@ -57,7 +57,7 @@ describe('inbound unit consistency（件/片口径防回归）', () => {
       expect.arrayContaining([
         expect.objectContaining({
           path: ['quantity'],
-          message: '最终片数与录入数量/装箱数不一致，请刷新后重试',
+          message: '最终片数与到货数量/装箱数/破损数量不一致，请刷新后重试',
         }),
       ])
     );
@@ -87,7 +87,7 @@ describe('inbound unit consistency（件/片口径防回归）', () => {
       expect.arrayContaining([
         expect.objectContaining({
           path: ['quantity'],
-          message: '最终片数与录入数量/装箱数不一致，请刷新后重试',
+          message: '最终片数与到货数量/装箱数/破损数量不一致，请刷新后重试',
         }),
       ])
     );

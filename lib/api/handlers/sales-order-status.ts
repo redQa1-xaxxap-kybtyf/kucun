@@ -626,7 +626,7 @@ async function executeOrderConfirmation(
             actualPaymentAmount: 0,
             roundingAmount: Number(roundingAdjustment.toFixed(2)),
             appliedAmount: 0,
-            paymentDate: new Date(),
+            paymentDate: existingOrder.orderDate ?? new Date(),
             status: 'pending',
             remarks: `系统自动生成：销售订单 ${order.orderNumber} 确认应收`,
           },
@@ -1045,6 +1045,10 @@ async function executeOrderStatusUpdateWithInventory(
             : localCostWithExpense;
 
           // 创建出库记录（使用事务内生成的单号 + FIFO成本）
+          const outboundReason = existingOrder.isSampleOrder
+            ? 'sample_outbound'
+            : 'sales_outbound';
+
           await tx.outboundRecord.create({
             data: {
               recordNumber: outboundRecordNumber,
@@ -1055,8 +1059,8 @@ async function executeOrderStatusUpdateWithInventory(
               quantity: outboundQuantity,
               unitCost: localUnitCostWithExpense ?? undefined,
               totalCost: localCostWithExpense ?? undefined,
-              reason: 'sales_outbound',
-              notes: `销售订单发货：${existingOrder.orderNumber}`,
+              reason: outboundReason,
+              notes: `${existingOrder.isSampleOrder ? '样品单' : '销售订单'}发货：${existingOrder.orderNumber}`,
               customerId: existingOrder.customerId,
               salesOrderId: existingOrder.id,
               operatorId: finalOperatorId,

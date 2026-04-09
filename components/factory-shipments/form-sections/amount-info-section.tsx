@@ -41,9 +41,9 @@ export function AmountInfoSection({ form }: AmountInfoSectionProps) {
             金额概览
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4 p-4 sm:space-y-6 sm:p-6">
+        <CardContent className="space-y-4 p-4 sm:space-y-6 lg:p-5 xl:p-6">
           {/* 金额统计概览 */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-4 md:gap-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:gap-4 xl:grid-cols-4">
             <div className="rounded-md border bg-[hsl(var(--color-bg-card))] p-3 sm:p-4">
               <p className="text-xs font-medium text-[hsl(var(--color-primary))]">
                 订单总金额
@@ -79,7 +79,7 @@ export function AmountInfoSection({ form }: AmountInfoSectionProps) {
           </div>
 
           {/* 金额输入表单 */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 md:gap-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-5 xl:grid-cols-3">
             {/* 订单总金额 */}
             <FormField
               control={form.control}
@@ -177,7 +177,7 @@ export function AmountInfoSection({ form }: AmountInfoSectionProps) {
             支付信息
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-6">
+        <CardContent className="p-5 lg:p-6">
           <div className="space-y-6">
             <FormField
               control={form.control}

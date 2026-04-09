@@ -10,11 +10,7 @@ import {
 } from '@tanstack/react-query';
 
 import { queryKeys } from '@/lib/queryKeys';
-import type {
-  ApiResponse,
-  ErrorResponse,
-  PaginatedResponse,
-} from '@/lib/types/api';
+import type { ApiResponse, PaginatedResponse } from '@/lib/types/api';
 import type {
   SalesOrder,
   SalesOrderCreateInput,
@@ -24,9 +20,7 @@ import type {
   SalesOrderUpdateInput,
 } from '@/lib/types/sales-order';
 import { csrfFetch } from '@/lib/utils/csrf';
-
-// API错误类型
-type ApiError = ErrorResponse;
+import { createFriendlyApiError } from '@/lib/utils/user-friendly-error';
 
 /**
  * API基础URL
@@ -65,7 +59,7 @@ export async function getSalesOrders(
   const response = await fetch(`${API_BASE}?${searchParams.toString()}`);
 
   if (!response.ok) {
-    throw new Error(`获取销售订单列表失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '获取销售订单列表失败');
   }
 
   const result = await response.json();
@@ -92,7 +86,7 @@ export async function getSalesOrder(id: string): Promise<SalesOrder> {
     if (response.status === 404) {
       throw new Error('销售订单不存在');
     }
-    throw new Error(`获取销售订单详情失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '获取销售订单详情失败');
   }
 
   const data: ApiResponse<SalesOrder> = await response.json();
@@ -122,21 +116,7 @@ export async function createSalesOrder(
   });
 
   if (!response.ok) {
-    // 优先解析API返回的错误消息，便于定位500错误
-    try {
-      const rawText = await response.text();
-      const json = JSON.parse(rawText);
-      const message =
-        (json?.error && (json.error.message || json.error)) ||
-        response.statusText ||
-        '创建销售订单失败';
-      throw new Error(message);
-    } catch {
-      // 非JSON响应
-      throw new Error(
-        `创建销售订单失败: ${response.status} ${response.statusText}`
-      );
-    }
+    throw await createFriendlyApiError(response, '创建销售订单失败');
   }
 
   const data: ApiResponse<SalesOrder> = await response.json();
@@ -166,10 +146,7 @@ export async function updateSalesOrder(
   });
 
   if (!response.ok) {
-    const errorData: ApiError = await response.json();
-    throw new Error(
-      errorData.error || `HTTP error! status: ${response.status}`
-    );
+    throw await createFriendlyApiError(response, '更新销售订单失败');
   }
 
   return response.json();
@@ -187,10 +164,7 @@ export async function deleteSalesOrder(
   });
 
   if (!response.ok) {
-    const errorData: ApiError = await response.json();
-    throw new Error(
-      errorData.error || `HTTP error! status: ${response.status}`
-    );
+    throw await createFriendlyApiError(response, '删除销售订单失败');
   }
 
   return response.json();
@@ -213,10 +187,7 @@ export async function updateSalesOrderStatus(payload: {
   });
 
   if (!response.ok) {
-    const errorData: ApiError = await response.json();
-    throw new Error(
-      errorData.error || `HTTP error! status: ${response.status}`
-    );
+    throw await createFriendlyApiError(response, '更新订单状态失败');
   }
 
   return response.json();
@@ -254,10 +225,7 @@ export async function getSalesOrderStats(params?: {
   });
 
   if (!response.ok) {
-    const errorData: ApiError = await response.json();
-    throw new Error(
-      errorData.error || `HTTP error! status: ${response.status}`
-    );
+    throw await createFriendlyApiError(response, '获取销售订单统计失败');
   }
 
   return response.json();
@@ -288,10 +256,7 @@ export async function getCustomerOrders(
   });
 
   if (!response.ok) {
-    const errorData: ApiError = await response.json();
-    throw new Error(
-      errorData.error || `HTTP error! status: ${response.status}`
-    );
+    throw await createFriendlyApiError(response, '获取客户历史订单失败');
   }
 
   const result = await response.json();
@@ -314,10 +279,7 @@ export async function copySalesOrder(
   });
 
   if (!response.ok) {
-    const errorData: ApiError = await response.json();
-    throw new Error(
-      errorData.error || `HTTP error! status: ${response.status}`
-    );
+    throw await createFriendlyApiError(response, '复制销售订单失败');
   }
 
   return response.json();
@@ -338,10 +300,7 @@ export async function batchUpdateSalesOrderStatus(
   });
 
   if (!response.ok) {
-    const errorData: ApiError = await response.json();
-    throw new Error(
-      errorData.error || `HTTP error! status: ${response.status}`
-    );
+    throw await createFriendlyApiError(response, '批量更新订单状态失败');
   }
 
   return response.json();
@@ -360,10 +319,7 @@ export async function batchDeleteSalesOrders(
   });
 
   if (!response.ok) {
-    const errorData: ApiError = await response.json();
-    throw new Error(
-      errorData.error || `HTTP error! status: ${response.status}`
-    );
+    throw await createFriendlyApiError(response, '批量删除订单失败');
   }
 
   return response.json();
@@ -406,7 +362,7 @@ export async function exportSalesOrders(
   });
 
   if (!response.ok) {
-    throw new Error(`导出失败: ${response.status}`);
+    throw await createFriendlyApiError(response, '导出销售订单失败');
   }
 
   return response.blob();
@@ -427,10 +383,7 @@ export async function getSalesOrderPrintData(id: string): Promise<
   });
 
   if (!response.ok) {
-    const errorData: ApiError = await response.json();
-    throw new Error(
-      errorData.error || `HTTP error! status: ${response.status}`
-    );
+    throw await createFriendlyApiError(response, '获取销售订单打印数据失败');
   }
 
   return response.json();

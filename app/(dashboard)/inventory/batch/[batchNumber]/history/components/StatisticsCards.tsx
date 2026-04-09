@@ -22,7 +22,7 @@ export function StatisticsCards({
   totalAdjustment,
 }: StatisticsCardsProps) {
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
       <Card className="card-shadow-light border border-[hsl(var(--color-border-primary))]">
         <CardContent className="p-4">
           <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">

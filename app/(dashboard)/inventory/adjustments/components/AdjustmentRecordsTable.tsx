@@ -138,8 +138,8 @@ export function AdjustmentRecordsTable({
   return (
     <div className="overflow-hidden rounded-xl border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm">
       {/* 桌面端表格视图 */}
-      <div className="hidden overflow-x-auto md:block">
-        <Table>
+      <div className="hidden overflow-x-auto xl:block">
+        <Table className="min-w-[1080px] [&_th]:whitespace-nowrap">
           <TableHeader className="card-shadow-light">
             <TableRow>
               <TableHead>产品编码</TableHead>
@@ -169,25 +169,25 @@ export function AdjustmentRecordsTable({
                   key={adjustment.id}
                   className="h-10 border-b border-[hsl(var(--color-border-primary))] transition-colors hover:bg-[hsl(var(--color-primary-light))]"
                 >
-                  <TableCell className="text-xs font-medium text-[hsl(var(--color-text-primary))]">
+                  <TableCell className="text-xs font-medium whitespace-nowrap text-[hsl(var(--color-text-primary))]">
                     {adjustment.product?.code || '-'}
                   </TableCell>
-                  <TableCell className="text-xs text-[hsl(var(--color-text-primary))]">
+                  <TableCell className="min-w-[180px] text-xs text-[hsl(var(--color-text-primary))]">
                     {adjustment.product?.name || '未知产品'}
                   </TableCell>
-                  <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
+                  <TableCell className="text-xs whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
                     {formatSpecification(adjustment.product?.specification) ||
                       '-'}
                   </TableCell>
-                  <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
+                  <TableCell className="text-xs whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
                     {adjustment.batchNumber || '-'}
                   </TableCell>
-                  <TableCell className="text-center text-xs text-[hsl(var(--color-text-secondary))]">
+                  <TableCell className="text-center text-xs whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
                     {adjustment.product?.piecesPerUnit
                       ? `${adjustment.product.piecesPerUnit}片/件`
                       : '-'}
                   </TableCell>
-                  <TableCell className="text-xs text-[hsl(var(--color-text-primary))]">
+                  <TableCell className="text-xs whitespace-nowrap text-[hsl(var(--color-text-primary))]">
                     <div className="flex flex-col gap-0.5">
                       {formatAdjustQuantity(adjustment.adjustQuantity)}
                       <span className="text-xs text-[hsl(var(--color-text-secondary))]">
@@ -203,18 +203,18 @@ export function AdjustmentRecordsTable({
                       </span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-xs text-[hsl(var(--color-text-primary))]">
+                  <TableCell className="text-xs whitespace-nowrap text-[hsl(var(--color-text-primary))]">
                     <Badge variant="info" className="text-xs font-medium">
                       {getAdjustmentReasonLabel(adjustment.reason)}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
+                  <TableCell className="text-xs whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
                     <div className="flex items-center gap-1 text-[hsl(var(--color-text-secondary))]">
                       <User className="h-3 w-3" />
                       {formatDate(adjustment.createdAt)}
                     </div>
                   </TableCell>
-                  <TableCell className="text-xs">
+                  <TableCell className="text-xs whitespace-nowrap">
                     {onViewDetail && (
                       <Button
                         variant="ghost"
@@ -234,7 +234,7 @@ export function AdjustmentRecordsTable({
       </div>
 
       {/* 移动端卡片视图 */}
-      <div className="space-y-3 p-3 md:hidden">
+      <div className="space-y-3 p-3 xl:hidden">
         {adjustments.length === 0 ? (
           <div className="text-muted-foreground flex flex-col items-center gap-2 py-6 text-sm">
             <Package className="h-8 w-8" />

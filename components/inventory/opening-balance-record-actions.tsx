@@ -27,22 +27,32 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useDeleteInboundRecord, useUpdateInboundRecord } from '@/lib/api/inbound';
+import {
+  useDeleteInboundRecord,
+  useUpdateInboundRecord,
+} from '@/lib/api/inbound';
 import type { InboundRecord } from '@/lib/types/inbound';
+import { formatCostPrice, roundCostPrice } from '@/lib/utils/cost-price';
+import {
+  type OpeningBalanceUnitCostEntryMode,
+  parseOpeningBalanceUnitCostInput,
+} from '@/lib/utils/opening-balance-correction';
 import {
   formatPieceSummary,
   parseQuantityInput,
   validatePieceQuantity,
 } from '@/lib/utils/piece-calculation';
-import {
-  showError,
-  showSuccess,
-  showWarning,
-} from '@/lib/utils/toast-helper';
+import { showError, showSuccess, showWarning } from '@/lib/utils/toast-helper';
 
 type OpeningBalanceEditableRecord = Pick<
   InboundRecord,
-  'id' | 'recordNumber' | 'quantity' | 'batchNumber' | 'openingImportBatchId'
+  | 'id'
+  | 'recordNumber'
+  | 'quantity'
+  | 'batchNumber'
+  | 'openingImportBatchId'
+  | 'unitCost'
+  | 'totalCost'
 > & {
   product?: Pick<NonNullable<InboundRecord['product']>, 'piecesPerUnit'>;
   batchSpecification?: Pick<
@@ -58,7 +68,9 @@ interface OpeningBalanceRecordActionsProps {
 
 function getPiecesPerUnit(record: OpeningBalanceEditableRecord) {
   return (
-    record.batchSpecification?.piecesPerUnit ?? record.product?.piecesPerUnit ?? 0
+    record.batchSpecification?.piecesPerUnit ??
+    record.product?.piecesPerUnit ??
+    0
   );
 }
 
@@ -66,6 +78,40 @@ function formatQuantityDisplay(quantity: number, piecesPerUnit: number) {
   return piecesPerUnit > 0
     ? formatPieceSummary(quantity, piecesPerUnit, { fallbackUnit: '片' })
     : `${quantity}片`;
+}
+
+function formatEditableQuantityInput(quantity: number, piecesPerUnit: number) {
+  if (piecesPerUnit > 0) {
+    return formatPieceSummary(quantity, piecesPerUnit, {
+      fallbackUnit: '片',
+    }).replace(/^(\d+)片 \((?:约)(.+)\)$/u, '$2');
+  }
+
+  return String(quantity);
+}
+
+function formatUnitCostInput(unitCost?: number) {
+  return typeof unitCost === 'number' && Number.isFinite(unitCost)
+    ? formatCostPrice(unitCost, { withSymbol: false })
+    : '';
+}
+
+function formatAmount(value?: number) {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? `￥${value.toFixed(2)}`
+    : '—';
+}
+
+function getUnitCostInputPlaceholder(mode: OpeningBalanceUnitCostEntryMode) {
+  return mode === 'unit'
+    ? '按件录入时可直接填 96，也支持 24片价'
+    : '支持 24、24片价、96元/件';
+}
+
+function getUnitCostInputHelperText(mode: OpeningBalanceUnitCostEntryMode) {
+  return mode === 'unit'
+    ? '当前按件录入：直接填 96 会按件价换算成单片成本；若这一条本身就是片价，可明确写 24片价。'
+    : '当前按片录入：直接填 24 会按单片成本保存；若拿到的是件价，也支持写 96元/件 自动换算。';
 }
 
 function parseCorrectedQuantity(input: string, piecesPerUnit: number) {
@@ -79,7 +125,9 @@ function parseCorrectedQuantity(input: string, piecesPerUnit: number) {
     return parseQuantityInput(trimmed, piecesPerUnit);
   }
 
-  const normalized = trimmed.endsWith('片') ? trimmed.slice(0, -1).trim() : trimmed;
+  const normalized = trimmed.endsWith('片')
+    ? trimmed.slice(0, -1).trim()
+    : trimmed;
   const parsed = Number(normalized);
 
   if (!Number.isInteger(parsed) || parsed <= 0) {
@@ -98,69 +146,130 @@ export function OpeningBalanceRecordActions({
   const deleteMutation = useDeleteInboundRecord();
   const [editOpen, setEditOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
-  const [quantityInput, setQuantityInput] = React.useState(String(record.quantity));
+  const [quantityInput, setQuantityInput] = React.useState(
+    formatEditableQuantityInput(record.quantity, getPiecesPerUnit(record))
+  );
+  const [unitCostInput, setUnitCostInput] = React.useState(
+    formatUnitCostInput(record.unitCost)
+  );
+  const [unitCostEntryMode, setUnitCostEntryMode] =
+    React.useState<OpeningBalanceUnitCostEntryMode>('piece');
 
   const piecesPerUnit = getPiecesPerUnit(record);
-  const currentQuantityDisplay = formatQuantityDisplay(record.quantity, piecesPerUnit);
+  const currentQuantityDisplay = formatQuantityDisplay(
+    record.quantity,
+    piecesPerUnit
+  );
   const batchTriggerLabel = compact ? '整批处理' : '按本次导入批次处理';
-  const editLabel = compact ? '更正' : '更正数量';
+  const editLabel = compact ? '更正' : '更正数量/成本';
   const deleteLabel = compact ? '删除' : '删除重导';
 
   React.useEffect(() => {
     if (editOpen) {
-      setQuantityInput(String(record.quantity));
+      setQuantityInput(
+        formatEditableQuantityInput(record.quantity, piecesPerUnit)
+      );
+      setUnitCostInput(formatUnitCostInput(record.unitCost));
+      setUnitCostEntryMode('piece');
     }
-  }, [editOpen, record.quantity]);
+  }, [editOpen, piecesPerUnit, record.quantity, record.unitCost]);
 
-  const quantityPreview = React.useMemo(() => {
+  const correctionPreview = React.useMemo(() => {
     try {
-      const parsedQuantity = parseCorrectedQuantity(quantityInput, piecesPerUnit);
+      const parsedQuantity = parseCorrectedQuantity(
+        quantityInput,
+        piecesPerUnit
+      );
       const validation = validatePieceQuantity(parsedQuantity);
 
       if (!validation.isValid) {
         return {
           parsedQuantity: null,
+          parsedUnitCost: null,
           error: validation.error ?? '数量格式不正确',
         };
       }
 
+      const normalizedUnitCostInput = unitCostInput.trim();
+      const parsedUnitCost = normalizedUnitCostInput
+        ? parseOpeningBalanceUnitCostInput(
+            normalizedUnitCostInput,
+            piecesPerUnit,
+            unitCostEntryMode
+          )
+        : undefined;
+
       return {
         parsedQuantity,
+        parsedUnitCost,
         error: null,
       };
     } catch (error) {
       return {
         parsedQuantity: null,
+        parsedUnitCost: null,
         error: error instanceof Error ? error.message : '数量格式不正确',
       };
     }
-  }, [piecesPerUnit, quantityInput]);
+  }, [piecesPerUnit, quantityInput, unitCostEntryMode, unitCostInput]);
 
   const handleCorrectQuantity = async () => {
-    if (quantityPreview.error || quantityPreview.parsedQuantity === null) {
+    if (correctionPreview.error || correctionPreview.parsedQuantity === null) {
       showError('更正失败', {
-        description: quantityPreview.error ?? '请先填写正确的数量',
+        description: correctionPreview.error ?? '请先填写正确的数量和成本',
       });
       return;
     }
 
-    if (quantityPreview.parsedQuantity === record.quantity) {
-      showWarning('数量未变化', {
-        description: '当前输入与原始期初数量一致，无需重复提交',
+    const parsedQuantity = correctionPreview.parsedQuantity;
+    const currentUnitCost =
+      typeof record.unitCost === 'number' && Number.isFinite(record.unitCost)
+        ? roundCostPrice(record.unitCost)
+        : undefined;
+    const parsedUnitCost = correctionPreview.parsedUnitCost;
+    const quantityChanged = parsedQuantity !== record.quantity;
+    const unitCostChanged =
+      parsedUnitCost !== undefined &&
+      (currentUnitCost === undefined ||
+        Math.abs(parsedUnitCost - currentUnitCost) > 0.000001);
+
+    if (!quantityChanged && !unitCostChanged) {
+      showWarning('没有检测到修改', {
+        description: '当前输入与原始期初数量、单位成本一致，无需重复提交',
       });
       return;
     }
 
     try {
+      const payload: {
+        quantity?: number;
+        unitCost?: number;
+      } = {};
+
+      if (quantityChanged) {
+        payload.quantity = parsedQuantity;
+      }
+      if (unitCostChanged) {
+        payload.unitCost = parsedUnitCost;
+      }
+
       await updateMutation.mutateAsync({
         id: record.id,
-        data: {
-          quantity: quantityPreview.parsedQuantity,
-        },
+        data: payload,
       });
 
+      const messageParts: string[] = [];
+      if (quantityChanged) {
+        messageParts.push(formatQuantityDisplay(parsedQuantity, piecesPerUnit));
+      }
+      if (unitCostChanged) {
+        messageParts.push(
+          `单片成本 ${formatCostPrice(parsedUnitCost, { fallback: '—' })}`
+        );
+      }
+
       showSuccess('期初库存已更正', {
-        description: `${record.recordNumber} 已更正为 ${formatQuantityDisplay(quantityPreview.parsedQuantity, piecesPerUnit)}`,
+        description: `${record.recordNumber} 已更正为 ${messageParts.join('，')}`,
       });
       setEditOpen(false);
       router.refresh();
@@ -220,9 +329,9 @@ export function OpeningBalanceRecordActions({
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>更正期初库存数量</DialogTitle>
+            <DialogTitle>更正期初库存</DialogTitle>
             <DialogDescription>
-              这里修改的是原始期初入库记录，不会新增库存调整单。适合处理还没被后续业务污染的导入错误。
+              这里修改的是原始期初入库记录，不会新增库存调整单。适合处理还没被后续业务污染的导入错误；数量和单位成本都可以单独改。
             </DialogDescription>
           </DialogHeader>
 
@@ -230,7 +339,8 @@ export function OpeningBalanceRecordActions({
             <Alert className="border-blue-200 bg-blue-50/80 text-blue-900">
               <RotateCcw className="h-4 w-4" />
               <AlertDescription className="leading-6">
-                如果这条期初记录已经被出库、销售或 FIFO 消耗，系统会自动拦截，避免把历史账弄乱。
+                如果这条期初记录已经被出库、销售或 FIFO
+                消耗，系统会自动拦截，避免把历史账弄乱。
               </AlertDescription>
             </Alert>
 
@@ -254,9 +364,21 @@ export function OpeningBalanceRecordActions({
                 </div>
               </div>
               <div>
+                <div className="text-xs text-slate-500">当前单位成本</div>
+                <div className="mt-1 font-semibold text-slate-900">
+                  {formatCostPrice(record.unitCost, { fallback: '—' })}
+                </div>
+              </div>
+              <div>
                 <div className="text-xs text-slate-500">包装规格</div>
                 <div className="mt-1 font-semibold text-slate-900">
                   {piecesPerUnit > 0 ? `${piecesPerUnit}片/件` : '未维护装箱数'}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-slate-500">当前总成本</div>
+                <div className="mt-1 font-semibold text-slate-900">
+                  {formatAmount(record.totalCost)}
                 </div>
               </div>
             </div>
@@ -283,16 +405,106 @@ export function OpeningBalanceRecordActions({
               </div>
             </div>
 
+            <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="text-xs font-medium text-slate-600">
+                    单价输入口径
+                  </div>
+                  <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1">
+                    <Button
+                      type="button"
+                      variant={
+                        unitCostEntryMode === 'piece' ? 'secondary' : 'ghost'
+                      }
+                      size="sm"
+                      className="h-7 px-3 text-xs"
+                      onClick={() => setUnitCostEntryMode('piece')}
+                      disabled={updateMutation.isPending}
+                    >
+                      按片录入
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={
+                        unitCostEntryMode === 'unit' ? 'secondary' : 'ghost'
+                      }
+                      size="sm"
+                      className="h-7 px-3 text-xs"
+                      onClick={() => setUnitCostEntryMode('unit')}
+                      disabled={updateMutation.isPending}
+                    >
+                      按件录入
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="corrected-opening-balance-unit-cost">
+                    更正后的单位成本
+                  </Label>
+                  <Input
+                    id="corrected-opening-balance-unit-cost"
+                    value={unitCostInput}
+                    onChange={event => setUnitCostInput(event.target.value)}
+                    placeholder={getUnitCostInputPlaceholder(unitCostEntryMode)}
+                    inputMode="decimal"
+                    disabled={updateMutation.isPending}
+                  />
+                  <div className="text-xs text-slate-500">
+                    {getUnitCostInputHelperText(unitCostEntryMode)}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div
               className={`rounded-xl border px-3 py-2 text-sm ${
-                quantityPreview.error
+                correctionPreview.error
                   ? 'border-rose-200 bg-rose-50 text-rose-700'
                   : 'border-emerald-200 bg-emerald-50 text-emerald-700'
               }`}
             >
-              {quantityPreview.error
-                ? quantityPreview.error
-                : `解析后将保存为：${formatQuantityDisplay(quantityPreview.parsedQuantity ?? 0, piecesPerUnit)}`}
+              {correctionPreview.error ? (
+                correctionPreview.error
+              ) : (
+                <div className="space-y-1">
+                  <div>
+                    解析后数量：
+                    {formatQuantityDisplay(
+                      correctionPreview.parsedQuantity ?? 0,
+                      piecesPerUnit
+                    )}
+                  </div>
+                  <div>
+                    解析后单位成本：
+                    {correctionPreview.parsedUnitCost !== undefined
+                      ? formatCostPrice(correctionPreview.parsedUnitCost, {
+                          fallback: '—',
+                        })
+                      : formatCostPrice(record.unitCost, { fallback: '—' })}
+                  </div>
+                  <div>
+                    预计总成本：
+                    {formatAmount(
+                      typeof (
+                        correctionPreview.parsedUnitCost ?? record.unitCost
+                      ) === 'number'
+                        ? Number(
+                            (
+                              (correctionPreview.parsedQuantity ?? 0) *
+                              Number(
+                                correctionPreview.parsedUnitCost ??
+                                  record.unitCost ??
+                                  0
+                              )
+                            ).toFixed(2)
+                          )
+                        : undefined
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -309,7 +521,7 @@ export function OpeningBalanceRecordActions({
               type="button"
               className="bg-blue-600 text-white hover:bg-blue-700"
               onClick={handleCorrectQuantity}
-              disabled={updateMutation.isPending || !!quantityPreview.error}
+              disabled={updateMutation.isPending || !!correctionPreview.error}
             >
               {updateMutation.isPending ? (
                 <>

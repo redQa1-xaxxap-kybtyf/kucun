@@ -63,7 +63,7 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="space-y-4 sm:space-y-6">
         {/* 顶部操作栏 */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" size="sm" asChild className="gap-1.5">
               <Link href="/finance/payables">
@@ -74,7 +74,7 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
             <div className="h-5 w-px bg-gray-300"></div>
             <h1 className="text-lg font-semibold text-gray-900">应付款详情</h1>
           </div>
-          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap lg:justify-end">
             {payable.remainingAmount > 0 && (
               <Button
                 size="sm"
@@ -83,7 +83,7 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
                     `/finance/payments-out/create?payableId=${payable.id}`
                   )
                 }
-                className="gap-1.5 bg-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-dark))]"
+                className="w-full gap-1.5 bg-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-dark))] sm:w-auto"
               >
                 <ChineseYuan className="h-3.5 w-3.5" />
                 记录付款
@@ -95,56 +95,55 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
         {/* 顶部核心信息卡片 */}
         <Card className="overflow-hidden border border-[hsl(var(--color-border-secondary))] shadow-lg">
           <CardContent className="p-0">
-            <div className="border-b border-[hsl(var(--color-border-secondary))]/50 bg-gradient-to-br from-[hsl(var(--color-bg-secondary))] via-[hsl(var(--color-bg-tertiary))] to-white px-6 py-4">
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary))] shadow-md">
-                    <Receipt className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-xl font-bold text-[hsl(var(--color-text-primary))]">
-                        {payable.payableNumber}
-                      </h2>
-                      <Badge
-                        variant={PAYABLE_STATUS_VARIANTS[payable.status]}
-                        className="gap-1"
-                      >
-                        {payable.status === 'paid' && (
-                          <CheckCircle className="h-3 w-3" />
-                        )}
-                        {payable.status === 'pending' && (
-                          <Clock className="h-3 w-3" />
-                        )}
-                        {payable.status === 'partial' && (
-                          <Clock className="h-3 w-3" />
-                        )}
-                        {PAYABLE_STATUS_LABELS[payable.status]}
-                      </Badge>
+            <div className="border-b border-[hsl(var(--color-border-secondary))]/50 bg-gradient-to-br from-[hsl(var(--color-bg-secondary))] via-[hsl(var(--color-bg-tertiary))] to-white px-4 py-4 sm:px-6">
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                  <div className="flex items-start gap-3 sm:gap-4">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary))] shadow-md sm:h-12 sm:w-12">
+                      <Receipt className="h-5 w-5 text-white sm:h-6 sm:w-6" />
                     </div>
-                    <div className="mt-1 flex items-center gap-2 text-sm text-[hsl(var(--color-text-secondary))]">
-                      <Building2 className="h-3.5 w-3.5" />
-                      <span>{payable.supplier.name}</span>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="text-xl font-bold break-all text-[hsl(var(--color-text-primary))] sm:text-2xl">
+                          {payable.payableNumber}
+                        </h2>
+                        <Badge
+                          variant={PAYABLE_STATUS_VARIANTS[payable.status]}
+                          className="gap-1"
+                        >
+                          {payable.status === 'paid' && (
+                            <CheckCircle className="h-3 w-3" />
+                          )}
+                          {(payable.status === 'pending' ||
+                            payable.status === 'partial') && (
+                            <Clock className="h-3 w-3" />
+                          )}
+                          {PAYABLE_STATUS_LABELS[payable.status]}
+                        </Badge>
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                        <Building2 className="h-3.5 w-3.5" />
+                        <span>{payable.supplier.name}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-8">
-                  <div className="text-right">
-                    <p className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
-                      应付金额
-                    </p>
-                    <p className="text-2xl font-bold text-[hsl(var(--color-primary))]">
-                      {formatCurrency(payable.payableAmount)}
-                    </p>
-                  </div>
-                  <div className="h-8 w-px bg-[hsl(var(--color-border-secondary))]"></div>
-                  <div className="text-right">
-                    <p className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
-                      剩余应付
-                    </p>
-                    <p className="text-2xl font-bold text-[hsl(var(--color-warning))]">
-                      {formatCurrency(payable.remainingAmount)}
-                    </p>
+                  <div className="grid gap-3 sm:grid-cols-2 xl:min-w-[360px]">
+                    <div className="rounded-xl border border-[hsl(var(--color-border-secondary))]/60 bg-white/80 px-4 py-3 shadow-sm">
+                      <p className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                        应付金额
+                      </p>
+                      <p className="mt-1 text-xl font-bold text-[hsl(var(--color-primary))] sm:text-2xl">
+                        {formatCurrency(payable.payableAmount)}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-[hsl(var(--color-border-secondary))]/60 bg-white/80 px-4 py-3 shadow-sm">
+                      <p className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                        剩余应付
+                      </p>
+                      <p className="mt-1 text-xl font-bold text-[hsl(var(--color-warning))] sm:text-2xl">
+                        {formatCurrency(payable.remainingAmount)}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -152,9 +151,9 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
           {/* 左侧：基本信息和付款记录 */}
-          <div className="space-y-6 lg:col-span-2">
+          <div className="space-y-6 xl:col-span-2">
             {/* 基本信息 */}
             <Card className="overflow-hidden shadow-sm">
               <CardHeader className="border-b bg-[hsl(var(--color-bg-secondary))]/50 pb-3">
@@ -164,7 +163,7 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   <div className="space-y-1">
                     <span className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                       来源类型
@@ -259,62 +258,119 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
               <CardContent className="p-0">
                 {payable.paymentOutRecords &&
                 payable.paymentOutRecords.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-[hsl(var(--color-bg-tertiary))]/50 hover:bg-[hsl(var(--color-bg-tertiary))]/50">
-                        <TableHead className="h-9">付款单号</TableHead>
-                        <TableHead className="h-9">付款方式</TableHead>
-                        <TableHead className="h-9">付款日期</TableHead>
-                        <TableHead className="h-9 text-right">金额</TableHead>
-                        <TableHead className="h-9 w-[50px]"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                  <>
+                    <div className="hidden 2xl:block">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-[hsl(var(--color-bg-tertiary))]/50 hover:bg-[hsl(var(--color-bg-tertiary))]/50">
+                            <TableHead className="h-9">付款单号</TableHead>
+                            <TableHead className="h-9">付款方式</TableHead>
+                            <TableHead className="h-9">付款日期</TableHead>
+                            <TableHead className="h-9 text-right">
+                              金额
+                            </TableHead>
+                            <TableHead className="h-9 w-[50px]"></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {payable.paymentOutRecords.map(payment => (
+                            <TableRow
+                              key={payment.id}
+                              className="hover:bg-muted/50"
+                            >
+                              <TableCell className="font-medium">
+                                <Link
+                                  href={`/finance/payments-out/${payment.id}`}
+                                  className="text-primary font-mono hover:underline"
+                                >
+                                  {payment.paymentNumber}
+                                </Link>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant="outline"
+                                  className="font-normal"
+                                >
+                                  {
+                                    PAYMENT_OUT_METHOD_LABELS[
+                                      payment.paymentMethod
+                                    ]
+                                  }
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                                  <Calendar className="h-3.5 w-3.5" />
+                                  <RelativeTime date={payment.paymentDate} />
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right font-medium text-[hsl(var(--color-success))]">
+                                {formatCurrency(payment.paymentAmount)}
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  asChild
+                                >
+                                  <Link
+                                    href={`/finance/payments-out/${payment.id}`}
+                                  >
+                                    <ArrowLeft className="h-4 w-4 rotate-180" />
+                                  </Link>
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                    <div className="space-y-3 p-4 xl:grid xl:grid-cols-2 xl:gap-4 xl:space-y-0 2xl:hidden">
                       {payable.paymentOutRecords.map(payment => (
-                        <TableRow
+                        <div
                           key={payment.id}
-                          className="hover:bg-muted/50"
+                          className="rounded-xl border border-[hsl(var(--color-border-secondary))] bg-white p-4 shadow-sm"
                         >
-                          <TableCell className="font-medium">
-                            <Link
-                              href={`/finance/payments-out/${payment.id}`}
-                              className="text-primary font-mono hover:underline"
-                            >
-                              {payment.paymentNumber}
-                            </Link>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="font-normal">
-                              {PAYMENT_OUT_METHOD_LABELS[payment.paymentMethod]}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2 text-sm text-[hsl(var(--color-text-secondary))]">
-                              <Calendar className="h-3.5 w-3.5" />
-                              <RelativeTime date={payment.paymentDate} />
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right font-medium text-[hsl(var(--color-success))]">
-                            {formatCurrency(payment.paymentAmount)}
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              asChild
-                            >
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div className="min-w-0">
                               <Link
                                 href={`/finance/payments-out/${payment.id}`}
+                                className="text-primary block font-mono text-sm font-semibold break-all hover:underline"
                               >
-                                <ArrowLeft className="h-4 w-4 rotate-180" />
+                                {payment.paymentNumber}
                               </Link>
-                            </Button>
-                          </TableCell>
-                        </TableRow>
+                              <div className="mt-1 flex items-center gap-2 text-xs text-[hsl(var(--color-text-secondary))]">
+                                <Calendar className="h-3.5 w-3.5" />
+                                <RelativeTime date={payment.paymentDate} />
+                              </div>
+                            </div>
+                            <Badge variant="outline" className="w-fit">
+                              {PAYMENT_OUT_METHOD_LABELS[payment.paymentMethod]}
+                            </Badge>
+                          </div>
+                          <div className="mt-3 flex items-center justify-between rounded-lg bg-[hsl(var(--color-bg-secondary))]/50 px-3 py-2">
+                            <span className="text-sm text-[hsl(var(--color-text-secondary))]">
+                              付款金额
+                            </span>
+                            <span className="font-semibold text-[hsl(var(--color-success))]">
+                              {formatCurrency(payment.paymentAmount)}
+                            </span>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-3 w-full"
+                            asChild
+                          >
+                            <Link href={`/finance/payments-out/${payment.id}`}>
+                              查看付款详情
+                            </Link>
+                          </Button>
+                        </div>
                       ))}
-                    </TableBody>
-                  </Table>
+                    </div>
+                  </>
                 ) : (
                   <div className="py-8">
                     <EmptyState

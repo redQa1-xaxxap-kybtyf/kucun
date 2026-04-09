@@ -14,7 +14,14 @@
  * 遵循原则: KISS, DRY, SOLID
  */
 
-import { Filter, Loader2, RotateCcw, Search, SlidersHorizontal, X } from 'lucide-react';
+import {
+  Filter,
+  Loader2,
+  RotateCcw,
+  Search,
+  SlidersHorizontal,
+  X,
+} from 'lucide-react';
 import dynamic from 'next/dynamic';
 import * as React from 'react';
 
@@ -327,7 +334,9 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
                   <SheetTrigger asChild>
                     <Button
                       type="button"
-                      variant={activeFilterItems.length > 0 ? 'default' : 'outline'}
+                      variant={
+                        activeFilterItems.length > 0 ? 'default' : 'outline'
+                      }
                       className="h-11 shrink-0 rounded-xl px-3"
                     >
                       <SlidersHorizontal className="mr-1.5 h-4 w-4" />
@@ -349,7 +358,8 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
 
                     <div className="mt-5 space-y-4">
                       {filters.map(filter => {
-                        const includeAllOption = filter.includeAllOption ?? true;
+                        const includeAllOption =
+                          filter.includeAllOption ?? true;
                         const selectedValue =
                           filterValues[filter.key] ??
                           filter.defaultValue ??
@@ -515,8 +525,8 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
           </div>
 
           <div className="hidden sm:block">
-            <div className="flex flex-wrap items-end gap-3 sm:gap-4">
-              <div className="flex min-w-0 w-full flex-1 flex-col gap-1.5 sm:min-w-[300px]">
+            <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
+              <div className="flex w-full min-w-0 flex-1 flex-col gap-1.5">
                 {!isPro && searchLabel && (
                   <label className="text-muted-foreground text-xs font-medium">
                     {searchLabel}
@@ -540,42 +550,50 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
                 />
               </div>
 
-              {dateRangeFilter && (
-                <DateRangePicker
-                  value={dateRangeFilter.value}
-                  onChange={dateRangeFilter.onChange}
-                  label={isPro ? undefined : dateRangeFilter.label}
-                  placeholder={dateRangeFilter.placeholder || '选择日期范围'}
-                  showPresets={dateRangeFilter.showPresets ?? true}
-                  className={cn(
-                    'min-w-0 w-full sm:min-w-[200px] sm:w-auto',
-                    isPro
-                      ? 'h-14 rounded-2xl border-white bg-white/40 font-bold backdrop-blur-md'
-                      : '',
-                    dateRangeFilter.className
+              {(dateRangeFilter ||
+                customFilters ||
+                (showClearButton && hasFilters && onClearFilters)) && (
+                <div className="flex flex-wrap items-end gap-3 xl:justify-end">
+                  {dateRangeFilter && (
+                    <DateRangePicker
+                      value={dateRangeFilter.value}
+                      onChange={dateRangeFilter.onChange}
+                      label={isPro ? undefined : dateRangeFilter.label}
+                      placeholder={
+                        dateRangeFilter.placeholder || '选择日期范围'
+                      }
+                      showPresets={dateRangeFilter.showPresets ?? true}
+                      className={cn(
+                        'w-full min-w-0 md:w-[280px] xl:w-auto xl:min-w-[220px]',
+                        isPro
+                          ? 'h-14 rounded-2xl border-white bg-white/40 font-bold backdrop-blur-md'
+                          : '',
+                        dateRangeFilter.className
+                      )}
+                    />
                   )}
-                />
-              )}
 
-              {customFilters && (
-                <div className="w-full sm:w-auto">{customFilters}</div>
-              )}
-
-              {showClearButton && hasFilters && onClearFilters && (
-                <Button
-                  variant={isPro ? 'ghost' : 'outline'}
-                  size="sm"
-                  onClick={handleClearFilters}
-                  className={cn(
-                    'h-8 w-full justify-center gap-1.5 self-end transition-all sm:w-auto',
-                    isPro
-                      ? 'font-black text-slate-400 hover:bg-white/50 hover:text-slate-900'
-                      : 'hover:border-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-light))]'
+                  {customFilters && (
+                    <div className="w-full xl:w-auto">{customFilters}</div>
                   )}
-                >
-                  <RotateCcw className="mr-1 h-3 w-3" />
-                  重置筛选
-                </Button>
+
+                  {showClearButton && hasFilters && onClearFilters && (
+                    <Button
+                      variant={isPro ? 'ghost' : 'outline'}
+                      size="sm"
+                      onClick={handleClearFilters}
+                      className={cn(
+                        'h-8 w-full justify-center gap-1.5 self-end transition-all md:w-auto',
+                        isPro
+                          ? 'font-black text-slate-400 hover:bg-white/50 hover:text-slate-900'
+                          : 'hover:border-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-light))]'
+                      )}
+                    >
+                      <RotateCcw className="mr-1 h-3 w-3" />
+                      重置筛选
+                    </Button>
+                  )}
+                </div>
               )}
             </div>
           </div>

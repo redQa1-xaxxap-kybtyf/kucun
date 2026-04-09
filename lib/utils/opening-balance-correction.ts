@@ -18,7 +18,7 @@ export interface OpeningBalanceCurrentUnitEntryConversionResult {
 
 export type OpeningBalanceSavedQuantityMode = 'piece' | 'unit';
 
-type UnitCostEntryMode = 'piece' | 'unit';
+export type OpeningBalanceUnitCostEntryMode = 'piece' | 'unit';
 
 function normalizeUnitCostInput(input: string) {
   return input
@@ -29,9 +29,12 @@ function normalizeUnitCostInput(input: string) {
     .replace(/元/gu, '');
 }
 
-function parseUnitCostEntry(input: string): {
+function parseUnitCostEntry(
+  input: string,
+  defaultMode: OpeningBalanceUnitCostEntryMode = 'piece'
+): {
   value: number;
-  mode: UnitCostEntryMode;
+  mode: OpeningBalanceUnitCostEntryMode;
 } {
   const normalized = normalizeUnitCostInput(input);
 
@@ -49,13 +52,21 @@ function parseUnitCostEntry(input: string): {
     };
   }
 
-  const pieceMatch = normalized.match(
-    /^(\d+(?:\.\d+)?)(?:\/片|每片|片价|片单价)?$/u
+  const explicitPieceMatch = normalized.match(
+    /^(\d+(?:\.\d+)?)(?:\/片|每片|片价|片单价)$/u
   );
-  if (pieceMatch) {
+  if (explicitPieceMatch) {
     return {
-      value: Number(pieceMatch[1]),
+      value: Number(explicitPieceMatch[1]),
       mode: 'piece',
+    };
+  }
+
+  const plainNumericMatch = normalized.match(/^(\d+(?:\.\d+)?)$/u);
+  if (plainNumericMatch) {
+    return {
+      value: Number(plainNumericMatch[1]),
+      mode: defaultMode,
     };
   }
 
@@ -120,9 +131,10 @@ export function buildOpeningBalanceSavedValuePreview(
 
 export function parseOpeningBalanceUnitCostInput(
   input: string,
-  piecesPerUnit: number
+  piecesPerUnit: number,
+  defaultMode: OpeningBalanceUnitCostEntryMode = 'piece'
 ): number {
-  const entry = parseUnitCostEntry(input);
+  const entry = parseUnitCostEntry(input, defaultMode);
   const numeric = entry.value;
 
   if (!Number.isFinite(numeric) || numeric < 0) {

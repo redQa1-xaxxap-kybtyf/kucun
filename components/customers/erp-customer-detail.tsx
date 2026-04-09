@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { customerQueryKeys, getCustomer } from '@/lib/api/customers';
 import { CUSTOMER_FIELD_LABELS, type Customer } from '@/lib/types/customer';
 import { formatDate } from '@/lib/utils/datetime';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 import { parseExtendedInfo } from '@/lib/validations/customer';
 
 interface ERPCustomerDetailProps {
@@ -113,7 +114,7 @@ export function ERPCustomerDetail({
         </div>
         <div className="px-3 py-2">
           <div className="text-center text-xs text-[hsl(var(--color-error))]">
-            加载失败: {error instanceof Error ? error.message : '未知错误'}
+            加载失败: {getFriendlyErrorMessage(error, '请稍后重试')}
           </div>
         </div>
       </div>

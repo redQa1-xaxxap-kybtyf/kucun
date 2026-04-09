@@ -29,7 +29,7 @@ export function InboundPageHeader() {
         <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-blue-500/5 blur-3xl" />
         <div className="absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-emerald-500/5 blur-3xl" />
 
-        <div className="relative z-10 flex flex-col gap-6 p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
+        <div className="relative z-10 flex flex-col gap-6 p-6 sm:p-8 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex items-start gap-5 sm:items-center">
             <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 shadow-xl shadow-blue-500/10">
               <PackageCheck className="h-8 w-8 text-white" />
@@ -44,14 +44,14 @@ export function InboundPageHeader() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="grid gap-3 md:grid-cols-2 xl:flex xl:w-auto xl:flex-wrap">
             {/* 期初入库按钮 - 仅对有权限的用户显示 */}
             {can(user ?? null, 'inventory:opening_balance') && (
               <>
                 <Button
                   variant="outline"
                   size="lg"
-                  className="h-12 border-blue-200 bg-blue-50 text-blue-700 shadow-sm hover:bg-blue-100 hover:text-blue-900"
+                  className="h-12 w-full border-blue-200 bg-blue-50 text-blue-700 shadow-sm hover:bg-blue-100 hover:text-blue-900"
                   onClick={() => setImportDialogOpen(true)}
                 >
                   <FileSpreadsheet className="mr-2 h-4 w-4" />
@@ -60,7 +60,7 @@ export function InboundPageHeader() {
                 <Button
                   variant="outline"
                   size="lg"
-                  className="h-12 border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900"
+                  className="h-12 w-full border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900"
                   onClick={() =>
                     router.push(
                       '/inventory/inbound/create?type=opening_balance'
@@ -76,11 +76,11 @@ export function InboundPageHeader() {
             {/* 新增入库按钮 */}
             <Button
               size="lg"
-              className="h-12 bg-blue-600 text-white shadow-lg shadow-blue-500/20 transition-all hover:scale-105 hover:bg-blue-700 active:scale-95"
+              className="h-12 w-full bg-blue-600 text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-700"
               onClick={() => router.push('/inventory/inbound/create')}
             >
               <Plus className="mr-2 h-4 w-4" />
-              产品入库
+              手工采购入库
             </Button>
           </div>
         </div>

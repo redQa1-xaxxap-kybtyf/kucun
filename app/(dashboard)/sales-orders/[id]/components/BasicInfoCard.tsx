@@ -11,7 +11,7 @@ import {
   TRANSFER_MODE_LABELS,
 } from '@/lib/types/sales-order';
 import { getSalesOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
-import { formatDateTime } from '@/lib/utils/datetime';
+import { formatDate, formatDateTime } from '@/lib/utils/datetime';
 
 import type { SalesOrderDetail } from './types';
 
@@ -146,7 +146,16 @@ export function BasicInfoCard({ order }: { order: SalesOrderDetail }) {
 
           <div className="space-y-1.5 rounded-xl border border-slate-100 bg-white p-4 transition-all hover:border-blue-100/50 hover:shadow-sm">
             <div className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
-              单据签署日期
+              销售日期
+            </div>
+            <div className="font-mono text-sm text-slate-600">
+              {formatDate(order.orderDate ?? order.createdAt)}
+            </div>
+          </div>
+
+          <div className="space-y-1.5 rounded-xl border border-slate-100 bg-white p-4 transition-all hover:border-blue-100/50 hover:shadow-sm">
+            <div className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+              建档时间
             </div>
             <div className="font-mono text-sm text-slate-600">
               {formatDateTime(order.createdAt)}

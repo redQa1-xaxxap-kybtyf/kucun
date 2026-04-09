@@ -9,6 +9,8 @@ import {
 } from '@/lib/constants/cache';
 import { queryKeys } from '@/lib/queryKeys';
 import type {
+  BatchCreateInboundRequest,
+  BatchInboundCreateResponse,
   CreateInboundRequest,
   InboundListResponse,
   InboundQueryParams,
@@ -166,6 +168,67 @@ export function useCreateInboundRecord() {
       });
 
       // ✅ 刷新产品搜索缓存，确保入库后搜索显示最新库存
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.products.all,
+      });
+    },
+  });
+}
+
+export function useCreateBatchInboundRecords() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (
+      data: BatchCreateInboundRequest
+    ): Promise<BatchInboundCreateResponse> => {
+      const response = await csrfFetch(API_BASE, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        const errorMessage =
+          error.error || error.message || error.details || '批量创建入库记录失败';
+        throw new Error(
+          typeof errorMessage === 'string'
+            ? errorMessage
+            : JSON.stringify(errorMessage)
+        );
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || '批量创建入库记录失败');
+      }
+
+      return result.data;
+    },
+    onSuccess: () => {
+      queryClient.refetchQueries({
+        predicate: query =>
+          query.queryKey[0] === 'inventory' &&
+          query.queryKey[1] === 'inbounds' &&
+          query.queryKey[2] === 'list',
+        type: 'active',
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.inventory.all,
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.purchaseOrders.all,
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.all,
+      });
+
       queryClient.invalidateQueries({
         queryKey: queryKeys.products.all,
       });

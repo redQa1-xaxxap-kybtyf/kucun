@@ -36,6 +36,7 @@ import {
   getYearDateRange,
   type ReportVisibility,
 } from './report-helpers';
+import { getPurchaseDamageMetricsForPeriod } from './report-purchase-damage-service';
 import { getAnnualSampleMetrics } from './report-sample-helpers';
 
 const REPORT_QUERY_BATCH_SIZE = 1000;
@@ -298,25 +299,25 @@ async function getMonthData(
 
   const [salesStats, expenseStats, factoryShipmentStats, adjustments] =
     await Promise.all([
-    prisma.salesOrder.aggregate({
-      where: salesWhere,
-      _sum: {
-        totalAmount: true,
-        costAmount: true,
-      },
-      _count: {
-        id: true,
-      },
-    }),
-    prisma.expenseRecord.aggregate({
-      where: expenseWhere,
-      _sum: {
-        expenseAmount: true,
-      },
-    }),
-    getFactoryShipmentPeriodStats(startDate, endDate, visibility),
-    getReportAdjustments(startDate, endDate, visibility),
-  ]);
+      prisma.salesOrder.aggregate({
+        where: salesWhere,
+        _sum: {
+          totalAmount: true,
+          costAmount: true,
+        },
+        _count: {
+          id: true,
+        },
+      }),
+      prisma.expenseRecord.aggregate({
+        where: expenseWhere,
+        _sum: {
+          expenseAmount: true,
+        },
+      }),
+      getFactoryShipmentPeriodStats(startDate, endDate, visibility),
+      getReportAdjustments(startDate, endDate, visibility),
+    ]);
 
   const warehouseRevenue = normalizeAnnualMetric(
     toNumber(salesStats._sum.totalAmount) - adjustments.returnAmountTotal
@@ -562,6 +563,7 @@ export async function getAnnualReport(
   const [
     summary,
     sample,
+    purchaseDamage,
     monthlyTrend,
     quarterlyData,
     expenseDistribution,
@@ -569,6 +571,7 @@ export async function getAnnualReport(
   ] = await Promise.all([
     getAnnualSummary(year, visibility),
     getAnnualSampleMetrics(startDate, endDate, visibility),
+    getPurchaseDamageMetricsForPeriod(startDate, endDate),
     getMonthlyTrend(year, visibility),
     getQuarterlyData(year, visibility),
     getExpenseDistribution(year, visibility),
@@ -609,6 +612,7 @@ export async function getAnnualReport(
     period,
     summary: combinedSummary,
     sample,
+    purchaseDamage,
     monthlyTrend,
     quarterlyData,
     expenseDistribution,

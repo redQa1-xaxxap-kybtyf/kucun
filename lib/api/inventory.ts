@@ -15,6 +15,7 @@ import type {
   OutboundCreateInput,
 } from '@/lib/types/inventory';
 import { csrfFetch } from '@/lib/utils/csrf';
+import { createFriendlyApiError } from '@/lib/utils/user-friendly-error';
 
 /**
  * API基础URL
@@ -43,7 +44,7 @@ export async function getInventories(
   const response = await fetch(`${API_BASE}?${searchParams.toString()}`);
 
   if (!response.ok) {
-    throw new Error(`获取库存列表失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '获取库存列表失败');
   }
 
   type InventoryListPayload = InventoryListResponse['data'];
@@ -87,7 +88,7 @@ export async function getInventory(productId: string): Promise<Inventory> {
     if (response.status === 404) {
       throw new Error('库存记录不存在');
     }
-    throw new Error(`获取库存详情失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '获取库存详情失败');
   }
 
   const data: ApiResponse<Inventory> = await response.json();
@@ -118,7 +119,7 @@ export async function createInbound(
   });
 
   if (!response.ok) {
-    throw new Error(`入库操作失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '入库操作失败');
   }
 
   const data: ApiResponse<Inventory> = await response.json();
@@ -149,7 +150,7 @@ export async function createOutbound(
   });
 
   if (!response.ok) {
-    throw new Error(`出库操作失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '出库操作失败');
   }
 
   const data: ApiResponse<Inventory> = await response.json();
@@ -180,7 +181,7 @@ export async function adjustInventory(
   });
 
   if (!response.ok) {
-    throw new Error(`库存调整失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '库存调整失败');
   }
 
   const data: ApiResponse<Inventory> = await response.json();
@@ -208,7 +209,7 @@ export async function getInventoryAlerts(): Promise<InventoryAlert[]> {
   });
 
   if (!response.ok) {
-    throw new Error(`获取库存警报失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '获取库存警报失败');
   }
 
   const data: ApiResponse<InventoryAlert[]> = await response.json();
@@ -242,7 +243,7 @@ export async function checkInventoryAvailability(
   });
 
   if (!response.ok) {
-    throw new Error(`检查库存可用性失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '检查库存可用性失败');
   }
 
   const data: ApiResponse<{
@@ -282,7 +283,7 @@ export async function getProductBatches(
   const response = await fetch(`${API_BASE}?${params.toString()}`);
 
   if (!response.ok) {
-    throw new Error(`获取批次库存失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '获取批次库存失败');
   }
 
   const data: ApiResponse<PaginatedResponse<Inventory>> = await response.json();
@@ -318,7 +319,7 @@ export async function checkBatchAvailability(
   });
 
   if (!response.ok) {
-    throw new Error(`检查批次可用性失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '检查批次可用性失败');
   }
 
   const data: ApiResponse<{

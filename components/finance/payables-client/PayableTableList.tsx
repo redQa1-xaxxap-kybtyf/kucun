@@ -652,7 +652,7 @@ export function PayableTableList({
   return (
     <>
       {/* 桌面端：宽表格 + 横向滚动 */}
-      <div className="hidden overflow-x-auto rounded-md border xl:block">
+      <div className="hidden overflow-x-auto rounded-md border 2xl:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -687,7 +687,7 @@ export function PayableTableList({
       </div>
 
       {/* 移动端：卡片列表 */}
-      <div className="grid gap-3 lg:grid-cols-2 xl:hidden">
+      <div className="grid gap-3 xl:grid-cols-2 2xl:hidden">
         {items.map(payable => (
           <PayableCard
             key={payable.id}

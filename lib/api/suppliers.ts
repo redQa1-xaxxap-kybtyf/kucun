@@ -10,62 +10,9 @@ import type {
   SupplierUpdateInput,
 } from '@/lib/types/supplier';
 import { csrfFetch } from '@/lib/utils/csrf';
+import { createFriendlyApiError } from '@/lib/utils/user-friendly-error';
 
 const API_BASE = '/api/suppliers';
-
-function extractErrorMessage(
-  errorData: unknown,
-  fallbackMessage: string
-): string {
-  if (!errorData) {
-    return fallbackMessage;
-  }
-
-  if (Array.isArray(errorData) && errorData.length > 0) {
-    const first = errorData[0] as unknown;
-    if (typeof first === 'string' && first.trim()) {
-      return first;
-    }
-    if (
-      first &&
-      typeof first === 'object' &&
-      typeof (first as Record<string, unknown>).message === 'string'
-    ) {
-      return (first as Record<string, unknown>).message as string;
-    }
-  }
-
-  if (typeof errorData === 'string' && errorData.trim()) {
-    return errorData;
-  }
-
-  if (typeof errorData === 'object') {
-    const data = errorData as Record<string, unknown>;
-    const nestedError = data.error;
-
-    if (typeof nestedError === 'string' && nestedError.trim()) {
-      return nestedError;
-    }
-
-    if (
-      nestedError &&
-      typeof nestedError === 'object' &&
-      typeof (nestedError as Record<string, unknown>).message === 'string'
-    ) {
-      const nestedMessage = (nestedError as Record<string, unknown>)
-        .message as string;
-      if (nestedMessage.trim()) {
-        return nestedMessage;
-      }
-    }
-
-    if (typeof data.message === 'string' && data.message.trim()) {
-      return data.message;
-    }
-  }
-
-  return fallbackMessage;
-}
 
 /**
  * 获取供应商列表
@@ -85,7 +32,7 @@ export async function getSuppliers(
   const response = await fetch(url);
 
   if (!response.ok) {
-    throw new Error(`获取供应商列表失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '获取供应商列表失败');
   }
 
   return response.json();
@@ -98,7 +45,7 @@ export async function getSupplier(id: string): Promise<ApiResponse<Supplier>> {
   const response = await fetch(`${API_BASE}/${id}`);
 
   if (!response.ok) {
-    throw new Error(`获取供应商详情失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '获取供应商详情失败');
   }
 
   return response.json();
@@ -119,13 +66,7 @@ export async function createSupplier(
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-
-    const message = extractErrorMessage(
-      errorData,
-      `创建供应商失败: ${response.statusText}`
-    );
-    throw new Error(message);
+    throw await createFriendlyApiError(response, '创建供应商失败');
   }
 
   return response.json();
@@ -147,12 +88,7 @@ export async function updateSupplier(
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    const message = extractErrorMessage(
-      errorData,
-      `更新供应商失败: ${response.statusText}`
-    );
-    throw new Error(message);
+    throw await createFriendlyApiError(response, '更新供应商失败');
   }
 
   return response.json();
@@ -167,12 +103,7 @@ export async function deleteSupplier(id: string): Promise<ApiResponse<void>> {
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    const message = extractErrorMessage(
-      errorData,
-      `删除供应商失败: ${response.statusText}`
-    );
-    throw new Error(message);
+    throw await createFriendlyApiError(response, '删除供应商失败');
   }
 
   return response.json();
@@ -193,12 +124,7 @@ export async function batchDeleteSuppliers(
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    const message = extractErrorMessage(
-      errorData,
-      `批量删除供应商失败: ${response.statusText}`
-    );
-    throw new Error(message);
+    throw await createFriendlyApiError(response, '批量删除供应商失败');
   }
 
   return response.json();
@@ -219,12 +145,7 @@ export async function batchUpdateSupplierStatus(
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    const message = extractErrorMessage(
-      errorData,
-      `批量更新供应商状态失败: ${response.statusText}`
-    );
-    throw new Error(message);
+    throw await createFriendlyApiError(response, '批量更新供应商状态失败');
   }
 
   return response.json();

@@ -15,6 +15,7 @@ jest.mock('@/lib/db', () => ({
     },
     inboundRecord: {
       aggregate: jest.fn(),
+      groupBy: jest.fn(),
     },
     outboundRecord: {
       aggregate: jest.fn(),
@@ -71,6 +72,7 @@ describe('monthly-report-service：口径/边界（集成回归）', () => {
     prisma.inboundRecord.aggregate.mockResolvedValue({
       _sum: { totalCost: 0 },
     });
+    prisma.inboundRecord.groupBy.mockResolvedValue([]);
     prisma.outboundRecord.aggregate.mockResolvedValue({
       _sum: { totalCost: 0 },
     });
@@ -157,13 +159,14 @@ describe('monthly-report-service：口径/边界（集成回归）', () => {
 
     await getMonthlyReport(2025, 1, false);
 
-    const inboundCalls = (prisma.inboundRecord.aggregate as jest.Mock).mock
-      .calls;
+    const inboundCalls = (prisma.inboundRecord.aggregate as jest.Mock).mock.calls
+      .map(([args]: any[]) => args)
+      .filter((args: any) => args?._sum?.totalCost);
     expect(inboundCalls.length).toBeGreaterThan(0);
 
-    const firstInboundWhere = inboundCalls[0]?.[0]?.where as any;
-    expect(firstInboundWhere?.reason).toEqual({ not: 'opening_balance' });
-    expect(firstInboundWhere?.purchaseOrder?.is).toEqual(
+    const costInboundWhere = inboundCalls[0]?.where as any;
+    expect(costInboundWhere?.reason).toEqual({ not: 'opening_balance' });
+    expect(costInboundWhere?.purchaseOrder?.is).toEqual(
       expect.objectContaining({
         voidedAt: null,
         dataTag: 'prod',
@@ -249,5 +252,58 @@ describe('monthly-report-service：口径/边界（集成回归）', () => {
       })
     );
     expect(report.receivables.paidAmount).toBe(79.5);
+  });
+
+  test('采购破损口径：应只统计 purchase + damagedQuantity>0，并返回片数与金额汇总', async () => {
+    prisma.inboundRecord.aggregate.mockImplementation(async (args: any) => {
+      if (args?._sum?.damagedQuantity) {
+        return {
+          _sum: { damagedQuantity: 9, damageTotalCost: 90 },
+        };
+      }
+
+      return {
+        _sum: { totalCost: 0 },
+      };
+    });
+    prisma.inboundRecord.groupBy.mockResolvedValue([
+      {
+        damageHandling: 'supplier_claim',
+        _sum: { damagedQuantity: 5, damageTotalCost: 50 },
+      },
+      {
+        damageHandling: 'internal_loss',
+        _sum: { damagedQuantity: 4, damageTotalCost: 40 },
+      },
+    ]);
+
+    const { getMonthlyReport } = await import(
+      '@/lib/services/monthly-report-service'
+    );
+    const report = await getMonthlyReport(2025, 1, false);
+
+    expect(prisma.inboundRecord.aggregate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        _sum: { damagedQuantity: true, damageTotalCost: true },
+        where: expect.objectContaining({
+          reason: 'purchase',
+          damagedQuantity: { gt: 0 },
+          createdAt: expect.objectContaining({
+            gte: expect.any(Date),
+            lte: expect.any(Date),
+          }),
+        }),
+      })
+    );
+    expect(prisma.inboundRecord.groupBy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        by: ['damageHandling'],
+        _sum: { damagedQuantity: true, damageTotalCost: true },
+      })
+    );
+    expect(report.purchaseDamage.totalQuantity).toBe(9);
+    expect(report.purchaseDamage.totalAmount).toBe(90);
+    expect(report.purchaseDamage.supplierClaim.quantity).toBe(5);
+    expect(report.purchaseDamage.internalLoss.amount).toBe(40);
   });
 });

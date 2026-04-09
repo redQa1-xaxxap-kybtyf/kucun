@@ -11,6 +11,7 @@ import { logger } from '@/lib/logger';
 import { ensureCompanyExpenses } from '@/lib/services/expense-service';
 import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 import { generateSalesOrderNumber } from '@/lib/services/simple-order-number-generator';
+import { parseLocalDateString } from '@/lib/utils/datetime';
 import { toNumber } from '@/lib/utils/number';
 import { generatePaymentNumber } from '@/lib/utils/payment-number-generator';
 import {
@@ -57,6 +58,7 @@ const createSelect = {
   status: true,
   orderType: true,
   transferMode: true,
+  orderDate: true,
   isSampleOrder: true,
   sampleSettlementType: true,
   itemsAmount: true,
@@ -208,6 +210,8 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
   const financials = calculateFinancials(validatedData, transferMode);
   const sampleSettlementType =
     validatedData.sampleSettlementType ?? DEFAULT_SAMPLE_SETTLEMENT_TYPE;
+  const resolvedOrderDate =
+    parseLocalDateString(validatedData.orderDate) ?? new Date();
 
   const maxCreateRetries = 10;
   let attempt = 0;
@@ -256,6 +260,7 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
             status: validatedData.status || 'draft',
             orderType: validatedData.orderType,
             transferMode,
+            orderDate: resolvedOrderDate,
             isSampleOrder: validatedData.isSampleOrder ?? false,
             sampleSettlementType,
             costAmount: financials.costAmount,
@@ -573,7 +578,7 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
         referenceNumber: order.orderNumber,
         description: `销售订单 ${order.orderNumber} 创建并已确认`,
         userId: order.userId,
-        occurredAt: order.createdAt,
+        occurredAt: order.orderDate,
         metadata: {
           status: order.status,
           triggeredBy: 'order:create',

@@ -339,6 +339,18 @@ const monthlyReportMock = {
     inventoryCostChange: 8600,
     totalCost: 260000,
   },
+  purchaseDamage: {
+    totalQuantity: 42,
+    totalAmount: 4200,
+    supplierClaim: {
+      quantity: 30,
+      amount: 3000,
+    },
+    internalLoss: {
+      quantity: 12,
+      amount: 1200,
+    },
+  },
   receivables: {
     totalReceivable: 412000,
     totalPayable: 186000,
@@ -452,6 +464,18 @@ const annualReportMock = {
         sampleCost: 9100,
       },
     ],
+  },
+  purchaseDamage: {
+    totalQuantity: 368,
+    totalAmount: 36800,
+    supplierClaim: {
+      quantity: 250,
+      amount: 25000,
+    },
+    internalLoss: {
+      quantity: 118,
+      amount: 11800,
+    },
   },
   monthlyTrend: [
     {

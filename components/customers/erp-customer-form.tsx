@@ -34,6 +34,7 @@ import type {
   CustomerExtendedInfo,
   CustomerUpdateInput,
 } from '@/lib/types/customer';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 import {
   customerCreateSchema as CreateCustomerSchema,
   customerCreateDefaults,
@@ -115,7 +116,7 @@ function useCustomerFormActions({
     onError: error => {
       toast({
         title: '创建失败',
-        description: error instanceof Error ? error.message : '创建失败',
+        description: getFriendlyErrorMessage(error, '创建客户失败，请稍后重试'),
         variant: 'destructive',
       });
     },
@@ -148,7 +149,7 @@ function useCustomerFormActions({
     onError: error => {
       toast({
         title: '更新失败',
-        description: error instanceof Error ? error.message : '更新失败',
+        description: getFriendlyErrorMessage(error, '更新客户失败，请稍后重试'),
         variant: 'destructive',
       });
     },

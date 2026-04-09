@@ -44,6 +44,11 @@ const baseSalesOrderSchema = z
     orderType: salesOrderTypeSchema, // 移除.default('NORMAL')
 
     transferMode: transferFulfillmentModeSchema.optional(), // 移除.default('SUPPLIER_ONLY')
+    orderDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, '销售日期格式不正确，请使用YYYY-MM-DD格式')
+      .optional()
+      .or(z.literal('')),
 
     isSampleOrder: z.boolean().optional(),
     sampleSettlementType: z.enum(SAMPLE_SETTLEMENT_TYPE_VALUES).optional(),
@@ -313,6 +318,7 @@ export const salesOrderQuerySchema = z.object({
   sortBy: z
     .enum([
       'orderNumber',
+      'orderDate',
       'totalAmount',
       'createdAt',
       'updatedAt',
@@ -321,8 +327,8 @@ export const salesOrderQuerySchema = z.object({
     ])
     .nullable()
     .optional()
-    .default('createdAt')
-    .transform(val => val ?? 'createdAt'),
+    .default('orderDate')
+    .transform(val => val ?? 'orderDate'),
   sortOrder: z
     .enum(['asc', 'desc'])
     .nullable()
@@ -446,6 +452,7 @@ export const salesOrderFormDefaults = {
   customerId: '',
   orderType: 'NORMAL' as const,
   status: 'draft' as const,
+  orderDate: '',
   isSampleOrder: false,
   sampleSettlementType: DEFAULT_SAMPLE_SETTLEMENT_TYPE,
   items: [],

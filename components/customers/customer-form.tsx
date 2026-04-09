@@ -36,6 +36,7 @@ import {
   parseExtendedInfo,
   processExtendedInfo,
 } from '@/lib/validations/customer';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
 interface CustomerFormProps {
   mode: 'create' | 'edit';
@@ -111,7 +112,9 @@ export function CustomerForm({
       }
     },
     onError: error => {
-      setSubmitError(error instanceof Error ? error.message : '创建客户失败');
+      setSubmitError(
+        getFriendlyErrorMessage(error, '创建客户失败，请稍后重试')
+      );
     },
   });
 
@@ -140,7 +143,9 @@ export function CustomerForm({
       }
     },
     onError: error => {
-      setSubmitError(error instanceof Error ? error.message : '更新客户失败');
+      setSubmitError(
+        getFriendlyErrorMessage(error, '更新客户失败，请稍后重试')
+      );
     },
   });
 

@@ -6,6 +6,7 @@ import { clearCacheAfterPayment } from '@/lib/cache/finance-cache';
 import { prisma } from '@/lib/db';
 import { publishFinanceEvent } from '@/lib/events';
 import { logger } from '@/lib/logger';
+import { isAutoReceivableConfirmationPayment } from '@/lib/services/receivables-helpers';
 
 function appendCancelRemark(
   existing: string | null,
@@ -69,6 +70,13 @@ export const POST = withAuth(
         return NextResponse.json(
           { success: false, error: '收款记录不存在' },
           { status: 404 }
+        );
+      }
+
+      if (isAutoReceivableConfirmationPayment(payment)) {
+        return NextResponse.json(
+          { success: false, error: '系统应收建账记录不能手工取消' },
+          { status: 400 }
         );
       }
 

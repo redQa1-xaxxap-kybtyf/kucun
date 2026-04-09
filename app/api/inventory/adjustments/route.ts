@@ -75,7 +75,12 @@ function buildAdjustmentWhereClause(queryParams: {
  * 构建调整记录排序配置
  */
 type AdjustmentQueryParams = {
-  sortBy?: 'createdAt' | 'adjustmentNumber' | 'quantity' | 'reason';
+  sortBy?:
+    | 'createdAt'
+    | 'adjustmentNumber'
+    | 'quantity'
+    | 'adjustQuantity'
+    | 'reason';
 };
 
 function buildAdjustmentOrderBy(
@@ -89,8 +94,8 @@ function buildAdjustmentOrderBy(
     orderBy.createdAt = finalSortOrder;
   } else if (sortBy === 'adjustmentNumber') {
     orderBy.adjustmentNumber = finalSortOrder;
-  } else if (sortBy === 'quantity') {
-    // Map 'quantity' from query to 'adjustQuantity' in database
+  } else if (sortBy === 'quantity' || sortBy === 'adjustQuantity') {
+    // 兼容旧 query 值 quantity 与新显式字段名 adjustQuantity
     orderBy.adjustQuantity = finalSortOrder;
   } else if (sortBy === 'reason') {
     orderBy.reason = finalSortOrder;

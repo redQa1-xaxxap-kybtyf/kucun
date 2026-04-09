@@ -97,7 +97,7 @@ export const navigationItems: NavigationItem[] = [
       },
       {
         id: 'inventory-inbound-create',
-        title: '产品入库',
+        title: '手工采购入库',
         href: '/inventory/inbound/create',
         icon: Plus,
       },

@@ -10,6 +10,7 @@ import type { AuthUser } from '@/lib/auth/context';
 import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
 import { prisma } from '@/lib/db';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
+import { roundCostPrice } from '@/lib/utils/cost-price';
 import { toNumber } from '@/lib/utils/number';
 import {
   cleanRemarks,
@@ -127,6 +128,7 @@ const putInboundRecordHandler = withAuth(
         where: { id: recordId },
         select: {
           id: true,
+          reason: true,
           quantity: true,
           unitCost: true,
           totalCost: true,
@@ -160,6 +162,22 @@ const putInboundRecordHandler = withAuth(
       try {
         updatedRecord = await prisma.$transaction(async tx => {
           const updateData: Record<string, unknown> = {};
+          const currentUnitCost = toNumber(existingRecord.unitCost, Number.NaN);
+          const nextQuantity =
+            validatedData.quantity !== undefined
+              ? formatQuantity(validatedData.quantity)
+              : existingRecord.quantity;
+          const quantityChanged =
+            validatedData.quantity !== undefined &&
+            nextQuantity !== existingRecord.quantity;
+          const nextUnitCost =
+            validatedData.unitCost !== undefined
+              ? roundCostPrice(validatedData.unitCost)
+              : currentUnitCost;
+          const unitCostChanged =
+            validatedData.unitCost !== undefined &&
+            (!Number.isFinite(currentUnitCost) ||
+              Math.abs(nextUnitCost - currentUnitCost) > 0.000001);
 
           if (validatedData.reason !== undefined) {
             updateData.reason = validatedData.reason;
@@ -168,16 +186,10 @@ const putInboundRecordHandler = withAuth(
             updateData.remarks = cleanRemarks(validatedData.remarks);
           }
 
-          if (
-            validatedData.quantity !== undefined &&
-            validatedData.quantity !== existingRecord.quantity
-          ) {
-            const newQuantity = formatQuantity(validatedData.quantity);
-            if (!Number.isInteger(newQuantity)) {
+          if (quantityChanged || unitCostChanged) {
+            if (!Number.isInteger(nextQuantity)) {
               throw ApiError.badRequest('数量必须是整数（片）');
             }
-
-            const quantityDiff = newQuantity - existingRecord.quantity;
 
             const inventories = await tx.inventory.findMany({
               where: {
@@ -216,69 +228,109 @@ const putInboundRecordHandler = withAuth(
             }
 
             const costEntry = costEntries[0] ?? null;
+            const consumedQty = costEntry
+              ? existingRecord.quantity - costEntry.remainingQty
+              : 0;
 
-            if (costEntry) {
-              const consumedQty =
-                existingRecord.quantity - costEntry.remainingQty;
-
-              if (consumedQty < 0) {
-                throw ApiError.badRequest(
-                  'FIFO 队列数据异常：remainingQty 大于入库数量'
-                );
-              }
-
-              if (newQuantity < consumedQty) {
-                throw ApiError.badRequest(
-                  `该入库记录已被出库消耗 ${consumedQty} 片，数量不能小于已消耗数量`
-                );
-              }
-
-              const newRemainingQty = newQuantity - consumedQty;
-
-              await tx.inventoryCostQueue.update({
-                where: { id: costEntry.id },
-                data: { remainingQty: newRemainingQty },
-              });
-            } else if (quantityDiff > 0) {
-              // 历史记录未写入 FIFO 队列，允许减少/纠错，但禁止增加数量以免账实不符
+            if (consumedQty < 0) {
               throw ApiError.badRequest(
-                '该入库记录未写入 FIFO 队列，无法增加数量；如需补齐 FIFO 请使用专用修复脚本'
+                'FIFO 队列数据异常：remainingQty 大于入库数量'
               );
             }
 
-            if (quantityDiff > 0) {
-              await tx.inventory.update({
-                where: { id: inventory.id },
-                data: {
-                  quantity: { increment: quantityDiff },
-                  updatedAt: new Date(),
-                },
-              });
-            } else {
-              const decrementQty = Math.abs(quantityDiff);
-              const availableQty =
-                inventory.quantity - inventory.reservedQuantity;
+            if (
+              existingRecord.reason === 'opening_balance' &&
+              consumedQty > 0
+            ) {
+              throw ApiError.badRequest(
+                `该期初入库记录已被后续业务消耗 ${consumedQty} 片，不能再修改原始数量或成本`
+              );
+            }
 
-              if (availableQty < decrementQty) {
+            if (quantityChanged) {
+              const quantityDiff = nextQuantity - existingRecord.quantity;
+
+              if (costEntry) {
+                if (nextQuantity < consumedQty) {
+                  throw ApiError.badRequest(
+                    `该入库记录已被出库消耗 ${consumedQty} 片，数量不能小于已消耗数量`
+                  );
+                }
+
+                const newRemainingQty = nextQuantity - consumedQty;
+
+                await tx.inventoryCostQueue.update({
+                  where: { id: costEntry.id },
+                  data: { remainingQty: newRemainingQty },
+                });
+              } else if (quantityDiff > 0) {
+                // 历史记录未写入 FIFO 队列，允许减少/纠错，但禁止增加数量以免账实不符
                 throw ApiError.badRequest(
-                  `扣减后可用库存不足：当前可用 ${availableQty} 片，需要扣减 ${decrementQty} 片`
+                  '该入库记录未写入 FIFO 队列，无法增加数量；如需补齐 FIFO 请使用专用修复脚本'
                 );
               }
 
+              if (quantityDiff > 0) {
+                await tx.inventory.update({
+                  where: { id: inventory.id },
+                  data: {
+                    quantity: { increment: quantityDiff },
+                    updatedAt: new Date(),
+                  },
+                });
+              } else {
+                const decrementQty = Math.abs(quantityDiff);
+                const availableQty =
+                  inventory.quantity - inventory.reservedQuantity;
+
+                if (availableQty < decrementQty) {
+                  throw ApiError.badRequest(
+                    `扣减后可用库存不足：当前可用 ${availableQty} 片，需要扣减 ${decrementQty} 片`
+                  );
+                }
+
+                await tx.inventory.update({
+                  where: { id: inventory.id },
+                  data: {
+                    quantity: { decrement: decrementQty },
+                    updatedAt: new Date(),
+                  },
+                });
+              }
+            }
+
+            if (unitCostChanged) {
               await tx.inventory.update({
                 where: { id: inventory.id },
                 data: {
-                  quantity: { decrement: decrementQty },
+                  unitCost: nextUnitCost,
                   updatedAt: new Date(),
                 },
               });
+
+              if (costEntry) {
+                await tx.inventoryCostQueue.update({
+                  where: { id: costEntry.id },
+                  data: {
+                    unitCost: nextUnitCost,
+                  },
+                });
+              }
             }
 
-            updateData.quantity = newQuantity;
-            const unitCost = toNumber(existingRecord.unitCost, Number.NaN);
-            if (Number.isFinite(unitCost)) {
+            if (quantityChanged) {
+              updateData.quantity = nextQuantity;
+            }
+            if (unitCostChanged) {
+              updateData.unitCost = nextUnitCost;
+            }
+
+            const effectiveUnitCost = unitCostChanged
+              ? nextUnitCost
+              : currentUnitCost;
+            if (Number.isFinite(effectiveUnitCost)) {
               updateData.totalCost =
-                Math.round(newQuantity * unitCost * 100) / 100;
+                Math.round(nextQuantity * effectiveUnitCost * 100) / 100;
             }
           }
 
@@ -310,8 +362,7 @@ const putInboundRecordHandler = withAuth(
           reason: updatedRecord.reason,
           remarks: updatedRecord.remarks || undefined,
           userId: updatedRecord.userId,
-          openingImportBatchId:
-            updatedRecord.openingImportBatchId || undefined,
+          openingImportBatchId: updatedRecord.openingImportBatchId || undefined,
           createdAt: updatedRecord.createdAt.toISOString(),
           updatedAt: updatedRecord.updatedAt.toISOString(),
           product: updatedRecord.product,

@@ -291,6 +291,7 @@ const accountsReceivableQuerySchemaObject = z.object({
     }, '请输入有效的结束日期格式'),
   sortBy: z
     .enum([
+      'orderDate',
       'createdAt',
       'updatedAt',
       'dueDate',
@@ -301,7 +302,7 @@ const accountsReceivableQuerySchemaObject = z.object({
       'remainingAmount',
     ])
     .optional()
-    .default('createdAt'),
+    .default('orderDate'),
   sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
 });
 

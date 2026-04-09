@@ -28,6 +28,7 @@ const getSalesOrdersHandler = withErrorHandling(
         sortOrder: searchParams.get('sortOrder'),
         status: searchParams.get('status'),
         customerId: searchParams.get('customerId'),
+        userId: searchParams.get('userId'),
         startDate: searchParams.get('startDate'),
         endDate: searchParams.get('endDate'),
         orderType: searchParams.get('orderType'),
@@ -80,6 +81,7 @@ const createSalesOrderHandler = withErrorHandling(
         status: validatedData.status,
         orderType: validatedData.orderType,
         transferMode: validatedData.transferMode,
+        orderDate: validatedData.orderDate || undefined,
         isSampleOrder: validatedData.isSampleOrder ?? false,
         sampleSettlementType:
           validatedData.sampleSettlementType ?? DEFAULT_SAMPLE_SETTLEMENT_TYPE,

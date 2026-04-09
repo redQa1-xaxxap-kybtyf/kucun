@@ -10,6 +10,8 @@ import {
   type QueryKey,
 } from '@tanstack/react-query';
 
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
+
 // ============================================================================
 // 类型定义
 // ============================================================================
@@ -169,7 +171,9 @@ export async function prefetchMultipleQueries(
  */
 export function extractApiData<T>(response: ApiResponse<T>): T {
   if (response.error) {
-    throw new Error(response.error);
+    throw createQueryError(
+      getFriendlyErrorMessage(response.error, '请求失败，请稍后重试')
+    );
   }
   return response.data;
 }
@@ -314,13 +318,7 @@ export function isNetworkError(error: unknown): boolean {
  * ```
  */
 export function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  if (typeof error === 'string') {
-    return error;
-  }
-  return '发生未知错误';
+  return getFriendlyErrorMessage(error, '发生未知错误，请稍后重试');
 }
 
 // ============================================================================

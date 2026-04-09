@@ -67,7 +67,7 @@ export function BasicInfoSection({
           基本信息
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-8 p-8">
+      <CardContent className="space-y-6 p-5 lg:p-6 xl:space-y-8 xl:p-8">
         {/* 第一行：客户选择和集装箱号 */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {/* 客户选择 */}

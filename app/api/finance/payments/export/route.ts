@@ -15,6 +15,7 @@ import { type NextRequest } from 'next/server';
 import { errorResponse, withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { buildExcludeAutoReceivableConfirmationWhere } from '@/lib/services/receivables-helpers';
 import { paymentRecordQuerySchema } from '@/lib/validations/payment';
 
 type ExportFormat = 'excel' | 'csv';
@@ -110,10 +111,7 @@ export const POST = withAuth(
         where.paymentDate = paymentDateFilter;
       }
 
-      // 与收款列表页面保持一致：仅导出有实际收款金额的记录
-      where.actualPaymentAmount = {
-        gt: 0,
-      };
+      Object.assign(where, buildExcludeAutoReceivableConfirmationWhere());
 
       const totalCount = await prisma.paymentRecord.count({ where });
 

@@ -82,7 +82,7 @@ export function CountStatisticsCards({
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
       {cardConfigs.map(({ id, title, icon: Icon, value, description }) => (
         <Card key={id}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

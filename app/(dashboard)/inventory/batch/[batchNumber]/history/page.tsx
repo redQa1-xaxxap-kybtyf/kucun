@@ -173,7 +173,7 @@ function BatchHistoryScreen({
   view: BatchViewModel;
 }) {
   return (
-    <div className="flex h-full flex-col overflow-auto bg-slate-50/30 p-4 sm:p-6 lg:p-8">
+    <div className="flex h-full flex-col overflow-auto bg-slate-50/30 p-4 sm:p-6 xl:p-8">
       <div className="mx-auto w-full max-w-7xl space-y-8">
         <BatchHistoryHeader
           batchNumber={view.effectiveBatchNumber}
@@ -182,15 +182,15 @@ function BatchHistoryScreen({
 
         <BatchHistorySummary summary={view.summary} />
 
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-          <div className="lg:col-span-1">
+        <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
+          <div className="xl:col-span-1">
             <ProductInfoCard
               batchNumber={view.effectiveBatchNumber}
               product={view.product}
               variant={view.variant}
             />
           </div>
-          <div className="lg:col-span-2">
+          <div className="xl:col-span-2">
             <MovementHistoryCard groups={history.groups} />
           </div>
         </div>
@@ -282,10 +282,10 @@ function MovementHistoryCard({ groups }: { groups: BatchMovementGroup[] }) {
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center text-sm font-black tracking-wider text-slate-500 uppercase">
             <Clock className="mr-2 h-4 w-4 text-emerald-500" />
-            全量变动流水
+            批次变动记录
           </CardTitle>
-          <Badge className="bg-slate-900 text-[10px] font-black tracking-widest text-white uppercase">
-            {totalCount} RECORDS
+          <Badge className="bg-slate-900 text-[10px] font-black tracking-widest text-white">
+            {totalCount} 条记录
           </Badge>
         </div>
       </CardHeader>
@@ -310,7 +310,7 @@ function MovementHistoryCard({ groups }: { groups: BatchMovementGroup[] }) {
 function MovementTable({ groups }: { groups: BatchMovementGroup[] }) {
   return (
     <div className="overflow-x-auto">
-      <Table>
+      <Table className="min-w-[860px] [&_th]:whitespace-nowrap">
         <TableHeader className="bg-slate-50/50">
           <TableRow className="border-b border-slate-100">
             <TableHead className="py-4 pl-6 font-black text-slate-500">
@@ -378,7 +378,7 @@ function MovementRow({ entry }: { entry: InventoryMovementEntry }) {
 
   return (
     <TableRow className="group border-b border-slate-50 transition-colors hover:bg-slate-50/50">
-      <TableCell className="py-4 pl-6">
+      <TableCell className="py-4 pl-6 whitespace-nowrap">
         <div className="flex flex-col gap-0.5">
           <span className="text-xs font-bold text-slate-900">
             {formatDateTimeCN(entry.createdAt).split(' ')[0]}
@@ -388,7 +388,7 @@ function MovementRow({ entry }: { entry: InventoryMovementEntry }) {
           </span>
         </div>
       </TableCell>
-      <TableCell className="py-4">
+      <TableCell className="py-4 whitespace-nowrap">
         <Badge
           variant={meta.badge}
           className="rounded-full px-2.5 py-0.5 text-[9px] font-black tracking-wider uppercase"
@@ -396,7 +396,7 @@ function MovementRow({ entry }: { entry: InventoryMovementEntry }) {
           {meta.label}
         </Badge>
       </TableCell>
-      <TableCell className="py-4">
+      <TableCell className="min-w-[140px] py-4">
         <div className="flex flex-col gap-1">
           <code className="text-[11px] font-black tracking-tight text-blue-600">
             {entry.recordNumber}
@@ -409,15 +409,15 @@ function MovementRow({ entry }: { entry: InventoryMovementEntry }) {
         </div>
       </TableCell>
       <TableCell
-        className={`py-4 text-right text-xs font-black tabular-nums ${changeColor}`}
+        className={`py-4 text-right text-xs font-black whitespace-nowrap tabular-nums ${changeColor}`}
       >
         {changePrefix}
         {changeDisplay}
       </TableCell>
-      <TableCell className="py-4 text-right text-[11px] font-bold text-slate-600 tabular-nums">
+      <TableCell className="py-4 text-right text-[11px] font-bold whitespace-nowrap text-slate-600 tabular-nums">
         {formatBalance(entry.balanceAfter)}
       </TableCell>
-      <TableCell className="py-4 pr-6 text-right text-xs font-bold text-slate-500">
+      <TableCell className="py-4 pr-6 text-right text-xs font-bold whitespace-nowrap text-slate-500">
         {entry.operator?.name || '—'}
       </TableCell>
     </TableRow>

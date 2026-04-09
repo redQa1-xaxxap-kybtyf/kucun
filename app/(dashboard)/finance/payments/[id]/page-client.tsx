@@ -48,6 +48,7 @@ interface PaymentRecord {
   remarks?: string;
   receiptNumber?: string;
   bankInfo?: string;
+  isSystemReceivableConfirmation?: boolean;
   customer: {
     id: string;
     name: string;
@@ -168,6 +169,8 @@ export function PaymentDetailClient({
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelNotes, setCancelNotes] = useState('');
   const [isCancelling, setIsCancelling] = useState(false);
+  const isSystemReceivableConfirmation =
+    payment.isSystemReceivableConfirmation === true;
 
   // 确认收款
   const handleConfirm = async () => {
@@ -234,9 +237,7 @@ export function PaymentDetailClient({
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(
-            trimmedNotes ? { notes: trimmedNotes } : {}
-          ),
+          body: JSON.stringify(trimmedNotes ? { notes: trimmedNotes } : {}),
         })
       );
 
@@ -283,38 +284,71 @@ export function PaymentDetailClient({
             </Button>
             <div className="h-5 w-px bg-gray-300"></div>
             <h1 className="text-lg font-semibold text-gray-900">
-              收款记录详情
+              {isSystemReceivableConfirmation
+                ? '系统应收建账详情'
+                : '收款记录详情'}
             </h1>
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-            {payment.status === 'pending' && (
-              <>
-                <Button
-                  size="sm"
-                  className="gap-1.5 bg-green-600 hover:bg-green-700"
-                  onClick={handleConfirm}
-                  disabled={isConfirming || isCancelling}
-                >
-                  <CheckCircle className="h-3.5 w-3.5" />
-                  {isConfirming ? '确认中...' : '确认收款'}
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={() => {
-                    setCancelNotes('');
-                    setShowCancelDialog(true);
-                  }}
-                  disabled={isConfirming || isCancelling}
-                >
-                  <XCircle className="h-3.5 w-3.5" />
-                  取消收款
-                </Button>
-              </>
-            )}
+            {!isSystemReceivableConfirmation &&
+              payment.status === 'pending' && (
+                <>
+                  <Button
+                    size="sm"
+                    className="gap-1.5 bg-green-600 hover:bg-green-700"
+                    onClick={handleConfirm}
+                    disabled={isConfirming || isCancelling}
+                  >
+                    <CheckCircle className="h-3.5 w-3.5" />
+                    {isConfirming ? '确认中...' : '确认收款'}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => {
+                      setCancelNotes('');
+                      setShowCancelDialog(true);
+                    }}
+                    disabled={isConfirming || isCancelling}
+                  >
+                    <XCircle className="h-3.5 w-3.5" />
+                    取消收款
+                  </Button>
+                </>
+              )}
           </div>
         </div>
+
+        {isSystemReceivableConfirmation && (
+          <Card className="border-amber-200 bg-amber-50/70 shadow-sm">
+            <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="space-y-2">
+                <div className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">
+                  系统应收建账
+                </div>
+                <p className="text-sm text-amber-900">
+                  这条记录用于确认订单应收已建立，不代表客户已经付款，也不会计入真实收款列表。
+                </p>
+                <p className="text-xs text-amber-700">
+                  如需查看客户真实到账，请查看下方订单收款汇总或前往销售订单详情。
+                </p>
+              </div>
+              {payment.salesOrder?.id && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  asChild
+                  className="border-amber-300 bg-white text-amber-900 hover:bg-amber-100"
+                >
+                  <Link href={`/finance/receivables/${payment.salesOrder.id}`}>
+                    查看应收详情
+                  </Link>
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
           <AlertDialogContent>
@@ -379,7 +413,7 @@ export function PaymentDetailClient({
               {/* 1. 记账金额 */}
               <div className="flex flex-col items-center justify-center bg-white px-4 py-4 transition-colors hover:bg-[hsl(var(--color-bg-secondary))]">
                 <span className="mb-1.5 text-xs font-semibold tracking-wider text-[hsl(var(--color-text-tertiary))] uppercase">
-                  记账金额
+                  {isSystemReceivableConfirmation ? '应收建账' : '记账金额'}
                 </span>
                 <span className="text-xl font-bold tracking-tight text-[hsl(var(--color-primary))]">
                   {formatCurrency(payment.paymentAmount)}
@@ -389,7 +423,7 @@ export function PaymentDetailClient({
               {/* 2. 收款差额 */}
               <div className="flex flex-col items-center justify-center bg-white px-4 py-4 transition-colors hover:bg-[hsl(var(--color-bg-secondary))]">
                 <span className="mb-1.5 text-xs font-semibold tracking-wider text-[hsl(var(--color-text-tertiary))] uppercase">
-                  收款差额
+                  {isSystemReceivableConfirmation ? '建账差额' : '收款差额'}
                 </span>
                 {payment.roundingAmount !== 0 ? (
                   <div className="flex flex-col items-center">
@@ -421,11 +455,23 @@ export function PaymentDetailClient({
               </div>
 
               {/* 3. 实际收款 */}
-              <div className="flex flex-col items-center justify-center bg-gradient-to-br from-[hsl(var(--color-success))]/5 to-white px-4 py-4 transition-all hover:from-[hsl(var(--color-success))]/10">
+              <div
+                className={`flex flex-col items-center justify-center px-4 py-4 transition-all ${
+                  isSystemReceivableConfirmation
+                    ? 'bg-gradient-to-br from-amber-100/70 to-white hover:from-amber-100'
+                    : 'bg-gradient-to-br from-[hsl(var(--color-success))]/5 to-white hover:from-[hsl(var(--color-success))]/10'
+                }`}
+              >
                 <span className="mb-1.5 text-xs font-semibold tracking-wider text-[hsl(var(--color-text-tertiary))] uppercase">
-                  实际收款
+                  {isSystemReceivableConfirmation ? '客户实付' : '实际收款'}
                 </span>
-                <span className="text-xl font-bold tracking-tight text-[hsl(var(--color-success))]">
+                <span
+                  className={`text-xl font-bold tracking-tight ${
+                    isSystemReceivableConfirmation
+                      ? 'text-amber-700'
+                      : 'text-[hsl(var(--color-success))]'
+                  }`}
+                >
                   {formatCurrency(payment.actualPaymentAmount)}
                 </span>
               </div>
@@ -435,13 +481,19 @@ export function PaymentDetailClient({
             <div className="grid grid-cols-2 gap-3 bg-[hsl(var(--color-bg-tertiary))]/30 px-4 py-3">
               <div className="rounded-lg bg-white/80 p-2.5 shadow-sm">
                 <p className="mb-1 text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
-                  收款方式
+                  {isSystemReceivableConfirmation ? '记录类型' : '收款方式'}
                 </p>
-                <PaymentMethodDisplay method={payment.paymentMethod} />
+                {isSystemReceivableConfirmation ? (
+                  <p className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                    系统应收建账
+                  </p>
+                ) : (
+                  <PaymentMethodDisplay method={payment.paymentMethod} />
+                )}
               </div>
               <div className="rounded-lg bg-white/80 p-2.5 shadow-sm">
                 <p className="mb-1 text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
-                  收款日期
+                  {isSystemReceivableConfirmation ? '建账时间' : '收款日期'}
                 </p>
                 <p className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
                   {formatPaymentDateTime(
@@ -505,7 +557,11 @@ export function PaymentDetailClient({
                       </p>
                     </div>
                     <div className="rounded-lg bg-white p-2.5 shadow-sm">
-                      <p className="mb-0.5 text-xs text-gray-500">已收金额</p>
+                      <p className="mb-0.5 text-xs text-gray-500">
+                        {isSystemReceivableConfirmation
+                          ? '真实已收/冲抵'
+                          : '已收金额'}
+                      </p>
                       <p className="text-base font-bold text-green-600">
                         {formatCurrency(payment.salesOrder.paidAmount)}
                       </p>
@@ -535,6 +591,11 @@ export function PaymentDetailClient({
                     <p className="text-lg font-bold text-orange-600">
                       {formatCurrency(payment.salesOrder.remainingAmount)}
                     </p>
+                    {isSystemReceivableConfirmation && (
+                      <p className="mt-1 text-xs text-gray-500">
+                        系统建账单不会计入上方已收金额。
+                      </p>
+                    )}
                   </div>
                 </div>
               </CardContent>

@@ -141,9 +141,9 @@ function buildStatCards(
  * 计算网格列数类名
  */
 function getGridColsClass(cardCount: number): string {
-  if (cardCount === 5) return 'lg:grid-cols-5';
-  if (cardCount === 4) return 'lg:grid-cols-4';
-  return 'lg:grid-cols-3';
+  if (cardCount === 5) return 'xl:grid-cols-5';
+  if (cardCount === 4) return 'xl:grid-cols-4';
+  return 'xl:grid-cols-3';
 }
 
 /**
@@ -301,7 +301,7 @@ function InventoryStatisticsCardsSkeleton({
 }) {
   // 根据权限动态计算卡片数量
   const cardCount = hasFinancePermission ? 5 : 3;
-  const gridColsClass = cardCount === 5 ? 'lg:grid-cols-5' : 'lg:grid-cols-3';
+  const gridColsClass = cardCount === 5 ? 'xl:grid-cols-5' : 'xl:grid-cols-3';
 
   return (
     <div className={`grid gap-4 md:grid-cols-2 ${gridColsClass}`}>

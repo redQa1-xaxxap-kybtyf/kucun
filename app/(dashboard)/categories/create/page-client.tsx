@@ -51,6 +51,7 @@ import { can } from '@/lib/auth/permissions';
 import { paginationConfig } from '@/lib/config/pagination';
 import { queryKeys } from '@/lib/queryKeys';
 import { buildCategoryPathMap } from '@/lib/utils/category-utils';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 import { CreateCategorySchema } from '@/lib/validations/category';
 
 // 表单层使用 Zod 输入类型（允许 schema 默认值和可选字段），
@@ -428,94 +429,31 @@ function useCreateCategoryController(): CreateCategoryController {
       router.refresh();
     },
     onError: error => {
-      // 解析错误类型并显示对应的友好提示
-      const errorMessage = error instanceof Error ? error.message : '创建失败';
+      const errorMessage = getFriendlyErrorMessage(
+        error,
+        '创建分类失败，请稍后重试'
+      );
+      const title = errorMessage.includes('登录')
+        ? '需要登录'
+        : errorMessage.includes('权限')
+          ? '权限不足'
+          : errorMessage.includes('网络')
+            ? '网络连接失败'
+            : errorMessage.includes('服务器') || errorMessage.includes('服务')
+              ? '服务器错误'
+              : errorMessage.includes('已存在') ||
+                  errorMessage.includes('不能为空') ||
+                  errorMessage.includes('不能超过') ||
+                  errorMessage.includes('校验') ||
+                  errorMessage.includes('层级')
+                ? '数据验证失败'
+                : '创建失败';
 
-      // 401 未授权 - 用户未登录
-      if (
-        errorMessage.includes('未授权') ||
-        errorMessage.includes('401') ||
-        errorMessage.includes('Unauthorized')
-      ) {
-        toast({
-          title: '需要登录',
-          description: '请先登录后再创建分类',
-          variant: 'destructive',
-          duration: 3000,
-        });
-        return;
-      }
-
-      // 403 权限不足 - 用户没有创建权限
-      if (
-        errorMessage.includes('权限不足') ||
-        errorMessage.includes('403') ||
-        errorMessage.includes('Forbidden')
-      ) {
-        toast({
-          title: '权限不足',
-          description: '您没有创建分类的权限，请联系管理员',
-          variant: 'destructive',
-          duration: 3000,
-        });
-        return;
-      }
-
-      // 400 数据验证失败 - 显示具体的验证错误
-      if (
-        errorMessage.includes('400') ||
-        errorMessage.includes('Bad Request') ||
-        errorMessage.includes('已存在') ||
-        errorMessage.includes('不能为空') ||
-        errorMessage.includes('不能超过') ||
-        errorMessage.includes('层级')
-      ) {
-        toast({
-          title: '数据验证失败',
-          description: errorMessage,
-          variant: 'destructive',
-          duration: 4000,
-        });
-        return;
-      }
-
-      // 500 服务器错误
-      if (
-        errorMessage.includes('500') ||
-        errorMessage.includes('Internal Server Error') ||
-        errorMessage.includes('服务器错误')
-      ) {
-        toast({
-          title: '服务器错误',
-          description: '服务器遇到问题，请稍后重试',
-          variant: 'destructive',
-          duration: 3000,
-        });
-        return;
-      }
-
-      // 网络错误
-      if (
-        errorMessage.includes('网络') ||
-        errorMessage.includes('Network') ||
-        errorMessage.includes('Failed to fetch') ||
-        errorMessage.includes('连接')
-      ) {
-        toast({
-          title: '网络连接失败',
-          description: '请检查网络连接后重试',
-          variant: 'destructive',
-          duration: 3000,
-        });
-        return;
-      }
-
-      // 其他未知错误 - 显示原始错误信息
       toast({
-        title: '创建失败',
-        description: errorMessage || '创建分类时发生未知错误，请重试',
+        title,
+        description: errorMessage,
         variant: 'destructive',
-        duration: 3000,
+        duration: title === '数据验证失败' ? 4000 : 3000,
       });
     },
   });

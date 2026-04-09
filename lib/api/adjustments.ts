@@ -12,6 +12,7 @@ import type {
   AdjustmentQueryParams,
   InventoryAdjustment,
 } from '@/lib/types/inventory-operations';
+import { createFriendlyApiError } from '@/lib/utils/user-friendly-error';
 
 // 定义 AdjustmentListResponse 类型
 interface AdjustmentListResponse {
@@ -89,7 +90,7 @@ export async function getAdjustments(
   });
 
   if (!response.ok) {
-    throw new Error(`获取调整记录失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '获取调整记录失败');
   }
 
   const data: AdjustmentListResponse = await response.json();
@@ -113,7 +114,7 @@ export async function getAdjustment(id: string): Promise<InventoryAdjustment> {
   });
 
   if (!response.ok) {
-    throw new Error(`获取调整记录详情失败: ${response.statusText}`);
+    throw await createFriendlyApiError(response, '获取调整记录详情失败');
   }
 
   const data: ApiResponse<InventoryAdjustment> = await response.json();

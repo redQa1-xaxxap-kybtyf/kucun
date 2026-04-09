@@ -166,8 +166,7 @@ export function MonthlyReportClient() {
         description: `报表图片已生成并下载 (${filename}.png)`,
       });
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : '导出图片失败';
+      const message = error instanceof Error ? error.message : '导出图片失败';
       toast({
         variant: 'destructive',
         title: '导出失败',
@@ -198,14 +197,21 @@ export function MonthlyReportClient() {
     );
   }
 
+  const purchaseDamage = report.purchaseDamage ?? {
+    totalQuantity: 0,
+    totalAmount: 0,
+    supplierClaim: { quantity: 0, amount: 0 },
+    internalLoss: { quantity: 0, amount: 0 },
+  };
+
   return (
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="space-y-4 sm:space-y-6">
         {/* 页面标题卡片 */}
         <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
           <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-4 sm:p-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-start gap-3 sm:items-center sm:gap-4">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between xl:items-center">
+              <div className="flex items-start gap-3 sm:gap-4">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-[0_10px_24px_rgba(9,88,217,0.22)] sm:h-12 sm:w-12">
                   <Calendar className="h-5 w-5 text-white sm:h-6 sm:w-6" />
                 </div>
@@ -218,13 +224,13 @@ export function MonthlyReportClient() {
                   </p>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2 sm:items-center sm:justify-end">
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap lg:max-w-md lg:justify-end">
                 <Button
                   variant="outline"
                   size="lg"
                   onClick={handleGenerateReport}
                   disabled={isGenerating}
-                  className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
+                  className="h-11 justify-center shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)] sm:min-w-[140px]"
                 >
                   <Receipt className="mr-2 h-4 w-4" />
                   {isGenerating ? '刷新中...' : '重新计算'}
@@ -234,7 +240,7 @@ export function MonthlyReportClient() {
                   size="lg"
                   onClick={handleExportImage}
                   disabled={isExporting}
-                  className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
+                  className="h-11 justify-center shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)] sm:min-w-[140px]"
                 >
                   <Receipt className="mr-2 h-4 w-4" />
                   {isExporting ? '导出中...' : '导出图片'}
@@ -246,18 +252,18 @@ export function MonthlyReportClient() {
 
         {/* 筛选器 */}
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
               选择月份
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="flex gap-4">
+          <CardContent className="pt-0">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap xl:flex-nowrap">
               <select
                 value={year.toString()}
                 onChange={e => setYear(parseInt(e.target.value, 10))}
-                className="border-input bg-background ring-offset-background focus:ring-ring h-10 w-32 rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden"
+                className="border-input bg-background ring-offset-background focus:ring-ring h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden sm:w-40"
                 aria-label="年份"
               >
                 {yearOptions.map(y => (
@@ -270,7 +276,7 @@ export function MonthlyReportClient() {
               <select
                 value={month.toString()}
                 onChange={e => setMonth(parseInt(e.target.value, 10))}
-                className="border-input bg-background ring-offset-background focus:ring-ring h-10 w-32 rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden"
+                className="border-input bg-background ring-offset-background focus:ring-ring h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden sm:w-40"
                 aria-label="月份"
               >
                 {monthOptions.map(m => (
@@ -286,6 +292,7 @@ export function MonthlyReportClient() {
                   setYear(currentDate.getFullYear());
                   setMonth(currentDate.getMonth() + 1);
                 }}
+                className="w-full sm:w-auto"
               >
                 当前月份
               </Button>
@@ -294,7 +301,7 @@ export function MonthlyReportClient() {
         </Card>
 
         {/* 核心指标 - 顶部大卡片 */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
           <StatCard
             title="本月销售总收入"
             value={report.revenue.salesRevenue}
@@ -321,6 +328,21 @@ export function MonthlyReportClient() {
             subtitle="资产健康状况"
           />
           <StatCard
+            title="本月破损片数"
+            value={purchaseDamage.totalQuantity}
+            icon={<Package className="h-4 w-4" />}
+            variant="warning"
+            isCurrency={false}
+            subtitle="仅统计采购到货破损"
+          />
+          <StatCard
+            title="本月破损金额"
+            value={purchaseDamage.totalAmount}
+            icon={<ChineseYuan className="h-4 w-4" />}
+            variant="error"
+            subtitle="按采购元/片成本折算"
+          />
+          <StatCard
             title="异常提醒"
             value={report.alerts?.length || 0}
             icon={<Receipt className="h-4 w-4" />}
@@ -330,9 +352,20 @@ export function MonthlyReportClient() {
           />
         </div>
 
+        <Card>
+          <CardContent className="px-4 py-3 text-xs leading-5 text-[hsl(var(--color-text-secondary))]">
+            采购破损说明：本月报工厂{' '}
+            {purchaseDamage.supplierClaim.quantity.toLocaleString()} 片 /
+            {formatCurrency(purchaseDamage.supplierClaim.amount)}，内部承担{' '}
+            {purchaseDamage.internalLoss.quantity.toLocaleString()} 片 /
+            {formatCurrency(purchaseDamage.internalLoss.amount)}
+            。金额按采购入库时的元/片成本折算，仅用于追责和财务跟踪，不计入库存。
+          </CardContent>
+        </Card>
+
         {/* 收入与支出明细 - 高清晰分组区 */}
-        <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-6">
-          <div className="mb-6 flex items-center justify-between">
+        <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 sm:p-6">
+          <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <h2 className="flex items-center gap-2 text-sm font-black tracking-widest text-slate-800 uppercase">
               <TrendingUp className="h-4 w-4 text-emerald-500" />
               收支明细中心
@@ -344,7 +377,7 @@ export function MonthlyReportClient() {
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
             <StatCard
               title="日均销售"
               value={report.revenue.salesRevenue / 30}
@@ -378,7 +411,7 @@ export function MonthlyReportClient() {
               icon={<ChineseYuan className="h-4 w-4" />}
               variant="neutral"
             />
-            <div className="my-2 h-px bg-slate-200 sm:col-span-2 lg:col-span-4 xl:col-span-5" />
+            <div className="my-2 h-px bg-slate-200 sm:col-span-2 xl:col-span-3 2xl:col-span-5" />
             {expenseBreakdownItems.map(item => (
               <StatCard
                 key={item.key}
@@ -402,9 +435,9 @@ export function MonthlyReportClient() {
         </div>
 
         {/* 资产回收与供应链 - 分组区 */}
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 xl:grid-cols-2">
           {/* 资金回收看板 */}
-          <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+          <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-6">
             <h2 className="mb-4 flex items-center gap-2 text-sm font-black tracking-widest text-slate-800 uppercase">
               <ChineseYuan className="h-4 w-4 text-blue-500" />
               资金回收看板
@@ -467,7 +500,7 @@ export function MonthlyReportClient() {
                 </div>
               </div>
             </div>
-            <div className="mt-4 flex items-center justify-between rounded-lg border border-red-100 bg-red-50 px-4 py-3">
+            <div className="mt-4 flex flex-col gap-2 rounded-lg border border-red-100 bg-red-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <span className="text-xs font-bold text-red-700">
                 待收余额 (欠款):
               </span>
@@ -478,7 +511,7 @@ export function MonthlyReportClient() {
           </div>
 
           {/* 供应链与直发分析 */}
-          <div className="rounded-2xl border border-slate-100 bg-white p-6 text-sm shadow-sm">
+          <div className="rounded-2xl border border-slate-100 bg-white p-4 text-sm shadow-sm sm:p-6">
             <h2 className="mb-4 flex items-center gap-2 text-sm font-black tracking-widest text-slate-800 uppercase">
               <RefreshCw className="h-4 w-4 text-emerald-500" />
               效率与直发绩效
@@ -523,7 +556,7 @@ export function MonthlyReportClient() {
 
         {/* 异常审计 - v3 风格内容 */}
         {report.alerts && report.alerts.length > 0 && (
-          <div className="rounded-2xl border border-amber-100 bg-amber-50 p-6">
+          <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 sm:p-6">
             <h2 className="mb-4 flex items-center gap-2 text-sm font-black tracking-widest text-amber-800 uppercase">
               <Receipt className="h-4 w-4" />
               智能风险审计建议
@@ -623,10 +656,10 @@ function StatCard({
       className={cn(
         'group hover:border-opacity-50 relative overflow-hidden border transition-all duration-300 hover:shadow-md',
         themeStyles[variant],
-        size === 'lg' ? 'md:col-span-2 lg:col-span-1' : ''
+        size === 'lg' ? 'md:col-span-2 xl:col-span-1' : ''
       )}
     >
-      <CardHeader className="flex flex-row items-start justify-between space-y-0 px-5 pt-5 pb-2">
+      <CardHeader className="flex flex-row items-start justify-between space-y-0 px-4 pt-4 pb-2 sm:px-5 sm:pt-5">
         <div className="space-y-1">
           <CardTitle className="text-xs font-bold tracking-wider uppercase opacity-80">
             {title}
@@ -634,7 +667,7 @@ function StatCard({
           <div
             className={cn(
               'font-black tracking-tight text-slate-900',
-              size === 'lg' ? 'text-3xl' : 'text-2xl'
+              size === 'lg' ? 'text-2xl lg:text-3xl' : 'text-xl sm:text-2xl'
             )}
           >
             {isCurrency ? formatCurrency(value) : value.toLocaleString()}
@@ -650,7 +683,7 @@ function StatCard({
         </div>
       </CardHeader>
 
-      <CardContent className="px-5 pb-4">
+      <CardContent className="px-4 pb-4 sm:px-5">
         <div className="flex flex-col gap-2">
           {comparison && (
             <div className="flex items-center gap-2">
@@ -681,7 +714,7 @@ function StatCard({
             </div>
           )}
           {subtitle && (
-            <p className="mt-1 line-clamp-1 border-t border-slate-200/50 pt-2 text-[11px] leading-relaxed text-slate-500">
+            <p className="mt-1 line-clamp-2 border-t border-slate-200/50 pt-2 text-[11px] leading-relaxed text-slate-500 sm:line-clamp-1">
               {subtitle}
             </p>
           )}

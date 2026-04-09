@@ -71,7 +71,7 @@ export function InboundRecordsToolbar({
               onClick={onCreateNew}
             >
               <Plus className="h-4 w-4" />
-              产品入库
+              手工采购入库
             </Button>
           )}
         </>

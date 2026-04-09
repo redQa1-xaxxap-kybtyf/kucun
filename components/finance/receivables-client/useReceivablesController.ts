@@ -250,7 +250,7 @@ function useReceivablesHandlers(
         });
       } else if (key === 'sortBy') {
         updateParams({
-          sortBy: (value || 'createdAt') as ReceivablesQueryParams['sortBy'],
+          sortBy: (value || 'orderDate') as ReceivablesQueryParams['sortBy'],
           page: 1,
         });
       } else if (key === 'sortOrder') {

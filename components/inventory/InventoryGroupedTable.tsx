@@ -152,11 +152,11 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
 
     return (
       <Table
-        className={
+        className={`${hasFinancePermission ? 'min-w-[1320px]' : 'min-w-[1160px]'} [&_th]:whitespace-nowrap ${
           density === 'compact'
             ? '[&_td]:!px-2 [&_td]:!py-2 [&_th]:!px-2 [&_th]:!py-2'
             : ''
-        }
+        }`}
       >
         <TableHeader className="card-shadow-light sticky top-0 z-20 bg-white/95 backdrop-blur-md">
           <TableRow className="border-b border-slate-200 hover:bg-transparent">
@@ -289,7 +289,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     onDoubleClick={() => onAdjust(item.id)}
                   >
                     {/* 产品预览区 */}
-                    <TableCell className="py-3">
+                    <TableCell className="py-3 whitespace-nowrap">
                       {isFirstInGroup ? (
                         <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm transition-transform group-hover:scale-105">
                           {group.thumbnailUrl ? (
@@ -314,7 +314,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     </TableCell>
 
                     {/* 产品编码 */}
-                    <TableCell className="py-3">
+                    <TableCell className="py-3 whitespace-nowrap">
                       <div className="flex flex-col gap-1">
                         <div
                           className={`text-sm font-black tracking-tight ${isFirstInGroup ? 'text-slate-900' : 'text-slate-400'}`}
@@ -325,7 +325,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     </TableCell>
 
                     {/* 产品名称 */}
-                    <TableCell className="py-3">
+                    <TableCell className="min-w-[220px] py-3">
                       <div
                         className={`max-w-[200px] truncate text-xs font-bold transition-colors ${isFirstInGroup ? 'text-slate-600 group-hover:text-slate-900' : 'text-slate-400'}`}
                       >
@@ -334,7 +334,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     </TableCell>
 
                     {/* 批次规格 */}
-                    <TableCell className="py-3">
+                    <TableCell className="min-w-[180px] py-3">
                       <div className="flex flex-col gap-1">
                         <div className="max-w-[150px] truncate text-xs font-medium text-slate-500">
                           {group.specification}
@@ -358,7 +358,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     </TableCell>
 
                     {/* 包装信息 */}
-                    <TableCell className="py-3">
+                    <TableCell className="py-3 whitespace-nowrap">
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-1">
                           <span className="text-sm font-black text-slate-700">
@@ -377,7 +377,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     </TableCell>
 
                     {/* 库存总量 */}
-                    <TableCell className="py-3 text-right">
+                    <TableCell className="py-3 text-right whitespace-nowrap">
                       <div className="flex flex-col items-end gap-1.5">
                         {isFirstInGroup && group.items.length > 1 && (
                           <div className="rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-black text-white shadow-md ring-2 ring-white">
@@ -396,7 +396,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     </TableCell>
 
                     {/* 预留/可用 */}
-                    <TableCell className="py-3 text-right">
+                    <TableCell className="py-3 text-right whitespace-nowrap">
                       <div className="flex flex-col items-end gap-1">
                         <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400">
                           <span>预留 {reservedDisplay}</span>
@@ -419,7 +419,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
 
                     {/* 货值评估 */}
                     {hasFinancePermission && (
-                      <TableCell className="py-3 text-right">
+                      <TableCell className="py-3 text-right whitespace-nowrap">
                         {item.unitCost !== null &&
                         item.unitCost !== undefined ? (
                           <div className="flex flex-col items-end gap-0.5">
@@ -437,7 +437,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     )}
 
                     {/* 健康状态 */}
-                    <TableCell className="py-3">
+                    <TableCell className="py-3 whitespace-nowrap">
                       <Badge
                         variant={variant}
                         className={`rounded-full px-3 py-0.5 text-[10px] font-black tracking-wider uppercase ${
@@ -451,7 +451,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     </TableCell>
 
                     {/* 操作 */}
-                    <TableCell className="py-3 text-right">
+                    <TableCell className="py-3 text-right whitespace-nowrap">
                       <Button
                         variant="ghost"
                         size="sm"

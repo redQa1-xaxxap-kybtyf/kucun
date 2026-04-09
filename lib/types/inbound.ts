@@ -149,9 +149,20 @@ export interface CreateInboundRequest {
   thickness?: number; // 产品厚度(mm)
 }
 
+export interface BatchCreateInboundRequest {
+  batchIdempotencyKey: string;
+  records: CreateInboundRequest[];
+}
+
+export interface BatchInboundCreateResponse {
+  records: InboundRecord[];
+  count: number;
+}
+
 // 更新入库记录的请求数据
 export interface UpdateInboundRequest {
   quantity?: number;
+  unitCost?: number;
   reason?: InboundReason;
   remarks?: string;
 }

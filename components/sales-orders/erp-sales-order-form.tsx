@@ -28,6 +28,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
@@ -190,6 +191,7 @@ export function ERPSalesOrderForm({
       status: payload.status,
       orderType: payload.orderType,
       transferMode: payload.transferMode,
+      orderDate: payload.orderDate,
       isSampleOrder: payload.isSampleOrder ?? false,
       sampleSettlementType:
         payload.sampleSettlementType ?? DEFAULT_SAMPLE_SETTLEMENT_TYPE,
@@ -223,6 +225,7 @@ export function ERPSalesOrderForm({
       status: 'draft',
       orderType: 'NORMAL',
       transferMode: 'SUPPLIER_ONLY',
+      orderDate: formatDate(new Date()),
       isSampleOrder: false,
       sampleSettlementType: DEFAULT_SAMPLE_SETTLEMENT_TYPE,
       supplierId: '',
@@ -364,13 +367,16 @@ export function ERPSalesOrderForm({
     [productsData?.data]
   );
 
-  const rememberSelectedProduct = React.useCallback((product: Product | null) => {
-    if (!product?.id) {
-      return;
-    }
+  const rememberSelectedProduct = React.useCallback(
+    (product: Product | null) => {
+      if (!product?.id) {
+        return;
+      }
 
-    setSelectedProducts(current => mergeProductsById(current, [product]));
-  }, []);
+      setSelectedProducts(current => mergeProductsById(current, [product]));
+    },
+    []
+  );
 
   const initialOrderProducts = React.useMemo(
     () =>
@@ -877,14 +883,14 @@ export function ERPSalesOrderForm({
   // 自动生成订单号状态
   const [autoOrderNumber, setAutoOrderNumber] = React.useState<string>('');
 
-  const creationDisplayDate = React.useMemo(() => {
+  const creationDisplayText = React.useMemo(() => {
     if (mode === 'edit' && initialData?.createdAt) {
       const parsedDate = new Date(initialData.createdAt);
       if (!Number.isNaN(parsedDate.getTime())) {
-        return parsedDate;
+        return formatDate(parsedDate);
       }
     }
-    return new Date();
+    return '保存后自动记录';
   }, [mode, initialData?.createdAt]);
 
   const initializedOrderRef = React.useRef<string | null>(null);
@@ -958,6 +964,7 @@ export function ERPSalesOrderForm({
       customerId: initialData.customerId,
       status: initialData.status,
       orderType: initialData.orderType,
+      orderDate: formatDate(initialData.orderDate ?? initialData.createdAt),
       isSampleOrder: initialData.isSampleOrder ?? false,
       sampleSettlementType:
         initialData.sampleSettlementType ?? DEFAULT_SAMPLE_SETTLEMENT_TYPE,
@@ -1372,8 +1379,8 @@ export function ERPSalesOrderForm({
               <h3 className="text-sm font-semibold text-gray-700">基本信息</h3>
             </div>
             <div className="p-4">
-              {/* 第一行：订单号和创建日期 */}
-              <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+              {/* 第一行：订单号、销售日期和创建日期 */}
+              <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {/* 订单号 */}
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-gray-700">
@@ -1393,14 +1400,38 @@ export function ERPSalesOrderForm({
                   </p>
                 </div>
 
-                {/* 创建日期 */}
+                <FormField
+                  control={form.control}
+                  name="orderDate"
+                  render={({ field }) => (
+                    <FormItem className="space-y-1.5">
+                      <FormLabel className="text-sm font-medium text-gray-700">
+                        销售日期 <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          type="date"
+                          value={field.value || ''}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                        />
+                      </FormControl>
+                      <FormMessage className="text-xs" />
+                    </FormItem>
+                  )}
+                />
+
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-gray-700">
                     创建日期
                   </Label>
                   <div className="rounded-md border bg-gray-50 px-3 py-1.5 text-sm text-gray-700">
-                    {formatDate(creationDisplayDate.toISOString())}
+                    {creationDisplayText}
                   </div>
+                  <p className="text-xs text-gray-500">
+                    系统审计时间，不可手动修改
+                  </p>
                 </div>
               </div>
 
@@ -1454,9 +1485,9 @@ export function ERPSalesOrderForm({
                               );
                             }
                           }}
-                          className="flex flex-row space-x-8 pt-1.5"
+                          className="flex flex-wrap gap-4 pt-1.5 md:gap-6"
                         >
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center space-x-2 whitespace-nowrap">
                             <RadioGroupItem value="NORMAL" id="normal" />
                             <Label
                               htmlFor="normal"
@@ -1465,7 +1496,7 @@ export function ERPSalesOrderForm({
                               {SALES_ORDER_TYPE_LABELS.NORMAL}
                             </Label>
                           </div>
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center space-x-2 whitespace-nowrap">
                             <RadioGroupItem value="TRANSFER" id="transfer" />
                             <Label
                               htmlFor="transfer"
@@ -1531,7 +1562,7 @@ export function ERPSalesOrderForm({
                         <RadioGroup
                           value={field.value ?? DEFAULT_SAMPLE_SETTLEMENT_TYPE}
                           onValueChange={field.onChange}
-                          className="grid gap-3 md:grid-cols-2"
+                          className="grid gap-3 xl:grid-cols-2"
                         >
                           <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50/80 p-4 shadow-sm">
                             <RadioGroupItem
@@ -1623,7 +1654,7 @@ export function ERPSalesOrderForm({
                     </Alert>
                   )}
 
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
                     <FormField
                       control={form.control}
                       name="transferMode"
@@ -1638,7 +1669,7 @@ export function ERPSalesOrderForm({
                               onValueChange={value =>
                                 field.onChange(value as TransferFulfillmentMode)
                               }
-                              className="grid gap-3 md:grid-cols-2"
+                              className="grid gap-3 xl:grid-cols-2"
                             >
                               <div className="border-border flex items-start gap-2 rounded-md border bg-white/80 p-3 shadow-sm">
                                 <RadioGroupItem
@@ -1800,7 +1831,7 @@ export function ERPSalesOrderForm({
               <h3 className="text-sm font-medium">汇总信息</h3>
             </div>
             <div className="p-3">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5 xl:grid-cols-6">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-6">
                 <div className="flex items-center justify-between rounded border bg-[hsl(var(--color-primary-light))] px-3 py-2">
                   <span className="text-muted-foreground text-xs">
                     产品种类
@@ -1931,20 +1962,20 @@ export function ERPSalesOrderForm({
 
           {/* ERP标准布局：操作按钮 */}
           <div className="bg-card sticky bottom-0 rounded border p-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+              <div className="flex w-full justify-end xl:w-auto xl:justify-start">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => onCancel?.() || router.back()}
                   disabled={createMutation.isPending}
-                  className="h-8 text-xs"
+                  className="h-8 w-full text-xs sm:w-auto"
                 >
                   取消
                 </Button>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="grid gap-2 sm:grid-cols-2 xl:flex xl:items-center">
                 <Button
                   type="button"
                   variant="outline"
@@ -1955,7 +1986,7 @@ export function ERPSalesOrderForm({
                     !form.watch('customerId') ||
                     hasInventoryShortage
                   }
-                  className="h-8 text-xs"
+                  className="h-8 w-full text-xs"
                   onClick={() => submitWithStatus('confirmed')}
                 >
                   {createMutation.isPending || updateMutation.isPending ? (
@@ -1973,7 +2004,7 @@ export function ERPSalesOrderForm({
                     updateMutation.isPending ||
                     !form.watch('customerId')
                   }
-                  className="h-8 text-xs"
+                  className="h-8 w-full text-xs"
                   onClick={() => submitWithStatus('draft')}
                 >
                   {createMutation.isPending || updateMutation.isPending ? (

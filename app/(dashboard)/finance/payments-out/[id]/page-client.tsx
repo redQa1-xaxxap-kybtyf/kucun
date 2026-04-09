@@ -265,7 +265,7 @@ export function PaymentOutDetailClient({
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="space-y-4 sm:space-y-6">
         {/* 顶部操作栏 */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" size="sm" asChild className="gap-1.5">
               <Link href="/finance/payments-out">
@@ -278,12 +278,12 @@ export function PaymentOutDetailClient({
               付款记录详情
             </h1>
           </div>
-          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap lg:justify-end">
             {payment.status !== 'cancelled' && (
               <Button
                 variant="outline"
                 size="sm"
-                className="gap-1.5"
+                className="w-full gap-1.5 sm:w-auto"
                 onClick={() =>
                   router.push(`/finance/payments-out/${payment.id}/edit`)
                 }
@@ -295,7 +295,7 @@ export function PaymentOutDetailClient({
             {payment.status === 'pending' && (
               <Button
                 size="sm"
-                className="gap-1.5 bg-green-600 hover:bg-green-700"
+                className="w-full gap-1.5 bg-green-600 hover:bg-green-700 sm:w-auto"
                 onClick={handleConfirm}
                 disabled={isConfirming || isVoiding}
               >
@@ -307,7 +307,7 @@ export function PaymentOutDetailClient({
               <Button
                 variant="destructive"
                 size="sm"
-                className="gap-1.5"
+                className="w-full gap-1.5 sm:w-auto"
                 onClick={() => {
                   setVoidReason('');
                   setShowVoidDialog(true);
@@ -359,50 +359,50 @@ export function PaymentOutDetailClient({
         {/* 顶部核心信息卡片 */}
         <Card className="overflow-hidden border border-[hsl(var(--color-border-secondary))] shadow-lg">
           <CardContent className="p-0">
-            <div className="border-b border-[hsl(var(--color-border-secondary))]/50 bg-gradient-to-br from-[hsl(var(--color-bg-secondary))] via-[hsl(var(--color-bg-tertiary))] to-white px-6 py-4">
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-md">
-                    <ChineseYuan className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-xl font-bold text-[hsl(var(--color-text-primary))]">
-                        {payment.paymentNumber}
-                      </h2>
-                      <StatusBadge status={payment.status} />
+            <div className="border-b border-[hsl(var(--color-border-secondary))]/50 bg-gradient-to-br from-[hsl(var(--color-bg-secondary))] via-[hsl(var(--color-bg-tertiary))] to-white px-4 py-4 sm:px-6">
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="flex items-start gap-3 sm:gap-4">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-md sm:h-12 sm:w-12">
+                      <ChineseYuan className="h-5 w-5 text-white sm:h-6 sm:w-6" />
                     </div>
-                    <div className="mt-1 flex items-center gap-2 text-sm text-[hsl(var(--color-text-secondary))]">
-                      <Building2 className="h-3.5 w-3.5" />
-                      <span>{payment.supplier.name}</span>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="text-xl font-bold break-all text-[hsl(var(--color-text-primary))] sm:text-2xl">
+                          {payment.paymentNumber}
+                        </h2>
+                        <StatusBadge status={payment.status} />
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                        <Building2 className="h-3.5 w-3.5" />
+                        <span>{payment.supplier.name}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-8">
-                  <div className="text-right">
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-xl border border-[hsl(var(--color-border-secondary))]/60 bg-white/80 px-4 py-3 shadow-sm">
                     <p className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                       记账金额
                     </p>
-                    <p className="text-2xl font-bold text-[hsl(var(--color-primary))]">
+                    <p className="mt-1 text-xl font-bold text-[hsl(var(--color-primary))] sm:text-2xl">
                       {formatCurrency(payment.paymentAmount)}
                     </p>
                   </div>
-                  <div className="h-8 w-px bg-[hsl(var(--color-border-secondary))]"></div>
-                  <div className="text-right">
+                  <div className="rounded-xl border border-[hsl(var(--color-border-secondary))]/60 bg-white/80 px-4 py-3 shadow-sm">
                     <p className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                       实际付款
                     </p>
-                    <p className="text-2xl font-bold text-green-600">
+                    <p className="mt-1 text-xl font-bold text-green-600 sm:text-2xl">
                       {formatCurrency(payment.actualPaymentAmount)}
                     </p>
                   </div>
-                  <div className="h-8 w-px bg-[hsl(var(--color-border-secondary))]"></div>
-                  <div className="text-right">
+                  <div className="rounded-xl border border-[hsl(var(--color-border-secondary))]/60 bg-white/80 px-4 py-3 shadow-sm">
                     <p className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                       抹零差额
                     </p>
                     <p
-                      className={`text-2xl font-bold ${
+                      className={`mt-1 text-xl font-bold sm:text-2xl ${
                         payment.roundingAmount < 0
                           ? 'text-red-600'
                           : payment.roundingAmount > 0
@@ -421,9 +421,9 @@ export function PaymentOutDetailClient({
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
           {/* 左侧：基本信息和操作记录 */}
-          <div className="space-y-6 lg:col-span-2">
+          <div className="space-y-6 xl:col-span-2">
             {/* 基本信息 */}
             <Card className="overflow-hidden shadow-sm">
               <CardHeader className="border-b bg-[hsl(var(--color-bg-secondary))]/50 pb-3">
@@ -433,7 +433,7 @@ export function PaymentOutDetailClient({
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   <div className="space-y-1">
                     <span className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                       付款日期
@@ -559,7 +559,7 @@ export function PaymentOutDetailClient({
                       >
                         {payment.payableRecord.payableNumber}
                       </Link>
-                      <div className="mt-2 grid grid-cols-2 gap-4">
+                      <div className="mt-2 grid gap-4 sm:grid-cols-2">
                         <div>
                           <p className="text-xs text-[hsl(var(--color-text-tertiary))]">
                             应付金额

@@ -29,6 +29,7 @@ export interface SalesOrderFormData {
   status?: SalesOrderStatus;
   orderType?: 'NORMAL' | 'TRANSFER';
   transferMode?: TransferFulfillmentMode;
+  orderDate?: string;
   isSampleOrder?: boolean;
   sampleSettlementType?: SampleSettlementType;
   supplierId?: string;
@@ -244,6 +245,7 @@ export function transformFormDataToCreateInput(
     status: formData.status || 'draft',
     orderType: effectiveOrderType,
     transferMode,
+    orderDate: formData.orderDate?.trim() || undefined,
     isSampleOrder: formData.isSampleOrder ?? false,
     sampleSettlementType:
       formData.sampleSettlementType ?? DEFAULT_SAMPLE_SETTLEMENT_TYPE,
@@ -392,6 +394,7 @@ export function transformFormDataToUpdateInput(
     status: formData.status,
     orderType: effectiveOrderType,
     transferMode,
+    orderDate: formData.orderDate?.trim() || undefined,
     isSampleOrder: formData.isSampleOrder ?? false,
     sampleSettlementType:
       formData.sampleSettlementType ?? DEFAULT_SAMPLE_SETTLEMENT_TYPE,

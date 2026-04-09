@@ -108,8 +108,8 @@ export function OutboundRecordsTable({
       </div>
 
       {/* 桌面端表格视图 */}
-      <div className="hidden overflow-x-auto md:block">
-        <Table>
+      <div className="hidden overflow-x-auto xl:block">
+        <Table className="min-w-[1120px] [&_th]:whitespace-nowrap">
           <TableHeader className="card-shadow-light">
             <TableRow className="border-b border-slate-200 hover:bg-transparent">
               <TableHead className="py-4 font-black text-slate-700">
@@ -156,22 +156,22 @@ export function OutboundRecordsTable({
                   key={record.id}
                   className="group border-b border-slate-100 transition-colors hover:bg-blue-50/30"
                 >
-                  <TableCell className="py-4">
+                  <TableCell className="py-4 whitespace-nowrap">
                     <div className="text-[11px] font-bold text-slate-400">
                       <CopyableText text={record.id.slice(-8).toUpperCase()} />
                     </div>
                   </TableCell>
-                  <TableCell className="py-4">
+                  <TableCell className="py-4 whitespace-nowrap">
                     <div className="text-sm leading-tight font-black text-slate-900">
                       <CopyableText text={record.productCode || '-'} />
                     </div>
                   </TableCell>
-                  <TableCell className="py-4">
+                  <TableCell className="min-w-[180px] py-4">
                     <div className="max-w-[180px] truncate text-xs font-bold text-slate-600">
                       {record.productName}
                     </div>
                   </TableCell>
-                  <TableCell className="py-4">
+                  <TableCell className="min-w-[180px] py-4">
                     <div className="flex flex-col gap-1.5">
                       {record.batchNumber ? (
                         <Badge
@@ -191,7 +191,7 @@ export function OutboundRecordsTable({
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="py-4">
+                  <TableCell className="py-4 whitespace-nowrap">
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs font-black text-slate-700">
                         {record.piecesPerUnit || '-'}
@@ -201,7 +201,7 @@ export function OutboundRecordsTable({
                       </span>
                     </div>
                   </TableCell>
-                  <TableCell className="py-4 text-right">
+                  <TableCell className="py-4 text-right whitespace-nowrap">
                     <div className="flex flex-col items-end gap-0.5">
                       <div className="text-sm font-black text-slate-900">
                         {formatQuantity(record.quantity, record.piecesPerUnit)}
@@ -211,7 +211,7 @@ export function OutboundRecordsTable({
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="py-4">
+                  <TableCell className="min-w-[150px] py-4">
                     <div className="flex flex-col gap-1">
                       <Badge
                         variant={
@@ -229,7 +229,7 @@ export function OutboundRecordsTable({
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="py-4">
+                  <TableCell className="py-4 whitespace-nowrap">
                     <div className="flex items-center gap-1.5 text-slate-500">
                       <User className="h-3 w-3 text-slate-300" />
                       <div className="flex flex-col">
@@ -247,7 +247,7 @@ export function OutboundRecordsTable({
       </div>
 
       {/* 移动端卡片视图 */}
-      <div className="space-y-3 p-3 md:hidden">
+      <div className="space-y-3 p-3 xl:hidden">
         {records.length === 0 ? (
           <EmptyState
             title="暂无出库记录"

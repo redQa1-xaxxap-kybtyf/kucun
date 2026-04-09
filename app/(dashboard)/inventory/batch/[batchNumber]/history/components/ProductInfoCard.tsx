@@ -23,7 +23,7 @@ export function ProductInfoCard({
         </CardTitle>
       </CardHeader>
       <CardContent className="bg-[hsl(var(--color-bg-card))] p-6">
-        <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 xl:grid-cols-3">
           <div>
             <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
               产品编码

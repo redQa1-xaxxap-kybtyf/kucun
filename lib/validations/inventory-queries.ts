@@ -42,17 +42,37 @@ export const inventoryAlertsQuerySchema = z.object({
 export const inventoryAdjustmentsQuerySchema = z
   .object({
     page: z
-      .string()
-      .nullable()
-      .optional()
-      .transform(val => (val ? parseInt(val) : 1))
+      .preprocess(val => {
+        if (val === undefined || val === null || val === '') {
+          return undefined;
+        }
+        if (typeof val === 'number') {
+          return val;
+        }
+        if (typeof val === 'string') {
+          const parsed = Number.parseInt(val, 10);
+          return Number.isNaN(parsed) ? val : parsed;
+        }
+        return val;
+      }, z.number().int().positive().optional())
+      .transform(val => val ?? 1)
       .refine(val => val > 0, '页码必须大于0'),
 
     limit: z
-      .string()
-      .nullable()
-      .optional()
-      .transform(val => (val ? parseInt(val) : 20))
+      .preprocess(val => {
+        if (val === undefined || val === null || val === '') {
+          return undefined;
+        }
+        if (typeof val === 'number') {
+          return val;
+        }
+        if (typeof val === 'string') {
+          const parsed = Number.parseInt(val, 10);
+          return Number.isNaN(parsed) ? val : parsed;
+        }
+        return val;
+      }, z.number().int().positive().optional())
+      .transform(val => val ?? 20)
       .refine(
         val => val > 0 && val <= paginationConfig.maxPageSize,
         `每页数量必须在1-${paginationConfig.maxPageSize}之间`
@@ -65,7 +85,13 @@ export const inventoryAdjustmentsQuerySchema = z
       .transform(val => val?.trim() || undefined),
 
     sortBy: z
-      .enum(['createdAt', 'adjustmentNumber', 'quantity', 'reason'])
+      .enum([
+        'createdAt',
+        'adjustmentNumber',
+        'quantity',
+        'adjustQuantity',
+        'reason',
+      ])
       .nullable()
       .optional()
       .transform(val => val || 'createdAt'),
@@ -108,7 +134,7 @@ export const inventoryAdjustmentsQuerySchema = z
       .transform(val => val || undefined),
 
     status: z
-      .enum(['pending', 'approved', 'rejected', 'completed'])
+      .enum(['draft', 'pending', 'approved', 'rejected', 'completed'])
       .nullable()
       .optional()
       .transform(val => val || undefined),
@@ -343,7 +369,12 @@ export const outboundRecordSearchSchema = z
   .object({
     search: z.string().max(100, '搜索关键词不能超过100个字符').optional(),
     type: z
-      .enum(['normal_outbound', 'sales_outbound', 'adjust_outbound'])
+      .enum([
+        'normal_outbound',
+        'sales_outbound',
+        'sample_outbound',
+        'adjust_outbound',
+      ])
       .optional()
       .or(z.literal('')),
     productId: z.string().uuid('产品ID格式不正确').optional().or(z.literal('')),

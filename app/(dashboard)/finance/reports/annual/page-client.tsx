@@ -28,10 +28,10 @@ const AnnualReportCharts = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 xl:grid-cols-2">
         <div className="h-[360px] w-full animate-pulse rounded-2xl bg-slate-50" />
         <div className="h-[360px] w-full animate-pulse rounded-2xl bg-slate-50" />
-        <div className="h-[320px] w-full animate-pulse rounded-2xl bg-slate-50 lg:col-span-2" />
+        <div className="h-[320px] w-full animate-pulse rounded-2xl bg-slate-50 xl:col-span-2" />
       </div>
     ),
   }
@@ -143,8 +143,9 @@ export function AnnualReportClient() {
       setIsExporting(true);
 
       const filename = `年度报表-${year}`;
-      const { PrintTemplateExportService } =
-        await import('@/lib/services/print-template-export-service');
+      const { PrintTemplateExportService } = await import(
+        '@/lib/services/print-template-export-service'
+      );
 
       await PrintTemplateExportService.exportDataToImage({
         templateType: 'finance-annual-report',
@@ -167,8 +168,7 @@ export function AnnualReportClient() {
         description: `报表图片已生成并下载 (${filename}.png)`,
       });
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : '导出图片失败';
+      const message = error instanceof Error ? error.message : '导出图片失败';
       toast({
         variant: 'destructive',
         title: '导出失败',
@@ -199,14 +199,21 @@ export function AnnualReportClient() {
     );
   }
 
+  const purchaseDamage = report.purchaseDamage ?? {
+    totalQuantity: 0,
+    totalAmount: 0,
+    supplierClaim: { quantity: 0, amount: 0 },
+    internalLoss: { quantity: 0, amount: 0 },
+  };
+
   return (
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="space-y-4 sm:space-y-6">
         {/* 页面标题卡片 */}
         <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
           <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-4 sm:p-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-start gap-3 sm:items-center sm:gap-4">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between xl:items-center">
+              <div className="flex items-start gap-3 sm:gap-4">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-[0_10px_24px_rgba(9,88,217,0.22)] sm:h-12 sm:w-12">
                   <Calendar className="h-5 w-5 text-white sm:h-6 sm:w-6" />
                 </div>
@@ -219,13 +226,13 @@ export function AnnualReportClient() {
                   </p>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2 sm:items-center sm:justify-end">
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap lg:max-w-md lg:justify-end">
                 <Button
                   variant="outline"
                   size="lg"
                   onClick={handleGenerateReport}
                   disabled={isGenerating}
-                  className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
+                  className="h-11 justify-center shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)] sm:min-w-[140px]"
                 >
                   <Receipt className="mr-2 h-4 w-4" />
                   {isGenerating ? '刷新中...' : '重新计算'}
@@ -235,7 +242,7 @@ export function AnnualReportClient() {
                   size="lg"
                   onClick={handleExportImage}
                   disabled={isExporting}
-                  className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
+                  className="h-11 justify-center shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)] sm:min-w-[140px]"
                 >
                   <Receipt className="mr-2 h-4 w-4" />
                   {isExporting ? '导出中...' : '导出图片'}
@@ -247,18 +254,18 @@ export function AnnualReportClient() {
 
         {/* 年份选择器 */}
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
               选择年份
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="flex gap-4">
+          <CardContent className="pt-0">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap xl:flex-nowrap">
               <select
                 value={year.toString()}
                 onChange={e => setYear(parseInt(e.target.value, 10))}
-                className="border-input bg-background ring-offset-background focus:ring-ring h-10 w-32 rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden"
+                className="border-input bg-background ring-offset-background focus:ring-ring h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden sm:w-40"
                 aria-label="年份"
               >
                 {yearOptions.map(y => (
@@ -268,7 +275,11 @@ export function AnnualReportClient() {
                 ))}
               </select>
 
-              <Button variant="outline" onClick={() => setYear(currentYear)}>
+              <Button
+                variant="outline"
+                onClick={() => setYear(currentYear)}
+                className="w-full sm:w-auto"
+              >
                 当前年份
               </Button>
             </div>
@@ -281,8 +292,19 @@ export function AnnualReportClient() {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardContent className="px-4 py-3 text-xs leading-5 text-[hsl(var(--color-text-secondary))]">
+            采购破损说明：本年报工厂{' '}
+            {purchaseDamage.supplierClaim.quantity.toLocaleString()} 片 /
+            {formatCurrency(purchaseDamage.supplierClaim.amount)}，内部承担{' '}
+            {purchaseDamage.internalLoss.quantity.toLocaleString()} 片 /
+            {formatCurrency(purchaseDamage.internalLoss.amount)}
+            。金额按采购入库时的元/片成本折算，仅用于追责和财务跟踪，不计入库存。
+          </CardContent>
+        </Card>
+
         {/* 年度核心指标 - 顶部大卡片 */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
           <StatCard
             title="年度销售总收入"
             value={report.summary.totalRevenue}
@@ -310,6 +332,21 @@ export function AnnualReportClient() {
             subtitle="经营效益综合评估"
           />
           <StatCard
+            title="年度破损片数"
+            value={purchaseDamage.totalQuantity}
+            icon={<Receipt className="h-4 w-4" />}
+            variant="warning"
+            isCurrency={false}
+            subtitle="仅统计采购到货破损"
+          />
+          <StatCard
+            title="年度破损金额"
+            value={purchaseDamage.totalAmount}
+            icon={<ChineseYuan className="h-4 w-4" />}
+            variant="error"
+            subtitle="按采购元/片成本折算"
+          />
+          <StatCard
             title="异常/预警提醒"
             value={report.alerts?.length || 0}
             icon={<Receipt className="h-4 w-4" />}
@@ -320,8 +357,8 @@ export function AnnualReportClient() {
         </div>
 
         {/* 经营绩效与效率 - 高清晰分组区 */}
-        <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-6">
-          <div className="mb-6 flex items-center justify-between">
+        <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 sm:p-6">
+          <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <h2 className="flex items-center gap-2 text-sm font-black tracking-widest text-slate-800 uppercase">
               <TrendingUp className="h-4 w-4 text-emerald-500" />
               年度经营效率看板
@@ -333,7 +370,7 @@ export function AnnualReportClient() {
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard
               title="总成交订单"
               value={report.summary.orderCount}
@@ -370,8 +407,8 @@ export function AnnualReportClient() {
           </div>
         </div>
 
-        <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="rounded-2xl border border-amber-100 bg-amber-50/60 p-6">
+        <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+          <div className="rounded-2xl border border-amber-100 bg-amber-50/60 p-4 sm:p-6">
             <div className="mb-4 flex items-center gap-2">
               <div className="h-4 w-1 rounded-full bg-amber-500" />
               <h2 className="text-sm font-black tracking-widest text-slate-900 uppercase">
@@ -409,8 +446,8 @@ export function AnnualReportClient() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-            <div className="mb-4 flex items-center justify-between">
+          <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-6">
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="text-sm font-black tracking-widest text-slate-900 uppercase">
                 样品客户排行
               </h2>
@@ -423,7 +460,7 @@ export function AnnualReportClient() {
                 {report.sample.topCustomers.map((customer, index) => (
                   <div
                     key={customer.customerId}
-                    className="grid grid-cols-[40px_1fr_auto_auto] items-center gap-3 rounded-xl border border-slate-100 px-3 py-3"
+                    className="grid grid-cols-[36px_minmax(0,1fr)] gap-3 rounded-xl border border-slate-100 px-3 py-3 sm:grid-cols-[40px_minmax(0,1fr)_auto_auto] sm:items-center"
                   >
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-black text-slate-600">
                       {index + 1}
@@ -436,13 +473,13 @@ export function AnnualReportClient() {
                         {customer.orderCount} 张样品单
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="col-span-2 flex items-center justify-between gap-3 border-t border-slate-100 pt-3 sm:col-span-1 sm:block sm:border-t-0 sm:pt-0 sm:text-right">
                       <div className="text-xs text-slate-400">样品数量</div>
                       <div className="text-sm font-black text-slate-900">
                         {customer.sampleQuantity}
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="col-span-2 flex items-center justify-between gap-3 border-t border-slate-100 pt-3 sm:col-span-1 sm:block sm:border-t-0 sm:pt-0 sm:text-right">
                       <div className="text-xs text-slate-400">样品费</div>
                       <div className="text-sm font-black text-amber-700">
                         {formatCurrency(customer.sampleRevenue)}
@@ -460,7 +497,6 @@ export function AnnualReportClient() {
         </section>
 
         <AnnualReportCharts report={report} />
-
       </div>
     </div>
   );
@@ -526,10 +562,10 @@ function StatCard({
       className={cn(
         'group hover:border-opacity-50 relative overflow-hidden border transition-all duration-300 hover:shadow-md',
         themeStyles[variant],
-        size === 'lg' ? 'md:col-span-2 lg:col-span-1' : ''
+        size === 'lg' ? 'md:col-span-2 xl:col-span-1' : ''
       )}
     >
-      <CardHeader className="flex flex-row items-start justify-between space-y-0 px-5 pt-5 pb-2">
+      <CardHeader className="flex flex-row items-start justify-between space-y-0 px-4 pt-4 pb-2 sm:px-5 sm:pt-5">
         <div className="space-y-1">
           <CardTitle className="text-xs font-bold tracking-wider uppercase opacity-80">
             {title}
@@ -538,7 +574,7 @@ function StatCard({
             <div
               className={cn(
                 'font-black tracking-tight',
-                size === 'lg' ? 'text-2xl sm:text-3xl' : 'text-xl'
+                size === 'lg' ? 'text-2xl lg:text-3xl' : 'text-xl sm:text-2xl'
               )}
             >
               {isCurrency ? formatCurrency(value) : value.toLocaleString()}
@@ -554,7 +590,7 @@ function StatCard({
           {icon}
         </div>
       </CardHeader>
-      <CardContent className="px-5 pt-0 pb-5">
+      <CardContent className="px-4 pt-0 pb-4 sm:px-5 sm:pb-5">
         <div className="flex flex-col gap-2">
           {comparison && (
             <div className="flex items-center gap-2">

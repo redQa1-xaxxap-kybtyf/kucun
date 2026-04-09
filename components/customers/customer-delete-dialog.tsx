@@ -16,6 +16,7 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { customerQueryKeys, deleteCustomer } from '@/lib/api/customers';
 import type { Customer } from '@/lib/types/customer';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
 interface CustomerDeleteDialogProps {
   customer: Customer | null;
@@ -56,7 +57,7 @@ export function CustomerDeleteDialog({
     onError: error => {
       toast({
         title: '删除失败',
-        description: error.message,
+        description: getFriendlyErrorMessage(error, '删除客户失败，请稍后重试'),
         variant: 'destructive',
       });
     },

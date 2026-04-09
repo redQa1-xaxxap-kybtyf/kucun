@@ -31,8 +31,8 @@ export interface ReceivableExportData extends Record<string, unknown> {
   应收余额: number;
   /** 订单状态 */
   订单状态: string;
-  /** 创建时间 */
-  创建时间: string;
+  /** 销售日期 */
+  销售日期: string;
   /** 确认时间 */
   确认时间: string;
   /** 发货时间 */
@@ -72,7 +72,7 @@ export class ReceivablesExportService {
       应收余额: item.remainingAmount,
       订单状态:
         PAYMENT_STATUS_MAP[item.paymentStatus] || item.paymentStatus || '',
-      创建时间: item.orderDate || '',
+      销售日期: item.orderDate || '',
       确认时间: item.lastPaymentDate || '',
       发货时间: '', // 列保留，当前列表数据中无对应字段
       备注: '', // 列保留，当前列表数据中无对应字段
@@ -91,7 +91,7 @@ export class ReceivablesExportService {
     EnhancedExcelExportService.exportToEnhancedExcel(data, {
       filename,
       sheetName: '应收账款',
-      dateFields: ['创建时间', '确认时间', '发货时间'],
+      dateFields: ['销售日期', '确认时间', '发货时间'],
       numberFields: ['订单金额', '已收金额', '应收余额'],
       freezeHeader: true,
       dateFormat: 'yyyy-MM-dd HH:mm:ss',
@@ -109,7 +109,7 @@ export class ReceivablesExportService {
 
     CSVExportService.exportToCSV(data, {
       filename,
-      dateFields: ['创建时间', '确认时间', '发货时间'],
+      dateFields: ['销售日期', '确认时间', '发货时间'],
       numberFields: ['订单金额', '已收金额', '应收余额'],
       dateFormat: 'yyyy-MM-dd HH:mm:ss',
       fieldOrder: [
@@ -119,7 +119,7 @@ export class ReceivablesExportService {
         '已收金额',
         '应收余额',
         '订单状态',
-        '创建时间',
+        '销售日期',
         '确认时间',
         '发货时间',
         '备注',

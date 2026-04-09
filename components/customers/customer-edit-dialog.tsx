@@ -34,6 +34,7 @@ import {
   updateCustomer,
 } from '@/lib/api/customers';
 import type { Customer, CustomerUpdateInput } from '@/lib/types/customer';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
 // 简化的编辑表单验证模式
 const editFormSchema = z.object({
@@ -70,7 +71,7 @@ export function CustomerEditDialog({
     queryKey: customerQueryKeys.detail(customerId || ''),
     queryFn: () => {
       if (!customerId) {
-        throw new Error('Customer ID is required');
+        throw new Error('缺少客户标识，请刷新页面后重试');
       }
       return getCustomer(customerId);
     },
@@ -102,7 +103,7 @@ export function CustomerEditDialog({
   const updateMutation = useMutation({
     mutationFn: (data: CustomerUpdateInput) => {
       if (!customerId) {
-        throw new Error('Customer ID is required');
+        throw new Error('缺少客户标识，请刷新页面后重试');
       }
       return updateCustomer(customerId, data);
     },
@@ -130,7 +131,7 @@ export function CustomerEditDialog({
     onError: error => {
       toast({
         title: '更新失败',
-        description: error.message,
+        description: getFriendlyErrorMessage(error, '更新客户失败，请稍后重试'),
         variant: 'destructive',
       });
     },

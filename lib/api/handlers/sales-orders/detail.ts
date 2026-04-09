@@ -1,6 +1,7 @@
 import type { Prisma, SalesOrder } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
+import { isAutoReceivableConfirmationPayment } from '@/lib/services/receivables-helpers';
 import { getSalesOrderReceivableTotal } from '@/lib/utils/sample-order';
 
 import {
@@ -271,7 +272,13 @@ export async function getSalesOrderDetailWithPayments(id: string) {
     { totalRefundAmount: 0, refundedAmount: 0, refundPendingAmount: 0 }
   );
 
-  const confirmed = order.payments.filter(p => p.status === 'confirmed');
+  const receivableConfirmationRecord = order.payments
+    .filter(payment => isAutoReceivableConfirmationPayment(payment))
+    .sort((left, right) => right.paymentDate.getTime() - left.paymentDate.getTime())[0];
+  const actualPayments = order.payments.filter(
+    payment => !isAutoReceivableConfirmationPayment(payment)
+  );
+  const confirmed = actualPayments.filter(p => p.status === 'confirmed');
   const actualPaidAmount = confirmed.reduce(
     (sum, r) => sum + Number(r.actualPaymentAmount),
     0
@@ -322,11 +329,32 @@ export async function getSalesOrderDetailWithPayments(id: string) {
 
   return {
     ...mapped,
-    paymentRecords: order.payments.map(p => ({
+    paymentRecords: actualPayments.map(p => ({
       ...p,
+      paymentAmount: Number(p.paymentAmount ?? 0),
+      actualPaymentAmount: Number(p.actualPaymentAmount ?? 0),
+      roundingAmount: Number(p.roundingAmount ?? 0),
       paymentDate: p.paymentDate.toISOString(),
       createdAt: p.createdAt.toISOString(),
     })),
+    ...(receivableConfirmationRecord
+      ? {
+          receivableConfirmationRecord: {
+            id: receivableConfirmationRecord.id,
+            paymentNumber: receivableConfirmationRecord.paymentNumber,
+            paymentAmount: Number(receivableConfirmationRecord.paymentAmount ?? 0),
+            actualPaymentAmount: Number(
+              receivableConfirmationRecord.actualPaymentAmount ?? 0
+            ),
+            roundingAmount: Number(receivableConfirmationRecord.roundingAmount ?? 0),
+            paymentMethod: receivableConfirmationRecord.paymentMethod,
+            paymentDate: receivableConfirmationRecord.paymentDate.toISOString(),
+            status: receivableConfirmationRecord.status,
+            remarks: receivableConfirmationRecord.remarks ?? undefined,
+            createdAt: receivableConfirmationRecord.createdAt.toISOString(),
+          },
+        }
+      : {}),
     actualPaidAmount,
     paymentRounding,
     paidAmount,

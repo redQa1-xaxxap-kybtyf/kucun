@@ -53,7 +53,7 @@ export function BatchSpecificationsTable({
     <div className="overflow-hidden rounded-xl border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm">
       <div className="p-0">
         {/* 桌面端：宽表格视图，支持横向滚动 */}
-        <div className="hidden md:block">
+        <div className="hidden xl:block">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader className="card-shadow-light">
@@ -216,7 +216,7 @@ export function BatchSpecificationsTable({
         </div>
 
         {/* 移动端：卡片视图，避免宽表格在小屏上难以浏览 */}
-        <div className="space-y-3 px-4 py-3 md:hidden">
+        <div className="space-y-3 px-4 py-3 xl:hidden">
           {showSkeleton ? (
             Array.from({ length: 5 }).map((_, index) => (
               <div

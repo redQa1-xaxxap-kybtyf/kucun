@@ -58,7 +58,7 @@ const PATH_TITLES: Record<string, string> = {
   '/dashboard': '仪表盘',
   '/inventory': '库存管理',
   '/inventory/inbound': '入库记录',
-  '/inventory/inbound/create': '产品入库',
+  '/inventory/inbound/create': '手工采购入库',
   '/inventory/outbound': '出库记录',
   '/inventory/outbound/create': '产品出库',
   '/inventory/adjust': '库存调整',

@@ -34,6 +34,7 @@ import type {
   ReceivablesResult,
 } from '@/lib/services/receivables-service';
 import { formatCurrency } from '@/lib/utils';
+import { formatDate } from '@/lib/utils/datetime';
 
 import { formatCurrencyWithSign, isMeaningfulAmount } from './utils';
 
@@ -98,7 +99,7 @@ export function ReceivablesTableList({
   return (
     <div className="space-y-4">
       {/* 桌面端：宽表格 + 横向滚动 */}
-      <div className="hidden overflow-x-auto rounded-md border xl:block">
+      <div className="hidden overflow-x-auto rounded-md border 2xl:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -128,7 +129,7 @@ export function ReceivablesTableList({
       </div>
 
       {/* 移动端：卡片视图 */}
-      <div className="grid gap-3 lg:grid-cols-2 xl:hidden">
+      <div className="grid gap-3 xl:grid-cols-2 2xl:hidden">
         {receivables.map(receivable => (
           <ReceivableCard
             key={receivable.id}
@@ -251,7 +252,7 @@ function ReceivableTableRow({
       <TableCell>
         <div className="flex items-center gap-2 text-sm">
           <Calendar className="text-muted-foreground h-3.5 w-3.5" />
-          <RelativeTime date={receivable.orderDate} />
+          <span>{formatDate(receivable.orderDate)}</span>
         </div>
       </TableCell>
 
@@ -402,7 +403,7 @@ function ReceivableCard({
         <div className="flex items-center gap-1">
           <Calendar className="h-3.5 w-3.5" />
           <span>订单：</span>
-          <RelativeTime date={receivable.orderDate} />
+          <span>{formatDate(receivable.orderDate)}</span>
         </div>
         <div className="flex items-center gap-1">
           {receivable.lastPaymentDate ? (

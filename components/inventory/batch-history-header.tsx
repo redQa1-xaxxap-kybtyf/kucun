@@ -23,7 +23,7 @@ export function BatchHistoryHeader({
       <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-violet-500/5 blur-3xl" />
       <div className="absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-fuchsia-500/5 blur-3xl" />
 
-      <div className="relative z-10 flex flex-col gap-6 p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
+      <div className="relative z-10 flex flex-col gap-6 p-6 sm:p-8 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex items-start gap-5 sm:items-center">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-600 shadow-lg shadow-violet-200">
             <ActivitySquare className="h-7 w-7 text-white" />
@@ -31,13 +31,13 @@ export function BatchHistoryHeader({
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-black tracking-tight text-slate-900">
-                批次流量历史
+                批次变动历史
               </h1>
               <Badge
                 variant="outline"
-                className="h-6 border-violet-100 bg-violet-50 px-2 text-[10px] font-black text-violet-600 uppercase shadow-sm"
+                className="h-6 border-violet-100 bg-violet-50 px-2 text-[10px] font-black text-violet-600 shadow-sm"
               >
-                实时追踪
+                批次详情
               </Badge>
             </div>
             <div className="flex items-center gap-2 text-sm font-medium text-slate-500">
@@ -58,12 +58,12 @@ export function BatchHistoryHeader({
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="w-full xl:w-auto">
           <Button
             variant="outline"
             size="lg"
             asChild
-            className="h-12 gap-2 rounded-xl border-slate-200 bg-white font-bold text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            className="h-12 w-full gap-2 rounded-xl border-slate-200 bg-white font-bold text-slate-600 hover:bg-slate-50 hover:text-slate-900 xl:w-auto"
           >
             <Link href={backUrl}>
               <ArrowLeft className="h-4 w-4" />

@@ -16,6 +16,9 @@ interface InboundFormToolbarProps {
   isSubmitting: boolean;
   onReset: () => void;
   onSubmit: () => void;
+  title?: string;
+  description?: string;
+  submitLabel?: string;
   onSelectProduct?: () => void; // 新增：选择产品入口（F3）
 }
 
@@ -27,6 +30,9 @@ export function InboundFormToolbar({
   isSubmitting,
   onReset,
   onSubmit,
+  title = '手工采购入库',
+  description = '先填写供应商、产品、批次、数量和成本。',
+  submitLabel = '确认提交入库',
 }: InboundFormToolbarProps) {
   const router = useRouter();
 
@@ -36,31 +42,31 @@ export function InboundFormToolbar({
       <div className="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-blue-500/5 blur-3xl" />
       <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-emerald-500/5 blur-3xl" />
 
-      <CardContent className="relative z-10 p-6 sm:p-8">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <CardContent className="relative z-10 p-5 sm:p-6">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex items-center gap-4 sm:gap-5">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 shadow-xl shadow-blue-500/10">
               <PackageCheck className="h-7 w-7 text-white" />
             </div>
             <div className="min-w-0 space-y-1">
               <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
-                产品办理入库
+                {title}
               </h1>
               <p className="text-sm font-medium text-slate-500">
-                录入详尽入库信息 · 自动化同步实时库存
+                {description}
               </p>
             </div>
           </div>
-          <div className="flex w-full flex-wrap items-center justify-start gap-2 sm:w-auto sm:justify-end">
+          <div className="flex w-full flex-wrap items-center justify-start gap-2 xl:w-auto xl:justify-end">
             <Button
               type="button"
               variant="outline"
               size="lg"
-              className="h-12 border-slate-200 bg-white px-6 text-slate-600 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-900 sm:h-12"
+              className="h-11 border-slate-200 bg-white px-5 text-slate-600 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-900"
               onClick={() => router.back()}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              放弃并返回
+              返回上一页
             </Button>
             <Button
               type="button"
@@ -68,17 +74,17 @@ export function InboundFormToolbar({
               size="lg"
               onClick={onReset}
               disabled={isSubmitting}
-              className="h-12 border-slate-200 bg-white px-6 text-slate-600 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-900 sm:h-12"
+              className="h-11 border-slate-200 bg-white px-5 text-slate-600 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-900"
             >
               <RotateCcw className="mr-2 h-4 w-4" />
-              清空重置
+              重新填写
             </Button>
             <Button
               type="submit"
               size="lg"
               disabled={isSubmitting}
               onClick={onSubmit}
-              className="h-12 bg-blue-600 px-8 text-white shadow-lg shadow-blue-500/20 transition-all hover:scale-105 hover:bg-blue-700 active:scale-95 sm:h-12"
+              className="h-11 bg-blue-600 px-6 text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-700"
             >
               {isSubmitting ? (
                 <>
@@ -88,7 +94,7 @@ export function InboundFormToolbar({
               ) : (
                 <>
                   <Save className="mr-2 h-4 w-4" />
-                  确认提交入库
+                  {submitLabel}
                 </>
               )}
             </Button>

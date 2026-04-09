@@ -58,7 +58,7 @@ export function useInboundForm(options?: UseInboundFormOptions) {
       damageHandling: undefined,
       damageRemarks: '',
       unitCost: undefined,
-      reason: options?.initialReason || 'other', // ✅ 修复：支持自定义初始值
+      reason: options?.initialReason || 'purchase',
       remarks: '',
       batchNumber: '',
       piecesPerUnit: undefined,
@@ -90,7 +90,7 @@ export function useInboundForm(options?: UseInboundFormOptions) {
   };
 }
 
-// 计算最终片数的工具函数
+// 将录入数量按当前单位换算为片数
 export function calculateFinalQuantity(
   inputQuantity: number | undefined,
   inputUnit: InboundUnit,
@@ -130,6 +130,53 @@ export function calculateFinalQuantity(
   } catch {
     return inputQuantity;
   }
+}
+
+export function calculateAcceptedInboundQuantity(options: {
+  reason: InboundReason;
+  inputQuantity: number | undefined;
+  damagedInputQuantity: number | undefined;
+  inputUnit: InboundUnit;
+  piecesPerUnit: number | undefined;
+}): {
+  quantity: number | undefined;
+  damagedQuantity: number | undefined;
+} {
+  const inputQuantityInPieces = calculateFinalQuantity(
+    options.inputQuantity,
+    options.inputUnit,
+    options.piecesPerUnit
+  );
+  const damagedQuantityInPieces =
+    options.damagedInputQuantity && options.damagedInputQuantity > 0
+      ? calculateFinalQuantity(
+          options.damagedInputQuantity,
+          options.inputUnit,
+          options.piecesPerUnit
+        )
+      : undefined;
+
+  if (options.reason !== 'purchase') {
+    return {
+      quantity: inputQuantityInPieces,
+      damagedQuantity: damagedQuantityInPieces,
+    };
+  }
+
+  if (inputQuantityInPieces === undefined) {
+    return {
+      quantity: undefined,
+      damagedQuantity: damagedQuantityInPieces,
+    };
+  }
+
+  const acceptedQuantity =
+    inputQuantityInPieces - (damagedQuantityInPieces ?? 0);
+
+  return {
+    quantity: acceptedQuantity > 0 ? acceptedQuantity : 0,
+    damagedQuantity: damagedQuantityInPieces,
+  };
 }
 
 // 处理产品选择的逻辑
@@ -207,7 +254,7 @@ export function useProductSelection(
   };
 
   const handleReset = () => {
-    // ✅ 修复：保持当前的 reason 值，避免期初入库状态丢失
+    // 保持当前入库类型，避免采购/期初场景在重置后跳回默认流程
     const currentReason = form.getValues('reason');
 
     form.reset({
@@ -220,7 +267,7 @@ export function useProductSelection(
       damageHandling: undefined,
       damageRemarks: '',
       unitCost: undefined,
-      reason: currentReason, // ✅ 保持当前的 reason，而不是重置为 'purchase'
+      reason: currentReason,
       remarks: '',
       batchNumber: '',
       piecesPerUnit: undefined,

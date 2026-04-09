@@ -17,6 +17,7 @@ jest.mock('@/lib/db', () => ({
     },
     inboundRecord: {
       aggregate: jest.fn(),
+      groupBy: jest.fn(),
     },
     outboundRecord: {
       aggregate: jest.fn(),
@@ -56,6 +57,7 @@ describe('annual-report-service：厂家直发合并口径（集成回归）', (
     prisma.inboundRecord.aggregate.mockResolvedValue({
       _sum: { totalCost: 0 },
     });
+    prisma.inboundRecord.groupBy.mockResolvedValue([]);
     prisma.outboundRecord.aggregate.mockResolvedValue({
       _sum: { totalCost: 0 },
     });
@@ -82,6 +84,28 @@ describe('annual-report-service：厂家直发合并口径（集成回归）', (
   });
 
   test('合并口径：利润应加回一次厂家费用，避免重复扣减', async () => {
+    prisma.inboundRecord.aggregate.mockImplementation(async (args: any) => {
+      if (args?._sum?.damagedQuantity) {
+        return {
+          _sum: { damagedQuantity: 14, damageTotalCost: 140 },
+        };
+      }
+
+      return {
+        _sum: { totalCost: 0 },
+      };
+    });
+    prisma.inboundRecord.groupBy.mockResolvedValue([
+      {
+        damageHandling: 'supplier_claim',
+        _sum: { damagedQuantity: 9, damageTotalCost: 90 },
+      },
+      {
+        damageHandling: 'internal_loss',
+        _sum: { damagedQuantity: 5, damageTotalCost: 50 },
+      },
+    ]);
+
     const { getAnnualReport } = await import(
       '@/lib/services/annual-report-service'
     );
@@ -95,6 +119,10 @@ describe('annual-report-service：厂家直发合并口径（集成回归）', (
     expect(report.summary.orderCount).toBe(11);
     expect(report.summary.averageMonthlyRevenue).toBe(100);
     expect(report.summary.profitMargin).toBeCloseTo((350 / 1200) * 100, 6);
+    expect(report.purchaseDamage.totalQuantity).toBe(14);
+    expect(report.purchaseDamage.totalAmount).toBe(140);
+    expect(report.purchaseDamage.supplierClaim.quantity).toBe(9);
+    expect(report.purchaseDamage.internalLoss.amount).toBe(50);
     expect(report.yearOverYear).toBeUndefined();
   });
 

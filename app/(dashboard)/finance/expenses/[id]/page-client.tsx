@@ -92,7 +92,7 @@ export default function ExpenseDetailPageClient({
         <PageHeader
           title={expense.expenseName}
           description={
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
               <span>费用编号：{expense.expenseNumber}</span>
               <span className="text-[hsl(var(--color-text-tertiary))]">•</span>
               <span>类型：{EXPENSE_TYPE_LABELS[expense.expenseType]}</span>

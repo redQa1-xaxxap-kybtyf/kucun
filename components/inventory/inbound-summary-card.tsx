@@ -28,9 +28,9 @@ import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 
 const PrintTemplatePreviewDialog = dynamic(
   () =>
-    import('@/components/print-designer/renderer/PrintTemplatePreviewDialog').then(
-      mod => mod.PrintTemplatePreviewDialog
-    ),
+    import(
+      '@/components/print-designer/renderer/PrintTemplatePreviewDialog'
+    ).then(mod => mod.PrintTemplatePreviewDialog),
   { ssr: false, loading: () => null }
 );
 
@@ -54,16 +54,16 @@ function DetailStat({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="group rounded-xl border border-slate-100 bg-white p-5 shadow-sm transition-all hover:border-blue-200 hover:shadow-md">
+    <div className="group rounded-xl border border-slate-100 bg-white p-4 shadow-sm transition-all hover:border-blue-200 hover:shadow-md sm:p-5">
       <div className="flex items-center gap-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-50 text-blue-600 shadow-inner group-hover:bg-blue-50">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-50 text-blue-600 shadow-inner group-hover:bg-blue-50 sm:h-12 sm:w-12">
           {icon}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
+          <div className="text-[10px] font-black tracking-widest text-slate-400 uppercase sm:text-[11px]">
             {label}
           </div>
-          <div className="mt-0.5 truncate text-base leading-tight font-black text-slate-900">
+          <div className="mt-0.5 truncate text-sm leading-tight font-black text-slate-900 sm:text-base">
             {value ?? '—'}
           </div>
         </div>
@@ -91,23 +91,45 @@ export function InboundSummaryCard({
     () => can(session?.user ?? null, 'inventory:adjust'),
     [session?.user]
   );
+  const piecesPerUnit =
+    record.batchSpecification?.piecesPerUnit ??
+    record.product?.piecesPerUnit ??
+    0;
+  const hasDamage = Boolean(
+    record.damagedQuantity && record.damagedQuantity > 0
+  );
+  const arrivalQuantity = record.quantity + (record.damagedQuantity ?? 0);
+
+  const formatInboundQuantity = (quantity: number | null | undefined) => {
+    if (!Number.isFinite(quantity)) {
+      return '—';
+    }
+
+    const normalizedQuantity = Number(quantity);
+    return piecesPerUnit > 0
+      ? formatPieceSummary(normalizedQuantity, piecesPerUnit, {
+          fallbackUnit: '片',
+        })
+      : `${formatNumber(normalizedQuantity)}片`;
+  };
 
   // 构建统计项数组，根据权限动态添加成本相关项
   const stats = [
     // 公共统计项
     {
-      label: '入库数量',
-      value: (() => {
-        const ppu =
-          record.batchSpecification?.piecesPerUnit ??
-          record.product?.piecesPerUnit ??
-          0;
-        return ppu > 0
-          ? formatPieceSummary(record.quantity, ppu, { fallbackUnit: '片' })
-          : `${formatNumber(record.quantity)}片`;
-      })(),
+      label: hasDamage ? '合格入库' : '入库数量',
+      value: formatInboundQuantity(record.quantity),
       icon: <Boxes className="h-5 w-5" />,
     },
+    ...(hasDamage
+      ? [
+          {
+            label: '到货总量',
+            value: formatInboundQuantity(arrivalQuantity),
+            icon: <Boxes className="h-5 w-5" />,
+          },
+        ]
+      : []),
     {
       label: '操作人',
       value: record.user?.name || '—',
@@ -120,18 +142,10 @@ export function InboundSummaryCard({
     },
     {
       label: '当前批次库存',
-      value: (() => {
-        if (record.inventoryBalance === undefined) return '—';
-        const ppu =
-          record.batchSpecification?.piecesPerUnit ??
-          record.product?.piecesPerUnit ??
-          0;
-        return ppu > 0
-          ? formatPieceSummary(record.inventoryBalance, ppu, {
-              fallbackUnit: '片',
-            })
-          : `${formatNumber(record.inventoryBalance)}片`;
-      })(),
+      value:
+        record.inventoryBalance === undefined
+          ? '—'
+          : formatInboundQuantity(record.inventoryBalance),
       icon: <Warehouse className="h-5 w-5" />,
     },
     {
@@ -139,21 +153,11 @@ export function InboundSummaryCard({
       value: record.batchNumber || '—',
       icon: <ClipboardList className="h-5 w-5" />,
     },
-    ...(record.damagedQuantity && record.damagedQuantity > 0
+    ...(hasDamage
       ? [
           {
             label: '到货破损',
-            value: (() => {
-              const ppu =
-                record.batchSpecification?.piecesPerUnit ??
-                record.product?.piecesPerUnit ??
-                0;
-              return ppu > 0
-                ? formatPieceSummary(record.damagedQuantity, ppu, {
-                    fallbackUnit: '片',
-                  })
-                : `${formatNumber(record.damagedQuantity)}片`;
-            })(),
+            value: formatInboundQuantity(record.damagedQuantity),
             icon: <Boxes className="h-5 w-5" />,
           },
           {
@@ -171,7 +175,7 @@ export function InboundSummaryCard({
     ...(hasFinancePermission
       ? [
           {
-            label: '单位成本',
+            label: '单位成本 (元/片)',
             value:
               record.unitCost !== undefined && record.unitCost !== null
                 ? formatCostPrice(record.unitCost)
@@ -179,14 +183,14 @@ export function InboundSummaryCard({
             icon: <CalendarDays className="h-5 w-5" />,
           },
           {
-            label: '总成本',
+            label: hasDamage ? '合格入库成本' : '总成本',
             value:
               record.totalCost !== undefined && record.totalCost !== null
                 ? formatCurrency(record.totalCost)
                 : '—',
             icon: <CalendarDays className="h-5 w-5" />,
           },
-          ...(record.damagedQuantity && record.damagedQuantity > 0
+          ...(hasDamage
             ? [
                 {
                   label: '破损参考金额',
@@ -205,22 +209,24 @@ export function InboundSummaryCard({
 
   // 动态计算网格列数
   const gridColsClass =
-    stats.length === 6
-      ? 'xl:grid-cols-3'
-      : stats.length === 5
-        ? 'xl:grid-cols-5'
-        : 'xl:grid-cols-4';
+    stats.length === 5
+      ? 'xl:grid-cols-3 2xl:grid-cols-5'
+      : stats.length === 6
+        ? 'xl:grid-cols-3'
+        : stats.length > 6
+          ? 'xl:grid-cols-3 2xl:grid-cols-4'
+          : 'xl:grid-cols-4';
 
   return (
     <>
       <Card className="overflow-hidden border-slate-200 bg-white transition-all hover:shadow-lg">
-        <CardHeader className="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/50 px-6 py-5 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-1.5 text-center md:text-left">
-            <CardTitle className="flex items-center justify-center gap-2 text-xl font-black tracking-tight text-slate-900 md:justify-start">
+        <CardHeader className="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/50 px-4 py-4 sm:px-6 sm:py-5 xl:flex-row xl:items-center xl:justify-between">
+          <div className="space-y-1.5 text-left">
+            <CardTitle className="flex items-center justify-start gap-2 text-lg font-black tracking-tight text-slate-900 sm:text-xl">
               <Package className="h-5 w-5 text-blue-600" />
               数字入库单 {record.recordNumber}
             </CardTitle>
-            <p className="flex flex-wrap items-center justify-center gap-2 text-xs font-bold text-slate-400 md:justify-start">
+            <p className="flex flex-wrap items-center justify-start gap-2 text-xs font-bold text-slate-400">
               <span className="flex items-center gap-1">
                 <CalendarDays className="h-3 w-3" /> {createdAt}
               </span>
@@ -232,7 +238,7 @@ export function InboundSummaryCard({
               )}
             </p>
           </div>
-          <div className="mx-auto flex flex-wrap items-center justify-center gap-2 md:mx-0 md:justify-end">
+          <div className="flex w-full flex-wrap items-center gap-2 xl:w-auto xl:justify-end">
             <Badge
               variant={reasonVariant}
               className="w-fit px-3 py-1 text-[11px] font-black tracking-widest uppercase"
@@ -254,7 +260,7 @@ export function InboundSummaryCard({
           </div>
         </CardHeader>
         <CardContent
-          className={`grid gap-5 p-6 md:grid-cols-2 ${gridColsClass}`}
+          className={`grid gap-4 p-4 sm:p-6 md:grid-cols-2 ${gridColsClass}`}
         >
           {stats.map(stat => (
             <DetailStat key={stat.label} {...stat} />
