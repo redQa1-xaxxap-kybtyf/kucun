@@ -1,15 +1,14 @@
 'use client';
 
-import { MapPin, Truck } from 'lucide-react';
+import { Truck } from 'lucide-react';
 import { useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 
 import { CustomerSelector } from '@/components/sales-orders/customer-selector';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -61,13 +60,13 @@ export function BasicInfoSection({
   >(initialCustomer);
 
   return (
-    <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] shadow-md">
+    <Card className="overflow-hidden border-[hsl(var(--color-border-primary))]">
       <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] py-3">
         <CardTitle className="text-base font-semibold text-[hsl(var(--color-text-primary))]">
           基本信息
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6 p-5 lg:p-6 xl:space-y-8 xl:p-8">
+      <CardContent className="space-y-5 p-5 lg:p-6">
         {/* 第一行：客户选择和集装箱号 */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {/* 客户选择 */}
@@ -96,11 +95,8 @@ export function BasicInfoSection({
                 </FormControl>
                 {/* 显示客户地址 */}
                 {selectedCustomer?.address && (
-                  <div className="mt-2 flex items-start gap-2 rounded-md bg-[hsl(var(--color-bg-secondary))] p-3 text-sm">
-                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[hsl(var(--color-primary))]" />
-                    <span className="text-[hsl(var(--color-text-secondary))]">
-                      {selectedCustomer.address}
-                    </span>
+                  <div className="mt-2 rounded-md border bg-[hsl(var(--color-bg-secondary))] px-3 py-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                    {selectedCustomer.address}
                   </div>
                 )}
                 <FormMessage />
@@ -128,7 +124,6 @@ export function BasicInfoSection({
                     />
                   </div>
                 </FormControl>
-                <FormDescription>可选，用于追踪货物运输状态</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -137,7 +132,7 @@ export function BasicInfoSection({
 
         {/* 订单状态（仅在编辑模式且showStatus为true时显示） */}
         {showStatus && (
-          <div className="rounded-lg border border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))]/50 p-4">
+          <div className="rounded-lg border border-[hsl(var(--color-border-secondary))] p-4">
             <FormField
               control={form.control}
               name="status"
@@ -148,18 +143,20 @@ export function BasicInfoSection({
                   </FormLabel>
                   <div className="flex flex-wrap gap-2 pt-2">
                     {Object.values(FACTORY_SHIPMENT_STATUS).map(status => (
-                      <Badge
+                      <Button
                         key={status}
+                        type="button"
                         variant={field.value === status ? 'default' : 'outline'}
-                        className={`cursor-pointer px-4 py-1.5 text-sm transition-all hover:scale-105 ${
+                        size="sm"
+                        className={`h-8 px-3 text-sm ${
                           field.value === status
-                            ? 'bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))] shadow-sm'
-                            : 'hover:bg-[hsl(var(--color-bg-secondary))]'
+                            ? ''
+                            : 'text-[hsl(var(--color-text-secondary))]'
                         }`}
                         onClick={() => field.onChange(status)}
                       >
                         {FACTORY_SHIPMENT_STATUS_LABELS[status]}
-                      </Badge>
+                      </Button>
                     ))}
                   </div>
                   <FormMessage />

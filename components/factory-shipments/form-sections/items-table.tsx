@@ -312,21 +312,15 @@ export const ItemsTable = React.memo<ItemsTableProps>(
     return (
       <div className="space-y-6">
         {/* 表头 */}
-        <div className="flex flex-col gap-3 rounded-lg border border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))]/50 p-4">
+        <div className="flex flex-col gap-3 rounded-lg border border-[hsl(var(--color-border-secondary))] p-4">
           <div className="flex items-center gap-2 text-sm font-medium">
             <Package className="h-4 w-4" />
             产品明细
           </div>
-          <div className="text-xs leading-5 text-[hsl(var(--color-text-secondary))]">
-            先选产品，再补批次、数量和价格。系统会自动带出产品编码、名称、规格和历史售价，录单时只需要盯住当前这一行。
-          </div>
           <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
             <div className="flex flex-1 flex-col gap-2 xl:flex-row xl:items-end">
               <div className="w-full max-w-sm space-y-1">
-                <div className="text-sm font-medium">本单常用供应商</div>
-                <div className="text-xs text-[hsl(var(--color-text-secondary))]">
-                  同一厂家连续录单时可先选这里，新增明细会自动带出，也可以批量补到空白行。
-                </div>
+                <div className="text-sm font-medium">默认供应商</div>
                 <SupplierSelector
                   value={defaultSupplierId}
                   onValueChange={setDefaultSupplierId}

@@ -35,7 +35,7 @@ export function AmountInfoSection({ form }: AmountInfoSectionProps) {
   return (
     <div className="grid gap-6 md:grid-cols-2">
       {/* 金额概览 */}
-      <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] shadow-md">
+      <Card className="overflow-hidden border-[hsl(var(--color-border-primary))]">
         <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] py-3">
           <CardTitle className="text-base font-semibold text-[hsl(var(--color-text-primary))]">
             金额概览
@@ -44,35 +44,35 @@ export function AmountInfoSection({ form }: AmountInfoSectionProps) {
         <CardContent className="space-y-4 p-4 sm:space-y-6 lg:p-5 xl:p-6">
           {/* 金额统计概览 */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:gap-4 xl:grid-cols-4">
-            <div className="rounded-md border bg-[hsl(var(--color-bg-card))] p-3 sm:p-4">
-              <p className="text-xs font-medium text-[hsl(var(--color-primary))]">
+            <div className="rounded-md border bg-[hsl(var(--color-bg-secondary))] p-3 sm:p-4">
+              <p className="text-xs font-medium text-[hsl(var(--color-text-secondary))]">
                 订单总金额
               </p>
-              <p className="mt-1 text-xl font-bold text-[hsl(var(--color-primary))]">
+              <p className="mt-1 text-lg font-semibold text-[hsl(var(--color-text-primary))]">
                 ￥{totalAmount.toFixed(2)}
               </p>
             </div>
-            <div className="rounded-md border bg-[hsl(var(--color-bg-card))] p-3 sm:p-4">
-              <p className="text-xs font-medium text-[hsl(var(--color-success))]">
+            <div className="rounded-md border bg-[hsl(var(--color-bg-secondary))] p-3 sm:p-4">
+              <p className="text-xs font-medium text-[hsl(var(--color-text-secondary))]">
                 应收金额
               </p>
-              <p className="mt-1 text-xl font-bold text-[hsl(var(--color-success))]">
+              <p className="mt-1 text-lg font-semibold text-[hsl(var(--color-text-primary))]">
                 ￥{grossReceivableAmount.toFixed(2)}
               </p>
             </div>
-            <div className="rounded-md border bg-[hsl(var(--color-bg-card))] p-3 sm:p-4">
-              <p className="text-xs font-medium text-[hsl(var(--color-purple))]">
+            <div className="rounded-md border bg-[hsl(var(--color-bg-secondary))] p-3 sm:p-4">
+              <p className="text-xs font-medium text-[hsl(var(--color-text-secondary))]">
                 已收定金
               </p>
-              <p className="mt-1 text-xl font-bold text-[hsl(var(--color-purple))]">
+              <p className="mt-1 text-lg font-semibold text-[hsl(var(--color-text-primary))]">
                 ￥{depositAmount.toFixed(2)}
               </p>
             </div>
-            <div className="rounded-md border bg-[hsl(var(--color-bg-card))] p-3 sm:p-4">
-              <p className="text-xs font-medium text-[hsl(var(--color-warning))]">
+            <div className="rounded-md border bg-[hsl(var(--color-bg-secondary))] p-3 sm:p-4">
+              <p className="text-xs font-medium text-[hsl(var(--color-text-secondary))]">
                 待收余额
               </p>
-              <p className="mt-1 text-xl font-bold text-[hsl(var(--color-warning))]">
+              <p className="mt-1 text-lg font-semibold text-[hsl(var(--color-text-primary))]">
                 ￥{balanceAmount.toFixed(2)}
               </p>
             </div>
@@ -171,10 +171,10 @@ export function AmountInfoSection({ form }: AmountInfoSectionProps) {
       </Card>
 
       {/* 支付信息 */}
-      <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] shadow-md">
+      <Card className="overflow-hidden border-[hsl(var(--color-border-primary))]">
         <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] py-3">
           <CardTitle className="text-base font-semibold text-[hsl(var(--color-text-primary))]">
-            支付信息
+            备注
           </CardTitle>
         </CardHeader>
         <CardContent className="p-5 lg:p-6">
@@ -189,8 +189,8 @@ export function AmountInfoSection({ form }: AmountInfoSectionProps) {
                   </FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="请输入订单备注、支付说明或其他注意事项..."
-                      className="min-h-[120px] resize-y transition-all duration-200 focus:ring-2 focus:ring-[hsl(var(--color-primary))]/20"
+                      placeholder="填写交期、跟单说明等"
+                      className="min-h-[120px] resize-y"
                       {...field}
                       value={field.value || ''}
                     />

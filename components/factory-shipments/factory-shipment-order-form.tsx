@@ -380,7 +380,7 @@ export function FactoryShipmentOrderForm({
           (data: any) => onSubmit(data as FactoryShipmentOrderFormData),
           handleInvalidSubmit
         )}
-        className="space-y-8"
+        className="space-y-5"
       >
         {/* 基本信息 */}
         <BasicInfoSection
@@ -405,13 +405,13 @@ export function FactoryShipmentOrderForm({
         />
 
         {/* 费用项目 */}
-        <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] shadow-md">
+        <Card className="overflow-hidden border-[hsl(var(--color-border-primary))]">
           <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] py-3">
             <CardTitle className="text-base font-semibold text-[hsl(var(--color-text-primary))]">
               费用项目
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-8">
+          <CardContent className="p-5 lg:p-6 xl:p-8">
             <FeeItemsFormField control={form.control} disabled={isLoading} />
           </CardContent>
         </Card>
@@ -420,7 +420,7 @@ export function FactoryShipmentOrderForm({
         <AmountInfoSection form={form} />
 
         {/* 操作按钮 */}
-        <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] bg-gradient-to-r from-[hsl(var(--color-bg-secondary))] to-[hsl(var(--color-bg-primary))] shadow-md">
+        <Card className="overflow-hidden border-[hsl(var(--color-border-primary))]">
           <CardContent className="p-5 lg:p-6 xl:p-8">
             <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
               <Button
@@ -429,7 +429,7 @@ export function FactoryShipmentOrderForm({
                 size="lg"
                 onClick={onCancel}
                 disabled={isLoading}
-                className="w-full min-w-[120px] shadow-sm transition-all duration-200 hover:shadow-md sm:w-auto"
+                className="w-full min-w-[120px] sm:w-auto"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 返回
@@ -439,7 +439,7 @@ export function FactoryShipmentOrderForm({
                   type="submit"
                   size="lg"
                   disabled={isLoading}
-                  className="w-full min-w-[160px] shadow-md transition-all duration-200 hover:shadow-lg sm:w-auto"
+                  className="w-full min-w-[160px] sm:w-auto"
                 >
                   <Save className="mr-2 h-4 w-4" />
                   {isLoading ? '保存中...' : '保存修改'}
@@ -452,7 +452,7 @@ export function FactoryShipmentOrderForm({
                     size="lg"
                     disabled={isLoading}
                     onClick={() => handleSubmitIntent('draft')}
-                    className="w-full min-w-[140px] shadow-sm transition-all duration-200 hover:shadow-md"
+                    className="w-full min-w-[140px]"
                   >
                     <Save className="mr-2 h-4 w-4" />
                     {isLoading && submitIntent === 'draft'
@@ -464,7 +464,7 @@ export function FactoryShipmentOrderForm({
                     size="lg"
                     disabled={isLoading}
                     onClick={() => handleSubmitIntent('confirm')}
-                    className="w-full min-w-[160px] shadow-md transition-all duration-200 hover:shadow-lg"
+                    className="w-full min-w-[160px]"
                   >
                     <Save className="mr-2 h-4 w-4" />
                     {isLoading && submitIntent === 'confirm'
@@ -475,8 +475,8 @@ export function FactoryShipmentOrderForm({
               )}
             </div>
             {!isEditing && (
-              <p className="text-muted-foreground mt-4 text-sm">
-                保存草稿：用于临时保存，稍后可继续编辑；新建发货单：提交后进入正式发货流程。
+              <p className="text-muted-foreground mt-4 text-xs">
+                草稿用于暂存，确认后进入正式流程。
               </p>
             )}
           </CardContent>

@@ -5,7 +5,6 @@ import type { UseFormReturn } from 'react-hook-form';
 
 import { SupplierPriceSelector } from '@/components/factory-shipments/supplier-price-selector';
 import { IntelligentProductInput } from '@/components/sales-orders/intelligent-product-input';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   FormControl,
@@ -105,52 +104,31 @@ export function FactoryShipmentItemCards({
         return (
           <div
             key={field.id}
-            className="rounded-xl border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4 shadow-sm"
+            className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4"
           >
             <div className="flex flex-col gap-3 border-b border-[hsl(var(--color-border-secondary))] pb-3 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0 space-y-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="outline" className="font-mono text-xs">
-                    第 {index + 1} 行
-                  </Badge>
-                  <span className="min-w-0 truncate text-sm font-semibold text-[hsl(var(--color-text-primary))]">
-                    {lineSummary.displayName || '请先选择产品'}
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="text-sm font-medium text-[hsl(var(--color-text-secondary))]">
+                    明细 {index + 1}
                   </span>
-                  {lineSummary.productCode && (
-                    <Badge variant="secondary" className="text-xs">
-                      编码 {lineSummary.productCode}
-                    </Badge>
-                  )}
-                  {lineSummary.supplierId && (
-                    <Badge variant="secondary" className="text-xs">
-                      已选供应商
-                    </Badge>
-                  )}
+                  <span className="min-w-0 truncate text-sm font-semibold text-[hsl(var(--color-text-primary))]">
+                    {lineSummary.displayName || '未选择产品'}
+                  </span>
                 </div>
-                <div className="flex flex-wrap gap-2 text-xs text-[hsl(var(--color-text-secondary))]">
-                  {lineSummary.specification ? (
-                    <span className="rounded-full bg-[hsl(var(--color-bg-secondary))] px-2 py-1">
-                      规格：{lineSummary.specification}
-                    </span>
-                  ) : null}
-                  {lineSummary.batchNumber ? (
-                    <span className="rounded-full bg-[hsl(var(--color-bg-secondary))] px-2 py-1">
-                      批次：{lineSummary.batchNumber}
-                    </span>
-                  ) : null}
-                  {lineSummary.quantity > 0 ? (
-                    <span className="rounded-full bg-[hsl(var(--color-bg-secondary))] px-2 py-1">
-                      数量：{lineSummary.quantity}
-                      {lineSummary.unit || '片'}
-                    </span>
-                  ) : null}
-                  {!lineSummary.specification &&
-                  !lineSummary.batchNumber &&
-                  !lineSummary.quantity ? (
-                    <span>
-                      这一行适合连续录入，先选产品即可自动带出基础信息。
-                    </span>
-                  ) : null}
+                <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                  {lineSummary.productCode
+                    ? `编码：${lineSummary.productCode}`
+                    : '先选产品，再填数量和价格'}
+                  {lineSummary.specification
+                    ? `  ·  规格：${lineSummary.specification}`
+                    : ''}
+                  {lineSummary.batchNumber
+                    ? `  ·  批次：${lineSummary.batchNumber}`
+                    : ''}
+                  {lineSummary.quantity > 0
+                    ? `  ·  数量：${lineSummary.quantity}${lineSummary.unit || '片'}`
+                    : ''}
                 </div>
               </div>
               <div className="flex items-center justify-between gap-3 lg:flex-col lg:items-end">
@@ -158,7 +136,7 @@ export function FactoryShipmentItemCards({
                   <div className="text-xs text-[hsl(var(--color-text-secondary))]">
                     当前金额
                   </div>
-                  <div className="font-mono text-lg font-bold text-orange-600">
+                  <div className="font-mono text-base font-semibold text-[hsl(var(--color-text-primary))]">
                     ￥{itemAmount.toFixed(2)}
                   </div>
                 </div>
@@ -189,14 +167,14 @@ export function FactoryShipmentItemCards({
                     placeholder="搜索产品或添加临时产品"
                     enableTemporaryProducts
                   />
-                  <div className="rounded-lg bg-[hsl(var(--color-bg-secondary))] px-3 py-2 text-xs text-[hsl(var(--color-text-secondary))]">
+                  <div className="rounded-md border bg-[hsl(var(--color-bg-secondary))] px-3 py-2 text-xs text-[hsl(var(--color-text-secondary))]">
                     {lineSummary.displayName || lineSummary.productCode ? (
                       <div className="flex flex-wrap gap-x-4 gap-y-1">
                         <span>名称：{lineSummary.displayName || '未带出'}</span>
                         <span>编码：{lineSummary.productCode || '未带出'}</span>
                       </div>
                     ) : (
-                      <span>支持搜索现有产品，也支持直接新增临时产品。</span>
+                      <span>可搜索现有产品，也可新增临时产品。</span>
                     )}
                   </div>
                   {(itemErrors?.productCode?.message ||
@@ -533,7 +511,7 @@ export function FactoryShipmentItemCards({
               </div>
             </div>
 
-            <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_220px]">
+            <div className="mt-4">
               <FormField
                 control={form.control}
                 name={`items.${index}.remarks`}
@@ -546,7 +524,7 @@ export function FactoryShipmentItemCards({
                       <Input
                         {...field}
                         value={field.value || ''}
-                        placeholder="例如颜色、交期、跟单说明"
+                        placeholder="备注"
                         className="h-9 text-sm"
                       />
                     </FormControl>
@@ -554,16 +532,6 @@ export function FactoryShipmentItemCards({
                   </FormItem>
                 )}
               />
-
-              <div className="rounded-lg bg-[hsl(var(--color-bg-secondary))] px-3 py-2 text-xs leading-5 text-[hsl(var(--color-text-secondary))]">
-                {lineSummary.remarks ? (
-                  <span>已填写备注，可直接继续新增下一行。</span>
-                ) : (
-                  <span>
-                    没有特殊说明时，备注可以留空，先把产品、数量和价格录完更高效。
-                  </span>
-                )}
-              </div>
             </div>
           </div>
         );
