@@ -51,12 +51,26 @@ export interface ReportAlert {
   threshold?: number;
 }
 
+export interface SampleSourceMetrics {
+  recordCount: number; // 记录数
+  customerCount: number; // 客户数
+  sampleQuantity: number; // 样品数量
+  sampleRevenue: number; // 样品费
+  sampleCost: number; // 样品成本
+}
+
+export interface SampleSourceBreakdown {
+  sampleOrder: SampleSourceMetrics; // 样品销售单
+  manualOutbound: SampleSourceMetrics; // 手工样品出库
+}
+
 export interface SampleMetrics {
-  orderCount: number; // 样品单数量
+  orderCount: number; // 样品记录数（样品单 + 手工样品出库）
   customerCount: number; // 领取样品客户数
   sampleQuantity: number; // 样品数量
   sampleRevenue: number; // 样品费
   sampleCost: number; // 样品成本
+  sources: SampleSourceBreakdown; // 按来源拆分
 }
 
 export interface SampleCustomerMetrics extends SampleMetrics {
@@ -73,11 +87,28 @@ export interface PurchaseDamageBreakdown {
   amount: number; // 破损参考金额
 }
 
-export interface PurchaseDamageMetrics {
-  totalQuantity: number; // 采购破损总片数
-  totalAmount: number; // 采购破损总金额
-  supplierClaim: PurchaseDamageBreakdown; // 报工厂赔付
+export interface PurchaseDamageCategoryBreakdown {
+  damage: PurchaseDamageBreakdown; // 破损
+  scrap: PurchaseDamageBreakdown; // 报废
+  loss: PurchaseDamageBreakdown; // 丢失
+  other: PurchaseDamageBreakdown; // 其他
+}
+
+export interface PurchaseDamageHandlingBreakdown {
+  pendingConfirm: PurchaseDamageBreakdown; // 待确认
+  supplierClaim: PurchaseDamageBreakdown; // 找工厂赔付
   internalLoss: PurchaseDamageBreakdown; // 内部承担
+}
+
+export interface PurchaseDamageMetrics {
+  totalQuantity: number; // 破损总片数（到货破损 + 手工报损）
+  totalAmount: number; // 破损总金额（到货破损 + 手工报损）
+  purchaseInbound: PurchaseDamageBreakdown; // 采购到货破损
+  manualDamage: PurchaseDamageBreakdown; // 手工报损
+  supplierClaim: PurchaseDamageBreakdown; // 到货破损中报工厂赔付
+  internalLoss: PurchaseDamageBreakdown; // 到货破损中内部承担
+  manualDamageByCategory: PurchaseDamageCategoryBreakdown; // 手工报损按类型拆分
+  manualDamageByHandling: PurchaseDamageHandlingBreakdown; // 手工报损按处理方式拆分
 }
 
 // ==================== 月度报表类型 ====================
@@ -178,7 +209,7 @@ export interface MonthlyReport {
   sample: SampleMetrics; // 样品数据
   expenses: MonthlyExpenses; // 支出数据
   costs: MonthlyCosts; // 成本数据
-  purchaseDamage: PurchaseDamageMetrics; // 采购到货破损
+  purchaseDamage: PurchaseDamageMetrics; // 破损统计
   receivables: MonthlyReceivables; // 应收应付数据
   profit: MonthlyProfit; // 利润数据
   factoryShipmentProfit: MonthlyFactoryShipmentProfit; // 厂家发货利润数据
@@ -270,7 +301,7 @@ export interface AnnualReport {
   period: ReportPeriod; // 报表周期
   summary: AnnualSummary; // 年度汇总
   sample: AnnualSampleMetrics; // 年度样品统计
-  purchaseDamage: PurchaseDamageMetrics; // 采购到货破损
+  purchaseDamage: PurchaseDamageMetrics; // 破损统计
   monthlyTrend: MonthlyTrendData[]; // 月度趋势 (12个月)
   quarterlyData: QuarterlyData[]; // 季度数据 (4个季度)
   expenseDistribution: ExpenseDistribution[]; // 费用分布

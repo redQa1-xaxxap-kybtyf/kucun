@@ -19,9 +19,15 @@ jest.mock('@/lib/db', () => ({
     },
     outboundRecord: {
       aggregate: jest.fn(),
+      findMany: jest.fn(),
     },
     inventoryAdjustment: {
       aggregate: jest.fn(),
+      findMany: jest.fn(),
+    },
+    manualDamageLedger: {
+      aggregate: jest.fn(),
+      groupBy: jest.fn(),
     },
     accountStatement: {
       aggregate: jest.fn(),
@@ -76,9 +82,15 @@ describe('monthly-report-service：口径/边界（集成回归）', () => {
     prisma.outboundRecord.aggregate.mockResolvedValue({
       _sum: { totalCost: 0 },
     });
+    prisma.outboundRecord.findMany.mockResolvedValue([]);
     prisma.inventoryAdjustment.aggregate.mockResolvedValue({
       _sum: { totalCost: 0 },
     });
+    prisma.inventoryAdjustment.findMany.mockResolvedValue([]);
+    prisma.manualDamageLedger.aggregate.mockResolvedValue({
+      _sum: { damagedQuantity: 0, referenceAmount: 0 },
+    });
+    prisma.manualDamageLedger.groupBy.mockResolvedValue([]);
 
     prisma.accountStatement.aggregate.mockResolvedValue({
       _sum: { currentBalance: 0 },
@@ -112,8 +124,8 @@ describe('monthly-report-service：口径/边界（集成回归）', () => {
       .filter((args: any) => args?._sum?.totalAmount);
 
     const hasPrevRevenueQuery = revenueCalls.some((args: any) => {
-      const gte = args?.where?.createdAt?.gte as Date | undefined;
-      const lte = args?.where?.createdAt?.lte as Date | undefined;
+      const gte = args?.where?.orderDate?.gte as Date | undefined;
+      const lte = args?.where?.orderDate?.lte as Date | undefined;
       return (
         gte instanceof Date &&
         lte instanceof Date &&
@@ -254,7 +266,7 @@ describe('monthly-report-service：口径/边界（集成回归）', () => {
     expect(report.receivables.paidAmount).toBe(79.5);
   });
 
-  test('采购破损口径：应只统计 purchase + damagedQuantity>0，并返回片数与金额汇总', async () => {
+  test('采购破损口径：应汇总到货破损和手工报损，并返回手工报损细分', async () => {
     prisma.inboundRecord.aggregate.mockImplementation(async (args: any) => {
       if (args?._sum?.damagedQuantity) {
         return {
@@ -276,6 +288,37 @@ describe('monthly-report-service：口径/边界（集成回归）', () => {
         _sum: { damagedQuantity: 4, damageTotalCost: 40 },
       },
     ]);
+    prisma.manualDamageLedger.aggregate.mockResolvedValue({
+      _sum: { damagedQuantity: 3, referenceAmount: 27 },
+    });
+    prisma.manualDamageLedger.groupBy.mockImplementation(async (args: any) => {
+      const by = args?.by?.[0];
+      if (by === 'damageCategory') {
+        return [
+          {
+            damageCategory: 'damage',
+            _sum: { damagedQuantity: 1, referenceAmount: 9 },
+          },
+          {
+            damageCategory: 'scrap',
+            _sum: { damagedQuantity: 2, referenceAmount: 18 },
+          },
+        ];
+      }
+      if (by === 'damageHandling') {
+        return [
+          {
+            damageHandling: 'pending_confirm',
+            _sum: { damagedQuantity: 1, referenceAmount: 9 },
+          },
+          {
+            damageHandling: 'internal_loss',
+            _sum: { damagedQuantity: 2, referenceAmount: 18 },
+          },
+        ];
+      }
+      return [];
+    });
 
     const { getMonthlyReport } = await import(
       '@/lib/services/monthly-report-service'
@@ -301,9 +344,20 @@ describe('monthly-report-service：口径/边界（集成回归）', () => {
         _sum: { damagedQuantity: true, damageTotalCost: true },
       })
     );
-    expect(report.purchaseDamage.totalQuantity).toBe(9);
-    expect(report.purchaseDamage.totalAmount).toBe(90);
+    expect(prisma.manualDamageLedger.groupBy).toHaveBeenCalledTimes(2);
+    expect(report.purchaseDamage.totalQuantity).toBe(12);
+    expect(report.purchaseDamage.totalAmount).toBe(117);
+    expect(report.purchaseDamage.manualDamage.quantity).toBe(3);
+    expect(report.purchaseDamage.manualDamage.amount).toBe(27);
     expect(report.purchaseDamage.supplierClaim.quantity).toBe(5);
     expect(report.purchaseDamage.internalLoss.amount).toBe(40);
+    expect(report.purchaseDamage.manualDamageByCategory.damage.quantity).toBe(1);
+    expect(report.purchaseDamage.manualDamageByCategory.scrap.amount).toBe(18);
+    expect(
+      report.purchaseDamage.manualDamageByHandling.pendingConfirm.quantity
+    ).toBe(1);
+    expect(
+      report.purchaseDamage.manualDamageByHandling.internalLoss.amount
+    ).toBe(18);
   });
 });

@@ -122,11 +122,11 @@ export function ProfitLossClient() {
         backgroundColor: '#ffffff',
       });
 
-      toast({ title: '导出成功', description: '分析报告已生成' });
+      toast({ title: '导出成功', description: '盈亏分析图片已导出' });
     } catch (error) {
       toast({
         title: '导出失败',
-        description: error instanceof Error ? error.message : '未知错误',
+        description: error instanceof Error ? error.message : '请稍后再试',
         variant: 'destructive',
       });
     } finally {
@@ -189,6 +189,8 @@ export function ProfitLossClient() {
     );
   }
 
+  const sampleSourceSummary = `样品单 ${analysis.sample.sources.sampleOrder.recordCount} 条，手工样品出库 ${analysis.sample.sources.manualOutbound.recordCount} 条`;
+
   return (
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="space-y-4 sm:space-y-6">
@@ -202,13 +204,10 @@ export function ProfitLossClient() {
                 </div>
                 <div>
                   <h1 className="text-lg font-bold tracking-tight text-white sm:text-2xl">
-                    盈亏多维分析{' '}
-                    <span className="ml-2 text-xs font-normal opacity-60 sm:text-sm">
-                      利润与亏损分析
-                    </span>
+                    盈亏分析
                   </h1>
                   <p className="mt-1 text-xs text-slate-300 sm:text-sm">
-                    经营状况深度透视 · 实时财务健康看板
+                    查看一段时间内的收入、成本、费用和利润变化
                   </p>
                 </div>
               </div>
@@ -220,7 +219,7 @@ export function ProfitLossClient() {
                   className="border-white/10 bg-white/10 text-white hover:bg-white/20"
                 >
                   <Receipt className="mr-2 h-4 w-4" />
-                  导出分析报告
+                  导出图片
                 </Button>
               </div>
             </div>
@@ -232,7 +231,7 @@ export function ProfitLossClient() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
-              选择日期范围
+              查询时间
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -251,7 +250,7 @@ export function ProfitLossClient() {
                     setEndDate(nextEndDate ?? '');
                   }}
                   label="日期范围"
-                  placeholder="选择日期范围"
+                  placeholder="选择查询时间"
                   showPresets
                   showClearButton
                   className="w-full md:w-[240px]"
@@ -330,7 +329,7 @@ export function ProfitLossClient() {
               )}
             >
               <div className="mb-2 text-xs font-black tracking-[0.2em] uppercase opacity-60">
-                当前经营状态
+                当前盈亏情况
               </div>
               <div className="flex items-center gap-3">
                 <div
@@ -452,7 +451,7 @@ export function ProfitLossClient() {
               <div className="flex items-center gap-2">
                 <div className="h-4 w-1 rounded-full bg-blue-500" />
                 <h2 className="text-sm font-black tracking-widest text-slate-900 uppercase">
-                  收入构成深度分析
+                  收入构成
                 </h2>
               </div>
               <Eye className="h-4 w-4 text-slate-300" />
@@ -469,7 +468,7 @@ export function ProfitLossClient() {
                 value={analysis.sample.sampleRevenue}
                 icon={<ChineseYuan className="h-4 w-4" />}
                 variant="warning"
-                subtitle={`${analysis.sample.orderCount} 张样品单`}
+                subtitle={sampleSourceSummary}
               />
               <StatCard
                 title="厂家直发收入"

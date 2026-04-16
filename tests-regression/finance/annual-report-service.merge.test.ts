@@ -21,6 +21,14 @@ jest.mock('@/lib/db', () => ({
     },
     outboundRecord: {
       aggregate: jest.fn(),
+      findMany: jest.fn(),
+    },
+    inventoryAdjustment: {
+      findMany: jest.fn(),
+    },
+    manualDamageLedger: {
+      aggregate: jest.fn(),
+      groupBy: jest.fn(),
     },
     factoryShipmentOrder: {
       findMany: jest.fn(),
@@ -61,6 +69,12 @@ describe('annual-report-service：厂家直发合并口径（集成回归）', (
     prisma.outboundRecord.aggregate.mockResolvedValue({
       _sum: { totalCost: 0 },
     });
+    prisma.outboundRecord.findMany.mockResolvedValue([]);
+    prisma.inventoryAdjustment.findMany.mockResolvedValue([]);
+    prisma.manualDamageLedger.aggregate.mockResolvedValue({
+      _sum: { damagedQuantity: 0, referenceAmount: 0 },
+    });
+    prisma.manualDamageLedger.groupBy.mockResolvedValue([]);
 
     prisma.factoryShipmentOrder.findMany.mockImplementation(
       async (args: any) => {
@@ -105,6 +119,37 @@ describe('annual-report-service：厂家直发合并口径（集成回归）', (
         _sum: { damagedQuantity: 5, damageTotalCost: 50 },
       },
     ]);
+    prisma.manualDamageLedger.aggregate.mockResolvedValue({
+      _sum: { damagedQuantity: 4, referenceAmount: 36 },
+    });
+    prisma.manualDamageLedger.groupBy.mockImplementation(async (args: any) => {
+      const by = args?.by?.[0];
+      if (by === 'damageCategory') {
+        return [
+          {
+            damageCategory: 'damage',
+            _sum: { damagedQuantity: 1, referenceAmount: 9 },
+          },
+          {
+            damageCategory: 'loss',
+            _sum: { damagedQuantity: 3, referenceAmount: 27 },
+          },
+        ];
+      }
+      if (by === 'damageHandling') {
+        return [
+          {
+            damageHandling: 'supplier_claim',
+            _sum: { damagedQuantity: 2, referenceAmount: 18 },
+          },
+          {
+            damageHandling: 'internal_loss',
+            _sum: { damagedQuantity: 2, referenceAmount: 18 },
+          },
+        ];
+      }
+      return [];
+    });
 
     const { getAnnualReport } = await import(
       '@/lib/services/annual-report-service'
@@ -119,10 +164,21 @@ describe('annual-report-service：厂家直发合并口径（集成回归）', (
     expect(report.summary.orderCount).toBe(11);
     expect(report.summary.averageMonthlyRevenue).toBe(100);
     expect(report.summary.profitMargin).toBeCloseTo((350 / 1200) * 100, 6);
-    expect(report.purchaseDamage.totalQuantity).toBe(14);
-    expect(report.purchaseDamage.totalAmount).toBe(140);
+    expect(prisma.manualDamageLedger.groupBy).toHaveBeenCalledTimes(2);
+    expect(report.purchaseDamage.totalQuantity).toBe(18);
+    expect(report.purchaseDamage.totalAmount).toBe(176);
+    expect(report.purchaseDamage.manualDamage.quantity).toBe(4);
+    expect(report.purchaseDamage.manualDamage.amount).toBe(36);
     expect(report.purchaseDamage.supplierClaim.quantity).toBe(9);
     expect(report.purchaseDamage.internalLoss.amount).toBe(50);
+    expect(report.purchaseDamage.manualDamageByCategory.damage.quantity).toBe(1);
+    expect(report.purchaseDamage.manualDamageByCategory.loss.amount).toBe(27);
+    expect(
+      report.purchaseDamage.manualDamageByHandling.supplierClaim.quantity
+    ).toBe(2);
+    expect(
+      report.purchaseDamage.manualDamageByHandling.internalLoss.amount
+    ).toBe(18);
     expect(report.yearOverYear).toBeUndefined();
   });
 

@@ -1,7 +1,10 @@
 import { prisma } from '@/lib/db';
 import { roundToTwoDecimals } from '@/lib/services/factory-shipment-expense-service';
+import { getManualDamageMetricsForPeriod } from '@/lib/services/manual-damage-ledger-service';
 import type {
   PurchaseDamageBreakdown,
+  PurchaseDamageCategoryBreakdown,
+  PurchaseDamageHandlingBreakdown,
   PurchaseDamageMetrics,
 } from '@/lib/types/report';
 import { toNumber } from '@/lib/utils/number';
@@ -13,12 +16,33 @@ function createEmptyBreakdown(): PurchaseDamageBreakdown {
   };
 }
 
+function createEmptyCategoryBreakdown(): PurchaseDamageCategoryBreakdown {
+  return {
+    damage: createEmptyBreakdown(),
+    scrap: createEmptyBreakdown(),
+    loss: createEmptyBreakdown(),
+    other: createEmptyBreakdown(),
+  };
+}
+
+function createEmptyHandlingBreakdown(): PurchaseDamageHandlingBreakdown {
+  return {
+    pendingConfirm: createEmptyBreakdown(),
+    supplierClaim: createEmptyBreakdown(),
+    internalLoss: createEmptyBreakdown(),
+  };
+}
+
 export function createEmptyPurchaseDamageMetrics(): PurchaseDamageMetrics {
   return {
     totalQuantity: 0,
     totalAmount: 0,
+    purchaseInbound: createEmptyBreakdown(),
+    manualDamage: createEmptyBreakdown(),
     supplierClaim: createEmptyBreakdown(),
     internalLoss: createEmptyBreakdown(),
+    manualDamageByCategory: createEmptyCategoryBreakdown(),
+    manualDamageByHandling: createEmptyHandlingBreakdown(),
   };
 }
 
@@ -53,7 +77,7 @@ export async function getPurchaseDamageMetricsForPeriod(
     },
   };
 
-  const [summary, grouped] = await Promise.all([
+  const [summary, grouped, manualDamage] = await Promise.all([
     prisma.inboundRecord.aggregate({
       where,
       _sum: {
@@ -69,16 +93,29 @@ export async function getPurchaseDamageMetricsForPeriod(
         damageTotalCost: true,
       },
     }),
+    getManualDamageMetricsForPeriod(startDate, endDate),
   ]);
 
+  const purchaseInbound: PurchaseDamageBreakdown = {
+    quantity: Number(summary._sum.damagedQuantity ?? 0),
+    amount: roundToTwoDecimals(toNumber(summary._sum.damageTotalCost)),
+  };
+
   return {
-    totalQuantity: Number(summary._sum.damagedQuantity ?? 0),
-    totalAmount: roundToTwoDecimals(toNumber(summary._sum.damageTotalCost)),
+    totalQuantity: purchaseInbound.quantity + manualDamage.quantity,
+    totalAmount: roundToTwoDecimals(purchaseInbound.amount + manualDamage.amount),
+    purchaseInbound,
+    manualDamage: {
+      quantity: manualDamage.quantity,
+      amount: manualDamage.amount,
+    },
     supplierClaim: normalizeBreakdown(
       grouped.find(group => group.damageHandling === 'supplier_claim')
     ),
     internalLoss: normalizeBreakdown(
       grouped.find(group => group.damageHandling === 'internal_loss')
     ),
+    manualDamageByCategory: manualDamage.byCategory,
+    manualDamageByHandling: manualDamage.byHandling,
   };
 }

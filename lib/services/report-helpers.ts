@@ -107,7 +107,7 @@ export function buildSalesOrderWhere(
 ): Prisma.SalesOrderWhereInput {
   const where: Prisma.SalesOrderWhereInput = {
     status: { in: ['confirmed', 'shipped', 'completed'] },
-    createdAt: {
+    orderDate: {
       gte: startDate,
       lte: endDate,
     },

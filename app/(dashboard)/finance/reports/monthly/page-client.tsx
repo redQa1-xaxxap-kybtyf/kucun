@@ -23,6 +23,7 @@ import type { MonthlyReport } from '@/lib/types/report';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils/format';
 import { buildMonthlyExpenseBreakdown } from '@/lib/utils/monthly-report-ui';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
 export function MonthlyReportClient() {
   const currentDate = React.useMemo(() => new Date(), []);
@@ -109,16 +110,17 @@ export function MonthlyReportClient() {
       );
 
       toast({
-        title: '数据已刷新',
-        description: `${year} 年 ${month} 月的月度报表已重新计算`,
+        title: '报表已刷新',
+        description: `${year} 年 ${month} 月的报表已经更新`,
       });
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : '刷新月度报表失败';
       toast({
         variant: 'destructive',
-        title: '生成失败',
-        description: message,
+        title: '刷新失败',
+        description: getFriendlyErrorMessage(
+          error,
+          '月度报表暂时无法刷新，请稍后重试'
+        ),
       });
     } finally {
       setIsGenerating(false);
@@ -166,11 +168,13 @@ export function MonthlyReportClient() {
         description: `报表图片已生成并下载 (${filename}.png)`,
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : '导出图片失败';
       toast({
         variant: 'destructive',
         title: '导出失败',
-        description: message,
+        description: getFriendlyErrorMessage(
+          error,
+          '报表图片暂时无法导出，请稍后重试'
+        ),
       });
     } finally {
       setIsExporting(false);
@@ -190,7 +194,7 @@ export function MonthlyReportClient() {
       <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
         <Card>
           <CardContent className="text-muted-foreground py-8 text-center">
-            暂无数据
+            当前月份还没有报表数据
           </CardContent>
         </Card>
       </div>
@@ -200,9 +204,43 @@ export function MonthlyReportClient() {
   const purchaseDamage = report.purchaseDamage ?? {
     totalQuantity: 0,
     totalAmount: 0,
+    purchaseInbound: { quantity: 0, amount: 0 },
+    manualDamage: { quantity: 0, amount: 0 },
     supplierClaim: { quantity: 0, amount: 0 },
     internalLoss: { quantity: 0, amount: 0 },
+    manualDamageByCategory: {
+      damage: { quantity: 0, amount: 0 },
+      scrap: { quantity: 0, amount: 0 },
+      loss: { quantity: 0, amount: 0 },
+      other: { quantity: 0, amount: 0 },
+    },
+    manualDamageByHandling: {
+      pendingConfirm: { quantity: 0, amount: 0 },
+      supplierClaim: { quantity: 0, amount: 0 },
+      internalLoss: { quantity: 0, amount: 0 },
+    },
   };
+  const sampleSourceSummary = `样品单 ${report.sample.sources.sampleOrder.recordCount} 条，手工样品出库 ${report.sample.sources.manualOutbound.recordCount} 条`;
+  const manualDamageCategoryItems = [
+    { label: '破损', value: purchaseDamage.manualDamageByCategory.damage },
+    { label: '报废', value: purchaseDamage.manualDamageByCategory.scrap },
+    { label: '丢失', value: purchaseDamage.manualDamageByCategory.loss },
+    { label: '其他', value: purchaseDamage.manualDamageByCategory.other },
+  ];
+  const manualDamageHandlingItems = [
+    {
+      label: '待确认',
+      value: purchaseDamage.manualDamageByHandling.pendingConfirm,
+    },
+    {
+      label: '找工厂赔付',
+      value: purchaseDamage.manualDamageByHandling.supplierClaim,
+    },
+    {
+      label: '内部承担',
+      value: purchaseDamage.manualDamageByHandling.internalLoss,
+    },
+  ];
 
   return (
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
@@ -233,7 +271,7 @@ export function MonthlyReportClient() {
                   className="h-11 justify-center shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)] sm:min-w-[140px]"
                 >
                   <Receipt className="mr-2 h-4 w-4" />
-                  {isGenerating ? '刷新中...' : '重新计算'}
+                  {isGenerating ? '刷新中...' : '刷新报表'}
                 </Button>
                 <Button
                   variant="outline"
@@ -333,7 +371,7 @@ export function MonthlyReportClient() {
             icon={<Package className="h-4 w-4" />}
             variant="warning"
             isCurrency={false}
-            subtitle="仅统计采购到货破损"
+            subtitle="含到货破损和手工报损"
           />
           <StatCard
             title="本月破损金额"
@@ -343,23 +381,65 @@ export function MonthlyReportClient() {
             subtitle="按采购元/片成本折算"
           />
           <StatCard
-            title="异常提醒"
+            title="待处理提醒"
             value={report.alerts?.length || 0}
             icon={<Receipt className="h-4 w-4" />}
             variant={(report.alerts?.length ?? 0) > 0 ? 'warning' : 'default'}
             isCurrency={false}
-            subtitle="待处理审计项"
+            subtitle="建议尽快处理"
           />
         </div>
 
         <Card>
-          <CardContent className="px-4 py-3 text-xs leading-5 text-[hsl(var(--color-text-secondary))]">
-            采购破损说明：本月报工厂{' '}
-            {purchaseDamage.supplierClaim.quantity.toLocaleString()} 片 /
-            {formatCurrency(purchaseDamage.supplierClaim.amount)}，内部承担{' '}
-            {purchaseDamage.internalLoss.quantity.toLocaleString()} 片 /
-            {formatCurrency(purchaseDamage.internalLoss.amount)}
-            。金额按采购入库时的元/片成本折算，仅用于追责和财务跟踪，不计入库存。
+          <CardContent className="space-y-3 px-4 py-3 text-xs leading-5 text-[hsl(var(--color-text-secondary))]">
+            <p>
+              破损统计说明：本月到货破损{' '}
+              {purchaseDamage.purchaseInbound.quantity.toLocaleString()} 片 /
+              {formatCurrency(purchaseDamage.purchaseInbound.amount)}，手工报损{' '}
+              {purchaseDamage.manualDamage.quantity.toLocaleString()} 片 /
+              {formatCurrency(purchaseDamage.manualDamage.amount)}。到货破损里，报工厂{' '}
+              {purchaseDamage.supplierClaim.quantity.toLocaleString()} 片 /
+              {formatCurrency(purchaseDamage.supplierClaim.amount)}，内部承担{' '}
+              {purchaseDamage.internalLoss.quantity.toLocaleString()} 片 /
+              {formatCurrency(purchaseDamage.internalLoss.amount)}。
+            </p>
+            <div className="grid gap-3 lg:grid-cols-2">
+              <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+                <div className="mb-2 text-[11px] font-medium text-slate-700">
+                  手工报损按类型
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {manualDamageCategoryItems.map(item => (
+                    <span
+                      key={item.label}
+                      className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] text-slate-600"
+                    >
+                      {item.label} {item.value.quantity.toLocaleString()} 片 /{' '}
+                      {formatCurrency(item.value.amount)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+                <div className="mb-2 text-[11px] font-medium text-slate-700">
+                  手工报损按处理方式
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {manualDamageHandlingItems.map(item => (
+                    <span
+                      key={item.label}
+                      className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] text-slate-600"
+                    >
+                      {item.label} {item.value.quantity.toLocaleString()} 片 /{' '}
+                      {formatCurrency(item.value.amount)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <p>
+              金额按采购入库时的元/片成本折算，用于经营追踪和责任核对。
+            </p>
           </CardContent>
         </Card>
 
@@ -368,7 +448,7 @@ export function MonthlyReportClient() {
           <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <h2 className="flex items-center gap-2 text-sm font-black tracking-widest text-slate-800 uppercase">
               <TrendingUp className="h-4 w-4 text-emerald-500" />
-              收支明细中心
+              收支明细
             </h2>
             <div className="flex items-center gap-4 text-xs font-bold">
               <div className="flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-emerald-700">
@@ -395,7 +475,7 @@ export function MonthlyReportClient() {
               value={report.sample.sampleRevenue}
               icon={<ChineseYuan className="h-4 w-4" />}
               variant="warning"
-              subtitle={`${report.sample.orderCount} 单`}
+              subtitle={sampleSourceSummary}
             />
             <StatCard
               title="样品数量"
@@ -403,7 +483,7 @@ export function MonthlyReportClient() {
               icon={<Package className="h-4 w-4" />}
               variant="info"
               isCurrency={false}
-              subtitle={`${report.sample.customerCount} 位客户`}
+              subtitle={`${report.sample.customerCount} 位客户领取`}
             />
             <StatCard
               title="样品成本"
@@ -430,7 +510,7 @@ export function MonthlyReportClient() {
             ))}
           </div>
           <div className="mt-4 rounded-xl border border-slate-200 bg-white/80 px-4 py-3 text-xs leading-5 text-slate-500">
-            报表说明：仅统计已审核入账的费用；关联采购的费用已计入库存/成本，不重复计入当期期间费用。
+            说明：这里只统计已经审核入账的费用；关联采购的费用已经计入库存或成本，不会重复记到当期费用。
           </div>
         </div>
 
@@ -554,12 +634,12 @@ export function MonthlyReportClient() {
           </div>
         </div>
 
-        {/* 异常审计 - v3 风格内容 */}
+        {/* 经营提醒 */}
         {report.alerts && report.alerts.length > 0 && (
           <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 sm:p-6">
             <h2 className="mb-4 flex items-center gap-2 text-sm font-black tracking-widest text-amber-800 uppercase">
               <Receipt className="h-4 w-4" />
-              智能风险审计建议
+              经营提醒
             </h2>
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {report.alerts.map((alert, index) => (

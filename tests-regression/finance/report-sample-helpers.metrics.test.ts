@@ -8,12 +8,18 @@ jest.mock('@/lib/db', () => ({
     salesOrder: {
       findMany: jest.fn(),
     },
+    outboundRecord: {
+      findMany: jest.fn(),
+    },
   },
 }));
 
 const { prisma } = jest.requireMock('@/lib/db') as {
   prisma: {
     salesOrder: {
+      findMany: jest.Mock;
+    };
+    outboundRecord: {
       findMany: jest.Mock;
     };
   };
@@ -26,6 +32,7 @@ describe('report-sample-helpers metrics regression', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    prisma.outboundRecord.findMany.mockResolvedValue([]);
   });
 
   test('getSampleMetrics：应按分页累计样品统计并去重客户', async () => {
@@ -77,6 +84,22 @@ describe('report-sample-helpers metrics regression', () => {
       sampleQuantity: 10,
       sampleRevenue: 160,
       sampleCost: 115,
+      sources: {
+        sampleOrder: {
+          recordCount: 3,
+          customerCount: 2,
+          sampleQuantity: 10,
+          sampleRevenue: 160,
+          sampleCost: 115,
+        },
+        manualOutbound: {
+          recordCount: 0,
+          customerCount: 0,
+          sampleQuantity: 0,
+          sampleRevenue: 0,
+          sampleCost: 0,
+        },
+      },
     });
     expect(prisma.salesOrder.findMany).toHaveBeenCalledTimes(3);
     expect(prisma.salesOrder.findMany).toHaveBeenCalledWith(
@@ -84,6 +107,14 @@ describe('report-sample-helpers metrics regression', () => {
         where: expect.objectContaining({
           isSampleOrder: true,
           status: { in: ['confirmed', 'shipped', 'completed'] },
+        }),
+      })
+    );
+    expect(prisma.outboundRecord.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          reason: 'sample_outbound',
+          salesOrderId: null,
         }),
       })
     );
@@ -136,6 +167,9 @@ describe('report-sample-helpers metrics regression', () => {
     expect(annual.customerCount).toBe(3);
     expect(annual.sampleQuantity).toBe(18);
     expect(annual.sampleRevenue).toBe(230);
+    expect(annual.sampleCost).toBe(142);
+    expect(annual.sources.sampleOrder.recordCount).toBe(3);
+    expect(annual.sources.manualOutbound.recordCount).toBe(0);
     expect(annual.topCustomers).toHaveLength(2);
     expect(annual.topCustomers.map(item => item.customerName)).toEqual([
       '丙客户',
@@ -153,5 +187,70 @@ describe('report-sample-helpers metrics regression', () => {
         sampleRevenue: 120,
       })
     );
+  });
+
+  test('getSampleMetrics：应合并手工样品出库并拆分来源统计', async () => {
+    prisma.salesOrder.findMany.mockImplementation(
+      async (args?: { cursor?: { id: string } }) => {
+        if (args?.cursor?.id) {
+          return [];
+        }
+
+        return [
+          {
+            id: 'sample-order-001',
+            customerId: 'customer-a',
+            totalAmount: 88,
+            costAmount: 50,
+            customer: { name: '甲客户' },
+            items: [{ quantity: 4 }],
+          },
+        ];
+      }
+    );
+
+    prisma.outboundRecord.findMany.mockImplementation(
+      async (args?: { cursor?: { id: string } }) => {
+        if (args?.cursor?.id) {
+          return [];
+        }
+
+        return [
+          {
+            id: 'sample-outbound-001',
+            customerId: 'customer-b',
+            quantity: 6,
+            totalCost: 72,
+            customer: { name: '乙客户' },
+          },
+        ];
+      }
+    );
+
+    const summary = await getSampleMetrics(startDate, endDate, visibility);
+
+    expect(summary).toEqual({
+      orderCount: 2,
+      customerCount: 2,
+      sampleQuantity: 10,
+      sampleRevenue: 88,
+      sampleCost: 122,
+      sources: {
+        sampleOrder: {
+          recordCount: 1,
+          customerCount: 1,
+          sampleQuantity: 4,
+          sampleRevenue: 88,
+          sampleCost: 50,
+        },
+        manualOutbound: {
+          recordCount: 1,
+          customerCount: 1,
+          sampleQuantity: 6,
+          sampleRevenue: 0,
+          sampleCost: 72,
+        },
+      },
+    });
   });
 });

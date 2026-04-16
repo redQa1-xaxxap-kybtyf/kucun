@@ -1,8 +1,11 @@
+import type { Prisma } from '@prisma/client';
+
 import { prisma } from '@/lib/db';
 import type {
   AnnualSampleMetrics,
   SampleCustomerMetrics,
   SampleMetrics,
+  SampleSourceMetrics,
 } from '@/lib/types/report';
 import { toNumber } from '@/lib/utils/number';
 
@@ -13,11 +16,29 @@ import {
 } from './report-helpers';
 
 const SAMPLE_REPORT_BATCH_SIZE = 500;
+const UNKNOWN_CUSTOMER_KEY = '__unknown_sample_customer__';
+const UNKNOWN_CUSTOMER_NAME = '未指定客户';
 
-type SampleAccumulator = {
-  summary: SampleMetrics;
-  customers: Map<string, SampleCustomerMetrics>;
+type SampleSourceKey = keyof SampleMetrics['sources'];
+
+type SampleMetricAccumulator = {
+  metric: SampleMetrics;
+  customerIds: Set<string>;
+  sourceCustomerIds: Record<SampleSourceKey, Set<string>>;
 };
+
+type SampleCustomerAccumulator = SampleMetricAccumulator & {
+  customerId: string;
+  customerName: string;
+};
+
+const createEmptySampleSourceMetrics = (): SampleSourceMetrics => ({
+  recordCount: 0,
+  customerCount: 0,
+  sampleQuantity: 0,
+  sampleRevenue: 0,
+  sampleCost: 0,
+});
 
 const createEmptySampleMetrics = (): SampleMetrics => ({
   orderCount: 0,
@@ -25,31 +46,128 @@ const createEmptySampleMetrics = (): SampleMetrics => ({
   sampleQuantity: 0,
   sampleRevenue: 0,
   sampleCost: 0,
+  sources: {
+    sampleOrder: createEmptySampleSourceMetrics(),
+    manualOutbound: createEmptySampleSourceMetrics(),
+  },
+});
+
+const createSampleMetricAccumulator = (): SampleMetricAccumulator => ({
+  metric: createEmptySampleMetrics(),
+  customerIds: new Set<string>(),
+  sourceCustomerIds: {
+    sampleOrder: new Set<string>(),
+    manualOutbound: new Set<string>(),
+  },
 });
 
 const roundMetric = (value: number) => Math.round(value * 100) / 100;
+
+function normalizeCustomerIdentity(
+  customerId: string | null | undefined,
+  customerName: string | null | undefined
+): { customerId: string; customerName: string } {
+  if (customerId && customerId.trim().length > 0) {
+    return {
+      customerId,
+      customerName: customerName?.trim() || UNKNOWN_CUSTOMER_NAME,
+    };
+  }
+
+  return {
+    customerId: UNKNOWN_CUSTOMER_KEY,
+    customerName: UNKNOWN_CUSTOMER_NAME,
+  };
+}
+
+function recordSampleMetric(
+  accumulator: SampleMetricAccumulator,
+  sourceKey: SampleSourceKey,
+  customerId: string,
+  sampleQuantity: number,
+  sampleRevenue: number,
+  sampleCost: number
+) {
+  accumulator.metric.orderCount += 1;
+  accumulator.metric.sampleQuantity += sampleQuantity;
+  accumulator.metric.sampleRevenue += sampleRevenue;
+  accumulator.metric.sampleCost += sampleCost;
+  accumulator.customerIds.add(customerId);
+
+  const sourceMetric = accumulator.metric.sources[sourceKey];
+  sourceMetric.recordCount += 1;
+  sourceMetric.sampleQuantity += sampleQuantity;
+  sourceMetric.sampleRevenue += sampleRevenue;
+  sourceMetric.sampleCost += sampleCost;
+  accumulator.sourceCustomerIds[sourceKey].add(customerId);
+}
+
+function finalizeSampleSourceMetrics(metric: SampleSourceMetrics) {
+  metric.sampleQuantity = roundMetric(metric.sampleQuantity);
+  metric.sampleRevenue = roundMetric(metric.sampleRevenue);
+  metric.sampleCost = roundMetric(metric.sampleCost);
+}
+
+function finalizeSampleAccumulator(
+  accumulator: SampleMetricAccumulator
+): SampleMetrics {
+  const { metric, customerIds, sourceCustomerIds } = accumulator;
+
+  metric.customerCount = customerIds.size;
+  metric.sampleQuantity = roundMetric(metric.sampleQuantity);
+  metric.sampleRevenue = roundMetric(metric.sampleRevenue);
+  metric.sampleCost = roundMetric(metric.sampleCost);
+
+  for (const sourceKey of Object.keys(metric.sources) as SampleSourceKey[]) {
+    metric.sources[sourceKey].customerCount = sourceCustomerIds[sourceKey].size;
+    finalizeSampleSourceMetrics(metric.sources[sourceKey]);
+  }
+
+  return metric;
+}
+
+function getOrCreateCustomerAccumulator(
+  customers: Map<string, SampleCustomerAccumulator>,
+  customerId: string,
+  customerName: string
+): SampleCustomerAccumulator {
+  const existing = customers.get(customerId);
+  if (existing) {
+    return existing;
+  }
+
+  const created: SampleCustomerAccumulator = {
+    customerId,
+    customerName,
+    ...createSampleMetricAccumulator(),
+  };
+  customers.set(customerId, created);
+  return created;
+}
 
 async function collectSampleMetrics(
   startDate: Date,
   endDate: Date,
   visibility: ReportVisibility
-): Promise<SampleAccumulator> {
-  const where = applyReportVisibility(
+): Promise<{
+  summary: SampleMetrics;
+  customers: SampleCustomerMetrics[];
+}> {
+  const salesOrderWhere = applyReportVisibility<Prisma.SalesOrderWhereInput>(
     {
       ...buildSalesOrderWhere(startDate, endDate),
       isSampleOrder: true,
-    } as any,
+    },
     visibility
   );
 
-  const customerIds = new Set<string>();
-  const customers = new Map<string, SampleCustomerMetrics>();
-  const summary = createEmptySampleMetrics();
+  const summaryAccumulator = createSampleMetricAccumulator();
+  const customers = new Map<string, SampleCustomerAccumulator>();
 
-  let cursor: string | undefined;
+  let salesOrderCursor: string | undefined;
   while (true) {
     const batch = await prisma.salesOrder.findMany({
-      where,
+      where: salesOrderWhere,
       select: {
         id: true,
         customerId: true,
@@ -70,7 +188,9 @@ async function collectSampleMetrics(
         id: 'asc',
       },
       take: SAMPLE_REPORT_BATCH_SIZE,
-      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      ...(salesOrderCursor
+        ? { cursor: { id: salesOrderCursor }, skip: 1 }
+        : {}),
     });
 
     if (batch.length === 0) {
@@ -78,6 +198,10 @@ async function collectSampleMetrics(
     }
 
     for (const order of batch) {
+      const identity = normalizeCustomerIdentity(
+        order.customerId,
+        order.customer?.name
+      );
       const sampleQuantity = order.items.reduce(
         (sum, item) => sum + Number(item.quantity ?? 0),
         0
@@ -85,44 +209,111 @@ async function collectSampleMetrics(
       const sampleRevenue = toNumber(order.totalAmount);
       const sampleCost = toNumber(order.costAmount);
 
-      summary.orderCount += 1;
-      summary.sampleQuantity += sampleQuantity;
-      summary.sampleRevenue += sampleRevenue;
-      summary.sampleCost += sampleCost;
+      recordSampleMetric(
+        summaryAccumulator,
+        'sampleOrder',
+        identity.customerId,
+        sampleQuantity,
+        sampleRevenue,
+        sampleCost
+      );
 
-      customerIds.add(order.customerId);
-
-      const existing = customers.get(order.customerId) ?? {
-        customerId: order.customerId,
-        customerName: order.customer?.name ?? '未命名客户',
-        ...createEmptySampleMetrics(),
-      };
-
-      existing.orderCount += 1;
-      existing.customerCount = 1;
-      existing.sampleQuantity += sampleQuantity;
-      existing.sampleRevenue += sampleRevenue;
-      existing.sampleCost += sampleCost;
-      customers.set(order.customerId, existing);
+      const customerAccumulator = getOrCreateCustomerAccumulator(
+        customers,
+        identity.customerId,
+        identity.customerName
+      );
+      recordSampleMetric(
+        customerAccumulator,
+        'sampleOrder',
+        identity.customerId,
+        sampleQuantity,
+        sampleRevenue,
+        sampleCost
+      );
     }
 
-    cursor = batch[batch.length - 1].id;
+    salesOrderCursor = batch[batch.length - 1].id;
   }
 
-  summary.customerCount = customerIds.size;
-  summary.sampleQuantity = roundMetric(summary.sampleQuantity);
-  summary.sampleRevenue = roundMetric(summary.sampleRevenue);
-  summary.sampleCost = roundMetric(summary.sampleCost);
+  let outboundCursor: string | undefined;
+  while (true) {
+    const batch = await prisma.outboundRecord.findMany({
+      where: {
+        createdAt: {
+          gte: startDate,
+          lte: endDate,
+        },
+        reason: 'sample_outbound',
+        salesOrderId: null,
+      },
+      select: {
+        id: true,
+        customerId: true,
+        quantity: true,
+        totalCost: true,
+        customer: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        id: 'asc',
+      },
+      take: SAMPLE_REPORT_BATCH_SIZE,
+      ...(outboundCursor ? { cursor: { id: outboundCursor }, skip: 1 } : {}),
+    });
 
-  for (const metric of customers.values()) {
-    metric.sampleQuantity = roundMetric(metric.sampleQuantity);
-    metric.sampleRevenue = roundMetric(metric.sampleRevenue);
-    metric.sampleCost = roundMetric(metric.sampleCost);
+    if (batch.length === 0) {
+      break;
+    }
+
+    for (const record of batch) {
+      const identity = normalizeCustomerIdentity(
+        record.customerId,
+        record.customer?.name
+      );
+      const sampleQuantity = Number(record.quantity ?? 0);
+      const sampleCost = toNumber(record.totalCost);
+
+      recordSampleMetric(
+        summaryAccumulator,
+        'manualOutbound',
+        identity.customerId,
+        sampleQuantity,
+        0,
+        sampleCost
+      );
+
+      const customerAccumulator = getOrCreateCustomerAccumulator(
+        customers,
+        identity.customerId,
+        identity.customerName
+      );
+      recordSampleMetric(
+        customerAccumulator,
+        'manualOutbound',
+        identity.customerId,
+        sampleQuantity,
+        0,
+        sampleCost
+      );
+    }
+
+    outboundCursor = batch[batch.length - 1].id;
   }
+
+  const summary = finalizeSampleAccumulator(summaryAccumulator);
+  const customerMetrics = [...customers.values()].map(customer => ({
+    customerId: customer.customerId,
+    customerName: customer.customerName,
+    ...finalizeSampleAccumulator(customer),
+  }));
 
   return {
     summary,
-    customers,
+    customers: customerMetrics,
   };
 }
 
@@ -147,7 +338,7 @@ export async function getAnnualSampleMetrics(
     visibility
   );
 
-  const topCustomers = [...customers.values()]
+  const topCustomers = customers
     .sort((left, right) => {
       if (right.sampleQuantity !== left.sampleQuantity) {
         return right.sampleQuantity - left.sampleQuantity;
