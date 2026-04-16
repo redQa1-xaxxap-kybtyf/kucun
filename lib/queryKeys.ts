@@ -322,6 +322,7 @@ export const financeKeys = {
     endDate: string;
     groupBy?: string;
     expenseType?: string | null;
+    relatedType?: string | null;
   }) => [...financeKeys.expenses(), 'statistics', params] as const,
 
   // 财务报表
