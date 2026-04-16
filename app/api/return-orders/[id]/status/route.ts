@@ -10,6 +10,46 @@ import { prisma } from '@/lib/db';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { updateReturnStatusSchema } from '@/lib/validations/return-order';
 
+async function readJsonBody(
+  request: NextRequest | { json?: () => Promise<unknown>; text?: () => Promise<string> }
+) {
+  if (typeof request.text === 'function') {
+    const rawBody = await request.text();
+
+    if (rawBody.trim().length === 0) {
+      return {
+        body: {} as unknown,
+      };
+    }
+
+    try {
+      return {
+        body: JSON.parse(rawBody) as unknown,
+      };
+    } catch {
+      return {
+        error: '请求体不是合法的 JSON',
+      };
+    }
+  }
+
+  if (typeof request.json === 'function') {
+    try {
+      return {
+        body: (await request.json()) as unknown,
+      };
+    } catch {
+      return {
+        error: '请求体不是合法的 JSON',
+      };
+    }
+  }
+
+  return {
+    body: {} as unknown,
+  };
+}
+
 /**
  * PATCH /api/return-orders/[id]/status - 更新退货订单状态
  */
@@ -18,25 +58,18 @@ export const PATCH = withAuth(
     const { id } = await (params as Promise<{ id: string }>);
     const userId = user.id;
 
-    // 解析请求体
-    const rawBody = await request.text();
-    let body: unknown = {};
-
-    if (rawBody.trim().length > 0) {
-      try {
-        body = JSON.parse(rawBody) as unknown;
-      } catch {
-        return NextResponse.json(
-          {
-            success: false,
-            error: '请求体不是合法的 JSON',
-          },
-          { status: 400 }
-        );
-      }
+    const bodyResult = await readJsonBody(request);
+    if (bodyResult.error) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: bodyResult.error,
+        },
+        { status: 400 }
+      );
     }
 
-    const validationResult = updateReturnStatusSchema.safeParse(body);
+    const validationResult = updateReturnStatusSchema.safeParse(bodyResult.body);
 
     if (!validationResult.success) {
       return NextResponse.json(
