@@ -5,16 +5,14 @@ import type { Prisma } from '@prisma/client';
 import { buildDateTimeRangeFromDateStrings } from '@/lib/api/date-range';
 import { prisma } from '@/lib/db';
 import { roundToTwoDecimals } from '@/lib/services/factory-shipment-expense-service';
-import type {
-  ManualDamageCategory,
-  ManualDamageHandling,
-  ManualDamageLedger,
-  ManualDamageLedgerQueryParams,
-  ManualDamageLedgerStatus,
-  ManualDamageLedgerSummary,
-} from '@/lib/types/manual-damage-ledger';
 import {
   MANUAL_DAMAGE_LEDGER_ALLOWED_TRANSITIONS,
+  type ManualDamageCategory,
+  type ManualDamageHandling,
+  type ManualDamageLedger,
+  type ManualDamageLedgerQueryParams,
+  type ManualDamageLedgerStatus,
+  type ManualDamageLedgerSummary,
 } from '@/lib/types/manual-damage-ledger';
 import {
   getBatchPiecesPerUnitFromMap,

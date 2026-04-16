@@ -33,6 +33,8 @@ const SPECIAL_FOREIGN_KEYS = new Set([
   'relatedId',
   'entityId',
   'siteId',
+  // 业务导入批次号，不是 Prisma 模型关系外键
+  'openingImportBatchId',
 ]);
 
 /**

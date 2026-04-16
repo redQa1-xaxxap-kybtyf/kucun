@@ -19,8 +19,10 @@ import { prisma } from '@/lib/db';
 import { getStandardTransactionOptions } from '@/lib/db/transaction-options';
 import { addToFIFOQueue } from '@/lib/services/fifo-cost-service';
 import { upsertPurchaseDamageLedgerFromInbound } from '@/lib/services/purchase-damage-ledger-service';
-import type { InboundDamageHandling } from '@/lib/types/inbound';
-import { INBOUND_REASON_LABELS } from '@/lib/types/inbound';
+import {
+  INBOUND_REASON_LABELS,
+  type InboundDamageHandling,
+} from '@/lib/types/inbound';
 import { calculateTotalCost } from '@/lib/utils/cost-calculation';
 import { toISOString } from '@/lib/utils/datetime';
 import { cleanRemarks } from '@/lib/validations/inbound';

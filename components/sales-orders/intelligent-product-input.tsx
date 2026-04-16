@@ -12,6 +12,7 @@ import {
 import { getProducts } from '@/lib/api/products';
 import { PRODUCT_UNIT_LABELS } from '@/lib/config/product';
 import type { Product } from '@/lib/types/product';
+import { toPieceOrSheetLabel } from '@/lib/utils/inventory-unit-conversion';
 import { ProductDataUtils } from '@/lib/utils/product-data';
 import { getInventoryBatchAvailableQuantity } from '@/lib/utils/product-inventory';
 
@@ -252,10 +253,8 @@ export function IntelligentProductInput<T extends FieldValues = FieldValues>({
       );
 
       const nextDisplayUnit =
-        productData.unit === '件' &&
-        productData.piecesPerUnit &&
-        productData.piecesPerUnit > 0
-          ? '件'
+        productData.unit
+          ? toPieceOrSheetLabel(productData.unit)
           : ((getFormValues(`items.${index}.displayUnit`) as
               | '片'
               | '件'
