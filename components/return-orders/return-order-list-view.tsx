@@ -53,6 +53,7 @@ import {
 } from '@/lib/types/return-order';
 import { formatCurrency } from '@/lib/utils';
 import { formatDateTime } from '@/lib/utils/datetime';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
 import { ErrorStateCard } from './return-order-list.error';
 import type { ReturnOrderListViewProps } from './return-order-list.types';
@@ -359,10 +360,10 @@ function ReturnOrderRow({
           setIsConfirming(false);
           const successDescription =
             order.processType === 'refund'
-              ? '退货已完成，库存已回补；如需退款，请继续处理退款'
-              : '退货已完成，库存已回补';
+              ? '这张退货单已经处理完成，库存已回补。如需退款，请继续登记退款。'
+              : '这张退货单已经处理完成，库存已回补。';
           toast({
-            title: '完成成功',
+            title: '退货已完成',
             description: successDescription,
             variant: 'success',
           });
@@ -374,8 +375,11 @@ function ReturnOrderRow({
         onError: (error: Error) => {
           setIsConfirming(false);
           toast({
-            title: '确认失败',
-            description: error.message,
+            title: '处理失败',
+            description: getFriendlyErrorMessage(
+              error,
+              '退货状态暂时无法更新，请稍后重试'
+            ),
             variant: 'destructive',
           });
         },
@@ -501,8 +505,8 @@ function ReturnOrderActionMenu({
       }
 
       toast({
-        title: '取消成功',
-        description: '退货订单已取消',
+        title: '退货单已取消',
+        description: '这张退货单已取消，后续不会再继续处理。',
         variant: 'success',
       });
       setCancelDialogOpen(false);
@@ -511,8 +515,11 @@ function ReturnOrderActionMenu({
       window.location.reload();
     } catch (error) {
       toast({
-        title: '取消失败',
-        description: error instanceof Error ? error.message : '未知错误',
+        title: '暂时无法取消',
+        description: getFriendlyErrorMessage(
+          error,
+          '这张退货单暂时无法取消，请稍后再试。'
+        ),
         variant: 'destructive',
       });
     }
@@ -584,17 +591,17 @@ function ReturnOrderActionMenu({
       <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>确认取消退货订单</AlertDialogTitle>
+            <AlertDialogTitle>确定取消这张退货单吗？</AlertDialogTitle>
             <AlertDialogDescription>
-              您确定要取消退货订单 <strong>{order.returnNumber}</strong> 吗？
+              退货单 <strong>{order.returnNumber}</strong> 取消后将不再继续处理。
               <br />
               <br />
               取消后：
               <ul className="mt-2 list-inside list-disc space-y-1">
-                <li>该退货订单将被标记为已取消状态</li>
-                <li>已取消的订单不会影响往来账单余额</li>
-                <li>订单记录仍会保留在系统中用于审计追踪</li>
-                <li>此操作不可撤销</li>
+                <li>这张退货单会变成“已取消”</li>
+                <li>往来余额不会再按这张退货单继续处理</li>
+                <li>单据记录会保留，方便后续查询</li>
+                <li>取消后不能恢复</li>
               </ul>
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -604,7 +611,7 @@ function ReturnOrderActionMenu({
               onClick={handleConfirmCancel}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              确认取消
+              确认取消退货单
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

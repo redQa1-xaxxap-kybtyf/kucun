@@ -67,6 +67,7 @@ import {
 } from '@/lib/types/return-order';
 import { formatCurrency } from '@/lib/utils';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
 interface ERPReturnOrderListProps {
   initialParams?: ReturnOrderQueryParams;
@@ -114,8 +115,8 @@ export function ERPReturnOrderList({
   const updateStatusMutation = useUpdateReturnOrderStatus({
     onSuccess: () => {
       toast({
-        title: '完成成功',
-        description: '退货已完成，库存已回补；如需退款，请继续处理退款',
+        title: '退货已完成',
+        description: '这张退货单已经处理完成，库存已回补。如需退款，请继续登记退款。',
         variant: 'success',
       });
       queryClient.invalidateQueries({ queryKey: queryKeys.returnOrders.all });
@@ -123,8 +124,8 @@ export function ERPReturnOrderList({
     },
     onError: (error: Error) => {
       toast({
-        title: '确认失败',
-        description: error.message,
+        title: '处理失败',
+        description: getFriendlyErrorMessage(error, '退货状态暂时无法更新，请稍后重试'),
         variant: 'destructive',
       });
       setConfirmingId(null);
@@ -254,8 +255,8 @@ export function ERPReturnOrderList({
     },
     onSuccess: () => {
       toast({
-        title: '取消成功',
-        description: '退货订单已取消',
+        title: '退货单已取消',
+        description: '这张退货单已取消，后续不会再继续处理。',
         variant: 'success',
       });
       // 刷新列表
@@ -265,8 +266,8 @@ export function ERPReturnOrderList({
     },
     onError: (error: Error) => {
       toast({
-        title: '取消失败',
-        description: error.message,
+        title: '暂时无法取消',
+        description: getFriendlyErrorMessage(error, '这张退货单暂时无法取消，请稍后重试'),
         variant: 'destructive',
       });
     },
@@ -508,7 +509,7 @@ export function ERPReturnOrderList({
                 加载退货订单失败
               </p>
               <p className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
-                {error instanceof Error ? error.message : '未知错误'}
+                {getFriendlyErrorMessage(error, '请稍后重试')}
               </p>
             </div>
             <Button
@@ -576,7 +577,7 @@ export function ERPReturnOrderList({
                   <EmptyState
                     title="暂无退货订单"
                     action={
-                      <Button onClick={handleCreateNew}>新建退货订单</Button>
+                      <Button onClick={handleCreateNew}>新建退货单</Button>
                     }
                     compact
                   />
@@ -775,18 +776,18 @@ export function ERPReturnOrderList({
       <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>确认取消退货订单</AlertDialogTitle>
+            <AlertDialogTitle>确定取消这张退货单吗？</AlertDialogTitle>
             <AlertDialogDescription>
-              您确定要取消退货订单{' '}
-              <strong>{orderToCancel?.returnNumber}</strong> 吗？
+              退货单 <strong>{orderToCancel?.returnNumber}</strong>{' '}
+              取消后将不再继续处理。
               <br />
               <br />
               取消后：
               <ul className="mt-2 list-inside list-disc space-y-1">
-                <li>该退货订单将被标记为已取消状态</li>
-                <li>已取消的订单不会影响往来账单余额</li>
-                <li>订单记录仍会保留在系统中用于审计追踪</li>
-                <li>此操作不可撤销</li>
+                <li>这张退货单会变成“已取消”</li>
+                <li>往来余额不会再按这张退货单继续处理</li>
+                <li>单据记录会保留，方便后续查询</li>
+                <li>取消后不能恢复</li>
               </ul>
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -799,7 +800,7 @@ export function ERPReturnOrderList({
               disabled={cancelMutation.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {cancelMutation.isPending ? '取消中...' : '确认取消'}
+              {cancelMutation.isPending ? '处理中...' : '确认取消退货单'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

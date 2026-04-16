@@ -30,7 +30,7 @@ import { formatCurrency } from '@/lib/utils';
 import { csrfFetch } from '@/lib/utils/csrf';
 import { formatDateTime } from '@/lib/utils/datetime';
 import { getErrorMessage } from '@/lib/utils/error-handler';
-import { calculatePieceDisplay } from '@/lib/utils/piece-calculation';
+import { formatDetailedPieceSummary } from '@/lib/utils/piece-calculation';
 
 const ReturnOrderHeaderActions = dynamic(
   () =>
@@ -164,20 +164,8 @@ function formatQuantityWithPieces(
 
   const piecesPerUnit = ppuFromItem ?? ppuFromProduct;
 
-  if (piecesPerUnit && piecesPerUnit > 0) {
-    const { fullUnits, remainingPieces, totalPieces } = calculatePieceDisplay(
-      qty,
-      piecesPerUnit
-    );
-
-    if (fullUnits === 0) {
-      return `${totalPieces}片`;
-    }
-    if (remainingPieces === 0) {
-      return `${fullUnits}件（共${totalPieces}片）`;
-    }
-
-    return `${fullUnits}件${remainingPieces}片（共${totalPieces}片）`;
+  if (piecesPerUnit && piecesPerUnit > 1) {
+    return formatDetailedPieceSummary(qty, piecesPerUnit);
   }
 
   // 没有每件片数时，退回到“数量 + 单位”
@@ -245,7 +233,7 @@ export function ReturnOrderDetailPageClient({
     return (
       <ErrorMessage
         title="订单不存在"
-        message="未找到指定的退货订单"
+        message="未找到这张退货单"
         onRetry={() => router.push('/return-orders')}
       />
     );
@@ -313,7 +301,7 @@ export function ReturnOrderDetailPageClient({
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
                 <div className="flex items-center gap-3">
                   <h1 className="text-lg font-bold tracking-tight text-[hsl(var(--color-text-primary))] sm:text-2xl">
-                    退货订单详情
+                    退货单详情
                   </h1>
                   <Badge
                     variant={displayStatus.variant}
@@ -707,7 +695,7 @@ export function ReturnOrderDetailPageClient({
                       </p>
                     ) : (
                       <p className="mt-2 text-xs text-[hsl(var(--color-text-tertiary))]">
-                        还没有退款处理单，点击下方按钮可自动生成并进入处理页面。
+                        还没有退款单，点下方按钮即可生成并继续处理。
                       </p>
                     )}
                   </div>
