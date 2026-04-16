@@ -66,6 +66,7 @@ import {
   normalizeSelector,
   normalizeSelectorGroup,
 } from '@/lib/utils/selector-normalizer';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
 // 固定的3个提取字段配置
 const FIXED_EXTRACT_FIELDS: ExtractField[] = [
@@ -222,7 +223,10 @@ export default function ShippingSitesAdmin({
     onError: (error: Error) => {
       toast({
         title: '保存失败',
-        description: error.message,
+        description: getFriendlyErrorMessage(
+          error,
+          '站点设置暂时无法保存，请稍后重试'
+        ),
         variant: 'destructive',
       });
     },
@@ -253,7 +257,10 @@ export default function ShippingSitesAdmin({
     onError: (error: Error) => {
       toast({
         title: '删除失败',
-        description: error.message,
+        description: getFriendlyErrorMessage(
+          error,
+          '站点暂时无法删除，请稍后重试'
+        ),
         variant: 'destructive',
       });
     },
@@ -317,8 +324,8 @@ export default function ShippingSitesAdmin({
       !formData.resultContainerSelector
     ) {
       toast({
-        title: '验证失败',
-        description: '请填写所有必填字段',
+        title: '请补全信息',
+        description: '请先填写所有必填内容',
         variant: 'destructive',
       });
       return;
@@ -328,8 +335,8 @@ export default function ShippingSitesAdmin({
     const { status, destination, estimatedArrival } = formData.extractFields;
     if (!status || !destination || !estimatedArrival) {
       toast({
-        title: '验证失败',
-        description: '请填写所有提取字段的CSS选择器',
+        title: '请补全识别规则',
+        description: '请填写状态、目的地和预计到达的页面定位规则',
         variant: 'destructive',
       });
       return;
@@ -383,7 +390,7 @@ export default function ShippingSitesAdmin({
               权限不足
             </CardTitle>
             <CardDescription className="text-amber-700">
-              只有管理员可以访问运输站点管理功能。
+              只有管理员可以访问物流查询站点设置。
             </CardDescription>
           </CardHeader>
         </Card>
@@ -406,7 +413,7 @@ export default function ShippingSitesAdmin({
                   运输查询站点管理
                 </h1>
                 <p className="mt-1 text-sm font-bold text-slate-500">
-                  配置和管理运输查询网站 • 优化 CSS 选择器配置体验
+                  统一维护物流查询网站和页面识别规则
                 </p>
               </div>
             </div>
@@ -422,7 +429,7 @@ export default function ShippingSitesAdmin({
                 <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-white/20">
                   <span className="text-sm">✨</span>
                 </div>
-                智能选择器助手
+                网页定位助手
               </Button>
               <Button
                 variant="outline"
@@ -444,13 +451,13 @@ export default function ShippingSitesAdmin({
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
               <p className="text-xs font-black tracking-widest text-slate-500 uppercase">
-                Data Management / 站点配置
+                站点管理 / 配置中心
               </p>
               <h3 className="text-lg font-black tracking-tight text-slate-900">
                 合作站点列表
               </h3>
               <p className="text-sm font-bold text-slate-400">
-                管理查询网点的 CSS 选择器，使用固定的 3 个提取字段。
+                管理查询网点的页面定位规则，统一维护 3 个核心识别项。
               </p>
             </div>
             <Button
@@ -526,7 +533,7 @@ export default function ShippingSitesAdmin({
                               : 'bg-slate-400'
                           )}
                         />
-                        {site.status === 'active' ? 'ACTIVE' : 'DISABLED'}
+                        {site.status === 'active' ? '正常使用' : '已停用'}
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
@@ -570,7 +577,7 @@ export default function ShippingSitesAdmin({
                       {formMode === 'create' ? '新增站点配置' : '编辑站点配置'}
                     </DialogTitle>
                     <DialogDescription className="text-xs font-bold text-slate-500">
-                      配置运输查询站点的核心元数据与 CSS 爬虫选择器
+                      填写站点信息和页面识别规则
                     </DialogDescription>
                   </div>
                 </div>
@@ -612,7 +619,7 @@ export default function ShippingSitesAdmin({
                             htmlFor="url"
                             className="text-xs font-black tracking-widest text-slate-500 uppercase"
                           >
-                            站点主页 URL{' '}
+                            站点主页链接{' '}
                             <span className="text-rose-500">*</span>
                           </Label>
                           <Input
@@ -656,7 +663,7 @@ export default function ShippingSitesAdmin({
                     <div className="mb-6 flex items-center gap-3 border-b border-slate-100 pb-4">
                       <div className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
                       <h4 className="text-sm font-black tracking-widest text-slate-900 uppercase">
-                        核心交互选择器
+                        核心页面定位规则
                       </h4>
                     </div>
 
@@ -731,7 +738,7 @@ export default function ShippingSitesAdmin({
                     <div className="mb-6 flex items-center gap-3 border-b border-slate-100 pb-4">
                       <div className="h-1.5 w-1.5 rounded-full bg-amber-500" />
                       <h4 className="text-sm font-black tracking-widest text-slate-900 uppercase">
-                        数据提取映射表
+                        识别内容设置
                       </h4>
                     </div>
 

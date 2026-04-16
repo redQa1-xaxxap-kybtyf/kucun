@@ -87,9 +87,9 @@ export default function SelectorHelperPage() {
         selector: `#${valueId}`,
         type: 'css',
         confidence: 'high',
-        reason: 'ID 选择器最简洁且唯一',
+        reason: '编号选择最简洁且唯一',
         pros: ['最简洁', '性能最好', '唯一性强'],
-        cons: ['依赖元素有 ID 属性'],
+        cons: ['依赖元素带有唯一编号'],
       });
     }
 
@@ -311,14 +311,14 @@ export default function SelectorHelperPage() {
 
       if (fields.length === 0) {
         toast({
-          title: '未检测到字段',
+          title: '未识别到内容',
           description: '请确保 HTML 代码包含船舶状态信息',
           variant: 'destructive',
         });
       } else {
         toast({
           title: '分析完成',
-          description: `检测到 ${fields.length} 个字段`,
+          description: `识别到 ${fields.length} 项内容`,
           variant: 'success',
         });
       }
@@ -338,7 +338,7 @@ export default function SelectorHelperPage() {
     navigator.clipboard.writeText(selector);
     toast({
       title: '已复制',
-      description: `${type.toUpperCase()} 选择器已复制到剪贴板`,
+      description: `${type === 'xpath' ? 'XPath 规则' : 'CSS 规则'}已复制到剪贴板`,
       variant: 'success',
     });
   };
@@ -350,7 +350,7 @@ export default function SelectorHelperPage() {
       .join('\n');
     navigator.clipboard.writeText(text);
     toast({
-      title: '已复制所有推荐选择器',
+      title: '已复制推荐规则',
       description: '可以粘贴到站点配置中',
       variant: 'success',
     });
@@ -372,8 +372,8 @@ export default function SelectorHelperPage() {
     });
     navigator.clipboard.writeText(JSON.stringify(json, null, 2));
     toast({
-      title: '已复制 JSON 格式',
-      description: '可以直接粘贴到 extract_selectors 字段',
+      title: '已复制配置格式',
+      description: '可以直接粘贴到站点配置里',
       variant: 'success',
     });
   };
@@ -395,10 +395,10 @@ export default function SelectorHelperPage() {
               </Button>
               <div>
                 <h1 className="text-2xl font-black tracking-tight text-slate-900">
-                  CSS 选择器智能助手
+                  网页定位规则助手
                 </h1>
                 <p className="mt-1 text-sm font-bold text-slate-500">
-                  粘贴 HTML 代码，自动生成符合 v3 标准的 CSS/XPath 选择器配置
+                  粘贴网页代码，自动生成可直接填写的 XPath / CSS 页面识别规则
                 </p>
               </div>
             </div>
@@ -419,7 +419,7 @@ export default function SelectorHelperPage() {
                   <Sparkles className="h-5 w-5" />
                 </div>
                 <h3 className="text-lg font-black tracking-tight text-slate-900">
-                  步骤 1: 粘贴 HTML 源码
+                  步骤 1: 粘贴网页代码
                 </h3>
               </div>
               <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
@@ -463,10 +463,10 @@ export default function SelectorHelperPage() {
                     htmlFor="htmlInput"
                     className="text-xs font-black tracking-widest text-slate-500 uppercase"
                   >
-                    HTML 代码块
+                    网页代码片段
                   </Label>
                   <span className="text-[10px] font-bold text-slate-400">
-                    建议复制包含 label 和 value 的完整父节点
+                    建议复制同时包含标题和结果内容的完整区域
                   </span>
                 </div>
                 <div className="relative overflow-hidden rounded-2xl border border-slate-100 bg-slate-900/5 transition-all focus-within:ring-2 focus-within:ring-blue-500/20">
@@ -492,11 +492,11 @@ export default function SelectorHelperPage() {
                 {isAnalyzing ? (
                   <div className="flex items-center gap-2">
                     <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-                    <span>正在深度分析 HTML 结构...</span>
+                    <span>正在识别网页结构...</span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <span>🔍 执行智能分析检测</span>
+                    <span>开始识别网页结构</span>
                   </div>
                 )}
               </Button>
@@ -511,7 +511,7 @@ export default function SelectorHelperPage() {
                   <div className="h-5 w-5">⭐</div>
                 </div>
                 <h3 className="text-lg font-black tracking-tight text-slate-900">
-                  步骤 2: 提取分析结果
+                  步骤 2: 查看识别结果
                 </h3>
               </div>
               {detectedFields.length > 0 && (
@@ -523,7 +523,7 @@ export default function SelectorHelperPage() {
                     className="h-9 rounded-xl border-slate-100 bg-white font-black text-slate-600 shadow-sm transition-all hover:bg-slate-50 active:scale-95"
                   >
                     <Copy className="mr-2 h-4 w-4" />
-                    JSON
+                    配置格式
                   </Button>
                   <Button
                     variant="outline"
@@ -547,7 +547,7 @@ export default function SelectorHelperPage() {
                     暂无分析数据
                   </h4>
                   <p className="mt-2 max-w-[200px] text-xs font-bold text-slate-400">
-                    请在左侧区域粘贴 HTML 源码并点击执行分析
+                    请先在左侧粘贴网页代码并开始识别
                   </p>
                 </div>
               ) : (
@@ -565,11 +565,11 @@ export default function SelectorHelperPage() {
                               {field.label}
                             </span>
                             <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-black text-slate-500">
-                              {field.options.length} OPTIONS
+                              {field.options.length} 种方案
                             </span>
                           </div>
                           <p className="text-xs font-bold text-slate-400">
-                            Detected Value:{' '}
+                            识别内容：
                             <span className="text-slate-900">
                               {field.value}
                             </span>
@@ -631,10 +631,10 @@ export default function SelectorHelperPage() {
                                       )}
                                     />
                                     {option.confidence === 'high'
-                                      ? 'High'
+                                      ? '高'
                                       : option.confidence === 'medium'
-                                        ? 'Medium'
-                                        : 'Low'}
+                                        ? '中'
+                                        : '低'}
                                   </div>
                                 </div>
                                 <Button
@@ -699,13 +699,13 @@ export default function SelectorHelperPage() {
                 {
                   num: '02',
                   title: '执行深度分析',
-                  desc: '将代码片段粘贴到上方输入框，系统将根据特征库智能解析字段级联关系。',
+                  desc: '将代码片段粘贴到上方输入框，系统会自动识别页面里各项信息的位置。',
                   color: 'bg-indigo-500',
                 },
                 {
                   num: '03',
                   title: '一键应用配置',
-                  desc: '点击 ⭐ 标记的推荐方案，直接粘贴到主站点的“提取映射表”中即可生效。',
+                  desc: '点击 ⭐ 标记的推荐方案，直接粘贴到主站点的“识别内容设置”中即可生效。',
                   color: 'bg-purple-500',
                 },
               ].map(step => (
@@ -736,12 +736,12 @@ export default function SelectorHelperPage() {
               <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-6">
                 <h3 className="mb-4 flex items-center gap-2 text-sm font-black text-amber-500">
                   <div className="h-1.5 w-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
-                  技术方案选择指南
+                  规则选择建议
                 </h3>
                 <div className="space-y-4">
                   <div className="space-y-1">
                     <span className="text-[11px] font-black tracking-widest text-amber-600/80 uppercase">
-                      XPath 路径（推荐）
+                      XPath 规则（推荐）
                     </span>
                     <p className="text-xs leading-relaxed font-bold text-amber-100/80">
                       支持 `contains()`
@@ -753,7 +753,7 @@ export default function SelectorHelperPage() {
                       CSS 选择器
                     </span>
                     <p className="text-xs leading-relaxed font-bold text-emerald-100/80">
-                      运行效率极高。在有 ID 或稳定属性值的简单页面中是最佳选择。
+                      适合页面结构稳定、元素标识清晰的网页。
                     </p>
                   </div>
                 </div>
@@ -763,7 +763,7 @@ export default function SelectorHelperPage() {
               <div className="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-6">
                 <h3 className="mb-4 flex items-center gap-2 text-sm font-black text-blue-500">
                   <div className="h-1.5 w-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
-                  智能提取案例展示
+                  示例预览
                 </h3>
                 <div className="rounded-xl border border-slate-700 bg-slate-800 p-4">
                   <code className="block space-y-1 font-mono text-[10px]">

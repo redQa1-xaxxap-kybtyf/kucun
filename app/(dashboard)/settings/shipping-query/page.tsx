@@ -185,7 +185,7 @@ export default function ShippingQueryPage() {
                     </span>
                   </h1>
                   <p className="mt-1 text-sm font-medium text-slate-400">
-                    全网快递实时追踪 · 节点信息深度同步
+                    全网快递实时追踪 · 物流进度自动更新
                   </p>
                 </div>
               </div>
