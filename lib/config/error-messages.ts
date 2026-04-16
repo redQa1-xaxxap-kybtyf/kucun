@@ -5,14 +5,14 @@
 
 // 通用错误信息
 export const COMMON_ERROR_MESSAGES = {
-  NETWORK_ERROR: '网络连接失败，请检查网络设置',
-  SERVER_ERROR: '服务器内部错误，请稍后重试',
-  UNAUTHORIZED: '未授权访问，请先登录',
+  NETWORK_ERROR: '网络不稳定，请检查后重试',
+  SERVER_ERROR: '系统暂时忙，请稍后重试',
+  UNAUTHORIZED: '登录已失效，请重新登录',
   FORBIDDEN: '权限不足，无法执行此操作',
-  NOT_FOUND: '请求的资源不存在',
-  VALIDATION_ERROR: '输入数据格式不正确',
+  NOT_FOUND: '未找到相关内容',
+  VALIDATION_ERROR: '填写内容有误，请检查后重试',
   TIMEOUT_ERROR: '请求超时，请稍后重试',
-  UNKNOWN_ERROR: '未知错误，请联系技术支持',
+  UNKNOWN_ERROR: '操作暂时未完成，请稍后重试',
 } as const;
 
 // WebSocket相关错误信息
@@ -94,8 +94,8 @@ export const FINANCE_ERROR_MESSAGES = {
 // 认证相关错误信息
 export const AUTH_ERROR_MESSAGES = {
   CREDENTIALS_INVALID: '用户名或密码错误',
-  ACCOUNT_DISABLED: '用户名或密码错误',
-  ACCESS_DENIED: '访问被拒绝',
+  ACCOUNT_DISABLED: '账号已停用，请联系负责人',
+  ACCESS_DENIED: '当前账号暂无权限访问',
   SESSION_EXPIRED: '会话已过期，请重新登录',
   SESSION_REQUIRED: '需要登录才能访问',
   PASSWORD_TOO_SHORT: '密码长度不能少于8位',

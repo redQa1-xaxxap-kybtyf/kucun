@@ -2,7 +2,7 @@ const FIELD_LABELS: Record<string, string> = {
   id: '编号',
   name: '名称',
   code: '编码',
-  sku: 'SKU',
+  sku: '货号',
   phone: '联系电话',
   mobile: '手机号',
   email: '邮箱地址',
@@ -29,6 +29,9 @@ const FIELD_LABELS: Record<string, string> = {
   region: '地区',
   shippingcompany: '船公司',
   containernumber: '柜号',
+  importkey: '导入批次号',
+  token: '登录状态',
+  idempotencykey: '请求标识',
   createdat: '创建时间',
   updatedat: '更新时间',
 };
@@ -52,6 +55,10 @@ const EXACT_ERROR_MESSAGE_MAP: Record<string, string> = {
   TOO_MANY_ATTEMPTS: '操作过于频繁，请稍后再试',
   INVALID_CREDENTIALS: '用户名或密码错误，请检查后重试',
   SERVER_ERROR: '服务器开小差了，请稍后重试',
+  'Unexpected token': '提交内容格式不正确，请检查后重试',
+  'request body is not valid json': '提交内容格式不正确，请检查后重试',
+  '请求体不是合法的 JSON': '提交内容格式不正确，请检查后重试',
+  幂等性键格式不正确: '请求已失效，请关闭后重新操作',
 };
 
 const HTTP_STATUS_MESSAGE_MAP: Record<number, string> = {
@@ -76,7 +83,11 @@ function containsChinese(message: string): boolean {
 }
 
 function cleanupMessage(message: string): string {
-  return message.replace(/\s+/g, ' ').trim();
+  return message
+    .replace(/\s+/g, ' ')
+    .replace(/^error:\s*/i, '')
+    .replace(/^failed:\s*/i, '')
+    .trim();
 }
 
 function normalizeFieldKey(field: string): string {
@@ -105,6 +116,25 @@ function replaceFieldTokens(message: string): string {
   }
 
   return output;
+}
+
+function replaceDeveloperTerms(message: string): string {
+  return message
+    .replace(/\bSKU\b/g, '货号')
+    .replace(/\bJSON\b/g, '数据格式')
+    .replace(/\btoken\b/gi, '登录状态')
+    .replace(/\bpayload\b/gi, '提交内容')
+    .replace(/\bapi\b/gi, '系统服务')
+    .replace(/幂等性键/g, '请求标识')
+    .replace(/idempotency key/gi, '请求标识')
+    .replace(/系统管理员/g, '负责人')
+    .replace(/技术支持/g, '负责人')
+    .replace(/数据库/g, '系统')
+    .replace(/字段/g, '内容')
+    .replace(/参数/g, '条件')
+    .replace(/事务/g, '本次操作')
+    .replace(/回滚/g, '撤销')
+    .replace(/反向流水/g, '作废记录');
 }
 
 function extractHttpStatus(message: string): number | null {
@@ -287,8 +317,10 @@ export function normalizeUserFacingErrorMessage(
     .replace(/\bInvalid\b/gi, '无效')
     .replace(/\bUnsupported\b/gi, '不支持');
 
-  if (containsChinese(localizedMessage)) {
-    return cleanupMessage(localizedMessage);
+  const cleanedLocalizedMessage = replaceDeveloperTerms(localizedMessage);
+
+  if (containsChinese(cleanedLocalizedMessage)) {
+    return cleanupMessage(cleanedLocalizedMessage);
   }
 
   if (isGenericEnglishError(rawMessage)) {

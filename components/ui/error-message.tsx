@@ -12,8 +12,8 @@ interface ErrorMessageProps {
 }
 
 export function ErrorMessage({
-  message = '发生了未知错误',
-  title = '错误',
+  message = '页面暂时无法打开，请稍后重试',
+  title = '提示',
   className,
   showIcon = true,
   variant = 'destructive',

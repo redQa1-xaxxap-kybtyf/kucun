@@ -58,6 +58,7 @@ const customJestConfig = {
     '<rootDir>/.next/',
     '<rootDir>/node_modules/',
     '<rootDir>/coverage/',
+    '<rootDir>/deployment-output/',
     '<rootDir>/bushu/',
     '<rootDir>/kucunxcx/',
     '<rootDir>/tests/e2e/',
@@ -65,7 +66,11 @@ const customJestConfig = {
   ],
 
   // 忽略的模块路径（避免子工程包名冲突和重复 __mocks__）
-  modulePathIgnorePatterns: ['<rootDir>/bushu/', '<rootDir>/kucunxcx/'],
+  modulePathIgnorePatterns: [
+    '<rootDir>/deployment-output/',
+    '<rootDir>/bushu/',
+    '<rootDir>/kucunxcx/',
+  ],
 
   // Transform忽略模式 - 允许转译少量 ESM 依赖（MSW 及其依赖、faker）
   transformIgnorePatterns: [

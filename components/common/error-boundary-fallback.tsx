@@ -4,6 +4,7 @@ import { AlertCircle, ArrowLeft, RefreshCw, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
 /**
  * 错误类型枚举
@@ -110,19 +111,22 @@ function getErrorDescription(
   error: Error | unknown,
   errorType: ErrorType
 ): string {
-  const errorMessage = error instanceof Error ? error.message : String(error);
+  const errorMessage = getFriendlyErrorMessage(
+    error,
+    '页面暂时无法打开，请稍后重试'
+  );
 
   switch (errorType) {
     case 'network':
-      return '请检查您的网络连接，然后重试';
+      return '请检查网络后再试';
     case 'permission':
-      return '您没有权限访问此资源，请联系管理员';
+      return '当前账号暂时无法查看这部分内容';
     case 'filter':
-      return '当前筛选条件没有找到匹配的数据';
+      return '按现在的筛选条件还没有查到内容';
     case 'server':
-      return '服务器暂时无法响应，请稍后重试';
+      return '系统暂时忙，请稍后再试';
     default:
-      return errorMessage || '发生了未知错误';
+      return errorMessage || '页面暂时无法打开，请稍后重试';
   }
 }
 
@@ -181,7 +185,7 @@ export function ErrorBoundaryFallback({
         {process.env.NODE_ENV === 'development' && error instanceof Error && (
           <details className="mt-4 text-left">
             <summary className="cursor-pointer text-xs text-gray-500 hover:text-gray-700">
-              查看详细错误信息
+              查看开发调试信息
             </summary>
             <pre className="mt-2 overflow-auto rounded bg-gray-100 p-2 text-xs text-gray-700">
               {error.stack || error.message}
