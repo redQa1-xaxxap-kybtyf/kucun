@@ -190,7 +190,7 @@ export const productQuerySchema = z.object({
 
 // 产品变体查询参数验证
 export const productVariantQuerySchema = z.object({
-  productId: z.string().uuid('产品ID格式不正确').optional(),
+  productId: z.string().uuid('产品信息格式不正确').optional(),
   colorCode: z.string().max(20, '色号不能超过20个字符').optional(),
   status: z.enum(['active', 'inactive']).optional(),
   page: z.coerce.number().int().min(1).default(1),
@@ -206,7 +206,7 @@ export const productVariantQuerySchema = z.object({
 
 // 产品变体创建验证
 export const productVariantCreateSchema = z.object({
-  productId: z.string().uuid('产品ID格式不正确'),
+  productId: z.string().uuid('产品信息格式不正确'),
   colorCode: z.string().min(1, '色号不能为空').max(20, '色号不能超过20个字符'),
   colorName: z.string().max(50, '色号名称不能超过50个字符').optional(),
   colorValue: z
@@ -234,7 +234,7 @@ export const productVariantUpdateSchema = z.object({
 
 // 产品变体批量创建验证
 export const productVariantBatchCreateSchema = z.object({
-  productId: z.string().uuid('产品ID格式不正确'),
+  productId: z.string().uuid('产品信息格式不正确'),
   variants: z
     .array(
       z.object({
@@ -258,7 +258,7 @@ export const productVariantBatchCreateSchema = z.object({
 export const productVariantBatchOperationSchema = z.object({
   operation: z.enum(['delete', 'activate', 'deactivate']),
   variantIds: z
-    .array(z.string().uuid('变体ID格式不正确'))
+    .array(z.string().uuid('规格信息格式不正确'))
     .min(1, '至少需要选择一个变体')
     .max(100, '批量操作最多支持100个变体'),
 });
@@ -266,7 +266,7 @@ export const productVariantBatchOperationSchema = z.object({
 // 产品变体SKU检查验证
 export const productVariantCheckSkuSchema = z.object({
   sku: z.string().min(1, 'SKU不能为空').max(50, 'SKU不能超过50个字符'),
-  excludeId: z.string().uuid('排除的变体ID格式不正确').optional(),
+  excludeId: z.string().uuid('排除规格信息格式不正确').optional(),
 });
 
 // 产品变体批量SKU检查验证
@@ -275,7 +275,7 @@ export const productVariantBatchCheckSkuSchema = z.object({
     .array(
       z.object({
         sku: z.string().min(1, 'SKU不能为空').max(50, 'SKU不能超过50个字符'),
-        excludeId: z.string().uuid('排除的变体ID格式不正确').optional(),
+        excludeId: z.string().uuid('排除规格信息格式不正确').optional(),
       })
     )
     .min(1, '至少需要一个SKU')

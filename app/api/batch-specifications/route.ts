@@ -101,7 +101,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   return NextResponse.json({
     success: true,
     data: batchSpecification,
-    message: '批次规格参数保存成功',
+    message: '批次资料保存成功',
   });
 });
 
@@ -139,7 +139,7 @@ export const PUT = withErrorHandling(async (request: NextRequest) => {
   const { specifications } = body;
 
   if (!Array.isArray(specifications) || specifications.length === 0) {
-    throw ApiError.badRequest('请提供要更新的批次规格参数列表');
+    throw ApiError.badRequest('请提供要更新的批次资料列表');
   }
 
   // 批量处理批次规格参数
@@ -148,7 +148,7 @@ export const PUT = withErrorHandling(async (request: NextRequest) => {
   return NextResponse.json({
     success: true,
     data: results,
-    message: `成功处理 ${results.length} 个批次规格参数`,
+    message: `成功处理 ${results.length} 条批次资料`,
   });
 });
 
@@ -194,7 +194,7 @@ export const DELETE = withErrorHandling(async (request: NextRequest) => {
   const { ids } = body;
 
   if (!Array.isArray(ids) || ids.length === 0) {
-    throw ApiError.badRequest('请提供要删除的批次规格参数ID列表');
+    throw ApiError.badRequest('请提供要删除的批次资料编号列表');
   }
 
   // 批量删除批次规格参数
@@ -202,7 +202,7 @@ export const DELETE = withErrorHandling(async (request: NextRequest) => {
 
   return NextResponse.json({
     success: true,
-    message: `成功删除 ${deletedCount} 个批次规格参数`,
+    message: `成功删除 ${deletedCount} 条批次资料`,
     details: {
       deleted: deletedCount,
       errors: errors.length > 0 ? errors : undefined,

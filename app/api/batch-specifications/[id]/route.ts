@@ -81,7 +81,7 @@ export const PUT = withErrorHandling(
     return NextResponse.json({
       success: true,
       data: updatedBatchSpecification,
-      message: '批次规格参数更新成功',
+      message: '批次资料更新成功',
     });
   }
 );
@@ -110,7 +110,7 @@ export const DELETE = withErrorHandling(
 
     return NextResponse.json({
       success: true,
-      message: '批次规格参数删除成功',
+      message: '批次资料删除成功',
     });
   }
 );
@@ -158,7 +158,7 @@ export const PATCH = withErrorHandling(
     return NextResponse.json({
       success: true,
       data: updatedBatchSpecification,
-      message: '批次规格参数部分更新成功',
+      message: '批次资料已更新',
     });
   }
 );

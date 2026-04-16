@@ -39,7 +39,7 @@ export const GET = withAuth(
       // 验证ID格式
       if (!id || typeof id !== 'string') {
         return NextResponse.json(
-          { success: false, error: '变体ID格式不正确' },
+          { success: false, error: '规格信息格式不正确' },
           { status: 400 }
         );
       }

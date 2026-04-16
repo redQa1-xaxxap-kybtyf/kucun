@@ -16,6 +16,7 @@ import {
   productQueryKeys,
   updateProduct,
 } from '@/lib/api/products';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import { type Product } from '@/lib/types/product';
 import { combineAsyncStates } from '@/lib/utils/async-state';
 import { logger } from '@/lib/utils/console-logger';
@@ -112,6 +113,11 @@ export function useProductForm({
     productQuery,
     actualProductData,
   });
+  const hasUnsavedChanges = form.formState.isDirty && !loadingState.isLoading;
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前产品信息尚未保存，确定要离开吗？',
+  });
 
   const onSubmit = useCallback(
     async (values: ProductFormValues) => {
@@ -140,12 +146,16 @@ export function useProductForm({
   );
 
   const handleCancel = useCallback(() => {
+    if (!confirmLeavePage()) {
+      return;
+    }
+
     if (onCancel) {
       onCancel();
       return;
     }
     router.back();
-  }, [onCancel, router]);
+  }, [confirmLeavePage, onCancel, router]);
 
   return {
     form,
