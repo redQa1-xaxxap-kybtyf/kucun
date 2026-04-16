@@ -4,6 +4,7 @@ import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { CalendarIcon, Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
 
@@ -40,6 +41,8 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import { useLocalFormDraft } from '@/hooks/use-local-form-draft';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import { invalidateFinanceCaches } from '@/lib/cache/invalidation-helpers';
 import { queryKeys } from '@/lib/queryKeys';
 import {
@@ -83,6 +86,7 @@ export function ExpenseForm({
   onCancel,
 }: ExpenseFormProps) {
   const { toast } = useToast();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const NO_RELATED_TYPE_VALUE = 'none';
@@ -131,6 +135,23 @@ export function ExpenseForm({
       form.setValue('relatedId', undefined);
     }
   }, [watchedRelatedType, form]);
+
+  const draftStorageKey = isEditMode
+    ? `finance:expenses:edit:${expenseId ?? 'unknown'}`
+    : 'finance:expenses:create';
+  const { clearDraft } = useLocalFormDraft({
+    form,
+    storageKey: draftStorageKey,
+    ready: !isEditMode || Boolean(initialData),
+    onRestore: () => {
+      toast({
+        title: '已恢复上次未提交内容',
+        description: isEditMode
+          ? '这笔费用的未保存修改已恢复，可以继续编辑。'
+          : '这笔费用的暂存内容已恢复，可以继续填写。',
+      });
+    },
+  });
 
   const invalidateExpenseQueries = React.useCallback(() => {
     // ✅ P0修复: 使用 exact: false 失效所有以 ['finance', 'expenses'] 开头的查询
@@ -185,10 +206,11 @@ export function ExpenseForm({
       return response.json();
     },
     onSuccess: () => {
+      clearDraft();
       toast({
         title: '创建成功',
         description:
-          '费用记录已保存为草稿；审核入账后才会计入月报、年报和利润分析。',
+          '费用已保存为草稿；审核入账后才会计入月报、年报和利润分析。',
       });
       invalidateExpenseQueries();
       onSuccess?.();
@@ -205,7 +227,7 @@ export function ExpenseForm({
   const updateMutation = useMutation({
     mutationFn: async (payload: ExpenseRequestPayload) => {
       if (!expenseId) {
-        throw new Error('缺少费用记录ID');
+        throw new Error('缺少费用记录编号');
       }
 
       const response = await fetch(
@@ -225,11 +247,12 @@ export function ExpenseForm({
       return response.json();
     },
     onSuccess: () => {
+      clearDraft();
       toast({
         title: '更新成功',
         description: isApproved
-          ? '费用记录已更新，相关报表会自动刷新。'
-          : '费用记录已更新；未审核入账的费用仍不会计入正式报表。',
+          ? '费用已更新，相关报表会自动刷新。'
+          : '费用已更新；未审核入账的费用仍不会计入正式报表。',
       });
       invalidateExpenseQueries();
       onSuccess?.();
@@ -257,13 +280,31 @@ export function ExpenseForm({
       setIsSubmitting(false);
     }
   };
+  const hasUnsavedChanges = form.formState.isDirty && !isSubmitting;
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前费用内容尚未保存，确定要离开吗？',
+  });
+
+  const handleCancel = () => {
+    if (!confirmLeavePage()) {
+      return;
+    }
+
+    if (onCancel) {
+      onCancel();
+      return;
+    }
+
+    router.back();
+  };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{isEditMode ? '编辑费用记录' : '新增费用记录'}</CardTitle>
+        <CardTitle>{isEditMode ? '编辑费用' : '登记费用'}</CardTitle>
         <CardDescription>
-          正式财务报表仅统计已审核入账的费用。草稿费用需要在列表点击“审核入账”后才会进入月报、年报和利润分析；关联采购的费用按成本口径处理，不重复计入期间费用。
+          财务报表只统计已经审核通过的费用。草稿费用需要在列表里点“审核入账”后，才会进入月报、年报和利润分析；关联采购的费用会并入采购成本，不会重复记到期间费用。未提交内容会暂存在当前设备。
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -495,7 +536,7 @@ export function ExpenseForm({
               <Button
                 type="button"
                 variant="outline"
-                onClick={onCancel}
+                onClick={handleCancel}
                 disabled={isSubmitting}
               >
                 取消

@@ -44,10 +44,13 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import { useLocalFormDraft } from '@/hooks/use-local-form-draft';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import { queryKeys } from '@/lib/queryKeys';
 import { cn, formatCurrency } from '@/lib/utils';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { computePaymentOutRounding } from '@/lib/utils/payment-out-amounts';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
 const Calendar = dynamic(
   () => import('@/components/ui/calendar').then(mod => mod.Calendar),
@@ -149,7 +152,7 @@ function PayableInfoSidebar({
           </p>
         </div>
         <div>
-          <p className="text-muted-foreground text-sm">已核销金额</p>
+          <p className="text-muted-foreground text-sm">已付款金额</p>
           <p className="font-medium text-[hsl(var(--color-success))]">
             {formatCurrency(payableRecord.paidAmount)}
           </p>
@@ -176,7 +179,7 @@ function PaymentOutFormFields({
   watchedPaymentMethod,
   handlePayableSelect,
   onSubmit,
-  router,
+  onCancel,
   isPending,
 }: {
   form: ReturnType<typeof useForm<CreatePaymentOutFormData>>;
@@ -186,7 +189,7 @@ function PaymentOutFormFields({
   watchedPaymentMethod: string;
   handlePayableSelect: (payableId: string) => void;
   onSubmit: (data: CreatePaymentOutFormData) => void;
-  router: ReturnType<typeof useRouter>;
+  onCancel: () => void;
   isPending: boolean;
 }) {
   return (
@@ -198,7 +201,7 @@ function PaymentOutFormFields({
           name="payableRecordId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>应付款记录（可选）</FormLabel>
+              <FormLabel>关联应付款（可选）</FormLabel>
               <FormControl>
                 <select
                   value={field.value ?? ''}
@@ -210,7 +213,7 @@ function PaymentOutFormFields({
                   disabled={payablesLoading}
                   className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <option value="">不关联（独立付款）</option>
+                  <option value="">不关联应付款（独立付款）</option>
                   {availablePayables.map(payable => (
                     <option key={payable.id} value={payable.id}>
                       {payable.payableNumber} - {payable.supplier.name} - 待付{' '}
@@ -220,7 +223,7 @@ function PaymentOutFormFields({
                 </select>
               </FormControl>
               <FormDescription>
-                选择关联的应付款记录，或留空创建独立付款记录
+                可关联一笔应付款，也可以直接登记独立付款
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -302,7 +305,7 @@ function PaymentOutFormFields({
                 />
               </FormControl>
               <FormDescription>
-                供应商实际收到的金额，可低于记账金额用于抹零。
+                这里填供应商实际收到的金额；如果有尾差，按实际付款填写即可。
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -314,7 +317,7 @@ function PaymentOutFormFields({
           name="roundingAmount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>抹零差额</FormLabel>
+              <FormLabel>抹零金额</FormLabel>
               <FormControl>
                 <Input
                   readOnly
@@ -325,7 +328,7 @@ function PaymentOutFormFields({
                 />
               </FormControl>
               <FormDescription>
-                自动计算：记账金额 - 实际付款，正值表示少付抹零，负值表示多付。
+                根据记账金额和实际付款自动计算；正数表示少付结清，负数表示多付。
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -427,12 +430,12 @@ function PaymentOutFormFields({
 
         {/* 提交按钮 */}
         <div className="flex justify-end gap-4">
-          <Button type="button" variant="outline" onClick={() => router.back()}>
+          <Button type="button" variant="outline" onClick={onCancel}>
             取消
           </Button>
           <Button type="submit" disabled={isPending}>
             <Save className="mr-2 h-4 w-4" />
-            {isPending ? '创建中...' : '创建付款记录'}
+            {isPending ? '登记中...' : '登记并完成付款'}
           </Button>
         </div>
       </form>
@@ -498,7 +501,7 @@ function useAvailablePayables() {
 /**
  * 创建付款记录的Hook
  */
-function useCreatePaymentOut() {
+function useCreatePaymentOut(onSuccess?: () => void) {
   const router = useRouter();
   const { toast } = useToast();
 
@@ -521,17 +524,21 @@ function useCreatePaymentOut() {
       return response.json();
     },
     onSuccess: data => {
+      onSuccess?.();
       toast({
-        title: '创建成功',
-        description: '付款记录创建成功',
+        title: '付款已完成',
+        description: '这笔付款已登记并记为已完成付款',
         variant: 'success',
       });
       router.push(`/finance/payments-out/${data.data.id}`);
     },
     onError: error => {
       toast({
-        title: '创建失败',
-        description: (error as Error).message,
+        title: '登记失败',
+        description: getFriendlyErrorMessage(
+          error,
+          '这笔付款暂时无法登记，请稍后重试'
+        ),
         variant: 'destructive',
       });
     },
@@ -574,7 +581,6 @@ export function CreatePaymentOutFormSection() {
   const payableRecord = usePayableData(watchedPayableId || '');
   const { availablePayables, isLoading: payablesLoading } =
     useAvailablePayables();
-  const createMutation = useCreatePaymentOut();
 
   // 处理应付款选择
   const handlePayableSelect = (selectedPayableId: string) => {
@@ -632,6 +638,32 @@ export function CreatePaymentOutFormSection() {
     }
   }, [form, watchedActualPaymentAmount, watchedPaymentAmount]);
 
+  const draftStorageKey = `finance:payments-out:create:${payableId ?? 'standalone'}`;
+  const { clearDraft } = useLocalFormDraft({
+    form,
+    storageKey: draftStorageKey,
+    ready: !payableId || !!payableRecord,
+    onRestore: () => {
+      toast({
+        title: '已恢复上次未提交内容',
+        description: '这笔付款的暂存内容已恢复，可以继续填写。',
+      });
+    },
+  });
+  const createMutation = useCreatePaymentOut(clearDraft);
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: form.formState.isDirty && !createMutation.isPending,
+    message: '当前付款内容尚未提交，确定要离开吗？',
+  });
+
+  const handleCancel = () => {
+    if (!confirmLeavePage()) {
+      return;
+    }
+
+    router.back();
+  };
+
   // 提交表单
   const onSubmit = (data: CreatePaymentOutFormData) => {
     // 验证付款金额不超过剩余应付金额
@@ -653,7 +685,9 @@ export function CreatePaymentOutFormSection() {
         <Card>
           <CardHeader className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
             <CardTitle>付款信息</CardTitle>
-            <CardDescription>请填写完整的付款信息</CardDescription>
+            <CardDescription>
+              请填写付款信息，保存后会直接记为已完成付款；未提交内容会自动暂存在当前设备
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <PaymentOutFormFields
@@ -664,7 +698,7 @@ export function CreatePaymentOutFormSection() {
               watchedPaymentMethod={watchedPaymentMethod}
               handlePayableSelect={handlePayableSelect}
               onSubmit={onSubmit}
-              router={router}
+              onCancel={handleCancel}
               isPending={createMutation.isPending}
             />
           </CardContent>

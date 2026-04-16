@@ -43,17 +43,20 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-	import {
-	  Popover,
-	  PopoverContent,
-	  PopoverTrigger,
-	} from '@/components/ui/popover';
-	import { Separator } from '@/components/ui/separator';
-	import { Textarea } from '@/components/ui/textarea';
-	import { useToast } from '@/components/ui/use-toast';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/components/ui/use-toast';
+import { useLocalFormDraft } from '@/hooks/use-local-form-draft';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import { queryKeys } from '@/lib/queryKeys';
 import { cn, formatCurrency } from '@/lib/utils';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
 // 创建收款记录表单Schema
 const createPaymentSchema = z
@@ -198,6 +201,29 @@ export default function CreatePaymentPage() {
     }
   }, [watchedPaymentAmount, watchedActualAmount, form]);
 
+  // 当通过URL参数指定订单时，自动设置客户ID和收款金额
+  useEffect(() => {
+    if (orderId && salesOrder) {
+      form.setValue('customerId', salesOrder.customer.id);
+      form.setValue('paymentAmount', salesOrder.remainingAmount);
+      form.setValue('actualPaymentAmount', salesOrder.remainingAmount);
+      form.setValue('roundingAmount', 0);
+    }
+  }, [orderId, salesOrder, form]);
+
+  const draftStorageKey = `finance:payments:create:${orderId ?? 'standalone'}`;
+  const { clearDraft } = useLocalFormDraft({
+    form,
+    storageKey: draftStorageKey,
+    ready: !orderId || !!salesOrder,
+    onRestore: () => {
+      toast({
+        title: '已恢复上次未提交内容',
+        description: '这笔收款的暂存内容已恢复，可以继续填写。',
+      });
+    },
+  });
+
   // 创建收款记录
   const createMutation = useMutation({
     mutationFn: async (data: CreatePaymentFormData) => {
@@ -220,9 +246,10 @@ export default function CreatePaymentPage() {
       return response.json();
     },
     onSuccess: data => {
+      clearDraft();
       toast({
-        title: '创建成功',
-        description: '收款记录创建成功',
+        title: '登记成功',
+        description: '这笔收款已登记为待确认到账',
         variant: 'success',
       });
 
@@ -252,22 +279,20 @@ export default function CreatePaymentPage() {
     },
     onError: error => {
       toast({
-        title: '创建失败',
-        description: (error as Error).message,
+        title: '登记失败',
+        description: getFriendlyErrorMessage(
+          error,
+          '这笔收款暂时无法登记，请稍后重试'
+        ),
         variant: 'destructive',
       });
     },
   });
 
-  // 当通过URL参数指定订单时，自动设置客户ID和收款金额
-  useEffect(() => {
-    if (orderId && salesOrder) {
-      form.setValue('customerId', salesOrder.customer.id);
-      form.setValue('paymentAmount', salesOrder.remainingAmount);
-      form.setValue('actualPaymentAmount', salesOrder.remainingAmount);
-      form.setValue('roundingAmount', 0);
-    }
-  }, [orderId, salesOrder, form]);
+  useUnsavedChangesGuard({
+    enabled: form.formState.isDirty && !createMutation.isPending,
+    message: '当前收款内容尚未提交，确定要离开吗？',
+  });
 
   // 处理订单选择
   const handleOrderSelect = (orderId: string) => {
@@ -298,10 +323,10 @@ export default function CreatePaymentPage() {
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
-                    创建收款记录
+                    登记待确认收款
                   </h1>
                   <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-                    填写收款记录详细信息，记录客户付款
+                    先登记收款信息，核对无误后再确认到账；未提交内容会自动暂存在当前设备
                   </p>
                 </div>
               </div>
@@ -329,7 +354,9 @@ export default function CreatePaymentPage() {
                   <ChineseYuan className="h-5 w-5" />
                   收款信息
                 </CardTitle>
-                <CardDescription>请填写收款记录的详细信息</CardDescription>
+                <CardDescription>
+                  请填写收款信息，保存后可在收款列表确认到账
+                </CardDescription>
               </CardHeader>
               <CardContent className="pt-6">
                 <Form {...form}>
@@ -345,13 +372,13 @@ export default function CreatePaymentPage() {
                         <FormItem>
                           <FormLabel>销售订单 *</FormLabel>
                           {orderId ? (
-                            // 如果URL中指定了订单ID，显示为只读
+                            // 如果URL中指定了订单编号，显示为只读
                             <div className="rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-3 py-2">
                               <p className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
                                 {salesOrder?.orderNumber || '加载中...'}
                               </p>
                               <p className="mt-1 text-xs text-[hsl(var(--color-text-tertiary))]">
-                                此收款记录关联到指定订单，无法修改
+                                这笔收款已关联指定订单，无法修改
                               </p>
                             </div>
 	                          ) : (
@@ -436,7 +463,7 @@ export default function CreatePaymentPage() {
                             />
                           </FormControl>
                           <FormDescription>
-                            记入订单的金额，将用于冲抵应收款
+                            这里填这次要记入订单的收款金额
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -467,7 +494,7 @@ export default function CreatePaymentPage() {
                             />
                           </FormControl>
                           <FormDescription>
-                            与客户实际到账的金额，可小于收款金额以实现抹零
+                            这里填客户实际到账的金额；如果有尾差，按实际到账填写即可
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -500,7 +527,7 @@ export default function CreatePaymentPage() {
                               />
                             </FormControl>
                             <FormDescription>
-                              自动计算的差额，正值表示抹零减免，负值表示多收
+                              根据收款金额和实际到账自动计算；正数表示少收结清，负数表示多收
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -615,8 +642,8 @@ export default function CreatePaymentPage() {
                       >
                         <Save className="mr-2 h-4 w-4" />
                         {createMutation.isPending
-                          ? '创建中...'
-                          : '创建收款记录'}
+                          ? '登记中...'
+                          : '登记待确认收款'}
                       </Button>
                       <Button
                         type="button"
@@ -724,7 +751,7 @@ export default function CreatePaymentPage() {
                 </div>
                 <div className="flex items-start gap-2">
                   <div className="bg-[hsl(var(--color-primary-light))]0 mt-2 h-2 w-2 shrink-0 rounded-full" />
-                  <p>收款记录创建后可在列表中查看和管理</p>
+                  <p>登记后可在收款列表中查看和管理</p>
                 </div>
               </CardContent>
             </Card>
