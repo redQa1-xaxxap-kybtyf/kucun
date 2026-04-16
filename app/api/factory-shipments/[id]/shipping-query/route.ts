@@ -17,7 +17,7 @@ const MANUAL_QUERY_COOLDOWN_MS = 6 * 60 * 60 * 1000; // 6小时
 export const POST = withErrorHandling(
   withAuth(async (_request: NextRequest, { params }) => {
     if (!params) {
-      return errorResponse('缺少请求参数', 400);
+      return errorResponse('缺少发货单信息', 400);
     }
     const { id } = await params;
 

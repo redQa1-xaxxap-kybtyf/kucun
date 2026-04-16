@@ -593,7 +593,7 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
       return NextResponse.json(
         {
           success: false,
-          error: '参数验证失败',
+          error: '提交内容有误，请检查后重试',
           details,
         },
         { status: 422 }

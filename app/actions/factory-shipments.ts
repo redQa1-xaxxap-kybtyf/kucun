@@ -347,7 +347,7 @@ export async function updateFactoryShipment(
 
     const shipmentIdValue = formData.get('shipmentId');
     if (typeof shipmentIdValue !== 'string' || !shipmentIdValue) {
-      return { success: false, error: '发货单 ID 不能为空' };
+      return { success: false, error: '发货单编号不能为空' };
     }
     shipmentIdForLog = shipmentIdValue;
     const shipmentId = shipmentIdValue;

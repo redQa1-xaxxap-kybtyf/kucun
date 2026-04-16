@@ -38,35 +38,35 @@ const DEFAULT_ANALYSIS_STEPS: AnalysisStep[] = [
     id: 'init',
     name: '初始化分析',
     status: 'pending',
-    description: '准备分析环境，验证参数',
+    description: '准备查询环境，核对必要信息',
     icon: <Brain className="h-4 w-4" />,
   },
   {
     id: 'parse',
     name: '解析网页结构',
     status: 'pending',
-    description: '分析HTML文档结构，识别关键元素',
+    description: '识别页面结构，查找关键内容',
     icon: <Search className="h-4 w-4" />,
   },
   {
     id: 'identify',
     name: '识别网站类型',
     status: 'pending',
-    description: '检测网站类型（船舶追踪/物流查询等）',
+    description: '识别当前查询页面类型',
     icon: <Zap className="h-4 w-4" />,
   },
   {
     id: 'analyze',
     name: '分析页面结构',
     status: 'pending',
-    description: '分析表单、表格和数据字段结构',
+    description: '分析表单、表格和信息栏结构',
     icon: <Table className="h-4 w-4" />,
   },
   {
     id: 'recommend',
     name: '生成推荐配置',
     status: 'pending',
-    description: '基于分析结果生成CSS选择器推荐',
+    description: '根据分析结果生成推荐方案',
     icon: <CheckCircle className="h-4 w-4" />,
   },
 ];
@@ -236,7 +236,7 @@ export function AnalysisProgress({
       {isAnalyzing && (
         <div className="mt-3 rounded-lg border border-[hsl(var(--color-info-light))] bg-[hsl(var(--color-info-light))] p-3">
           <p className="text-sm text-[hsl(var(--color-info))]">
-            💡 正在使用增强智能分析算法识别页面结构，请稍候...
+            正在识别页面结构，请稍候...
           </p>
         </div>
       )}
@@ -286,7 +286,7 @@ export function useAnalysisProgress() {
         id: 'recommend',
         name: '生成推荐配置',
         status: 'pending' as const,
-        description: '生成CSS选择器推荐',
+        description: '生成页面定位规则建议',
         icon: <CheckCircle className="h-4 w-4" />,
       },
     ];

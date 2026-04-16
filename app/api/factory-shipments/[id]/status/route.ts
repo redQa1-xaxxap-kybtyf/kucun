@@ -31,7 +31,7 @@ export const PATCH = withAuth(
 
     if (!id) {
       return NextResponse.json(
-        { error: '缺少订单ID', message: '缺少订单ID' },
+        { error: '缺少订单编号', message: '缺少订单编号' },
         { status: 400 }
       );
     }

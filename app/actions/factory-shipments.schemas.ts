@@ -25,7 +25,7 @@ export const factoryShipmentStatusEnum = z.enum(
 export const factoryShipmentItemSchema = z
   .object({
     productId: z.string().optional(),
-    supplierId: z.string().min(1, '供应商 ID 不能为空'),
+    supplierId: z.string().min(1, '供应商不能为空'),
     productCode: z.string().min(1, '产品编码不能为空'),
     batchNumber: z.string().max(100, '批次号不能超过100个字符').optional(),
     isManualProduct: z.boolean().optional(),
@@ -90,7 +90,7 @@ export const factoryShipmentFeeItemSchema = z.object({
 });
 
 export const createFactoryShipmentSchema = z.object({
-  customerId: z.string().min(1, '客户 ID 不能为空'),
+  customerId: z.string().min(1, '客户不能为空'),
   containerNumber: z.string().optional(),
   status: factoryShipmentStatusEnum.default(FACTORY_SHIPMENT_STATUS.DRAFT),
   shipmentDate: z.string().optional(),
@@ -103,7 +103,7 @@ export const createFactoryShipmentSchema = z.object({
 });
 
 export const updateFactoryShipmentStatusSchema = z.object({
-  shipmentId: z.string().min(1, '发货单 ID 不能为空'),
+  shipmentId: z.string().min(1, '发货单编号不能为空'),
   status: factoryShipmentStatusEnum,
 });
 
