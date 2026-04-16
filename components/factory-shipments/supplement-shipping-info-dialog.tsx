@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import { useUpdateFactoryShipmentOrderStatus } from '@/lib/api/factory-shipments';
 import { queryKeys } from '@/lib/queryKeys';
 import { FACTORY_SHIPMENT_STATUS } from '@/lib/types/factory-shipment';
@@ -333,16 +334,38 @@ export function SupplementShippingInfoDialog({
       onOpenChange,
       onSuccess,
     });
+  const hasUnsavedChanges =
+    open && form.formState.isDirty && !updateMutation.isPending;
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前船公司信息尚未保存，确定要关闭吗？',
+  });
+
+  const handleCloseAttempt = (nextOpen: boolean) => {
+    if (!nextOpen && !confirmLeavePage()) {
+      return;
+    }
+
+    onOpenChange(nextOpen);
+  };
+
+  const handleProtectedCancel = () => {
+    if (!confirmLeavePage()) {
+      return;
+    }
+
+    handleCancel();
+  };
 
   return (
     <SupplementShippingInfoDialogView
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={handleCloseAttempt}
       orderNumber={orderNumber}
       containerNumber={containerNumber}
       form={form}
       isPending={updateMutation.isPending}
-      onCancel={handleCancel}
+      onCancel={handleProtectedCancel}
       onSubmit={handleSubmit}
     />
   );

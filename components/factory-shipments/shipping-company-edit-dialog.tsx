@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import { useUpdateFactoryShipmentOrderShippingCompany } from '@/lib/api/factory-shipments';
 
 // 船公司名称编辑表单验证规则
@@ -237,16 +238,38 @@ export function ShippingCompanyEditDialog({
 
   // 判断订单是否已查询（已锁定）
   const isLocked = Boolean(order.lastShippingQueryAt);
+  const hasUnsavedChanges =
+    open && form.formState.isDirty && !updateMutation.isPending;
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前船公司信息尚未保存，确定要关闭吗？',
+  });
+
+  const handleCloseAttempt = (nextOpen: boolean) => {
+    if (!nextOpen && !confirmLeavePage()) {
+      return;
+    }
+
+    onOpenChange(nextOpen);
+  };
+
+  const handleProtectedCancel = () => {
+    if (!confirmLeavePage()) {
+      return;
+    }
+
+    handleCancel();
+  };
 
   return (
     <ShippingCompanyEditDialogView
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={handleCloseAttempt}
       orderNumber={order.orderNumber}
       form={form}
       isPending={updateMutation.isPending}
       isLocked={isLocked}
-      onCancel={handleCancel}
+      onCancel={handleProtectedCancel}
       onSubmit={handleSubmit}
     />
   );

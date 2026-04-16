@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import { useUpdateFactoryShipmentOrderStatus } from '@/lib/api/factory-shipments';
 import { FACTORY_SHIPMENT_STATUS } from '@/lib/types/factory-shipment';
 import { cn } from '@/lib/utils';
@@ -101,7 +102,11 @@ export function ConfirmArrivalDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent
+        className="sm:max-w-[480px] [&>button]:hidden"
+        onEscapeKeyDown={event => event.preventDefault()}
+        onInteractOutside={event => event.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>确认到港</DialogTitle>
           <DialogDescription>
@@ -151,6 +156,19 @@ function ConfirmArrivalForm({
       });
     }
   }, [open, form]);
+  const hasUnsavedChanges = form.formState.isDirty && !isPending;
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前到港信息尚未保存，确定要关闭吗？',
+  });
+
+  const handleCancel = () => {
+    if (!confirmLeavePage()) {
+      return;
+    }
+
+    onCancel();
+  };
 
   const handleSubmit = form.handleSubmit(async values => {
     await onConfirm(values.arrivalDate, values.remarks);
@@ -231,7 +249,7 @@ function ConfirmArrivalForm({
           <Button
             type="button"
             variant="outline"
-            onClick={onCancel}
+            onClick={handleCancel}
             disabled={isPending}
           >
             取消

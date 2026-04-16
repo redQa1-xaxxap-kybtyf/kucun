@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import { useCreateInboundRecord } from '@/lib/api/inbound';
 import { queryKeys } from '@/lib/queryKeys';
 import { useUpdateFactoryShipmentItemInboundStatus } from '@/lib/services/factory-shipment-item-service';
@@ -495,6 +496,27 @@ export function ConfirmInboundDialog({
     });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const initialFormState = useMemo(
+    () => createInitialFormState(itemsWithProduct),
+    [itemsWithProduct]
+  );
+  const hasUnsavedChanges =
+    open &&
+    !isSubmitting &&
+    !createInboundMutation.isPending &&
+    JSON.stringify(formState) !== JSON.stringify(initialFormState);
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前入库信息尚未保存，确定要关闭吗？',
+  });
+
+  const handleCloseAttempt = (nextOpen: boolean) => {
+    if (!nextOpen && !confirmLeavePage()) {
+      return;
+    }
+
+    onOpenChange(nextOpen);
+  };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -560,7 +582,7 @@ export function ConfirmInboundDialog({
   return (
     <ConfirmInboundDialogView
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={handleCloseAttempt}
       manualItems={manualItems}
       itemsWithProduct={itemsWithProduct}
       formState={formState}

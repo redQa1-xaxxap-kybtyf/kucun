@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import { useUpdateFactoryShipmentOrderContainerNumber } from '@/lib/api/factory-shipments';
 
 // 集装箱号编辑表单验证规则
@@ -218,15 +219,37 @@ export function ContainerNumberEditDialog({
       onOpenChange,
       onSuccess,
     });
+  const hasUnsavedChanges =
+    open && form.formState.isDirty && !updateMutation.isPending;
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前集装箱号尚未保存，确定要关闭吗？',
+  });
+
+  const handleCloseAttempt = (nextOpen: boolean) => {
+    if (!nextOpen && !confirmLeavePage()) {
+      return;
+    }
+
+    onOpenChange(nextOpen);
+  };
+
+  const handleProtectedCancel = () => {
+    if (!confirmLeavePage()) {
+      return;
+    }
+
+    handleCancel();
+  };
 
   return (
     <ContainerNumberEditDialogView
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={handleCloseAttempt}
       orderNumber={order.orderNumber}
       form={form}
       isPending={updateMutation.isPending}
-      onCancel={handleCancel}
+      onCancel={handleProtectedCancel}
       onSubmit={handleSubmit}
     />
   );

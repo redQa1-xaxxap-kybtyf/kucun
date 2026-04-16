@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import { useUpdateFactoryShipmentOrderStatus } from '@/lib/api/factory-shipments';
 import { queryKeys } from '@/lib/queryKeys';
 import { FACTORY_SHIPMENT_STATUS } from '@/lib/types/factory-shipment';
@@ -374,15 +375,40 @@ export function ConfirmShipmentDialog({
       onOpenChange,
       onSuccess,
     });
+  const hasUnsavedChanges =
+    open && form.formState.isDirty && !confirmMutation.isPending;
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前发货信息尚未保存，确定要关闭吗？',
+  });
+
+  const handleCloseAttempt = React.useCallback(
+    (nextOpen: boolean) => {
+      if (!nextOpen && !confirmLeavePage()) {
+        return;
+      }
+
+      onOpenChange(nextOpen);
+    },
+    [confirmLeavePage, onOpenChange]
+  );
+
+  const handleProtectedCancel = React.useCallback(() => {
+    if (!confirmLeavePage()) {
+      return;
+    }
+
+    handleCancel();
+  }, [confirmLeavePage, handleCancel]);
 
   return (
     <ConfirmShipmentDialogView
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={handleCloseAttempt}
       orderNumber={orderNumber}
       form={form}
       isPending={confirmMutation.isPending}
-      onCancel={handleCancel}
+      onCancel={handleProtectedCancel}
       onSubmit={handleSubmit}
     />
   );
