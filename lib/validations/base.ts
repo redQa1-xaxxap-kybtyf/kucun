@@ -10,7 +10,7 @@ import { paginationConfig } from '@/lib/config/pagination';
 // 基础验证规则
 export const baseValidations = {
   // ID验证
-  id: z.string().min(1, 'ID不能为空').uuid('ID格式不正确'),
+  id: z.string().min(1, '编号不能为空').uuid('编号格式不正确'),
 
   // 用户名验证
   username: z
@@ -73,7 +73,7 @@ export const baseValidations = {
   status: z.enum(['active', 'inactive']).default('active'),
 
   // 客户ID验证
-  customerId: z.string().min(1, '请选择客户').uuid('客户ID格式不正确'),
+  customerId: z.string().min(1, '请选择客户').uuid('客户信息格式不正确'),
 };
 
 // 分页验证
@@ -101,7 +101,7 @@ export const paginationValidations = {
       .optional()
       .transform(val => val?.trim() || undefined),
 
-    categoryId: z.string().uuid('分类ID格式不正确').optional(),
+    categoryId: z.string().uuid('分类信息格式不正确').optional(),
 
     status: z.enum(['active', 'inactive']).optional(),
 

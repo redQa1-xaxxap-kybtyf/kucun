@@ -11,7 +11,7 @@ export const verifyCaptchaSchema = z.object({
   sessionId: z
     .string({ message: '会话ID必须是字符串' })
     .min(1, { message: '缺少会话ID' })
-    .uuid({ message: '无效的会话ID格式' }),
+    .uuid({ message: '会话信息无效' }),
 
   captcha: z
     .string({ message: '验证码必须是字符串' })

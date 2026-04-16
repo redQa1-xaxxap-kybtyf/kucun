@@ -71,11 +71,11 @@ async function handleCaptchaValidation(
     const validationResult = verifyCaptchaSchema.safeParse(body);
 
     if (!validationResult.success) {
-      logger.warn('captcha', '参数验证失败');
+      logger.warn('captcha', '提交内容有误，请检查后重试');
       return NextResponse.json(
         {
           success: false,
-          error: '参数验证失败',
+          error: '提交内容有误，请检查后重试',
           details: validationResult.error.issues,
         },
         { status: 400 }

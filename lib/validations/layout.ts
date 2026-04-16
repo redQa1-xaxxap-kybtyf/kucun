@@ -10,7 +10,7 @@ import { z } from 'zod';
  * 导航项Schema
  */
 export const NavigationItemSchema = z.object({
-  id: z.string().min(1, '导航项ID不能为空'),
+  id: z.string().min(1, '导航项编号不能为空'),
   title: z.string().min(1, '导航项标题不能为空'),
   href: z.string().min(1, '导航项链接不能为空'),
   icon: z.function().optional(),
@@ -27,7 +27,7 @@ export const NavigationItemSchema = z.object({
  * 用户信息Schema
  */
 export const UserInfoSchema = z.object({
-  id: z.string().min(1, '用户ID不能为空'),
+  id: z.string().min(1, '用户编号不能为空'),
   name: z.string().min(1, '用户名不能为空'),
   email: z.string().email('邮箱格式不正确'),
   avatar: z.string().url('头像URL格式不正确').optional(),
@@ -38,7 +38,7 @@ export const UserInfoSchema = z.object({
  * 通知项Schema
  */
 export const NotificationItemSchema = z.object({
-  id: z.string().min(1, '通知ID不能为空'),
+  id: z.string().min(1, '通知编号不能为空'),
   title: z.string().min(1, '通知标题不能为空'),
   message: z.string().min(1, '通知内容不能为空'),
   type: z.enum(['info', 'warning', 'error', 'success'], {
@@ -112,7 +112,7 @@ export const LayoutConfigSchema = z.object({
  * 快速操作项Schema
  */
 export const QuickActionSchema = z.object({
-  id: z.string().min(1, '操作ID不能为空'),
+  id: z.string().min(1, '操作编号不能为空'),
   title: z.string().min(1, '操作标题不能为空'),
   description: z.string().optional(),
   icon: z.function(),
