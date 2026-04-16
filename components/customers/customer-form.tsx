@@ -16,6 +16,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
 // API and Types
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import {
   createCustomer,
   customerQueryKeys,
@@ -27,6 +28,7 @@ import {
   type CustomerUpdateInput,
 } from '@/lib/types/customer';
 import { logger } from '@/lib/utils/console-logger';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 import {
   type CustomerCreateFormData,
   type CustomerUpdateFormData,
@@ -36,7 +38,6 @@ import {
   parseExtendedInfo,
   processExtendedInfo,
 } from '@/lib/validations/customer';
-import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
 interface CustomerFormProps {
   mode: 'create' | 'edit';
@@ -150,6 +151,11 @@ export function CustomerForm({
   });
 
   const isLoading = createMutation.isPending || updateMutation.isPending;
+  const hasUnsavedChanges = form.formState.isDirty && !isLoading;
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前客户资料尚未保存，确定要离开吗？',
+  });
 
   // 表单提交
   const onSubmit = async (
@@ -176,6 +182,10 @@ export function CustomerForm({
 
   // 取消操作
   const handleCancel = () => {
+    if (!confirmLeavePage()) {
+      return;
+    }
+
     if (onCancel) {
       onCancel();
     } else {
@@ -197,20 +207,34 @@ export function CustomerForm({
       return;
     }
 
-    form.setValue('extendedInfo', {
-      ...extendedInfo,
-      tags: [...currentTags, newTag.trim()],
-    });
+    form.setValue(
+      'extendedInfo',
+      {
+        ...extendedInfo,
+        tags: [...currentTags, newTag.trim()],
+      },
+      {
+        shouldDirty: true,
+        shouldTouch: true,
+      }
+    );
     setNewTag('');
   };
 
   const removeTag = (tagToRemove: string) => {
     const extendedInfo = form.getValues('extendedInfo');
     const currentTags = extendedInfo?.tags || [];
-    form.setValue('extendedInfo', {
-      ...extendedInfo,
-      tags: currentTags.filter(tag => tag !== tagToRemove),
-    });
+    form.setValue(
+      'extendedInfo',
+      {
+        ...extendedInfo,
+        tags: currentTags.filter(tag => tag !== tagToRemove),
+      },
+      {
+        shouldDirty: true,
+        shouldTouch: true,
+      }
+    );
   };
 
   return (
@@ -227,7 +251,7 @@ export function CustomerForm({
               {isEdit ? '编辑客户' : '新增客户'}
             </h1>
             <p className="text-muted-foreground">
-              {isEdit ? '修改客户信息和扩展资料' : '创建新的客户档案'}
+              {isEdit ? '修改客户信息和补充资料' : '新增客户资料'}
             </p>
           </div>
         </div>

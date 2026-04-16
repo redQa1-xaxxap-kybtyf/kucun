@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import {
   createCustomer,
   customerQueryKeys,
@@ -390,6 +391,19 @@ export function ERPCustomerForm({
   const onSubmit = submitCustomer;
 
   const isEdit = mode === 'edit';
+  const hasUnsavedChanges = form.formState.isDirty && !isLoading;
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前客户资料尚未保存，确定要离开吗？',
+  });
+
+  const handleProtectedCancel = () => {
+    if (!confirmLeavePage()) {
+      return;
+    }
+
+    handleCancel(onCancel);
+  };
 
   return (
     <>
@@ -408,7 +422,7 @@ export function ERPCustomerForm({
               <FormActions
                 isLoading={isLoading}
                 mode={mode}
-                onCancel={() => handleCancel(onCancel)}
+                onCancel={handleProtectedCancel}
               />
             </CardContent>
           </Card>

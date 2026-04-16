@@ -31,6 +31,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import { createCustomer, customerQueryKeys } from '@/lib/api/customers';
 import type { AddressData } from '@/lib/types/address';
 import type { Customer } from '@/lib/types/customer';
@@ -56,6 +57,7 @@ export function QuickAddCustomerDialog({
 }: QuickAddCustomerDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [open, setOpen] = React.useState(false);
 
   // ✅ 表单配置 - 使用专用的快速添加Schema
   const form = useForm<CustomerQuickAddFormData>({
@@ -131,15 +133,36 @@ export function QuickAddCustomerDialog({
   };
 
   // 取消操作
+  const hasUnsavedChanges =
+    open && form.formState.isDirty && !createMutation.isPending;
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前客户资料尚未保存，确定要关闭吗？',
+  });
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen && !confirmLeavePage()) {
+      return;
+    }
+
+    if (!nextOpen) {
+      form.reset();
+    }
+
+    setOpen(nextOpen);
+  };
+
   const handleCancel = () => {
+    if (!confirmLeavePage()) {
+      return;
+    }
+
     form.reset();
     setOpen(false);
   };
 
-  const [open, setOpen] = React.useState(false);
-
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {trigger || (
           <Button variant="outline" size="sm">

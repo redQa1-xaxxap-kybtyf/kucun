@@ -80,7 +80,7 @@ export function ERPCustomerList({
     return (
       <div className="flex min-h-[400px] items-center justify-center rounded-3xl border border-white bg-white/40 backdrop-blur-md">
         <EmptyState
-          title="正在同步客户中枢..."
+          title="正在加载客户资料..."
           icon={<Loader2 className="h-10 w-10 animate-spin text-slate-300" />}
           compact
         />
@@ -92,14 +92,14 @@ export function ERPCustomerList({
     return (
       <div className="rounded-3xl border border-dashed border-slate-200 bg-white/20 p-20 text-center">
         <EmptyState
-          title="暂无往来客户登记"
-          description="开始建立您的业务中枢"
+          title="还没有客户资料"
+          description="先新增一位客户，后续更方便开单和跟进"
           action={
             <Button
               onClick={handleCreateNew}
               className="h-12 rounded-2xl bg-slate-900 px-8 font-black"
             >
-              登记首位客户
+              新增客户
             </Button>
           }
         />
@@ -136,12 +136,12 @@ export function ERPCustomerList({
                   <div className="flex items-center gap-3 text-xs font-bold text-slate-400">
                     <span className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
-                      合作始于{' '}
+                      建档时间{' '}
                       {formatDateTime(customer.createdAt).split(' ')[0]}
                     </span>
                     <span className="h-1 w-1 rounded-full bg-slate-200" />
                     <span className="text-xs font-bold tracking-widest text-slate-400 uppercase">
-                      ID: {customer.id.slice(-6)}
+                      客户编号：{customer.id.slice(-6)}
                     </span>
                   </div>
                 </div>
@@ -158,7 +158,7 @@ export function ERPCustomerList({
                 <div className="flex max-w-[240px] items-center gap-2 truncate rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
                   <MapPin className="h-3.5 w-3.5 text-slate-400" />
                   <span className="truncate text-sm font-bold text-slate-600">
-                    {customer.address || '无登记地址'}
+                    {customer.address || '未填写地址'}
                   </span>
                 </div>
               </div>
@@ -224,7 +224,7 @@ export function ERPCustomerList({
                         handleViewDetail(customer);
                       }}
                     >
-                      <Eye className="mr-2 h-4 w-4" /> 察看资产详情
+                      <Eye className="mr-2 h-4 w-4" /> 查看详情
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       className="rounded-xl py-2.5 font-bold"
@@ -233,7 +233,7 @@ export function ERPCustomerList({
                         handleEdit(customer);
                       }}
                     >
-                      <Edit className="mr-2 h-4 w-4" /> 修订档案
+                      <Edit className="mr-2 h-4 w-4" /> 编辑资料
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       className="rounded-xl py-2.5 font-bold text-rose-600 focus:bg-rose-500 focus:text-white"
@@ -242,7 +242,7 @@ export function ERPCustomerList({
                         handleDelete(customer);
                       }}
                     >
-                      <Trash2 className="mr-2 h-4 w-4" /> 归档并删除
+                      <Trash2 className="mr-2 h-4 w-4" /> 删除客户
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -260,8 +260,8 @@ export function ERPCustomerList({
                 )}
               >
                 {customer.cooperationDays && customer.cooperationDays > 30
-                  ? '活跃账户'
-                  : '新签合作'}
+                  ? '长期合作'
+                  : '新客户'}
               </div>
               {customer.returnOrderCount && customer.returnOrderCount > 5 && (
                 <div className="rounded-full bg-rose-100 px-3 py-1 text-xs font-black tracking-[0.2em] text-rose-700 uppercase">
@@ -282,7 +282,7 @@ export function ERPCustomerList({
                 数据范围
               </span>
               <span className="text-sm font-black text-slate-900">
-                {pagination.total} 位合作伙伴
+                {pagination.total} 位客户
               </span>
             </div>
             <Pagination

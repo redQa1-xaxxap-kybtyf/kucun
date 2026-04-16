@@ -53,7 +53,11 @@ export function ERPCustomerEditDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto p-0">
+      <DialogContent
+        className="max-h-[80vh] max-w-2xl overflow-y-auto p-0 [&>button]:hidden"
+        onEscapeKeyDown={event => event.preventDefault()}
+        onInteractOutside={event => event.preventDefault()}
+      >
         <DialogHeader className="sr-only">
           <DialogTitle>编辑客户</DialogTitle>
         </DialogHeader>

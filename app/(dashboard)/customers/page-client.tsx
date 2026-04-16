@@ -15,6 +15,7 @@ import {
   type Customer,
   type CustomerQueryParams,
 } from '@/lib/types/customer';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
 interface CustomersPageClientProps {
   initialParams: CustomerQueryParams;
@@ -193,7 +194,7 @@ export function CustomersPageClient({
               客户管理
             </h2>
             <p className="max-w-2xl text-sm leading-relaxed font-bold text-slate-400">
-              管理核心客群资产，跟踪交易频次、合作周期及往来账目。
+              统一维护客户资料，查看销售、退货和往来情况。
             </p>
           </div>
 
@@ -206,7 +207,7 @@ export function CustomersPageClient({
             >
               <Link href="/customers/export">
                 <Download className="mr-2 h-4 w-4" />
-                导出报表
+                导出客户列表
               </Link>
             </Button>
             <Button
@@ -233,7 +234,7 @@ export function CustomersPageClient({
             filters={[
               {
                 key: 'sortBy',
-                label: '排序字段',
+                label: '排序依据',
                 options: CUSTOMER_SORT_OPTIONS.map(option => ({ ...option })),
                 width: 'w-36',
               },
@@ -269,7 +270,7 @@ export function CustomersPageClient({
             <div className="animate-in fade-in slide-in-from-top-4 mb-8 flex items-center gap-3 rounded-2xl border border-rose-100 bg-rose-50/50 px-6 py-4 text-sm font-bold text-rose-600 duration-500">
               <div className="h-2 w-2 animate-pulse rounded-full bg-rose-500" />
               加载客户数据失败：
-              {error instanceof Error ? error.message : '发生未知错误'}
+              {getFriendlyErrorMessage(error, '请稍后重试')}
             </div>
           )}
 

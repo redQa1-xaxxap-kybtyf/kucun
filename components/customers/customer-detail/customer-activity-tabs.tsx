@@ -53,13 +53,13 @@ export function CustomerActivityTabs({
             value="sales"
             className="h-10 rounded-xl px-6 font-black transition-all data-[state=active]:bg-white data-[state=active]:shadow-xl"
           >
-            销售历史
+            销售记录
           </TabsTrigger>
           <TabsTrigger
             value="returns"
             className="h-10 rounded-xl px-6 font-black transition-all data-[state=active]:bg-white data-[state=active]:shadow-xl"
           >
-            退货追溯
+            退货记录
           </TabsTrigger>
           <TabsTrigger
             value="unpaid"
@@ -71,7 +71,7 @@ export function CustomerActivityTabs({
 
         <div className="hidden items-center gap-2 text-xs font-bold tracking-wider text-slate-400 uppercase md:flex">
           <History className="h-3.5 w-3.5" />
-          Audit Persistence Active
+          持续更新
         </div>
       </div>
 
@@ -115,7 +115,7 @@ export function CustomerActivityTabs({
             ))}
           </div>
         ) : (
-          <EmptyState message="该客户近期无退货异常" />
+          <EmptyState message="该客户暂无退货记录" />
         )}
       </TabsContent>
 
@@ -137,7 +137,7 @@ export function CustomerActivityTabs({
             })}
           </div>
         ) : (
-          <EmptyState message="所有账目已结清，信用良好" />
+          <EmptyState message="当前没有待收款订单" />
         )}
       </TabsContent>
     </Tabs>
@@ -207,7 +207,7 @@ function OrderCard({
             {formatCurrency(amount)}
           </p>
           <span className="text-xs font-bold tracking-wider text-slate-400 uppercase">
-            交易金额
+            金额
           </span>
         </div>
         <ChevronRight className="h-5 w-5 text-slate-200 transition-all group-hover:translate-x-1 group-hover:text-slate-900" />
@@ -244,11 +244,11 @@ function UnpaidOrderCard({
               #{orderNumber}
             </span>
             <div className="rounded-md bg-rose-100 px-2 py-0.5 text-xs font-bold tracking-wider text-rose-700 uppercase">
-              待结款
+              待收款
             </div>
           </div>
           <p className="text-xs font-bold text-slate-500">
-            应于 {formatDateTime(createdAt)} 前完成结算
+            开单时间：{formatDateTime(createdAt)}
           </p>
         </div>
       </div>
@@ -261,7 +261,7 @@ function UnpaidOrderCard({
             </p>
           </div>
           <p className="text-xs font-bold tracking-wider text-slate-400 uppercase">
-            Outstanding Balance
+            待收金额
           </p>
         </div>
         <ChevronRight className="h-5 w-5 text-slate-200 transition-all group-hover:translate-x-1 group-hover:text-slate-900" />

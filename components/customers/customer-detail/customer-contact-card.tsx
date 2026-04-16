@@ -41,7 +41,7 @@ export function CustomerContactCard({
       {/* 核心联系人信息分区 */}
       <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
         <div className="mb-4">
-          <h3 className="text-sm font-bold text-slate-900">核心联系信息</h3>
+          <h3 className="text-sm font-bold text-slate-900">联系信息</h3>
         </div>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           <SectionItem
@@ -51,8 +51,8 @@ export function CustomerContactCard({
                 icon={<User className="h-3.5 w-3.5" />}
               />
             }
-            label="档案联系人"
-            value={extendedInfo.contactPerson || '未设置'}
+            label="联系人"
+            value={extendedInfo.contactPerson || '未填写'}
           />
           <SectionItem
             icon={
@@ -78,7 +78,7 @@ export function CustomerContactCard({
             label="电子邮箱"
             value={
               <span className="font-mono font-bold text-slate-600">
-                {extendedInfo.email || '未绑定'}
+                {extendedInfo.email || '未填写'}
               </span>
             }
           />
@@ -92,7 +92,7 @@ export function CustomerContactCard({
             />
             <div className="flex-1">
               <p className="text-xs font-bold tracking-wider text-slate-500 uppercase">
-                办公地址
+                地址
               </p>
               <p className="mt-1 text-sm font-bold text-slate-700">{address}</p>
             </div>
@@ -105,7 +105,7 @@ export function CustomerContactCard({
         {/* 客户画像属性 */}
         <section className="rounded-2xl border border-slate-100 bg-slate-50/50 p-6">
           <div className="mb-6">
-            <h3 className="text-sm font-bold text-slate-900">客户画像</h3>
+            <h3 className="text-sm font-bold text-slate-900">客户信息</h3>
           </div>
           <div className="grid gap-6">
             <SectionItem
@@ -115,7 +115,7 @@ export function CustomerContactCard({
                   icon={<Building2 className="h-3.5 w-3.5" />}
                 />
               }
-              label="组织类型"
+              label="客户类型"
               value={
                 <span className="font-bold text-slate-700">
                   {getCustomerTypeLabel(extendedInfo.customerType)}
@@ -129,7 +129,7 @@ export function CustomerContactCard({
                   icon={<Star className="h-3.5 w-3.5" />}
                 />
               }
-              label="准入等级"
+              label="客户等级"
               value={
                 <span className="font-bold text-slate-700">
                   {extendedInfo.level
@@ -158,7 +158,7 @@ export function CustomerContactCard({
         {/* 财务授信用档案 */}
         <section className="rounded-2xl border border-slate-100 bg-slate-50/50 p-6">
           <div className="mb-6">
-            <h3 className="text-sm font-bold text-slate-900">财务授信</h3>
+            <h3 className="text-sm font-bold text-slate-900">结算信息</h3>
           </div>
           <div className="grid gap-6">
             <SectionItem
@@ -168,7 +168,7 @@ export function CustomerContactCard({
                   icon={<Wallet className="h-3.5 w-3.5" />}
                 />
               }
-              label="信用额度 (Credit)"
+              label="信用额度"
               value={
                 <span className="font-mono font-black text-emerald-600">
                   {formatCurrency(extendedInfo.creditLimit || 0)}
@@ -196,10 +196,10 @@ export function CustomerContactCard({
                   icon={<FileText className="h-3.5 w-3.5" />}
                 />
               }
-              label="登记税号"
+              label="税号"
               value={
                 <span className="font-mono text-sm font-bold text-slate-700">
-                  {extendedInfo.taxNumber || '未登记'}
+                  {extendedInfo.taxNumber || '未填写'}
                 </span>
               }
             />
@@ -215,7 +215,7 @@ export function CustomerContactCard({
               <h3 className="text-sm font-bold text-slate-900">补充备注</h3>
             </div>
             <p className="text-sm leading-relaxed font-medium text-slate-600 italic">
-              {extendedInfo.notes || '暂无该客户的补充备考说明。'}
+              {extendedInfo.notes || '暂无补充说明。'}
             </p>
           </div>
           <div className="flex shrink-0 flex-col gap-4 border-l border-slate-50 pl-6">

@@ -28,6 +28,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import {
   customerQueryKeys,
   getCustomer,
@@ -71,7 +72,7 @@ export function CustomerEditDialog({
     queryKey: customerQueryKeys.detail(customerId || ''),
     queryFn: () => {
       if (!customerId) {
-        throw new Error('缺少客户标识，请刷新页面后重试');
+        throw new Error('未找到客户信息，请刷新页面后重试');
       }
       return getCustomer(customerId);
     },
@@ -103,7 +104,7 @@ export function CustomerEditDialog({
   const updateMutation = useMutation({
     mutationFn: (data: CustomerUpdateInput) => {
       if (!customerId) {
-        throw new Error('缺少客户标识，请刷新页面后重试');
+        throw new Error('未找到客户信息，请刷新页面后重试');
       }
       return updateCustomer(customerId, data);
     },
@@ -126,6 +127,7 @@ export function CustomerEditDialog({
         });
       }
 
+      form.reset();
       onOpenChange(false);
     },
     onError: error => {
@@ -141,7 +143,7 @@ export function CustomerEditDialog({
     if (!customerId) {
       toast({
         title: '错误',
-        description: '客户ID不能为空',
+        description: '未找到客户信息',
         variant: 'destructive',
       });
       return;
@@ -152,8 +154,18 @@ export function CustomerEditDialog({
       ...data,
     });
   };
+  const hasUnsavedChanges =
+    open && form.formState.isDirty && !updateMutation.isPending;
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前客户资料尚未保存，确定要关闭吗？',
+  });
 
   const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen && !confirmLeavePage()) {
+      return;
+    }
+
     if (!newOpen) {
       form.reset();
     }
