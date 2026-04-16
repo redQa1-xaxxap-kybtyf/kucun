@@ -14,7 +14,7 @@ export const returnOrderItemSchema = z
   .object({
     id: z.string().optional(),
     salesOrderItemId: z.string().min(1, '请选择销售订单明细'),
-    productId: z.string().min(1, '产品ID不能为空'),
+    productId: z.string().min(1, '请选择产品'),
     colorCode: z.string().optional(),
     productionDate: z.string().optional(),
     returnQuantity: z
@@ -80,7 +80,7 @@ export const createReturnOrderSchema = z
   .object({
     returnMode: z.enum(['single_order', 'multi_order'] as const).optional(), // 移除.default('single_order')
     salesOrderId: z.string().optional(), // 移除.transform()
-    customerId: z.string().min(1, '客户ID不能为空'),
+    customerId: z.string().min(1, '客户不能为空'),
     type: z.enum(
       [
         'quality_issue',
@@ -115,7 +115,7 @@ export const createReturnOrderSchema = z
       return true;
     },
     {
-      message: '单订单退货模式下，销售订单ID不能为空',
+      message: '单订单退货时，请先选择销售订单',
       path: ['salesOrderId'],
     }
   )
@@ -134,7 +134,7 @@ export const createReturnOrderSchema = z
 
 // 退货订单更新验证规则
 export const updateReturnOrderSchema = z.object({
-  id: z.string().min(1, '退货订单ID不能为空'),
+  id: z.string().min(1, '退货订单编号不能为空'),
   returnMode: z.enum(['single_order', 'multi_order']).optional(),
   salesOrderId: z.string().optional(),
   customerId: z.string().optional(),
@@ -161,7 +161,7 @@ export const returnOrderFormSchema = z
     id: z.string().optional(), // 编辑模式时存在
     returnMode: z.enum(['single_order', 'multi_order'] as const).optional(),
     salesOrderId: z.string().optional(),
-    customerId: z.string().min(1, '客户ID不能为空'),
+    customerId: z.string().min(1, '客户不能为空'),
     type: z.enum(
       [
         'quality_issue',
@@ -196,7 +196,7 @@ export const returnOrderFormSchema = z
       return true;
     },
     {
-      message: '单订单退货模式下，销售订单ID不能为空',
+      message: '单订单退货时，请先选择销售订单',
       path: ['salesOrderId'],
     }
   )
@@ -379,7 +379,7 @@ export const returnOrderApprovalSchema = z
 // 批量操作验证规则
 export const batchReturnOrderSchema = z.object({
   ids: z
-    .array(z.string().min(1, '退货订单ID不能为空'))
+    .array(z.string().min(1, '退货订单编号不能为空'))
     .min(1, '请选择至少一个退货订单')
     .max(50, '批量操作不能超过50个订单'),
   action: z.enum(['approve', 'reject', 'cancel', 'export'], {

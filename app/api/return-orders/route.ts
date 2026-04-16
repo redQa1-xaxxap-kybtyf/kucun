@@ -290,7 +290,7 @@ export const POST = withAuth(
         // 单订单模式：验证指定的销售订单
         if (!data.salesOrderId || data.salesOrderId.trim() === '') {
           return NextResponse.json(
-            { success: false, error: '单订单模式下销售订单ID不能为空' },
+            { success: false, error: '单订单模式下销售订单编号不能为空' },
             { status: 400 }
           );
         }

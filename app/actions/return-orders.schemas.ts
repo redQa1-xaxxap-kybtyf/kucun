@@ -7,7 +7,7 @@ export const ALLOWED_RETURN_SALES_ORDER_STATUSES: ReadonlyArray<SalesOrderStatus
 
 export const returnOrderItemSchema = z.object({
   salesOrderItemId: z.string().min(1, '请选择销售订单明细'),
-  productId: z.string().min(1, '产品ID不能为空'),
+  productId: z.string().min(1, '请选择产品'),
   returnQuantity: z
     .number()
     .int('退货数量必须为整数')
@@ -25,7 +25,7 @@ export const returnOrderItemSchema = z.object({
 
 export const createReturnOrderSchema = z.object({
   salesOrderId: z.string().min(1, '请选择关联的销售订单'),
-  customerId: z.string().min(1, '客户ID不能为空'),
+  customerId: z.string().min(1, '客户不能为空'),
   type: z.enum([
     'quality_issue',
     'wrong_product',
@@ -46,7 +46,7 @@ export const createReturnOrderSchema = z.object({
 });
 
 export const updateReturnOrderStatusSchema = z.object({
-  returnOrderId: z.string().min(1, '退货订单ID不能为空'),
+  returnOrderId: z.string().min(1, '退货订单编号不能为空'),
   status: z.enum([
     'draft',
     'submitted',
@@ -66,7 +66,7 @@ export const updateReturnOrderStatusSchema = z.object({
 });
 
 export const approveReturnOrderSchema = z.object({
-  returnOrderId: z.string().min(1, '退货订单ID不能为空'),
+  returnOrderId: z.string().min(1, '退货订单编号不能为空'),
   approved: z.boolean(),
   refundAmount: z.number().min(0, '退款金额不能为负数').optional(),
   remarks: z.string().max(500, '审核备注不能超过500字符').optional(),
