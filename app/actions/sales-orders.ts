@@ -75,7 +75,7 @@ const salesOrderItemSchema = z
       if (!productId) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: '产品ID不能为空',
+          message: '请选择产品',
           path: ['productId'],
         });
       }
@@ -83,7 +83,7 @@ const salesOrderItemSchema = z
   });
 
 const createSalesOrderSchema = z.object({
-  customerId: z.string().min(1, '客户 ID 不能为空'),
+  customerId: z.string().min(1, '客户不能为空'),
   supplierId: z.string().optional(),
   orderType: z.enum(['NORMAL', 'TRANSFER']).default('NORMAL'),
   status: z
@@ -94,7 +94,7 @@ const createSalesOrderSchema = z.object({
 });
 
 const updateSalesOrderStatusSchema = z.object({
-  orderId: z.string().min(1, '订单 ID 不能为空'),
+  orderId: z.string().min(1, '订单编号不能为空'),
   status: z.enum(['draft', 'confirmed', 'shipped', 'completed', 'cancelled']),
   cancelReason: z.string().max(500, '取消原因不能超过500个字符').optional(),
   idempotencyKey: z.string().uuid('幂等性键格式不正确').optional(),
@@ -459,7 +459,7 @@ export async function deleteSalesOrder(orderId: string): Promise<ActionResult> {
  * 采用智能差异对比策略，避免"先删后建"的数据丢失风险
  *
  * @param tx - Prisma事务对象
- * @param orderId - 订单ID
+ * @param orderId - 订单编号
  * @param newItems - 新的订单项数据
  * @param existingItems - 现有的订单项数据
  */
@@ -651,3 +651,4 @@ export async function updateSalesOrder(
     };
   }
 }
+

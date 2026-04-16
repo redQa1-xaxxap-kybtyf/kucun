@@ -65,11 +65,11 @@ export const salesOrderFeeItemSchema = z.object({
  */
 export const salesOrderItemSchema = z
   .object({
-    productId: z.string().uuid('产品ID格式不正确').optional().or(z.literal('')),
+    productId: z.string().uuid('产品信息格式不正确').optional().or(z.literal('')),
 
     variantId: z
       .string()
-      .uuid('产品变体ID格式不正确')
+      .uuid('产品规格信息格式不正确')
       .optional()
       .or(z.literal('')),
 

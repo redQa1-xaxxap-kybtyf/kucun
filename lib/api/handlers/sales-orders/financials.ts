@@ -3,6 +3,7 @@ import type { Prisma } from '@prisma/client';
 import { allocateExpensesByValue } from '@/lib/services/sales-order-expense-service';
 import type { SalesOrderFeeItem } from '@/lib/types/sales-order-fee';
 
+import type { SalesOrderResolvedItemSnapshot } from './item-snapshots';
 import type { CreateInput } from './types';
 
 const roundCurrency = (value: number) => Math.round((value ?? 0) * 100) / 100;
@@ -125,7 +126,8 @@ export const calculateFinancials = (
 export const buildOrderItemsInput = (
   data: CreateInput,
   transferMode: CreateInput['transferMode'],
-  temporaryProductIds?: Map<number, string>
+  temporaryProductIds?: Map<number, string>,
+  itemSnapshots?: SalesOrderResolvedItemSnapshot[]
 ): Prisma.SalesOrderItemUncheckedCreateWithoutSalesOrderInput[] => {
   // 计算公司承担的费用总额
   const companyPaidFees = roundCurrency(
@@ -143,6 +145,7 @@ export const buildOrderItemsInput = (
 
   // 生成用于创建的订单项输入
   return data.items.map((item, index) => {
+    const itemSnapshot = itemSnapshots?.[index];
     const quantity = item.quantity ?? 0;
     const subtotal = roundCurrency(
       item.subtotal ?? quantity * (item.unitPrice ?? 0)
@@ -188,7 +191,8 @@ export const buildOrderItemsInput = (
       profitMargin,
       displayUnit: item.displayUnit || '片',
       displayQuantity: item.displayQuantity ?? quantity,
-      piecesPerUnit: item.piecesPerUnit ?? null,
+      piecesPerUnit: itemSnapshot?.piecesPerUnit ?? item.piecesPerUnit ?? null,
+      weightSnapshot: itemSnapshot?.weightSnapshot ?? null,
       specification: item.specification || null,
       remarks: item.remarks || null,
       isManualProduct: item.isManualProduct ?? null,

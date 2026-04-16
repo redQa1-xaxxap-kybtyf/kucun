@@ -124,7 +124,9 @@ const ProductSearchResultItem = React.memo<ProductSearchResultItemProps>(
         return `${availableQty}片 (多批次)`;
       }
       const effectivePiecesPerUnit =
-        batches.length > 0 ? batches[0].piecesPerUnit || 1 : piecesPerUnit || 1;
+        batches.length > 0
+          ? (batches[0].piecesPerUnit ?? 0)
+          : (piecesPerUnit ?? 0);
       return formatInventoryQuantity(availableQty, effectivePiecesPerUnit);
     }, [
       product.inventory?.availableInventory,
@@ -139,7 +141,9 @@ const ProductSearchResultItem = React.memo<ProductSearchResultItemProps>(
         return `${totalQty}片 (多批次)`;
       }
       const effectivePiecesPerUnit =
-        batches.length > 0 ? batches[0].piecesPerUnit || 1 : piecesPerUnit || 1;
+        batches.length > 0
+          ? (batches[0].piecesPerUnit ?? 0)
+          : (piecesPerUnit ?? 0);
       return formatInventoryQuantity(totalQty, effectivePiecesPerUnit);
     }, [
       product.inventory?.totalInventory,

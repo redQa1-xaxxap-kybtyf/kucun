@@ -37,7 +37,7 @@ const baseSalesOrderSchema = z
       .max(50, '订单号不能超过50个字符')
       .optional(), // 订单号可选，由后端自动生成
 
-    customerId: z.string().min(1, '客户ID不能为空'),
+    customerId: z.string().min(1, '客户不能为空'),
 
     status: salesOrderStatusSchema, // 移除.default('draft')
 
@@ -55,7 +55,7 @@ const baseSalesOrderSchema = z
 
     supplierId: z
       .string()
-      .min(1, '供应商ID不能为空')
+      .min(1, '供应商不能为空')
       .optional()
       .or(z.literal('')),
 
@@ -220,7 +220,7 @@ export const salesOrderCreateSchema = baseSalesOrderSchema
 export const salesOrderUpdateSchema = baseSalesOrderSchema
   .partial()
   .extend({
-    id: z.string().min(1, 'ID不能为空'),
+    id: z.string().min(1, '订单编号不能为空'),
   })
   .refine(
     data => {
@@ -384,6 +384,11 @@ export const salesOrderQuerySchema = z.object({
     .nullable()
     .optional()
     .transform(val => (val === 'true' ? true : undefined)),
+  recordScope: z
+    .enum(['history'])
+    .nullable()
+    .optional()
+    .transform(val => val ?? undefined),
   includeTest: z
     .string()
     .nullable()
@@ -401,7 +406,7 @@ export const salesOrderQuerySchema = z.object({
  */
 export const batchDeleteSalesOrdersSchema = z.object({
   salesOrderIds: z
-    .array(z.string().min(1, '销售订单ID不能为空'))
+    .array(z.string().min(1, '销售订单编号不能为空'))
     .min(1, '至少需要选择一个销售订单')
     .max(100, '一次最多只能删除100个销售订单'),
 });
@@ -410,7 +415,7 @@ export const batchDeleteSalesOrdersSchema = z.object({
  * 订单状态更新验证规则
  */
 export const updateOrderStatusSchema = z.object({
-  id: z.string().min(1, 'ID不能为空'),
+  id: z.string().min(1, '订单编号不能为空'),
   idempotencyKey: z
     .string()
     .uuid('幂等性键格式不正确')

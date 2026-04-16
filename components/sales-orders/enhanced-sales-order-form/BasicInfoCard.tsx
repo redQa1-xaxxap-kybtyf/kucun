@@ -50,7 +50,7 @@ export function BasicInfoCard({
               {autoOrderNumber || '正在生成...'}
             </div>
             <p className="text-muted-foreground text-xs">
-              系统将自动生成唯一订单号
+              保存时会自动生成订单号
             </p>
           </div>
 

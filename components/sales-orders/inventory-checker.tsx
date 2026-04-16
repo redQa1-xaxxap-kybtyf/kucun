@@ -9,7 +9,11 @@ import { Progress } from '@/components/ui/progress';
 import { PRODUCT_UNIT_LABELS } from '@/lib/config/product';
 import type { Product } from '@/lib/types/product';
 import { cn } from '@/lib/utils';
-import { getProductAvailableQuantity } from '@/lib/utils/product-inventory';
+import {
+  getProductAvailableQuantity,
+  getProductSelectableInventoryBatches,
+  requiresProductBatchSelection,
+} from '@/lib/utils/product-inventory';
 
 interface InventoryItem {
   productId: string;
@@ -27,6 +31,13 @@ interface InventoryCheckResult {
   isLowStock: boolean;
   message: string;
   severity: 'success' | 'warning' | 'error';
+  reason:
+    | 'success'
+    | 'low_stock'
+    | 'missing_batch'
+    | 'insufficient_stock';
+  shortageScope?: 'total' | 'batch';
+  selectableBatchCount?: number;
 }
 
 interface InventoryCheckerProps {
@@ -88,6 +99,8 @@ export function InventoryChecker({
             isLowStock: false,
             message: '产品不存在',
             severity: 'error' as const,
+            reason: 'insufficient_stock' as const,
+            shortageScope: 'total' as const,
           };
         }
 
@@ -109,21 +122,41 @@ export function InventoryChecker({
 
         let message = '';
         let severity: 'success' | 'warning' | 'error' = 'success';
+        let reason:
+          | 'success'
+          | 'low_stock'
+          | 'missing_batch'
+          | 'insufficient_stock' = 'success';
+        let shortageScope: 'total' | 'batch' | undefined;
+        let selectableBatchCount: number | undefined;
 
         // 系统内部统一使用"片"作为单位，避免单位混淆
         const unitLabel = '片';
         const batchLabel = item.batchNumber?.trim();
+        const needsBatchSelection = requiresProductBatchSelection(
+          product,
+          item.batchNumber
+        );
 
-        if (!isAvailable) {
+        if (needsBatchSelection && isAvailable) {
+          selectableBatchCount =
+            getProductSelectableInventoryBatches(product).length;
+          message = `总库存可用 ${availableQuantity}${unitLabel}，但存在 ${selectableBatchCount} 个可用批次，请先选择批次`;
+          severity = 'error';
+          reason = 'missing_batch';
+        } else if (!isAvailable) {
           message = batchLabel
             ? `批次 ${batchLabel} 库存不足！需要 ${requestedQuantity}${unitLabel}，可用 ${availableQuantity}${unitLabel}`
-            : `库存不足！需要 ${requestedQuantity}${unitLabel}，可用 ${availableQuantity}${unitLabel}`;
+            : `总库存不足！需要 ${requestedQuantity}${unitLabel}，可用 ${availableQuantity}${unitLabel}`;
           severity = 'error';
+          reason = 'insufficient_stock';
+          shortageScope = batchLabel ? 'batch' : 'total';
         } else if (isLowStock) {
           message = batchLabel
             ? `批次 ${batchLabel} 库存预警！剩余 ${availableQuantity}${unitLabel}`
             : `库存预警！剩余 ${availableQuantity}${unitLabel}`;
           severity = 'warning';
+          reason = 'low_stock';
         } else {
           message = batchLabel
             ? `批次 ${batchLabel} 库存充足，剩余 ${availableQuantity}${unitLabel}`
@@ -136,10 +169,13 @@ export function InventoryChecker({
           batchNumber: item.batchNumber,
           requestedQuantity,
           availableQuantity,
-          isAvailable,
+          isAvailable: severity !== 'error',
           isLowStock,
           message,
           severity,
+          reason,
+          shortageScope,
+          selectableBatchCount,
         };
       })
       .filter(result => result !== null) as InventoryCheckResult[];
@@ -177,8 +213,13 @@ export function InventoryChecker({
     return null;
   }
 
-  // 显示详细的库存不足信息
-  const errorItems = checkResults.filter(r => r.severity === 'error');
+  // 显示详细的库存阻塞信息
+  const missingBatchItems = checkResults.filter(
+    r => r.reason === 'missing_batch'
+  );
+  const shortageItems = checkResults.filter(
+    r => r.reason === 'insufficient_stock'
+  );
   const warningItems = checkResults.filter(r => r.severity === 'warning');
 
   return (
@@ -187,36 +228,69 @@ export function InventoryChecker({
       className={className}
     >
       <AlertTriangle className="h-4 w-4" />
-      <AlertDescription>
-        {stats.errors > 0 && (
+      <AlertDescription className="space-y-3">
+        {missingBatchItems.length > 0 && (
           <div className="space-y-1">
-            {errorItems.length === 1 ? (
+            {missingBatchItems.length === 1 ? (
               <div>
-                产品 [{errorItems[0].product?.code || '未知编码'}]{' '}
-                {errorItems[0].product?.name || '未知产品'}
-                {errorItems[0].batchNumber
-                  ? ` / 批次 ${errorItems[0].batchNumber}`
+                产品 [{missingBatchItems[0].product?.code || '未知编码'}]{' '}
+                {missingBatchItems[0].product?.name || '未知产品'}
+                存在多个可用批次，当前总可用库存：
+                {missingBatchItems[0].availableQuantity}片，请先选择批次后再确认
+              </div>
+            ) : (
+              <div>
+                <div className="mb-1">
+                  以下 {missingBatchItems.length} 个产品需要先选择批次：
+                </div>
+                <div className="space-y-0.5 text-sm">
+                  {missingBatchItems.map((item, index) => (
+                    <div key={index}>
+                      - [{item.product?.code || '未知编码'}]{' '}
+                      {item.product?.name || '未知产品'}：当前总可用{' '}
+                      {item.availableQuantity}片，
+                      {item.selectableBatchCount || 0} 个批次可选
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        {shortageItems.length > 0 && (
+          <div className="space-y-1">
+            {shortageItems.length === 1 ? (
+              <div>
+                产品 [{shortageItems[0].product?.code || '未知编码'}]{' '}
+                {shortageItems[0].product?.name || '未知产品'}
+                {shortageItems[0].batchNumber
+                  ? ` / 批次 ${shortageItems[0].batchNumber}`
                   : ''}{' '}
-                库存不足，当前库存：
-                {errorItems[0].availableQuantity}片，需要：
-                {errorItems[0].requestedQuantity}片，缺少：
-                {errorItems[0].requestedQuantity -
-                  errorItems[0].availableQuantity}
+                {shortageItems[0].shortageScope === 'batch'
+                  ? '批次库存不足'
+                  : '总库存不足'}
+                ，当前可用：
+                {shortageItems[0].availableQuantity}片，需要：
+                {shortageItems[0].requestedQuantity}片，缺少：
+                {shortageItems[0].requestedQuantity -
+                  shortageItems[0].availableQuantity}
                 片
               </div>
             ) : (
               <div>
                 <div className="mb-1">
-                  以下 {errorItems.length} 个产品库存不足：
+                  以下 {shortageItems.length} 个产品库存不足：
                 </div>
                 <div className="space-y-0.5 text-sm">
-                  {errorItems.map((item, index) => (
+                  {shortageItems.map((item, index) => (
                     <div key={index}>
                       - [{item.product?.code || '未知编码'}]{' '}
                       {item.product?.name || '未知产品'}
                       {item.batchNumber ? ` / 批次 ${item.batchNumber}` : ''}：
-                      当前库存 {item.availableQuantity}片，需要{' '}
-                      {item.requestedQuantity}
+                      {item.shortageScope === 'batch'
+                        ? '批次可用'
+                        : '总可用'}{' '}
+                      {item.availableQuantity}片，需要 {item.requestedQuantity}
                       片，缺少 {item.requestedQuantity - item.availableQuantity}
                       片
                     </div>
@@ -382,13 +456,28 @@ export function InventoryStatus({
 }: InventoryStatusProps) {
   const availableQuantity =
     getProductAvailableQuantity(product, batchNumber) ?? 0;
+  const needsBatchSelection = requiresProductBatchSelection(
+    product,
+    batchNumber
+  );
   const isAvailable = availableQuantity >= requestedQuantity;
   const isLowStock = availableQuantity > 0 && availableQuantity <= 10;
+
+  if (needsBatchSelection && isAvailable) {
+    return (
+      <Badge
+        variant="outline"
+        className={cn('border-amber-300 text-amber-700', className)}
+      >
+        待选批次
+      </Badge>
+    );
+  }
 
   if (!isAvailable) {
     return (
       <Badge variant="destructive" className={className}>
-        库存不足
+        {batchNumber ? '批次库存不足' : '总库存不足'}
       </Badge>
     );
   }

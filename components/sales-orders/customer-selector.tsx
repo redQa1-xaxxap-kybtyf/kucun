@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/popover';
 import {
   customerQueryKeys,
+  getCustomer,
   searchCustomersLightweight,
 } from '@/lib/api/customers';
 import type { Customer, CustomerExtendedInfo } from '@/lib/types/customer';
@@ -45,6 +46,7 @@ interface CustomerSelectorProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  allowCreate?: boolean;
   onCustomerCreated?: (customer: Customer) => void;
   onCustomerResolved?: (customer: Customer | undefined) => void;
   // 可选：初始客户列表（用于显示已选客户）
@@ -77,6 +79,7 @@ export function CustomerSelector({
   placeholder = '搜索并选择客户',
   disabled = false,
   className,
+  allowCreate = true,
   onCustomerCreated,
   onCustomerResolved,
   initialCustomer,
@@ -162,6 +165,15 @@ export function CustomerSelector({
     gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
     placeholderData: previousData => previousData, // ✅ 替换已弃用的keepPreviousData
+  });
+
+  const { data: resolvedCustomerByValue } = useQuery<Customer>({
+    queryKey: customerQueryKeys.detail(value || ''),
+    queryFn: () => getCustomer(value || ''),
+    enabled: Boolean(value) && (!selectedCustomer || selectedCustomer.id !== value),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   // 客户列表：搜索结果或空数组（使用 useMemo 避免重复渲染）
@@ -252,11 +264,22 @@ export function CustomerSelector({
 
   // 当 value 变化时，更新 selectedCustomer
   React.useEffect(() => {
-    if (initialCustomer && initialCustomer.id !== selectedCustomer?.id) {
+    if (!initialCustomer || value !== initialCustomer.id) {
+      return;
+    }
+
+    const hasChanged =
+      !selectedCustomer ||
+      initialCustomer.id !== selectedCustomer.id ||
+      initialCustomer.address !== selectedCustomer.address ||
+      initialCustomer.phone !== selectedCustomer.phone ||
+      initialCustomer.name !== selectedCustomer.name;
+
+    if (hasChanged) {
       setSelectedCustomer(initialCustomer as Customer); // ✅ 类型断言
       onCustomerResolved?.(initialCustomer as Customer); // ✅ 类型断言
     }
-  }, [initialCustomer, onCustomerResolved, selectedCustomer?.id]);
+  }, [initialCustomer, onCustomerResolved, selectedCustomer, value]);
 
   React.useEffect(() => {
     if (!value) {
@@ -286,6 +309,24 @@ export function CustomerSelector({
       onCustomerResolved?.(matched);
     }
   }, [value, customers, onCustomerResolved, selectedCustomer]);
+
+  React.useEffect(() => {
+    if (!resolvedCustomerByValue) {
+      return;
+    }
+
+    const hasChanged =
+      !selectedCustomer ||
+      resolvedCustomerByValue.id !== selectedCustomer.id ||
+      resolvedCustomerByValue.address !== selectedCustomer.address ||
+      resolvedCustomerByValue.phone !== selectedCustomer.phone ||
+      resolvedCustomerByValue.name !== selectedCustomer.name;
+
+    if (hasChanged) {
+      setSelectedCustomer(resolvedCustomerByValue);
+      onCustomerResolved?.(resolvedCustomerByValue);
+    }
+  }, [onCustomerResolved, resolvedCustomerByValue, selectedCustomer]);
 
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen);
@@ -326,7 +367,10 @@ export function CustomerSelector({
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[400px] p-0" align="start">
+        <PopoverContent
+          className="w-[min(400px,calc(100vw-2rem))] p-0"
+          align="start"
+        >
           <Command>
             <CommandInput
               placeholder="搜索客户名称或手机号..."
@@ -346,30 +390,34 @@ export function CustomerSelector({
                     <div className="text-muted-foreground mb-3 text-sm">
                       输入关键词开始搜索客户
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleCreateCustomer}
-                      className="h-8"
-                    >
-                      <Plus className="mr-2 h-3 w-3" />
-                      新增客户
-                    </Button>
+                    {allowCreate && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCreateCustomer}
+                        className="h-8"
+                      >
+                        <Plus className="mr-2 h-3 w-3" />
+                        新增客户
+                      </Button>
+                    )}
                   </div>
                 ) : (
                   <div className="py-6 text-center">
                     <div className="text-muted-foreground mb-3 text-sm">
                       未找到相关客户，尝试输入其它关键词
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleCreateCustomer}
-                      className="h-8"
-                    >
-                      <Plus className="mr-2 h-3 w-3" />
-                      新增客户
-                    </Button>
+                    {allowCreate && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCreateCustomer}
+                        className="h-8"
+                      >
+                        <Plus className="mr-2 h-3 w-3" />
+                        新增客户
+                      </Button>
+                    )}
                   </div>
                 )}
               </CommandEmpty>
@@ -429,7 +477,7 @@ export function CustomerSelector({
       </Popover>
 
       {/* 客户创建对话框 */}
-      {createDialogOpen && (
+      {allowCreate && createDialogOpen && (
         <CustomerCreateDialog
           open={createDialogOpen}
           onOpenChange={setCreateDialogOpen}

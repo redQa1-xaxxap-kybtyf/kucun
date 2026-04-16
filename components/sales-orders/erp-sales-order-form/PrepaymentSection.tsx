@@ -89,7 +89,7 @@ function BalanceInfo({
         <span className="font-semibold">￥{formatCurrency(orderTotal)}</span>
       </div>
       <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">最大可冲抵金额：</span>
+        <span className="text-muted-foreground">最大可抵扣金额：</span>
         <span className="font-semibold text-green-600">
           ￥{formatCurrency(maxApplicableAmount)}
         </span>
@@ -118,7 +118,7 @@ function PrepaymentAmountInput({
       name="prepaymentAmount"
       render={({ field }) => (
         <FormItem>
-          <FormLabel className="text-sm">冲抵金额</FormLabel>
+          <FormLabel className="text-sm">抵扣金额</FormLabel>
           <FormControl>
             <div className="relative">
               <span className="text-muted-foreground absolute top-2.5 left-3 text-sm">
@@ -126,7 +126,7 @@ function PrepaymentAmountInput({
               </span>
               <Input
                 type="number"
-                placeholder="输入冲抵金额"
+                placeholder="输入抵扣金额"
                 min={0}
                 max={maxApplicableAmount}
                 step={0.01}
@@ -172,10 +172,10 @@ function ValidationAlert({
       <AlertCircle className="h-4 w-4" />
       <AlertDescription className="text-xs">
         {prepaymentAmount > availableBalance
-          ? `冲抵金额不能超过可用余额 ￥${formatCurrency(availableBalance)}`
+          ? `抵扣金额不能超过可用余额 ￥${formatCurrency(availableBalance)}`
           : prepaymentAmount > orderTotal
-            ? `冲抵金额不能超过订单金额 ￥${formatCurrency(orderTotal)}`
-            : '请输入有效的冲抵金额'}
+            ? `抵扣金额不能超过订单金额 ￥${formatCurrency(orderTotal)}`
+            : '请输入有效的抵扣金额'}
       </AlertDescription>
     </Alert>
   );
@@ -192,7 +192,7 @@ function PaymentPreview({
   return (
     <div className="rounded bg-green-50 p-3">
       <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">冲抵后应付金额：</span>
+        <span className="text-muted-foreground">抵扣后应付金额：</span>
         <span className="text-lg font-bold text-green-700">
           ￥{formatCurrency(orderTotal - prepaymentAmount)}
         </span>
@@ -232,7 +232,7 @@ function PrepaymentCheckbox({
           </FormControl>
           <div className="space-y-1 leading-none">
             <FormLabel className="text-sm font-medium">
-              使用预收款冲抵
+              使用预收款抵扣
             </FormLabel>
             <FormDescription className="text-xs">
               {!customerId

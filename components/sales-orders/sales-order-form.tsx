@@ -47,6 +47,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import { customerQueryKeys, getCustomer } from '@/lib/api/customers';
 import {
   createSalesOrder,
@@ -179,6 +180,11 @@ export function SalesOrderForm({
   });
 
   const isLoading = createMutation.isPending || updateMutation.isPending;
+  const hasUnsavedChanges = form.formState.isDirty && !isLoading;
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前销售单内容尚未保存，确定要离开吗？',
+  });
 
   // 表单提交
   const onSubmit = async (data: SalesOrderFormData) => {
@@ -232,6 +238,10 @@ export function SalesOrderForm({
 
   // 取消操作
   const handleCancel = () => {
+    if (!confirmLeavePage()) {
+      return;
+    }
+
     if (onCancel) {
       onCancel();
     } else {
@@ -272,7 +282,9 @@ export function SalesOrderForm({
               {isEdit ? '编辑销售订单' : '新建销售订单'}
             </h1>
             <p className="text-muted-foreground">
-              {isEdit ? '修改销售订单信息和明细' : '新建销售订单并维护客户与明细信息'}
+              {isEdit
+                ? '修改销售订单信息和明细'
+                : '新建销售订单并维护客户与明细信息'}
             </p>
           </div>
         </div>

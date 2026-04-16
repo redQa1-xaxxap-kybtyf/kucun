@@ -11,6 +11,7 @@ import {
 } from 'react-hook-form';
 
 import type { Product } from '@/lib/types/product';
+import { getProductAvailableQuantity } from '@/lib/utils/product-inventory';
 import type { SalesOrderCreateFormData as CreateSalesOrderData } from '@/lib/validations/sales-order';
 import type { SalesOrderItemFormData } from '@/lib/validations/sales-order/schemas';
 
@@ -164,8 +165,6 @@ function useOrderItemUpdaters(
         return;
       }
 
-      const availableStock = product.inventory.availableQuantity ?? 0;
-
       let requestedQuantity: number;
       if (quantityOverride !== undefined && quantityOverride !== null) {
         const parsed = Number(quantityOverride);
@@ -176,6 +175,9 @@ function useOrderItemUpdaters(
         const parsed = Number(formQuantity);
         requestedQuantity = Number.isFinite(parsed) ? parsed : 0;
       }
+      const currentItem = form.getValues(`items.${itemIndex}`);
+      const availableStock =
+        getProductAvailableQuantity(product, currentItem?.batchNumber) ?? 0;
 
       if (requestedQuantity < 0) {
         requestedQuantity = 0;
@@ -185,7 +187,7 @@ function useOrderItemUpdaters(
         if (requestedQuantity > availableStock) {
           return {
             ...prev,
-            [itemIndex]: `库存不足！可用库存：${availableStock}${product.unit}`,
+            [itemIndex]: `库存不足！可用库存：${availableStock}片`,
           };
         }
         if (!prev[itemIndex]) {
@@ -247,7 +249,12 @@ function useOrderItemUpdaters(
         });
       }
 
-      if (nextProductId && (field === 'productId' || field === 'quantity')) {
+      if (
+        nextProductId &&
+        (field === 'productId' ||
+          field === 'quantity' ||
+          field === 'batchNumber')
+      ) {
         const quantityInput =
           field === 'quantity' ? value : updatedItem.quantity;
         const parsed = Number(quantityInput ?? 0);

@@ -25,6 +25,10 @@ interface Batch {
   piecesPerUnit?: number | null;
 }
 
+type BatchSelectorTriggerProps = React.ComponentPropsWithoutRef<typeof Button> & {
+  [key: `data-${string}`]: string | number | undefined;
+};
+
 interface BatchSelectorProps {
   batches: Batch[];
   value?: string;
@@ -32,6 +36,25 @@ interface BatchSelectorProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  triggerProps?: BatchSelectorTriggerProps;
+}
+
+function formatBatchStock(batch: Batch): string {
+  const piecesPerUnit =
+    typeof batch.piecesPerUnit === 'number' && batch.piecesPerUnit > 0
+      ? batch.piecesPerUnit
+      : 1;
+
+  if (batch.quantity <= 0) {
+    return '0片';
+  }
+
+  if (piecesPerUnit <= 1) {
+    return `${batch.quantity}片`;
+  }
+
+  const result = calculatePieceDisplay(batch.quantity, piecesPerUnit);
+  return result.displayText;
 }
 
 /**
@@ -45,6 +68,7 @@ export function BatchSelector({
   placeholder = '选择批次',
   disabled = false,
   className,
+  triggerProps,
 }: BatchSelectorProps) {
   const [open, setOpen] = React.useState(false);
 
@@ -53,21 +77,6 @@ export function BatchSelector({
   const handleBatchSelect = (batchNumber: string) => {
     onValueChange?.(batchNumber);
     setOpen(false);
-  };
-
-  // 格式化批次库存显示
-  const formatBatchStock = (batch: Batch): string => {
-    const piecesPerUnit =
-      typeof batch.piecesPerUnit === 'number' && batch.piecesPerUnit > 0
-        ? batch.piecesPerUnit
-        : 1;
-
-    if (batch.quantity <= 0) {
-      return '0片';
-    }
-
-    const result = calculatePieceDisplay(batch.quantity, piecesPerUnit);
-    return result.displayText;
   };
 
   // 如果只有一个批次，自动选择并显示
@@ -87,15 +96,17 @@ export function BatchSelector({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          {...triggerProps}
           variant="outline"
           role="combobox"
           aria-expanded={open}
           className={cn(
             'h-8 w-full justify-between text-xs font-normal',
             !selectedBatch && 'text-muted-foreground',
-            className
+            className,
+            triggerProps?.className
           )}
-          disabled={disabled || batches.length === 0}
+          disabled={disabled || batches.length === 0 || triggerProps?.disabled}
         >
           <span className="truncate">
             {selectedBatch ? selectedBatch.batchNumber : placeholder}

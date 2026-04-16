@@ -17,6 +17,7 @@ import {
   buildOrderItemsInput,
   calculateFinancials,
 } from './financials';
+import { resolveSalesOrderItemSnapshots } from './item-snapshots';
 
 // 复用临时产品相关工具
 
@@ -130,6 +131,11 @@ export async function updateSalesOrderDraft(
       }
     }
 
+    const itemSnapshots = await resolveSalesOrderItemSnapshots(
+      tx,
+      normalizedInput.items
+    );
+
     const updated = await tx.salesOrder.update({
       where: { id },
       data: {
@@ -166,7 +172,8 @@ export async function updateSalesOrderDraft(
               create: buildOrderItemsInput(
                 normalizedInput as any,
                 transferMode as any,
-                temporaryProductIds
+                temporaryProductIds,
+                itemSnapshots
               ),
             }
           : undefined,
@@ -307,6 +314,7 @@ function selectUpdatedOrder() {
         displayUnit: true,
         displayQuantity: true,
         piecesPerUnit: true,
+        weightSnapshot: true,
         specification: true,
         remarks: true,
         manualUnit: true,
@@ -318,6 +326,7 @@ function selectUpdatedOrder() {
             specification: true,
             unit: true,
             piecesPerUnit: true,
+            weight: true,
           },
         },
       },

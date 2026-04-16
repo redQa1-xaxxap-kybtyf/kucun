@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import { createCustomer, customerQueryKeys } from '@/lib/api/customers';
 import type { Customer } from '@/lib/types/customer';
 import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
@@ -198,7 +199,7 @@ function useCustomerCreateDialogController({
     }
   }, [open, initialName, form]);
 
-  const handleClose = React.useCallback(() => {
+  const forceClose = React.useCallback(() => {
     form.reset(DEFAULT_VALUES);
     onOpenChange(false);
   }, [form, onOpenChange]);
@@ -219,7 +220,7 @@ function useCustomerCreateDialogController({
       });
       queryClient.invalidateQueries({ queryKey: customerQueryKeys.all });
       onCustomerCreated?.(data);
-      handleClose();
+      forceClose();
     },
     onError: error => {
       toast({
@@ -234,6 +235,20 @@ function useCustomerCreateDialogController({
     () => form.handleSubmit(data => createMutation.mutate(data)),
     [form, createMutation]
   );
+  const hasUnsavedChanges =
+    open && form.formState.isDirty && !createMutation.isPending;
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前客户资料尚未保存，确定要关闭吗？',
+  });
+
+  const handleClose = React.useCallback(() => {
+    if (!confirmLeavePage()) {
+      return;
+    }
+
+    forceClose();
+  }, [confirmLeavePage, forceClose]);
 
   const handleDialogOpenChange = React.useCallback(
     (nextOpen: boolean) => {
@@ -244,9 +259,12 @@ function useCustomerCreateDialogController({
       if (createMutation.isPending) {
         return;
       }
-      handleClose();
+      if (!confirmLeavePage()) {
+        return;
+      }
+      forceClose();
     },
-    [createMutation.isPending, handleClose, onOpenChange]
+    [confirmLeavePage, createMutation.isPending, forceClose, onOpenChange]
   );
 
   return {

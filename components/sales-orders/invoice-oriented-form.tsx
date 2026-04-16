@@ -38,6 +38,7 @@ import {
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 // API and Types
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import { createSalesOrder, salesOrderQueryKeys } from '@/lib/api/sales-orders';
@@ -45,6 +46,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import type { SalesOrderCreateInput } from '@/lib/types/sales-order';
 import { logger } from '@/lib/utils/console-logger';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
+import { getProductAvailableQuantity } from '@/lib/utils/product-inventory';
 import {
   salesOrderCreateSchema as CreateSalesOrderSchema,
   type SalesOrderCreateFormData as CreateSalesOrderData,
@@ -188,6 +190,11 @@ export function SalesOrderForm({
     Record<string, string>
   >({});
   const [_isAdvancedOpen, _setIsAdvancedOpen] = React.useState(false);
+  const hasUnsavedChanges = form.formState.isDirty && !createMutation.isPending;
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前销售单内容尚未保存，确定要离开吗？',
+  });
 
   const _customerId = form.watch('customerId');
 
@@ -238,9 +245,27 @@ export function SalesOrderForm({
 
     update(index, updatedItem);
 
+    const nextProductId =
+      field === 'productId'
+        ? String(value || '')
+        : String(updatedItem.productId || '');
+
+    if (!nextProductId) {
+      setStockWarnings(prev => {
+        const nextWarnings = { ...prev };
+        delete nextWarnings[index];
+        return nextWarnings;
+      });
+      return;
+    }
+
     // 检查库存
-    if (field === 'productId' && value) {
-      checkProductStock(String(value), index);
+    if (
+      field === 'productId' ||
+      field === 'quantity' ||
+      field === 'batchNumber'
+    ) {
+      checkProductStock(nextProductId, index);
     }
   };
 
@@ -248,13 +273,16 @@ export function SalesOrderForm({
   const checkProductStock = (productId: string, itemIndex: number) => {
     const product = productsData?.data?.find(p => p.id === productId);
     if (product?.inventory) {
-      const availableStock = product.inventory.availableQuantity || 0;
-      const requestedQuantity = fields[itemIndex]?.quantity || 0;
+      const currentItems = form.getValues('items') ?? [];
+      const currentItem = currentItems[itemIndex];
+      const availableStock =
+        getProductAvailableQuantity(product, currentItem?.batchNumber) ?? 0;
+      const requestedQuantity = Number(currentItem?.quantity ?? 0) || 0;
 
       if (requestedQuantity > availableStock) {
         setStockWarnings(prev => ({
           ...prev,
-          [itemIndex]: `库存不足！可用库存：${availableStock}${product.unit}`,
+          [itemIndex]: `库存不足！可用库存：${availableStock}片`,
         }));
       } else {
         setStockWarnings(prev => {
@@ -302,7 +330,17 @@ export function SalesOrderForm({
           <Button
             type="button"
             variant="ghost"
-            onClick={() => (onCancel ? onCancel() : router.back())}
+            onClick={() => {
+              if (!confirmLeavePage()) {
+                return;
+              }
+
+              if (onCancel) {
+                onCancel();
+              } else {
+                router.back();
+              }
+            }}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             返回
@@ -687,7 +725,13 @@ export function SalesOrderForm({
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => router.back()}
+                  onClick={() => {
+                    if (!confirmLeavePage()) {
+                      return;
+                    }
+
+                    router.back();
+                  }}
                   disabled={createMutation.isPending}
                 >
                   取消

@@ -15,6 +15,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import type { Customer } from '@/lib/types/customer';
 import type { Product } from '@/lib/types/product';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
+import { getProductAvailableQuantity } from '@/lib/utils/product-inventory';
 import { transformFormDataToCreateInput } from '@/lib/utils/sales-order-transforms';
 import type { SalesOrderCreateFormData as CreateSalesOrderData } from '@/lib/validations/sales-order';
 
@@ -189,7 +190,7 @@ function useProductSearchState(products: Product[]) {
 
 function useStockWarningsManager(
   products: Product[],
-  fields: FieldArrayWithId<CreateSalesOrderData, 'items', 'id'>[]
+  form: UseFormReturn<CreateSalesOrderData>
 ) {
   const [stockWarnings, setStockWarnings] = React.useState<
     Record<number, string>
@@ -210,13 +211,16 @@ function useStockWarningsManager(
         return;
       }
 
-      const availableStock = product.inventory.availableQuantity ?? 0;
-      const requestedQuantity = fields[itemIndex]?.quantity ?? 0;
+      const currentItems = form.getValues('items') ?? [];
+      const currentItem = currentItems[itemIndex];
+      const availableStock =
+        getProductAvailableQuantity(product, currentItem?.batchNumber) ?? 0;
+      const requestedQuantity = Number(currentItem?.quantity ?? 0) || 0;
 
       if (requestedQuantity > availableStock) {
         setStockWarnings(prev => ({
           ...prev,
-          [itemIndex]: `库存不足！可用库存：${availableStock}${product.unit}`,
+          [itemIndex]: `库存不足！可用库存：${availableStock}片`,
         }));
       } else {
         setStockWarnings(prev => {
@@ -229,7 +233,7 @@ function useStockWarningsManager(
         });
       }
     },
-    [fields, products]
+    [form, products]
   );
 
   return { stockWarnings, setStockWarnings, checkProductStock };
@@ -264,7 +268,7 @@ export function useOrderItems(
   const { productSearch, setProductSearch, filteredProducts } =
     useProductSearchState(products);
   const { stockWarnings, setStockWarnings, checkProductStock } =
-    useStockWarningsManager(products, fields);
+    useStockWarningsManager(products, form);
 
   const addOrderItem = React.useCallback(() => {
     append({
@@ -301,11 +305,28 @@ export function useOrderItems(
 
       update(index, updatedItem);
 
-      if (field === 'productId' && value) {
-        checkProductStock(String(value), index);
+      const nextProductId =
+        field === 'productId'
+          ? String(value || '')
+          : String(updatedItem.productId || '');
+
+      if (!nextProductId) {
+        setStockWarnings(prev => {
+          if (!prev[index]) {
+            return prev;
+          }
+          const next = { ...prev };
+          delete next[index];
+          return next;
+        });
+        return;
+      }
+
+      if (field === 'productId' || field === 'quantity' || field === 'batchNumber') {
+        checkProductStock(nextProductId, index);
       }
     },
-    [checkProductStock, fields, update]
+    [checkProductStock, fields, setStockWarnings, update]
   );
 
   const handleProductSelect = React.useCallback(

@@ -39,7 +39,7 @@ export function AddTemporaryProductDialog(
             <Package className="h-5 w-5" /> 添加临时产品
           </DialogTitle>
           <DialogDescription>
-            临时产品用于记录库存外的特殊订单项，将不会同步到库存系统。
+            临时产品用于录入这次订单里的特殊项目，不会进入库存管理。
           </DialogDescription>
         </DialogHeader>
 

@@ -79,7 +79,7 @@ export function FormActionsBar({
       </div>
 
       <div className="text-muted-foreground mt-3 text-center text-xs">
-        💡 保存草稿：可随时修改；提交订单：确认后进入处理流程
+        保存草稿后可以继续修改；提交订单后，这张订单会进入待处理状态
       </div>
     </div>
   );
