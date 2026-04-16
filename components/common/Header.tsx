@@ -258,7 +258,7 @@ function HeaderComponent({
             size="icon"
             onClick={handleRefreshData}
             className="hidden h-9 w-9 text-slate-500 hover:bg-slate-100 hover:text-slate-900 sm:flex"
-            title="一键刷新全局缓存"
+            title="刷新当前页面数据"
           >
             <RefreshCw className="h-4 w-4" />
           </Button>

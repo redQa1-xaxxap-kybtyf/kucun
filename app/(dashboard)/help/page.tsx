@@ -24,7 +24,7 @@ import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = {
   title: '帮助中心 - 库存管理工具',
-  description: '系统使用指南、常见问题解答和技术支持',
+  description: '系统使用指南、常见问题解答和人工支持方式',
 };
 
 /**
@@ -73,7 +73,7 @@ const helpCategories = [
     description: '客户信息维护和关系管理',
     icon: Phone,
     items: [
-      { title: '客户档案', description: '新建和维护客户基本信息' },
+      { title: '客户资料', description: '新建和维护客户基本信息' },
       { title: '客户分类', description: '客户分组和标签管理' },
       { title: '交易记录', description: '查看客户历史交易记录' },
       { title: '信用管理', description: '客户信用额度和风险控制' },
@@ -98,7 +98,7 @@ const faqItems = [
   {
     question: '如何导出数据？',
     answer:
-      '在各个列表页面点击导出按钮，选择需要的数据格式（Excel、CSV等）进行下载。',
+      '在各个列表页面点击导出按钮，选择需要的文件格式（如 Excel 或文本表格）进行下载。',
   },
   {
     question: '系统支持哪些浏览器？',
@@ -106,9 +106,9 @@ const faqItems = [
       '推荐使用Chrome、Firefox、Safari或Edge的最新版本，确保最佳使用体验。',
   },
   {
-    question: '如何联系技术支持？',
+    question: '如何联系人工支持？',
     answer:
-      '可以通过页面底部的联系方式，或在系统内提交反馈表单联系我们的技术支持团队。',
+      '可以通过页面底部的联系方式，或在系统内提交反馈表单联系我们的人工支持团队。',
   },
 ];
 
@@ -124,7 +124,7 @@ const contactMethods = [
     href: '#',
   },
   {
-    type: '技术支持热线',
+    type: '人工支持热线',
     description: '400-123-4567',
     icon: Phone,
     action: '拨打电话',
@@ -197,7 +197,7 @@ export default function HelpPage() {
               action: '下载 PDF',
             },
             {
-              title: '专家在线诊断',
+              title: '人工协助排查',
               desc: '针对复杂业务场景提供即时支持',
               icon: MessageCircle,
               color: 'text-purple-500',

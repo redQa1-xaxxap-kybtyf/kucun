@@ -42,24 +42,24 @@ export default function FinanceError({
 
           <div className="space-y-2">
             <h2 className="text-2xl font-bold text-[hsl(var(--color-text-primary))]">
-              加载财务数据时出错
+              打开财务中心时出错
             </h2>
             <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-              无法加载财务数据，请稍后重试
+              暂时无法加载财务页面，请稍后重试
             </p>
           </div>
 
           {process.env.NODE_ENV === 'development' && (
             <div className="w-full rounded-lg bg-[hsl(var(--color-bg-tertiary))] p-4 text-left">
               <p className="mb-2 text-xs font-semibold text-[hsl(var(--color-text-secondary))]">
-                错误详情 (仅开发模式显示):
+                详细信息：
               </p>
               <pre className="overflow-auto text-xs text-[hsl(var(--color-error))]">
                 {error.message}
               </pre>
               {error.digest && (
                 <p className="mt-2 text-xs text-[hsl(var(--color-text-secondary))]">
-                  错误 ID: {error.digest}
+                  参考编号：{error.digest}
                 </p>
               )}
             </div>

@@ -403,7 +403,7 @@ const MobileSearchBar = React.forwardRef<HTMLDivElement, MobileSearchBarProps>(
               <SheetContent side="bottom" className="h-auto">
                 <SheetHeader>
                   <SheetTitle>排序方式</SheetTitle>
-                  <SheetDescription>选择排序字段和排序方向</SheetDescription>
+                  <SheetDescription>选择排序方式和顺序</SheetDescription>
                 </SheetHeader>
 
                 <div className="mt-6 space-y-2">

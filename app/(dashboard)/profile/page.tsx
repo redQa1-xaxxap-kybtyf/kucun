@@ -29,6 +29,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 import { csrfFetch } from '@/lib/utils/csrf';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
 // 个人资料接口响应类型（与 /api/profile 保持一致）
 interface ProfileInfo {
@@ -150,7 +151,7 @@ export default function ProfilePage() {
         toast({
           variant: 'destructive',
           title: '加载失败',
-          description: message,
+          description: getFriendlyErrorMessage(error, message),
         });
       } finally {
         if (isMounted) {
@@ -165,7 +166,7 @@ export default function ProfilePage() {
         const response = await csrfFetch('/api/profile/login-logs');
         if (!response.ok) {
           const error = await response.json().catch(() => null);
-          const message = error?.error || error?.message || '获取登录日志失败';
+          const message = error?.error || error?.message || '获取登录记录失败';
           // 未登录或会话失效时，不把错误当成异常处理，静默忽略
           if (response.status === 401 || response.status === 403) {
             if (!isMounted) return;
@@ -182,7 +183,7 @@ export default function ProfilePage() {
         };
 
         if (!result.success || !result.data) {
-          throw new Error(result.error || '获取登录日志失败');
+          throw new Error(result.error || '获取登录记录失败');
         }
 
         if (!isMounted) return;
@@ -190,10 +191,10 @@ export default function ProfilePage() {
         setLoginLogs(result.data.logs);
       } catch (error) {
         if (!isMounted) return;
-        // 登录日志失败不影响主流程，只在控制台记录
+        // 登录记录加载失败不影响主流程，只在控制台记录
         // eslint-disable-next-line no-console
         console.warn(
-          '加载登录日志失败',
+          '加载登录记录失败',
           error instanceof Error ? error.message : error
         );
       } finally {
@@ -250,7 +251,7 @@ export default function ProfilePage() {
         toast({
           variant: 'destructive',
           title: '保存失败',
-          description: message,
+          description: getFriendlyErrorMessage(error, message),
         });
       } finally {
         setIsSavingProfile(false);
@@ -300,7 +301,7 @@ export default function ProfilePage() {
         toast({
           variant: 'destructive',
           title: '修改失败',
-          description: message,
+          description: getFriendlyErrorMessage(error, message),
         });
       } finally {
         setIsChangingPassword(false);
@@ -379,7 +380,10 @@ export default function ProfilePage() {
                           name="name"
                           rules={{
                             required: '请输入姓名',
-                            maxLength: { value: 100, message: '姓名不能超过100个字符' },
+                            maxLength: {
+                              value: 100,
+                              message: '姓名不能超过100个字符',
+                            },
                           }}
                           render={({ field }) => (
                             <FormItem className="space-y-1">
@@ -414,7 +418,10 @@ export default function ProfilePage() {
                           name="email"
                           rules={{
                             required: '请输入邮箱地址',
-                            maxLength: { value: 100, message: '邮箱不能超过100个字符' },
+                            maxLength: {
+                              value: 100,
+                              message: '邮箱不能超过100个字符',
+                            },
                             pattern: {
                               value: EMAIL_PATTERN,
                               message: '请输入有效的邮箱地址',
@@ -438,14 +445,14 @@ export default function ProfilePage() {
                       </div>
                     </div>
 
-                    {/* 只读项：账号标识 */}
+                    {/* 只读项：登录账号 */}
                     <div className="flex flex-col gap-6 p-8 md:flex-row md:items-center">
                       <div className="w-full md:w-1/3">
                         <span className="text-sm font-black text-slate-900">
-                          登录账号 (ID)
+                          登录账号
                         </span>
                         <p className="mt-1 text-[11px] font-medium text-slate-400">
-                          您的系统唯一账号标识，不可更改
+                          系统分配的登录账号，不可修改
                         </p>
                       </div>
                       <div className="flex-1">
@@ -578,7 +585,8 @@ export default function ProfilePage() {
                           if (!/[^A-Za-z0-9]/.test(value)) {
                             return '新密码必须包含至少一个特殊字符';
                           }
-                          const current = passwordForm.getValues('currentPassword');
+                          const current =
+                            passwordForm.getValues('currentPassword');
                           if (current && value === current) {
                             return '新密码不能与当前密码相同';
                           }
@@ -648,7 +656,7 @@ export default function ProfilePage() {
               </div>
             </section>
 
-            {/* 精简登录日志 */}
+            {/* 登录记录 */}
             <section className="space-y-4">
               <h3 className="px-1 text-[11px] font-black tracking-widest text-slate-400 uppercase">
                 最近登录记录
@@ -661,7 +669,7 @@ export default function ProfilePage() {
                     </div>
                   ) : loginLogs.length === 0 ? (
                     <div className="py-6 text-center text-[10px] font-bold text-slate-300 uppercase">
-                      暂无登录历史
+                      暂无登录记录
                     </div>
                   ) : (
                     loginLogs.slice(0, 3).map((log, index) => (
@@ -680,7 +688,11 @@ export default function ProfilePage() {
                           />
                           <div className="flex flex-col">
                             <span className="text-[11px] font-black text-slate-900">
-                              {log.type === 'success' ? '登录成功' : '非法拦截'}
+                              {log.type === 'success'
+                                ? '登录成功'
+                                : log.type === 'failed'
+                                  ? '登录失败'
+                                  : '登录受限'}
                             </span>
                             <span className="font-mono text-[9px] font-bold text-slate-400">
                               IP: {log.clientIp}
