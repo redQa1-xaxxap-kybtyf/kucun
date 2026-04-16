@@ -13,6 +13,107 @@ import { isPieceEntryUnit } from '@/lib/utils/inventory-unit-conversion';
 
 import type { FactoryShipmentOrderItemFormData } from './schemas';
 
+type FactoryShipmentDuplicateComparableItem = {
+  productId?: string | null | undefined;
+  supplierId?: string | null | undefined;
+  productCode?: string | null | undefined;
+  batchNumber?: string | null | undefined;
+  manualProductName?: string | null | undefined;
+  displayName?: string | null | undefined;
+};
+
+function normalizeDuplicateText(value: unknown): string {
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  return value.trim().toLowerCase();
+}
+
+function resolveDuplicateItemIdentity(
+  item: FactoryShipmentDuplicateComparableItem
+) {
+  const productId = normalizeDuplicateText(item.productId);
+  if (productId) {
+    return `product:${productId}`;
+  }
+
+  const productCode = normalizeDuplicateText(item.productCode);
+  if (productCode) {
+    return `code:${productCode}`;
+  }
+
+  const manualName = normalizeDuplicateText(item.manualProductName);
+  if (manualName) {
+    return `manual:${manualName}`;
+  }
+
+  const displayName = normalizeDuplicateText(item.displayName);
+  if (displayName) {
+    return `display:${displayName}`;
+  }
+
+  return '';
+}
+
+export function getFactoryShipmentDuplicateItemMessage(
+  item: FactoryShipmentDuplicateComparableItem
+) {
+  const hasSupplier = normalizeDuplicateText(item.supplierId).length > 0;
+  const hasBatch = normalizeDuplicateText(item.batchNumber).length > 0;
+  const subject = hasSupplier ? '同一供应商下相同产品' : '相同产品';
+
+  return hasBatch
+    ? `${subject}和批次不能重复录入`
+    : `${subject}不能重复录入，请补充批次或合并数量`;
+}
+
+export function findFactoryShipmentDuplicateGroups(
+  items: FactoryShipmentDuplicateComparableItem[]
+) {
+  const duplicateGroups = new Map<string, number[]>();
+
+  items.forEach((item, index) => {
+    const identity = resolveDuplicateItemIdentity(item);
+    if (!identity) {
+      return;
+    }
+
+    const supplierKey = normalizeDuplicateText(item.supplierId) || '__no_supplier';
+    const batchKey = normalizeDuplicateText(item.batchNumber) || '__no_batch';
+    const key = `${supplierKey}::${identity}::${batchKey}`;
+    const indexes = duplicateGroups.get(key) ?? [];
+    indexes.push(index);
+    duplicateGroups.set(key, indexes);
+  });
+
+  return [...duplicateGroups.values()].filter(indexes => indexes.length > 1);
+}
+
+function validateDuplicateItems(
+  items: FactoryShipmentOrderItemFormData[],
+  ctx: z.RefinementCtx
+) {
+  findFactoryShipmentDuplicateGroups(items).forEach(indexes => {
+    indexes.forEach(index => {
+      const item = items[index];
+      const message = getFactoryShipmentDuplicateItemMessage(item);
+
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['items', index, 'displayName'],
+        message,
+      });
+
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['items', index, 'batchNumber'],
+        message,
+      });
+    });
+  });
+}
+
 /**
  * 验证手动输入产品的必填字段
  * 手动产品必须填写产品名称，库存产品必须有 productId
@@ -200,6 +301,7 @@ export function validateFactoryShipmentItems(
 ): void {
   validateManualProductFields(items, ctx, status);
   validateRequiredFieldsByStatus(items, status, ctx);
+  validateDuplicateItems(items, ctx);
 
   items.forEach((item, index) => {
     if (

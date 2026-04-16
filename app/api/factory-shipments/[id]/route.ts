@@ -427,7 +427,25 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const body = await request.json();
 
     // 验证输入数据
-    const validatedData = updateFactoryShipmentOrderSchema.parse(body);
+    const validationResult = updateFactoryShipmentOrderSchema.safeParse(body);
+    if (!validationResult.success) {
+      const details = validationResult.error.issues.map(issue => ({
+        path: issue.path.length > 0 ? issue.path.join('.') : 'root',
+        message: issue.message,
+        code: issue.code,
+      }));
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: '提交内容有误，请检查后重试',
+          details,
+        },
+        { status: 422 }
+      );
+    }
+
+    const validatedData = validationResult.data;
     const { customerId, status, items } = validatedData;
 
     // 如果有状态变更,使用幂等性包装器

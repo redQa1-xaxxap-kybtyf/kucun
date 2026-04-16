@@ -103,7 +103,7 @@ export const updateFactoryShipmentOrderSchema = z
       .optional()
       .or(z.literal('')),
     estimatedArrival: z.date().optional(),
-    customerId: z.string().uuid('客户ID格式不正确').optional(),
+    customerId: z.string().uuid('客户信息格式不正确').optional(),
     status: factoryShipmentStatusSchema.optional(),
     totalAmount: z.number().min(0, '订单总金额不能为负数').optional(),
     receivableAmount: z.number().min(0, '应收金额不能为负数').optional(),
@@ -186,7 +186,7 @@ const coerceNumber = (val: unknown) => {
 
 const factoryShipmentOrderItemFormSchema = z.object({
   // ✅ 允许初始状态为 undefined，避免 Zod 报 "expected string, received undefined"
-  productId: z.string().uuid('产品ID格式不正确').optional().nullable(),
+  productId: z.string().uuid('产品信息格式不正确').optional().nullable(),
   supplierId: z.string().min(1, '请选择供应商').optional().or(z.literal('')),
   productCode: z
     .string()
@@ -288,7 +288,7 @@ const factoryShipmentFeeItemFormSchema = z.object({
   ),
   paidBy: z.enum(['customer', 'company']), // 移除.default()
   // 费用对应的结算供应商（如物流公司），可选
-  supplierId: z.string().uuid('费用供应商ID格式不正确').optional().nullable(),
+  supplierId: z.string().uuid('费用供应商信息格式不正确').optional().nullable(),
   remarks: z
     .string()
     .max(500, '备注不能超过500个字符')
@@ -357,6 +357,8 @@ export * from './schemas';
 
 // 导出验证函数（供测试使用）
 export {
+  findFactoryShipmentDuplicateGroups,
+  getFactoryShipmentDuplicateItemMessage,
   validateFactoryShipmentItems,
   validateManualProductFields,
   validateRequiredFieldsByStatus,
