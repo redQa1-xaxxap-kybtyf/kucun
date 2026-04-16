@@ -70,7 +70,7 @@ export const GET = withAuth(
         return NextResponse.json(
           {
             success: false,
-            error: validatedQueryResult.error.issues[0]?.message ?? '查询参数不正确',
+            error: validatedQueryResult.error.issues[0]?.message ?? '查询条件不正确，请检查后重试',
           },
           { status: 400 }
         );
@@ -442,7 +442,7 @@ export const DELETE = withAuth(
 
       if (!userId) {
         return NextResponse.json(
-          { success: false, error: '用户ID不能为空' },
+          { success: false, error: '用户编号不能为空' },
           { status: 400 }
         );
       }
@@ -519,3 +519,4 @@ export const DELETE = withAuth(
   },
   { permissions: ['settings:manage_users'] }
 );
+

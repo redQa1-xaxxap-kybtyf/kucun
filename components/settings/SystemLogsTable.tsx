@@ -41,9 +41,9 @@ const LOG_TYPE_CONFIG: Record<
 > = {
   user_action: { label: '用户操作', variant: 'default' },
   business_operation: { label: '业务操作', variant: 'secondary' },
-  system_event: { label: '系统事件', variant: 'outline' },
-  error: { label: '错误日志', variant: 'destructive' },
-  security: { label: '安全日志', variant: 'destructive' },
+  system_event: { label: '系统提醒', variant: 'outline' },
+  error: { label: '异常记录', variant: 'destructive' },
+  security: { label: '安全提醒', variant: 'destructive' },
 };
 
 /**
@@ -77,7 +77,7 @@ export const SystemLogsTable = ({
       <div className="flex flex-col items-center justify-center rounded-[32px] border border-dashed border-slate-200 bg-white/40 py-20 text-center backdrop-blur-md">
         <Loader2 className="mb-4 h-12 w-12 text-slate-200" />
         <p className="text-sm font-black tracking-widest text-slate-400 uppercase">
-          当前暂无审计记录
+          当前暂无操作记录
         </p>
       </div>
     );
@@ -152,7 +152,7 @@ export const SystemLogsTable = ({
                 <div className="flex flex-col items-end gap-1">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-black text-slate-900">
-                      {log.user?.name || 'SYSTEM'}
+                      {log.user?.name || '系统'}
                     </span>
                     <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-slate-100">
                       <User className="h-3.5 w-3.5 text-slate-400" />
@@ -186,7 +186,7 @@ export const SystemLogsTable = ({
       {/* 分页控制 (v3 PRO 胶囊风格) */}
       <div className="flex items-center justify-between rounded-3xl bg-white/40 p-4 backdrop-blur-md">
         <div className="ml-4 text-xs font-black tracking-widest text-slate-500 uppercase">
-          RECORD:{' '}
+          记录：
           <span className="text-slate-900">
             {(page - 1) * limit + 1} - {Math.min(page * limit, total)}
           </span>{' '}

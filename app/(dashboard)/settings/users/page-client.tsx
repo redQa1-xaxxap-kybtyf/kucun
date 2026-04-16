@@ -21,10 +21,10 @@ import React from 'react';
 
 import { SettingsLayout } from '@/components/settings/SettingsLayout';
 import { Button } from '@/components/ui/button';
-	import { Card, CardContent } from '@/components/ui/card';
-	import { Input } from '@/components/ui/input';
-	import { useToast } from '@/components/ui/use-toast';
-	import { queryKeys } from '@/lib/queryKeys';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/components/ui/use-toast';
+import { queryKeys } from '@/lib/queryKeys';
 import type {
   CreateUserRequest,
   SettingsApiResponse,
@@ -34,6 +34,7 @@ import type {
   UserManagementUser,
 } from '@/lib/types/settings';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 import type { UserFormData } from '@/lib/validations/settings';
 
 const UserManagementTable = dynamic(
@@ -146,8 +147,8 @@ export default function UsersSettingsPageClient({
     },
     onSuccess: () => {
       toast({
-        title: '成功',
-        description: '用户创建成功',
+        title: '新增成功',
+        description: '成员账号已创建',
         variant: 'success',
       });
       setUserFormOpen(false);
@@ -160,7 +161,10 @@ export default function UsersSettingsPageClient({
     onError: (error: Error) => {
       toast({
         title: '创建失败',
-        description: error.message,
+        description: getFriendlyErrorMessage(
+          error,
+          '成员账号暂时无法创建，请稍后重试'
+        ),
         variant: 'destructive',
       });
     },
@@ -185,8 +189,8 @@ export default function UsersSettingsPageClient({
     },
     onSuccess: () => {
       toast({
-        title: '成功',
-        description: '用户更新成功',
+        title: '保存成功',
+        description: '成员资料已更新',
         variant: 'success',
       });
       setUserFormOpen(false);
@@ -199,7 +203,10 @@ export default function UsersSettingsPageClient({
     onError: (error: Error) => {
       toast({
         title: '更新失败',
-        description: error.message,
+        description: getFriendlyErrorMessage(
+          error,
+          '成员资料暂时无法更新，请稍后重试'
+        ),
         variant: 'destructive',
       });
     },
@@ -224,8 +231,8 @@ export default function UsersSettingsPageClient({
     },
     onSuccess: () => {
       toast({
-        title: '成功',
-        description: '用户删除成功',
+        title: '删除成功',
+        description: '成员账号已删除',
         variant: 'success',
       });
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户删除后立即看到变化
@@ -237,7 +244,10 @@ export default function UsersSettingsPageClient({
     onError: (error: Error) => {
       toast({
         title: '删除失败',
-        description: error.message,
+        description: getFriendlyErrorMessage(
+          error,
+          '成员账号暂时无法删除，请稍后重试'
+        ),
         variant: 'destructive',
       });
     },
@@ -268,8 +278,8 @@ export default function UsersSettingsPageClient({
     },
     onSuccess: () => {
       toast({
-        title: '成功',
-        description: '用户状态更新成功',
+        title: '状态已更新',
+        description: '成员状态已调整',
         variant: 'success',
       });
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户状态更新后立即看到变化
@@ -281,7 +291,10 @@ export default function UsersSettingsPageClient({
     onError: (error: Error) => {
       toast({
         title: '状态更新失败',
-        description: error.message,
+        description: getFriendlyErrorMessage(
+          error,
+          '成员状态暂时无法更新，请稍后重试'
+        ),
         variant: 'destructive',
       });
     },
@@ -312,15 +325,18 @@ export default function UsersSettingsPageClient({
     },
     onSuccess: () => {
       toast({
-        title: '成功',
-        description: '密码重置成功',
+        title: '重置成功',
+        description: '登录密码已更新',
         variant: 'success',
       });
     },
     onError: (error: Error) => {
       toast({
         title: '重置失败',
-        description: error.message,
+        description: getFriendlyErrorMessage(
+          error,
+          '密码暂时无法重置，请稍后重试'
+        ),
         variant: 'destructive',
       });
     },
@@ -387,7 +403,7 @@ export default function UsersSettingsPageClient({
         <div className="space-y-2">
           <h2 className="text-xl font-black text-slate-900">权限受限</h2>
           <p className="text-sm font-medium text-slate-500">
-            此区域仅限系统管理员访问与配置。
+            只有管理员可以查看和管理成员账号。
           </p>
         </div>
         <Button
@@ -410,54 +426,54 @@ export default function UsersSettingsPageClient({
 
   return (
     <SettingsLayout
-      title="用户账户与权限控制"
-      description="管理系统成员的准入凭证、角色授权及其账号生命周期，确保数据访问的安全性与可追溯性。"
+      title="成员与权限"
+      description="管理成员账号、角色分配和启用状态，方便团队日常使用。"
     >
       <div className="flex-1 space-y-6 pb-20">
         {/* 用户管理主体卡片 */}
         <Card className="overflow-hidden border-slate-200/60 shadow-sm">
           <CardContent className="space-y-6 p-8">
             {/* 操作栏 */}
-	            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-	              <div className="flex flex-1 flex-wrap items-center gap-3">
-	                <div className="relative min-w-[300px] flex-1">
-	                  <Search className="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-1 flex-wrap items-center gap-3">
+                <div className="relative min-w-[300px] flex-1">
+                  <Search className="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <Input
-                    placeholder="搜索用户名、邮箱或姓名..."
+                    placeholder="搜索账号、姓名或邮箱..."
                     value={searchTerm}
-	                    onChange={e => handleSearch(e.target.value)}
-	                    className="h-12 border-slate-200 bg-slate-50/50 pl-11 font-medium focus-visible:ring-blue-500"
-	                  />
-	                </div>
-	                <select
-	                  value={roleFilter}
-	                  onChange={e => handleRoleFilter(e.target.value)}
-	                  className="ring-offset-background focus:ring-blue-500 h-12 w-[140px] rounded-md border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm font-medium focus:ring-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
-	                  aria-label="角色"
-	                >
-	                  <option value="all">全部角色</option>
-	                  <option value="admin">系统管理员</option>
-	                  <option value="sales">普通员工</option>
-	                </select>
-	                <select
-	                  value={statusFilter}
-	                  onChange={e => handleStatusFilter(e.target.value)}
-	                  className="ring-offset-background focus:ring-blue-500 h-12 w-[140px] rounded-md border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm font-medium focus:ring-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
-	                  aria-label="状态"
-	                >
-	                  <option value="all">全部状态</option>
-	                  <option value="active">正常启用</option>
-	                  <option value="inactive">锁定禁用</option>
-	                </select>
-	              </div>
-	              <Button
-	                size="lg"
+                    onChange={e => handleSearch(e.target.value)}
+                    className="h-12 border-slate-200 bg-slate-50/50 pl-11 font-medium focus-visible:ring-blue-500"
+                  />
+                </div>
+                <select
+                  value={roleFilter}
+                  onChange={e => handleRoleFilter(e.target.value)}
+                  className="ring-offset-background h-12 w-[140px] rounded-md border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label="角色"
+                >
+                  <option value="all">全部角色</option>
+                  <option value="admin">管理员</option>
+                  <option value="sales">业务成员</option>
+                </select>
+                <select
+                  value={statusFilter}
+                  onChange={e => handleStatusFilter(e.target.value)}
+                  className="ring-offset-background h-12 w-[140px] rounded-md border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label="状态"
+                >
+                  <option value="all">全部状态</option>
+                  <option value="active">正常使用</option>
+                  <option value="inactive">已停用</option>
+                </select>
+              </div>
+              <Button
+                size="lg"
                 onClick={handleCreateUser}
                 disabled={isLoading || isAnyMutationLoading}
                 className="h-12 bg-slate-900 px-8 font-bold shadow-md hover:bg-slate-800"
               >
                 <Plus className="mr-2 h-5 w-5" />
-                新增成员
+                新增账号
               </Button>
             </div>
 
@@ -467,12 +483,17 @@ export default function UsersSettingsPageClient({
                 <div className="flex h-64 items-center justify-center bg-slate-50/30">
                   <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
                   <span className="ml-3 font-medium text-slate-500">
-                    数据同步中...
+                    正在加载成员资料...
                   </span>
                 </div>
               ) : error ? (
                 <div className="text-muted-foreground flex h-64 flex-col items-center justify-center bg-slate-50/30">
-                  <p className="font-medium text-rose-500">加载用户列表失败</p>
+                  <p className="font-medium text-rose-500">
+                    暂时无法加载成员列表
+                  </p>
+                  <p className="mt-2 text-sm text-slate-500">
+                    {getFriendlyErrorMessage(error, '请稍后重试')}
+                  </p>
                   <Button
                     variant="outline"
                     onClick={() => refetch()}
@@ -506,10 +527,10 @@ export default function UsersSettingsPageClient({
                   )}{' '}
                   / 共{' '}
                   <span className="text-slate-900">{userListData.total}</span>{' '}
-                  条存档
+                  位成员
                 </div>
                 <div className="text-xs font-bold text-slate-500 tabular-nums">
-                  PAGE {userListData.page} OF {userListData.totalPages}
+                  第 {userListData.page} / {userListData.totalPages} 页
                 </div>
               </div>
             )}

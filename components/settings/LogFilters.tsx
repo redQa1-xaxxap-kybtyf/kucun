@@ -28,9 +28,9 @@ interface LogFiltersProps {
 const LOG_TYPE_OPTIONS: { value: SystemLogType; label: string }[] = [
   { value: 'user_action', label: '用户操作' },
   { value: 'business_operation', label: '业务操作' },
-  { value: 'system_event', label: '系统事件' },
-  { value: 'error', label: '错误日志' },
-  { value: 'security', label: '安全日志' },
+  { value: 'system_event', label: '系统提醒' },
+  { value: 'error', label: '异常记录' },
+  { value: 'security', label: '安全提醒' },
 ];
 
 // 日志级别选项
@@ -89,11 +89,11 @@ export const LogFilters = ({ filters, onFiltersChange }: LogFiltersProps) => {
           <div className="flex items-center gap-2">
             <div className="h-1.5 w-1.5 rounded-full bg-slate-900" />
             <p className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
-              Filter / 条件筛选
+              筛选条件
             </p>
           </div>
           <p className="text-xl font-black tracking-tight text-slate-900">
-            精细化审计检索
+            操作记录筛选
           </p>
         </div>
         {hasActiveFilters && (
@@ -116,7 +116,7 @@ export const LogFilters = ({ filters, onFiltersChange }: LogFiltersProps) => {
             htmlFor="search"
             className="ml-1 text-[11px] font-black tracking-widest text-slate-400 uppercase"
           >
-            关键词检索
+            关键词
           </Label>
           <div className="relative">
             <Search className="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -130,16 +130,16 @@ export const LogFilters = ({ filters, onFiltersChange }: LogFiltersProps) => {
           </div>
         </div>
 
-        {/* 日志类型 */}
+        {/* 记录类型 */}
         <div className="space-y-2.5">
           <Label className="ml-1 text-[11px] font-black tracking-widest text-slate-400 uppercase">
-            日志类型
+            记录类型
           </Label>
           <select
             value={filters.type || 'all'}
             onChange={e => handleFilterChange('type', e.target.value)}
             className="h-11 w-full rounded-2xl border border-slate-100 bg-slate-50/50 px-3 font-bold text-slate-900 transition-all focus:bg-white focus:ring-2 focus:ring-slate-900/5 focus:outline-hidden"
-            aria-label="日志类型"
+            aria-label="记录类型"
           >
             <option value="all">全部类型</option>
             {LOG_TYPE_OPTIONS.map(option => (
@@ -176,11 +176,11 @@ export const LogFilters = ({ filters, onFiltersChange }: LogFiltersProps) => {
             htmlFor="action"
             className="ml-1 text-[11px] font-black tracking-widest text-slate-400 uppercase"
           >
-            操作指令
+            操作名称
           </Label>
           <Input
             id="action"
-            placeholder="如：login, sync_data..."
+            placeholder="如：登录、导出、同步..."
             value={filters.action || ''}
             onChange={e => handleFilterChange('action', e.target.value)}
             className="h-11 rounded-2xl border-slate-100 bg-slate-50/50 font-bold text-slate-900 focus:bg-white focus:ring-slate-900/5"
@@ -195,7 +195,7 @@ export const LogFilters = ({ filters, onFiltersChange }: LogFiltersProps) => {
               endDate: filters.endDate || undefined,
             }}
             onChange={handleDateRangeChange}
-            label="时间跨度检索"
+            label="时间范围"
             className="rounded-2xl border-slate-100 bg-slate-50/50 font-black"
             showPresets={true}
             showClearButton={true}

@@ -12,6 +12,7 @@ import type {
   SystemLogFilters,
   SystemLogListResponse,
 } from "@/lib/types/settings";
+import { getFriendlyErrorMessage } from "@/lib/utils/user-friendly-error";
 
 type LogFiltersProps = {
   filters: SystemLogFilters;
@@ -79,9 +80,9 @@ export default function LogsPage() {
       });
 
       const response = await fetch(`/api/settings/logs?${searchParams}`);
-      if (!response.ok) throw new Error("获取日志失败");
+      if (!response.ok) throw new Error("获取操作记录失败");
       const result: SettingsApiResponse<SystemLogListResponse> = await response.json();
-      if (!result.success) throw new Error(result.error || "获取日志失败");
+      if (!result.success) throw new Error(result.error || "获取操作记录失败");
       return result.data;
     },
   });
@@ -104,13 +105,13 @@ export default function LogsPage() {
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-2">
             <h2 className="text-3xl font-black tracking-tighter text-slate-900">
-              审计日志
+              操作记录
             </h2>
             <p className="text-slate-400 text-sm font-bold max-w-2xl leading-relaxed">
-               系统自动记录的操作与异常日志数值，用于业务追溯与安全审计。
+               这里会自动记录重要操作、系统提醒和异常情况，方便后续核对。
             </p>
             <p className="text-slate-400 text-sm font-bold max-w-2xl leading-relaxed">
-              为保证审计追溯性，已禁用手动清空审计日志。
+              为保证记录完整，这里的操作记录暂不支持手动清空。
             </p>
           </div>
         </div>
@@ -125,13 +126,16 @@ export default function LogsPage() {
           {error ? (
             <div className="flex flex-col items-center justify-center rounded-[32px] border border-dashed border-rose-200 bg-rose-50/30 py-20 text-center backdrop-blur-md">
               <AlertCircle className="mb-4 h-12 w-12 text-rose-300" />
-              <p className="text-sm font-black uppercase tracking-widest text-rose-500 mb-4">数据同步失败</p>
+              <p className="mb-2 text-sm font-black uppercase tracking-widest text-rose-500">暂时无法加载操作记录</p>
+              <p className="mb-4 text-sm font-bold text-rose-400">
+                {getFriendlyErrorMessage(error, "请稍后重试")}
+              </p>
               <Button
                 variant="outline"
                 onClick={() => refetch()}
                 className="rounded-xl border-rose-100 font-bold text-rose-600 hover:bg-rose-600 hover:text-white transition-all"
               >
-                重试同步
+                重新加载
               </Button>
             </div>
           ) : (

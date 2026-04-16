@@ -34,7 +34,7 @@ export const SettingCategorySchema = z.enum([
 
 // 系统设置基础验证
 export const SystemSettingSchema = z.object({
-  id: z.string().uuid('ID格式不正确'),
+  id: z.string().uuid('编号格式不正确'),
   key: z.string().min(1, '设置键不能为空').max(100, '设置键不能超过100个字符'),
   value: z.string(),
   category: SettingCategorySchema.default('basic'),
@@ -360,7 +360,7 @@ export const CreateUserSchema = z.object({
 });
 
 export const UpdateUserSchema = z.object({
-  userId: z.string().min(1, '用户ID不能为空'),
+  userId: z.string().min(1, '用户编号不能为空'),
   username: z
     .string()
     .min(3, '用户名至少需要3个字符')
@@ -400,7 +400,7 @@ export const UserListQuerySchema = z.object({
 });
 
 export const ResetPasswordSchema = z.object({
-  userId: z.string().uuid('用户ID格式不正确'),
+  userId: z.string().uuid('用户编号格式不正确'),
   newPassword: z
     .string()
     .min(6, '密码至少需要6个字符')

@@ -256,7 +256,7 @@ export async function GET(
 
     if (error instanceof Error && error.name === 'ZodError') {
       return NextResponse.json(
-        { success: false, error: '请求参数格式不正确' },
+        { success: false, error: '请求内容有误，请稍后重试' },
         { status: 400 }
       );
     }
@@ -387,7 +387,7 @@ export async function DELETE(
 
     if (error instanceof Error && error.name === 'ZodError') {
       return NextResponse.json(
-        { success: false, error: '请求参数格式不正确' },
+        { success: false, error: '请求内容有误，请稍后重试' },
         { status: 400 }
       );
     }
@@ -398,3 +398,4 @@ export async function DELETE(
     );
   }
 }
+
