@@ -119,16 +119,16 @@ export function DebugPanel() {
         )}
       </Button>
 
-      {/* 调试面板 */}
+      {/* 页面状态面板 */}
       {isOpen && (
         <div className="fixed right-4 bottom-20 z-50 flex h-96 w-[600px] flex-col rounded-lg border bg-white shadow-2xl">
           {/* 头部 */}
           <div className="flex items-center justify-between border-b bg-gray-100 px-4 py-2">
             <div className="flex items-center gap-2">
               <Bug className="h-4 w-4" />
-              <span className="font-semibold">调试面板</span>
+              <span className="font-semibold">页面状态</span>
               <span className="text-xs text-gray-500">
-                ({logs.length} 条日志)
+                ({logs.length} 条记录)
               </span>
             </div>
             <div className="flex gap-2">
@@ -155,7 +155,7 @@ export function DebugPanel() {
           <div className="flex-1 overflow-y-auto p-2">
             {logs.length === 0 ? (
               <div className="flex h-full items-center justify-center text-gray-400">
-                暂无日志
+                暂无记录
               </div>
             ) : (
               <div className="space-y-1">
@@ -181,7 +181,7 @@ export function DebugPanel() {
 
           {/* 底部提示 */}
           <div className="border-t bg-gray-50 px-4 py-2 text-xs text-gray-500">
-            💡 提示：所有日志也会显示在浏览器控制台中
+            提示：这些记录也会同步显示在浏览器控制台中
           </div>
         </div>
       )}
