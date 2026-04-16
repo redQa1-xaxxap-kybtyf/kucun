@@ -670,18 +670,23 @@ export class ReportGenerationService {
    * 构建查询条件
    */
   private buildWhereClause(filter: ReportFilter) {
-    const where: any = {};
+    const where: any = {
+      voidedAt: null,
+    };
 
     if (filter.startDate || filter.endDate) {
-      where.createdAt = {};
-      if (filter.startDate) where.createdAt.gte = filter.startDate;
-      if (filter.endDate) where.createdAt.lte = filter.endDate;
+      where.orderDate = {};
+      if (filter.startDate) where.orderDate.gte = filter.startDate;
+      if (filter.endDate) where.orderDate.lte = filter.endDate;
     }
 
     if (filter.customerId) where.customerId = filter.customerId;
     if (filter.userId) where.userId = filter.userId;
-    if (filter.status && filter.status.length > 0)
+    if (filter.status && filter.status.length > 0) {
       where.status = { in: filter.status };
+    } else {
+      where.status = { in: ['confirmed', 'shipped', 'completed'] };
+    }
 
     return where;
   }
