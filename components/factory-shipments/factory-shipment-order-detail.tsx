@@ -550,12 +550,12 @@ export function FactoryShipmentOrderDetail({
                           const unit = toPieceOrSheetLabel(item.unit);
                           const ppu = item.piecesPerUnit || 0;
                           if (unit === '件') {
-                            return ppu > 0
+                            return ppu > 1
                               ? `${qty}件（共${qty * ppu}片）`
-                              : `${qty}件`;
+                              : `${qty}片`;
                           }
                           if (unit === '片') {
-                            if (ppu > 0) {
+                            if (ppu > 1) {
                               const units = Math.floor(qty / ppu);
                               const pieces = qty % ppu;
                               if (units === 0) return `${pieces}片`;
