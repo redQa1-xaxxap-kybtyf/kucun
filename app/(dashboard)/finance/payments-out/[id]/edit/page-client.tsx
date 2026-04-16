@@ -91,7 +91,7 @@ export function EditPaymentOutClient({
           <CardHeader>
             <CardTitle className="text-red-600">无法编辑</CardTitle>
             <CardDescription>
-              该付款记录已确认，无法进行编辑操作。
+              该付款已完成，无法继续编辑。
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -119,7 +119,7 @@ export function EditPaymentOutClient({
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
-                    编辑付款记录
+                    编辑付款信息
                   </h1>
                   <p className="text-sm text-[hsl(var(--color-text-secondary))]">
                     {initialPayment.paymentNumber}

@@ -173,7 +173,7 @@ describe('/api/finance/payments-out（端点级回归）', () => {
     expect(prisma.paymentOutRecord.findMany).not.toHaveBeenCalled();
   });
 
-  test('GET：查询参数验证失败应返回 400', async () => {
+  test('GET：查询参数验证失败应返回更友好的 400 提示', async () => {
     paymentOutRecordQuerySchema.safeParse.mockReturnValue({
       success: false,
       error: { issues: [{ message: 'bad query' }] },
@@ -189,7 +189,7 @@ describe('/api/finance/payments-out（端点级回归）', () => {
     expect(body).toEqual(
       expect.objectContaining({
         success: false,
-        error: expect.stringContaining('查询参数验证失败: bad query'),
+        error: expect.stringContaining('查询条件有误： bad query'),
       })
     );
     expect(prisma.paymentOutRecord.findMany).not.toHaveBeenCalled();

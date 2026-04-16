@@ -129,7 +129,7 @@ export const createPaymentOutRecordSchema = z.object({
 
 // 更新付款记录验证规则
 export const updatePaymentOutRecordSchema = z.object({
-  id: z.string().min(1, '付款记录ID不能为空'),
+  id: z.string().min(1, '付款记录编号不能为空'),
   idempotencyKey: z.string().uuid('幂等性键格式不正确').optional(),
   paymentMethod: paymentOutMethodSchema.optional(),
   paymentAmount: z
@@ -250,7 +250,7 @@ export const paymentOutRecordQuerySchema = z.object({
 // 批量操作验证规则
 export const batchPayableOperationSchema = z.object({
   ids: z
-    .array(z.string().min(1, { error: 'ID不能为空' }))
+    .array(z.string().min(1, { error: '编号不能为空' }))
     .min(1, { error: '至少选择一条记录' })
     .max(100, { error: '批量操作不能超过100条记录' }),
   operation: z.enum(['delete', 'updateStatus'], {
@@ -262,7 +262,7 @@ export const batchPayableOperationSchema = z.object({
 // 批量付款操作验证规则
 export const batchPaymentOutOperationSchema = z.object({
   ids: z
-    .array(z.string().min(1, { error: 'ID不能为空' }))
+    .array(z.string().min(1, { error: '编号不能为空' }))
     .min(1, { error: '至少选择一条记录' })
     .max(100, { error: '批量操作不能超过100条记录' }),
   operation: z.enum(['delete', 'updateStatus'], {

@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { z } from 'zod';
 
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import { payablesApi } from '@/lib/api/payables';
 import { queryKeys } from '@/lib/queryKeys';
 import type {
@@ -204,6 +205,11 @@ export function usePayableForm({
   ]);
 
   const isLoading = loadingState.isLoading;
+  const hasUnsavedChanges = form.formState.isDirty && !isLoading;
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前应付款内容尚未保存，确定要离开吗？',
+  });
 
   const onSubmit = async (data: CreateFormData | UpdateFormData) => {
     setSubmitError('');
@@ -226,6 +232,10 @@ export function usePayableForm({
   };
 
   const handleCancel = () => {
+    if (!confirmLeavePage()) {
+      return;
+    }
+
     if (onCancel) {
       onCancel();
     } else {

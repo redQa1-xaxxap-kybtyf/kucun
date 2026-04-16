@@ -21,8 +21,8 @@ export async function generateMetadata({
 }: EditPaymentOutPageProps): Promise<Metadata> {
   const { id } = await params;
   return {
-    title: `编辑付款记录 #${id} - 库存管理工具`,
-    description: '编辑付款记录信息',
+    title: `编辑付款信息 #${id} - 库存管理工具`,
+    description: '编辑这笔付款的信息',
   };
 }
 

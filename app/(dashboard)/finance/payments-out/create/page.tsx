@@ -37,10 +37,10 @@ export default function CreatePaymentOutPage() {
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
-                    创建付款记录
+                    登记付款
                   </h1>
                   <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-                    填写付款信息并提交，记录对供应商的付款
+                    填写付款信息，保存后会直接记为已完成付款
                   </p>
                 </div>
               </div>
@@ -64,4 +64,3 @@ export default function CreatePaymentOutPage() {
     </div>
   );
 }
-

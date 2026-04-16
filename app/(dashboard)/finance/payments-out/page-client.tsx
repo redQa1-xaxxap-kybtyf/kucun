@@ -528,10 +528,10 @@ export function PaymentsOutPageClient({
                 </div>
                 <div>
                   <h1 className="text-lg font-semibold tracking-tight text-[hsl(var(--color-text-primary))] sm:text-2xl sm:font-bold">
-                    付款记录
+                    付款管理
                   </h1>
                   <p className="mt-1 text-xs text-[hsl(var(--color-text-secondary))] sm:text-sm">
-                    查看待确认和已确认的付款记录，方便核对供应商结算
+                    查看待确认与已完成付款，方便核对供应商结算
                   </p>
                 </div>
               </div>
@@ -553,7 +553,7 @@ export function PaymentsOutPageClient({
                 >
                   <Link href="/finance/payments-out/create">
                     <Plus className="mr-2 h-4 w-4" />
-                    新建付款
+                    登记付款
                   </Link>
                 </Button>
               </div>

@@ -41,6 +41,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { cn, formatCurrency } from '@/lib/utils';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { computePaymentOutRounding } from '@/lib/utils/payment-out-amounts';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
 import type { PaymentOutRecord } from './page-client';
 
@@ -125,7 +126,7 @@ function PayableInfoSidebar({
           </p>
         </div>
         <div>
-          <p className="text-muted-foreground text-sm">已核销金额</p>
+          <p className="text-muted-foreground text-sm">已付款金额</p>
           <p className="font-medium text-[hsl(var(--color-success))]">
             {formatCurrency(payableRecord.paidAmount)}
           </p>
@@ -213,7 +214,7 @@ export function EditPaymentOutFormSection({
     onSuccess: () => {
       toast({
         title: '更新成功',
-        description: '付款记录已更新',
+        description: '这笔付款信息已更新',
         variant: 'success',
       });
       router.push(`/finance/payments-out/${initialPayment.id}`);
@@ -222,7 +223,10 @@ export function EditPaymentOutFormSection({
     onError: error => {
       toast({
         title: '更新失败',
-        description: (error as Error).message,
+        description: getFriendlyErrorMessage(
+          error,
+          '这笔付款暂时无法更新，请稍后重试'
+        ),
         variant: 'destructive',
       });
     },
@@ -344,7 +348,7 @@ export function EditPaymentOutFormSection({
                         />
                       </FormControl>
                       <FormDescription>
-                        供应商实际收到的金额，可低于记账金额用于抹零。
+                        这里填供应商实际收到的金额；如果有尾差，按实际付款填写即可。
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -356,7 +360,7 @@ export function EditPaymentOutFormSection({
                   name="roundingAmount"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>抹零差额</FormLabel>
+                      <FormLabel>抹零金额</FormLabel>
                       <FormControl>
                         <Input
                           readOnly
@@ -367,7 +371,7 @@ export function EditPaymentOutFormSection({
                         />
                       </FormControl>
                       <FormDescription>
-                        自动计算：记账金额 - 实际付款，正值表示少付抹零，负值表示多付。
+                        根据记账金额和实际付款自动计算；正数表示少付结清，负数表示多付。
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

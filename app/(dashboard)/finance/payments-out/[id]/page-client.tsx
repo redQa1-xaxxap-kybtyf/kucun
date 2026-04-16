@@ -38,6 +38,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { formatCurrency } from '@/lib/utils';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { formatDateTime, formatPaymentDateTime } from '@/lib/utils/datetime';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
 interface PaymentOutRecord {
   id: string;
@@ -81,13 +82,13 @@ interface PaymentOutDetailClientProps {
 function StatusBadge({ status }: { status: string }) {
   const statusConfig = {
     pending: {
-      label: '待确认',
+      label: '待确认付款',
       icon: Clock,
       className:
         'border-[hsl(var(--color-warning))] bg-[hsl(var(--color-warning-light))] text-[hsl(var(--color-warning))]',
     },
     confirmed: {
-      label: '已确认',
+      label: '已完成付款',
       icon: CheckCircle,
       className:
         'border-[hsl(var(--color-success))] bg-[hsl(var(--color-success-light))] text-[hsl(var(--color-success))]',
@@ -147,6 +148,7 @@ export function PaymentOutDetailClient({
   const { toast } = useToast();
   const [payment, setPayment] = useState(initialPayment);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showVoidDialog, setShowVoidDialog] = useState(false);
   const [voidReason, setVoidReason] = useState('');
   const [isVoiding, setIsVoiding] = useState(false);
@@ -180,8 +182,8 @@ export function PaymentOutDetailClient({
       }
 
       toast({
-        title: '确认成功',
-        description: '付款记录已确认',
+        title: '付款已完成',
+        description: '这笔付款已经确认完成。',
         variant: 'success',
       });
 
@@ -190,13 +192,17 @@ export function PaymentOutDetailClient({
         ...payment,
         status: 'confirmed',
       });
+      setShowConfirmDialog(false);
 
       // 刷新页面数据
       router.refresh();
     } catch (error) {
       toast({
         title: '确认失败',
-        description: error instanceof Error ? error.message : '确认付款失败',
+        description: getFriendlyErrorMessage(
+          error,
+          '这笔付款暂时无法确认，请稍后重试'
+        ),
         variant: 'destructive',
       });
     } finally {
@@ -239,8 +245,8 @@ export function PaymentOutDetailClient({
       }
 
       toast({
-        title: '作废成功',
-        description: data.message || '付款记录已作废',
+        title: '付款已作废',
+        description: data.message || '这笔付款已作废',
         variant: 'success',
       });
 
@@ -253,7 +259,10 @@ export function PaymentOutDetailClient({
     } catch (error) {
       toast({
         title: '作废失败',
-        description: error instanceof Error ? error.message : '作废付款失败',
+        description: getFriendlyErrorMessage(
+          error,
+          '这笔付款暂时无法作废，请稍后重试'
+        ),
         variant: 'destructive',
       });
     } finally {
@@ -270,12 +279,12 @@ export function PaymentOutDetailClient({
             <Button variant="outline" size="sm" asChild className="gap-1.5">
               <Link href="/finance/payments-out">
                 <ArrowLeft className="h-3.5 w-3.5" />
-                返回列表
+                返回付款管理
               </Link>
             </Button>
             <div className="h-5 w-px bg-gray-300"></div>
             <h1 className="text-lg font-semibold text-gray-900">
-              付款记录详情
+              付款详情
             </h1>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap lg:justify-end">
@@ -296,11 +305,11 @@ export function PaymentOutDetailClient({
               <Button
                 size="sm"
                 className="w-full gap-1.5 bg-green-600 hover:bg-green-700 sm:w-auto"
-                onClick={handleConfirm}
+                onClick={() => setShowConfirmDialog(true)}
                 disabled={isConfirming || isVoiding}
               >
                 <CheckCircle className="h-3.5 w-3.5" />
-                {isConfirming ? '确认中...' : '确认付款'}
+                {isConfirming ? '确认中...' : '确认这笔付款'}
               </Button>
             )}
             {payment.status !== 'cancelled' && (
@@ -321,23 +330,52 @@ export function PaymentOutDetailClient({
           </div>
         </div>
 
+        <AlertDialog
+          open={showConfirmDialog}
+          onOpenChange={setShowConfirmDialog}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>确认这笔付款已经完成？</AlertDialogTitle>
+              <AlertDialogDescription>
+                将把付款单 <strong>{payment.paymentNumber}</strong>{' '}
+                记为已完成。
+                <br />
+                确认后，这笔付款会记入已付款，对应应付单的待付金额也会减少。
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isConfirming}>
+                我再核对一下
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleConfirm}
+                disabled={isConfirming || isVoiding}
+              >
+                {isConfirming ? '确认中...' : '确认付款完成'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         <AlertDialog open={showVoidDialog} onOpenChange={setShowVoidDialog}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>确认作废付款记录？</AlertDialogTitle>
+              <AlertDialogTitle>确认作废这笔付款？</AlertDialogTitle>
               <AlertDialogDescription>
                 将作废付款单 <strong>{payment.paymentNumber}</strong>。
                 <br />
-                作废会回滚关联应付款，并写入供应商往来账反向流水。
+                作废后，会把对应应付单的待付金额加回去，并保留这次作废记录。
               </AlertDialogDescription>
             </AlertDialogHeader>
 
             <div className="space-y-2">
-              <div className="text-sm font-medium">作废原因（可选）</div>
+              <div className="text-sm font-medium">作废说明（可选）</div>
               <Textarea
                 value={voidReason}
                 onChange={e => setVoidReason(e.target.value)}
-                placeholder="例如：录入错误 / 重复付款 / 供应商更换…（最多64字）"
+                placeholder="例如：金额录错 / 重复付款 / 改为其他付款方式（最多64字）"
                 disabled={isVoiding}
                 rows={3}
               />
@@ -350,7 +388,7 @@ export function PaymentOutDetailClient({
                 disabled={isVoiding}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
-                {isVoiding ? '作废中...' : '确认作废'}
+                {isVoiding ? '正在作废...' : '确认作废'}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -399,7 +437,7 @@ export function PaymentOutDetailClient({
                   </div>
                   <div className="rounded-xl border border-[hsl(var(--color-border-secondary))]/60 bg-white/80 px-4 py-3 shadow-sm">
                     <p className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
-                      抹零差额
+                      抹零金额
                     </p>
                     <p
                       className={`mt-1 text-xl font-bold sm:text-2xl ${
@@ -526,7 +564,7 @@ export function PaymentOutDetailClient({
                       </div>
                       <div>
                         <p className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
-                          确认付款
+                          确认付款完成
                         </p>
                         <p className="text-xs text-[hsl(var(--color-text-secondary))]">
                           于 {formatDateTime(payment.updatedAt)} 确认

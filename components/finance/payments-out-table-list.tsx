@@ -105,7 +105,7 @@ export function PaymentsOutTableList({
     return (
       <EmptyState
         icon={<Receipt className="text-muted-foreground h-8 w-8" />}
-        title="暂无付款记录"
+        title="暂无付款"
         compact
       />
     );
@@ -124,7 +124,7 @@ export function PaymentsOutTableList({
               <TableHead className="w-[100px]">付款方式</TableHead>
               <TableHead className="w-[110px] text-right">记账金额</TableHead>
               <TableHead className="w-[110px] text-right">实际付款</TableHead>
-              <TableHead className="w-[100px] text-right">抹零差额</TableHead>
+              <TableHead className="w-[100px] text-right">抹零金额</TableHead>
               <TableHead className="w-[140px]">付款日期</TableHead>
               <TableHead className="w-[100px]">状态</TableHead>
               <TableHead className="w-[120px] text-center">操作</TableHead>
@@ -350,7 +350,7 @@ function PaymentOutCard({
           </div>
         </div>
         <div className="space-y-1">
-          <div className="text-muted-foreground">抹零差额</div>
+          <div className="text-muted-foreground">抹零金额</div>
           <RoundingAmountDisplay amount={payment.roundingAmount} />
         </div>
       </div>
@@ -396,7 +396,7 @@ function PaymentOutCard({
                   disabled={isConfirming || Boolean(isVoiding)}
                   className="h-9 w-full bg-green-600 px-3 text-xs text-white hover:bg-green-700"
                 >
-                  {isThisConfirming ? '确认中...' : '确认付款'}
+                  {isThisConfirming ? '确认中...' : '确认付款完成'}
                 </Button>
               )}
             </>
@@ -450,7 +450,7 @@ function PaymentOutCard({
                     ) : (
                       <CheckCircle className="mr-2 h-4 w-4" />
                     )}
-                    确认付款
+                    确认付款完成
                   </DropdownMenuItem>
                 )}
               </>
@@ -480,8 +480,8 @@ function StatusBadge({ status }: { status: string }) {
     string,
     { label: string; variant: BadgeProps['variant']; icon: React.ElementType }
   > = {
-    pending: { label: '待确认', variant: 'secondary', icon: Clock },
-    confirmed: { label: '已确认', variant: 'default', icon: CheckCircle },
+    pending: { label: '待确认付款', variant: 'secondary', icon: Clock },
+    confirmed: { label: '已完成付款', variant: 'default', icon: CheckCircle },
     cancelled: { label: '已作废', variant: 'destructive', icon: XCircle },
   };
 
@@ -612,7 +612,7 @@ function PaymentOutRowActions({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>确认付款</p>
+                  <p>确认付款完成</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -652,7 +652,7 @@ function PaymentOutRowActions({
                   ) : (
                     <CheckCircle className="mr-2 h-4 w-4" />
                   )}
-                  确认付款
+                  确认付款完成
                 </DropdownMenuItem>
               )}
             </>

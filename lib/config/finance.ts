@@ -73,9 +73,9 @@ export const PAYMENT_METHOD_LABELS = {
 
 // 支付状态中文标签映射
 export const PAYMENT_STATUS_LABELS = {
-  [PAYMENT_STATUSES.PENDING]: '待确认',
+  [PAYMENT_STATUSES.PENDING]: '待确认到账',
   [PAYMENT_STATUSES.APPLIED]: '已冲抵',
-  [PAYMENT_STATUSES.CONFIRMED]: '已确认',
+  [PAYMENT_STATUSES.CONFIRMED]: '已到账',
   [PAYMENT_STATUSES.CANCELLED]: '已取消',
 } as const;
 

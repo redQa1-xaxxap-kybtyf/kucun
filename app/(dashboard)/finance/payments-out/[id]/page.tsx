@@ -22,8 +22,8 @@ export async function generateMetadata({
 }: PaymentOutDetailPageProps): Promise<Metadata> {
   const { id } = await params;
   return {
-    title: `付款记录详情 #${id} - 库存管理工具`,
-    description: '查看付款记录详细信息和关联应付账款',
+    title: `付款详情 #${id} - 库存管理工具`,
+    description: '查看付款详情和关联应付账款信息',
   };
 }
 

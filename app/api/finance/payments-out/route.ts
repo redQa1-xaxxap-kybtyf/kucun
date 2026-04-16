@@ -188,7 +188,7 @@ export const GET = withAuth(
 
     if (!validationResult.success) {
       return errorResponse(
-        `查询参数验证失败: ${validationResult.error.issues[0]?.message}`,
+        `查询条件有误： ${validationResult.error.issues[0]?.message}`,
         400
       );
     }
@@ -630,3 +630,4 @@ export const POST = withAuth(
   },
   { permissions: ['finance:manage'] }
 );
+

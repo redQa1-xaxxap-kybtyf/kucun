@@ -26,8 +26,8 @@ type PaymentOutSortField = 'createdAt' | 'paymentAmount' | 'paymentDate';
 import { PaymentsOutPageClient } from './page-client';
 
 export const metadata: Metadata = {
-  title: '付款记录 - 财务管理',
-  description: '管理采购付款记录，跟踪确认状态、记账金额与实际付款金额',
+  title: '付款管理 - 财务管理',
+  description: '查看供应商付款，区分待确认付款与已完成付款',
 };
 
 /**
