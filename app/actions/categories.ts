@@ -58,7 +58,7 @@ const updateCategorySchema = z.object({
 });
 
 const updateCategoryStatusSchema = z.object({
-  categoryId: z.string().min(1, '分类 ID 不能为空'),
+  categoryId: z.string().min(1, '分类不能为空'),
   status: z.enum(['active', 'inactive']),
 });
 
@@ -175,7 +175,7 @@ export async function updateCategory(
 
     const categoryIdValue = formData.get('categoryId');
     if (typeof categoryIdValue !== 'string' || !categoryIdValue) {
-      return { success: false, error: '分类 ID 不能为空' };
+      return { success: false, error: '分类不能为空' };
     }
     categoryIdForLog = categoryIdValue;
     const categoryId = categoryIdValue;

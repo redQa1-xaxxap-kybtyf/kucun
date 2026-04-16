@@ -56,7 +56,7 @@ export const CreateCategorySchema = z.object({
  * 分类更新表单验证
  */
 export const UpdateCategorySchema = z.object({
-  id: z.string().min(1, '分类ID不能为空'),
+  id: z.string().min(1, '分类不能为空'),
   name: baseValidations.name.optional(),
   code: baseValidations.code.optional(),
   parentId: baseValidations.parentId,

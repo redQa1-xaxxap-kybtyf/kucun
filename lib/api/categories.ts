@@ -14,10 +14,7 @@ import type {
   UpdateCategoryData,
 } from '@/lib/types/category-unified';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
-import {
-  createFriendlyApiError,
-  extractApiErrorMessage,
-} from '@/lib/utils/user-friendly-error';
+import { createFriendlyApiError } from '@/lib/utils/user-friendly-error';
 // 重新导出类型以保持向后兼容
 export type {
   Category,
@@ -225,11 +222,4 @@ export async function updateCategoryStatus(
  */
 async function createApiError(response: Response): Promise<Error> {
   return createFriendlyApiError(response, '分类操作失败');
-}
-
-/**
- * 提取 API 错误响应中的可读信息
- */
-function extractErrorMessage(errorData: unknown, fallback: string): string {
-  return extractApiErrorMessage(errorData, fallback);
 }

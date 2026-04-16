@@ -28,6 +28,7 @@ import {
   SelectItem,
   SelectTrigger,
 } from '@/components/ui/select';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import type { UpdateCategoryData } from '@/lib/validations/category';
 
 export type ParentCategory = {
@@ -145,6 +146,19 @@ function CategoryEditFormBody({
   parentSearchTerm,
   onParentSearchChange,
 }: CategoryEditFormBodyProps) {
+  const hasUnsavedChanges = form.formState.isDirty && !isSubmitting;
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前分类内容尚未保存，确定要离开吗？',
+  });
+  const handleCancel = () => {
+    if (!confirmLeavePage()) {
+      return;
+    }
+
+    onCancel();
+  };
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -156,7 +170,10 @@ function CategoryEditFormBody({
           parentSearchTerm={parentSearchTerm}
           onParentSearchChange={onParentSearchChange}
         />
-        <CategoryFormActions onCancel={onCancel} isSubmitting={isSubmitting} />
+        <CategoryFormActions
+          onCancel={handleCancel}
+          isSubmitting={isSubmitting}
+        />
       </form>
     </Form>
   );
