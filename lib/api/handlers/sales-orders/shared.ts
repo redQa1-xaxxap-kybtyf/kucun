@@ -15,6 +15,7 @@ export const salesOrderItemSelect = {
   displayUnit: true,
   displayQuantity: true,
   piecesPerUnit: true,
+  weightSnapshot: true,
   specification: true,
   remarks: true,
   batchNumber: true,
@@ -88,7 +89,11 @@ export function mapSalesOrderItem(
     code: string;
     unit: string;
     specification: string | null;
-    piecesPerUnit: number;
+    piecesPerUnit: number | null;
+    weight: number | null;
+  },
+  batchSpecification?: {
+    piecesPerUnit: number | null;
     weight: number | null;
   }
 ) {
@@ -109,7 +114,13 @@ export function mapSalesOrderItem(
     localQuantity: toNumber(item.localQuantity),
     transferQuantity: toNumber(item.transferQuantity),
     piecesPerUnit:
-      toNumber(item.piecesPerUnit) ?? product?.piecesPerUnit ?? undefined,
+      toNumber(item.piecesPerUnit) ??
+      toNumber(batchSpecification?.piecesPerUnit) ??
+      product?.piecesPerUnit ??
+      undefined,
+    weightSnapshot: toNumber(item.weightSnapshot),
+    batchPiecesPerUnit: toNumber(batchSpecification?.piecesPerUnit),
+    batchWeight: toNumber(batchSpecification?.weight),
     manualWeight: toNumber(item.manualWeight),
     // 其他字段
     batchNumber: item.batchNumber ?? undefined,
@@ -149,6 +160,7 @@ export function mapOrderBaseFields<
     roundingAdjustment?: Prisma.Decimal | number | null;
     prepaymentAmount?: Prisma.Decimal | number | null;
     remarks: string | null;
+    importKey?: string | null;
     orderDate?: Date | null;
     shippedAt: Date | null;
     createdAt: Date;
@@ -189,6 +201,7 @@ export function mapOrderBaseFields<
     prepaymentAmount: toNumber(order.prepaymentAmount),
     // 其他字段
     remarks: order.remarks ?? undefined,
+    importKey: order.importKey ?? undefined,
     orderDate: toISOString(order.orderDate ?? order.createdAt),
     shippedAt: toISOString(order.shippedAt),
     createdAt: order.createdAt.toISOString(),

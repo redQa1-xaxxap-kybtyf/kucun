@@ -7,6 +7,7 @@ import {
 import { getSalesOrders } from '@/lib/api/handlers/sales-orders';
 import { salesOrderQueryKeys } from '@/lib/api/sales-orders';
 import { paginationConfig } from '@/lib/env';
+import type { SalesOrderQueryParams } from '@/lib/types/sales-order';
 
 import { SalesOrdersPageClient } from './page-client';
 
@@ -58,6 +59,8 @@ export default async function SalesOrdersPage({
   const sortOrder = (params.sortOrder as 'asc' | 'desc') || 'desc';
   const startDate = (params.startDate as string) || undefined;
   const endDate = (params.endDate as string) || undefined;
+  const recordScope: SalesOrderQueryParams['recordScope'] =
+    params.recordScope === 'history' ? 'history' : undefined;
   const includeTest = params.includeTest === 'true' ? true : undefined;
   const includeVoided = params.includeVoided === 'true' ? true : undefined;
 
@@ -72,6 +75,7 @@ export default async function SalesOrdersPage({
     sortOrder,
     startDate,
     endDate,
+    recordScope,
     includeTest,
     includeVoided,
   };

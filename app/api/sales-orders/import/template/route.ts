@@ -1,0 +1,116 @@
+import { type NextRequest, NextResponse } from 'next/server';
+import * as XLSX from 'xlsx';
+
+import { withAuth } from '@/lib/auth/api-helpers';
+
+function createInstructionSheet() {
+  return XLSX.utils.aoa_to_sheet([
+    ['字段', '是否必填', '说明'],
+    [
+      '导入单号',
+      '否',
+      '可留空；系统会自动生成导入单号并用于重复导入去重。若表内已有“销售单号 / 单号”，也会优先使用',
+    ],
+    ['客户名称', '是', '优先按客户名称匹配；系统不存在时会自动创建客户资料'],
+    ['订单日期', '否', '建议使用 YYYY-MM-DD；留空则按导入当天创建'],
+    ['产品编码', '是', '按产品编码精确匹配，产品需已存在于系统'],
+    ['产品名称', '否', '不参与匹配；若填写，会校验与系统产品名称一致'],
+    ['装箱数', '否', '优先使用导入值；当单位=件时可用于换算片数'],
+    ['批次号', '否', '写入订单明细，便于保留历史销售批次信息'],
+    ['规格', '否', '不参与匹配；若填写，会校验与系统产品规格一致'],
+    ['单位', '否', '支持“片 / 件”；留空默认按“片”处理'],
+    ['数量', '是', '按所填单位录入；如果单位=件，会自动换算成片数'],
+    ['销售单价', '是', '按所填单位录入；单位=件时表示每件单价'],
+    ['金额', '否', '建议填写原始销售金额；如填写，系统会优先保留该金额'],
+    ['备注', '否', '写入对应订单明细备注'],
+    [
+      '客户电话',
+      '无需填写',
+      '导入时不校验电话；自动创建客户后可在客户资料里补录',
+    ],
+    ['联系人', '无需填写', '导入模板不要求联系人姓名，后续可在客户资料补录'],
+    [
+      '收款说明',
+      '固定',
+      '销售记录导入不会自动补历史已收金额；如需体现收款状态，请后续补录收款记录',
+    ],
+    [
+      '导入状态',
+      '在导入弹窗选择',
+      '无需在模板里增加“订单状态 / 发货时间”列；可统一选择按已确认未发货导入，或按已发货导入',
+    ],
+    [
+      '统一发货日期',
+      '在导入弹窗选择',
+      '仅当按“已发货”导入时可选填；留空则默认跟随每张订单的订单日期',
+    ],
+    [
+      '导入范围',
+      '固定',
+      '正式导入后会生成正常销售订单，进入默认销售列表和销售报表；按“已确认未发货”导入时先预留库存，按“已发货”导入时会直接生成出库并扣减库存',
+    ],
+  ]);
+}
+
+export const GET = withAuth(
+  async (_request: NextRequest) => {
+    const workbook = XLSX.utils.book_new();
+    const templateSheet = XLSX.utils.json_to_sheet([
+      {
+        导入单号: '',
+        客户名称: '示例客户',
+        订单日期: '2026-04-12',
+        产品编码: 'P-800-001',
+        产品名称: '抛光砖',
+        批次号: '',
+        装箱数: 8,
+        规格: '800x800mm',
+        单位: '件',
+        数量: 10,
+        销售单价: 350,
+        金额: 3500,
+        备注: '一楼客厅',
+      },
+      {
+        导入单号: '',
+        客户名称: '示例客户',
+        订单日期: '2026-04-12',
+        产品编码: 'P-600-002',
+        产品名称: '柔光砖',
+        批次号: '',
+        装箱数: '',
+        规格: '600x1200mm',
+        单位: '片',
+        数量: 24,
+        销售单价: 42,
+        金额: 1008,
+        备注: '电视背景墙',
+      },
+    ]);
+
+    XLSX.utils.book_append_sheet(workbook, templateSheet, '销售记录导入模板');
+    XLSX.utils.book_append_sheet(
+      workbook,
+      createInstructionSheet(),
+      '填写说明'
+    );
+
+    const buffer = XLSX.write(workbook, {
+      type: 'buffer',
+      bookType: 'xlsx',
+    });
+
+    const filename = '销售记录导入模板.xlsx';
+
+    return new NextResponse(buffer, {
+      headers: {
+        'Content-Type':
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(
+          filename
+        )}`,
+      },
+    });
+  },
+  { permissions: ['sales:manage'] }
+);

@@ -23,6 +23,7 @@ import { CopyableText } from '@/components/common/copyable-text';
 import { EmptyState } from '@/components/common/empty-state';
 import { RelativeTime } from '@/components/common/relative-time';
 import { SearchFilterCard } from '@/components/common/search-filter-card';
+import { CustomerSelector } from '@/components/sales-orders/customer-selector';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -67,6 +68,12 @@ import {
   type SalesOrderStatus,
 } from '@/lib/types/sales-order';
 import { formatDate, formatDateTime } from '@/lib/utils/datetime';
+import {
+  getCurrentPathWithSearch,
+  withReturnTo,
+} from '@/lib/utils/sales-order-navigation';
+import { shouldCreateReceivableForOrder } from '@/lib/utils/sample-order';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
 const NON_CANCELABLE_STATUSES: SalesOrderStatus[] = [
   'shipped',
@@ -124,16 +131,21 @@ export function ERPSalesOrderList({
   );
   const { exportToImage, isExportingImage } = useSalesOrderExport();
 
+  const isHistoryView = initialParams?.recordScope === 'history';
   const statusFilterValue = initialParams?.status ?? undefined;
   const normalizedStatus = statusFilterValue;
   const isPrioritySorted = React.useMemo(() => {
+    if (isHistoryView) {
+      return false;
+    }
+
     const sortBy = initialParams?.sortBy || 'orderDate';
 
     return (
       sortBy === 'orderDate' &&
       (!normalizedStatus || normalizedStatus === 'pending')
     );
-  }, [initialParams?.sortBy, normalizedStatus]);
+  }, [initialParams?.sortBy, isHistoryView, normalizedStatus]);
 
   // 检查是否有活跃筛选条件
   // ✅ P1修复: 将搜索词纳入活跃筛选判断
@@ -147,7 +159,7 @@ export function ERPSalesOrderList({
           initialParams?.orderType ||
           initialParams?.isSampleOrder ||
           initialParams?.hasReturns ||
-          initialParams?.includeTest ||
+          (!isHistoryView && initialParams?.includeTest) ||
           initialParams?.includeVoided ||
           // ✅ P1修复: 搜索词也算活跃筛选
           initialParams?.search ||
@@ -161,6 +173,7 @@ export function ERPSalesOrderList({
       initialParams?.orderType,
       initialParams?.isSampleOrder,
       initialParams?.hasReturns,
+      isHistoryView,
       initialParams?.includeTest,
       initialParams?.includeVoided,
       initialParams?.search,
@@ -212,6 +225,10 @@ export function ERPSalesOrderList({
     externalOnFilter?.('hasReturns', String(nextValue));
   }, [externalOnFilter, initialParams?.hasReturns]);
 
+  const handleToggleHistoryOrders = React.useCallback(() => {
+    externalOnFilter?.('recordScope', isHistoryView ? undefined : 'history');
+  }, [externalOnFilter, isHistoryView]);
+
   const handleToggleSampleOrders = React.useCallback(() => {
     const isSampleActive = initialParams?.isSampleOrder === true;
     externalOnFilter?.('isSampleOrder', isSampleActive ? undefined : 'true');
@@ -228,6 +245,17 @@ export function ERPSalesOrderList({
     const nextValue = !currentValue;
     externalOnFilter?.('includeVoided', nextValue ? 'true' : undefined);
   }, [externalOnFilter, initialParams?.includeVoided]);
+
+  const handleCustomerFilterChange = React.useCallback(
+    (customerId: string) => {
+      externalOnFilter?.('customerId', customerId || undefined);
+    },
+    [externalOnFilter]
+  );
+
+  const handleClearCustomerFilter = React.useCallback(() => {
+    externalOnFilter?.('customerId', undefined);
+  }, [externalOnFilter]);
 
   // ✅ 移除内部 queryParams 状态，完全依赖外部传入的 initialParams
   // ✅ 单一数据源原则：状态统一在父组件管理
@@ -247,6 +275,7 @@ export function ERPSalesOrderList({
       orderType: initialParams?.orderType,
       isSampleOrder: initialParams?.isSampleOrder,
       hasReturns: initialParams?.hasReturns,
+      recordScope: initialParams?.recordScope,
       includeTest: initialParams?.includeTest,
       includeVoided: initialParams?.includeVoided,
     }),
@@ -263,6 +292,7 @@ export function ERPSalesOrderList({
       initialParams?.orderType,
       initialParams?.isSampleOrder,
       initialParams?.hasReturns,
+      initialParams?.recordScope,
       initialParams?.includeTest,
       initialParams?.includeVoided,
     ]
@@ -333,7 +363,10 @@ export function ERPSalesOrderList({
     onError: (error: Error) => {
       toast({
         title: '操作失败',
-        description: error.message,
+        description: getFriendlyErrorMessage(
+          error,
+          '操作暂时未完成，请稍后重试'
+        ),
         variant: 'destructive',
       });
       setUpdatingOrderId(null);
@@ -341,9 +374,66 @@ export function ERPSalesOrderList({
   });
 
   // 确认发货处理函数
+  const handleOpenOrder = React.useCallback(
+    (order: SalesOrder) => {
+      if (onOrderSelect) {
+        onOrderSelect(order);
+        return;
+      }
+
+      router.push(
+        withReturnTo(
+          `/sales-orders/${order.id}`,
+          getCurrentPathWithSearch() ?? '/sales-orders'
+        )
+      );
+    },
+    [onOrderSelect, router]
+  );
+
+  const handleEditOrder = React.useCallback(
+    (order: SalesOrder) => {
+      if (order.status === 'draft') {
+        router.push(
+          withReturnTo(
+            `/sales-orders/${order.id}/edit`,
+            getCurrentPathWithSearch() ?? '/sales-orders'
+          )
+        );
+        return;
+      }
+
+      setSelectedOrder(order);
+      setShowEditWarning(true);
+    },
+    [router]
+  );
+
+  const handleExportOrderImage = React.useCallback(
+    async (order: SalesOrder) => {
+      try {
+        await exportToImage({
+          orderId: order.id,
+          orderNumber: order.orderNumber || '',
+          backgroundColor: '#ffffff',
+          scale: 2,
+        });
+      } catch (err) {
+        toast({
+          title: '导出失败',
+          description: getFriendlyErrorMessage(
+            err,
+            '图片暂时无法导出，请稍后重试'
+          ),
+          variant: 'destructive',
+        });
+      }
+    },
+    [exportToImage, toast]
+  );
+
   const handleConfirmShipment = React.useCallback(
-    (order: SalesOrder, e: React.MouseEvent) => {
-      e.stopPropagation();
+    (order: SalesOrder) => {
       if (order.status !== 'confirmed') {
         toast({
           title: '操作失败',
@@ -382,7 +472,7 @@ export function ERPSalesOrderList({
         return '订单已存在收款记录，不能撤回确认';
       }
       if (Number(order.prepaymentAmount ?? 0) > 0) {
-        return '订单已使用预收款冲抵，不能撤回确认，请直接取消后重开';
+        return '订单已使用预收款抵扣，不能撤回确认，请直接取消后重开';
       }
       return undefined;
     },
@@ -390,9 +480,7 @@ export function ERPSalesOrderList({
   );
 
   const handleWithdrawOrderClick = React.useCallback(
-    (order: SalesOrder, event: React.MouseEvent) => {
-      event.stopPropagation();
-
+    (order: SalesOrder) => {
       const blockReason = getWithdrawConfirmationBlockReason(order);
       if (blockReason) {
         toast({
@@ -431,8 +519,7 @@ export function ERPSalesOrderList({
   }, []);
 
   const handleCancelOrderClick = React.useCallback(
-    (order: SalesOrder, event: React.MouseEvent) => {
-      event.stopPropagation();
+    (order: SalesOrder) => {
       if (!isOrderCancelable(order.status)) {
         toast({
           title: '操作受限',
@@ -489,7 +576,10 @@ export function ERPSalesOrderList({
     onError: (error: Error) => {
       toast({
         title: '删除失败',
-        description: error.message,
+        description: getFriendlyErrorMessage(
+          error,
+          '这张销售单暂时无法删除，请稍后重试'
+        ),
         variant: 'destructive',
       });
       setDeletingOrderId(null);
@@ -500,8 +590,7 @@ export function ERPSalesOrderList({
   });
 
   const handleDeleteOrderClick = React.useCallback(
-    (order: SalesOrder, event: React.MouseEvent) => {
-      event.stopPropagation();
+    (order: SalesOrder) => {
       if (order.status !== 'cancelled') {
         toast({
           title: '操作受限',
@@ -531,6 +620,90 @@ export function ERPSalesOrderList({
       setOrderPendingDelete(null);
     }
   }, []);
+
+  const renderOrderActionMenuItems = React.useCallback(
+    (order: SalesOrder) => (
+      <>
+        <DropdownMenuItem
+          onClick={event => {
+            event.stopPropagation();
+            handleOpenOrder(order);
+          }}
+          className="text-xs"
+        >
+          <Eye className="mr-1 h-3 w-3" />
+          查看
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={event => {
+            event.stopPropagation();
+            handleEditOrder(order);
+          }}
+          className="text-xs"
+        >
+          <Edit className="mr-1 h-3 w-3" />
+          编辑
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={async event => {
+            event.stopPropagation();
+            await handleExportOrderImage(order);
+          }}
+          disabled={isExportingImage}
+          className="text-xs"
+        >
+          <Download className="mr-1 h-3 w-3" />
+          {isExportingImage ? '生成图片中...' : '导出图片'}
+        </DropdownMenuItem>
+        {isOrderCancelable(order.status) && (
+          <DropdownMenuItem
+            onClick={event => {
+              event.stopPropagation();
+              handleCancelOrderClick(order);
+            }}
+            className="text-xs text-[hsl(var(--color-error))]"
+          >
+            <Ban className="mr-1 h-3 w-3" />
+            取消
+          </DropdownMenuItem>
+        )}
+        {order.status === 'confirmed' && (
+          <DropdownMenuItem
+            onClick={event => {
+              event.stopPropagation();
+              handleWithdrawOrderClick(order);
+            }}
+            className="text-xs"
+          >
+            <Undo2 className="mr-1 h-3 w-3" />
+            撤回确认
+          </DropdownMenuItem>
+        )}
+        {order.status === 'cancelled' && (
+          <DropdownMenuItem
+            onClick={event => {
+              event.stopPropagation();
+              handleDeleteOrderClick(order);
+            }}
+            className="text-xs text-[hsl(var(--color-error))]"
+          >
+            <Trash2 className="mr-1 h-3 w-3" />
+            删除
+          </DropdownMenuItem>
+        )}
+      </>
+    ),
+    [
+      handleCancelOrderClick,
+      handleDeleteOrderClick,
+      handleEditOrder,
+      handleExportOrderImage,
+      handleOpenOrder,
+      handleWithdrawOrderClick,
+      isExportingImage,
+      isOrderCancelable,
+    ]
+  );
 
   // ✅ 日期筛选逻辑已移至统一的 DateRangePicker 组件
   // 移除了 getActiveDateRange 和 handleDateRangeFilter 函数
@@ -625,6 +798,17 @@ export function ERPSalesOrderList({
       );
     }
 
+    if (!shouldCreateReceivableForOrder(order)) {
+      return (
+        <Badge
+          variant="outline"
+          className="border-[hsl(var(--color-primary))] bg-[hsl(var(--color-primary-light))] text-xs font-medium text-[hsl(var(--color-primary))]"
+        >
+          无需收款
+        </Badge>
+      );
+    }
+
     // 已发货订单，显示收款状态
     // 未收款
     if (paidAmount === 0) {
@@ -666,11 +850,15 @@ export function ERPSalesOrderList({
     return (
       <div className="bg-card rounded border p-4">
         <div className="text-center text-red-600">
-          加载失败: {error instanceof Error ? error.message : '未知错误'}
+          页面暂时无法打开：{getFriendlyErrorMessage(error, '请稍后重试')}
         </div>
       </div>
     );
   }
+
+  const emptyStateTitle = isHistoryView
+    ? '暂无历史销售记录'
+    : '暂无销售订单数据';
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -728,8 +916,42 @@ export function ERPSalesOrderList({
           },
           placeholder: '选择订单日期',
         }}
+        customFilters={
+          <div className="w-full min-w-0 space-y-1.5 xl:w-[320px]">
+            <div className="text-muted-foreground text-xs font-medium">
+              客户筛选
+            </div>
+            <div className="flex min-w-0 items-center gap-2">
+              <CustomerSelector
+                value={initialParams?.customerId}
+                onValueChange={handleCustomerFilterChange}
+                placeholder="选择客户筛选订单"
+                allowCreate={false}
+                className="h-11 min-w-0 flex-1"
+              />
+              {initialParams?.customerId && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClearCustomerFilter}
+                  className="h-11 shrink-0 px-3"
+                >
+                  清空
+                </Button>
+              )}
+            </div>
+          </div>
+        }
         // Toggle 按钮
         toggleButtons={[
+          {
+            key: 'historyOrders',
+            label: '历史销售记录',
+            icon: <Clock className="mr-1 h-3 w-3" />,
+            active: isHistoryView,
+            onClick: handleToggleHistoryOrders,
+          },
           {
             key: 'transferOrders',
             label: '调货订单',
@@ -751,13 +973,17 @@ export function ERPSalesOrderList({
             active: !!initialParams?.hasReturns,
             onClick: handleToggleHasReturns,
           },
-          {
-            key: 'includeTest',
-            label: '显示测试',
-            icon: <Eye className="mr-1 h-3 w-3" />,
-            active: !!initialParams?.includeTest,
-            onClick: handleToggleIncludeTest,
-          },
+          ...(!isHistoryView
+            ? [
+                {
+                  key: 'includeTest',
+                  label: '显示测试',
+                  icon: <Eye className="mr-1 h-3 w-3" />,
+                  active: !!initialParams?.includeTest,
+                  onClick: handleToggleIncludeTest,
+                },
+              ]
+            : []),
           {
             key: 'includeVoided',
             label: '显示作废',
@@ -773,7 +999,21 @@ export function ERPSalesOrderList({
         compact={true}
       />
 
-      {isPrioritySorted && (
+      {isHistoryView && (
+        <div className="rounded-2xl border border-sky-200 bg-sky-50/90 px-4 py-3 text-sky-900 shadow-sm">
+          <div className="flex items-start gap-3">
+            <Clock className="mt-0.5 h-4 w-4 shrink-0 text-sky-600" />
+            <div className="min-w-0">
+              <p className="text-sm font-bold">历史导入视角</p>
+              <p className="mt-1 text-xs leading-5 text-sky-800 sm:text-sm">
+                这里集中展示通过导入沉淀的历史销售记录。默认销售订单列表不会显示它们，销售看板、应收统计和库存预留也不会自动纳入。
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!isHistoryView && isPrioritySorted && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-amber-900 shadow-sm">
           <div className="flex items-start gap-3">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
@@ -849,21 +1089,11 @@ export function ERPSalesOrderList({
                     <TableRow
                       key={order.id}
                       className="cursor-pointer border-b border-[hsl(var(--color-border-primary))] transition-colors hover:bg-[hsl(var(--color-primary-light))]"
-                      onClick={() => {
-                        if (onOrderSelect) {
-                          onOrderSelect(order);
-                          return;
-                        }
-                        router.push(`/sales-orders/${order.id}`);
-                      }}
+                      onClick={() => handleOpenOrder(order)}
                       onKeyDown={event => {
                         if (event.key === 'Enter' || event.key === ' ') {
                           event.preventDefault();
-                          if (onOrderSelect) {
-                            onOrderSelect(order);
-                          } else {
-                            router.push(`/sales-orders/${order.id}`);
-                          }
+                          handleOpenOrder(order);
                         }
                       }}
                       role="button"
@@ -938,7 +1168,10 @@ export function ERPSalesOrderList({
                             <Button
                               variant="default"
                               size="sm"
-                              onClick={e => handleConfirmShipment(order, e)}
+                              onClick={e => {
+                                e.stopPropagation();
+                                handleConfirmShipment(order);
+                              }}
                               disabled={updatingOrderId === order.id}
                               className="h-6 bg-[hsl(var(--color-primary))] px-2 text-xs text-white shadow-sm hover:bg-[hsl(var(--color-primary-dark))]"
                             >
@@ -986,91 +1219,7 @@ export function ERPSalesOrderList({
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-40">
-                            <DropdownMenuItem
-                              onClick={e => {
-                                e.stopPropagation();
-                                router.push(`/sales-orders/${order.id}`);
-                              }}
-                              className="text-xs"
-                            >
-                              <Eye className="mr-1 h-3 w-3" />
-                              查看
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={e => {
-                                e.stopPropagation();
-                                if (order.status === 'draft') {
-                                  router.push(`/sales-orders/${order.id}/edit`);
-                                } else {
-                                  setSelectedOrder(order);
-                                  setShowEditWarning(true);
-                                }
-                              }}
-                              className="text-xs"
-                            >
-                              <Edit className="mr-1 h-3 w-3" />
-                              编辑
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={async e => {
-                                e.stopPropagation();
-                                try {
-                                  await exportToImage({
-                                    orderId: order.id,
-                                    orderNumber: order.orderNumber || '',
-                                    backgroundColor: '#ffffff',
-                                    scale: 2,
-                                  });
-                                } catch (err) {
-                                  toast({
-                                    title: '导出失败',
-                                    description:
-                                      err instanceof Error
-                                        ? err.message
-                                        : '导出图片失败',
-                                    variant: 'destructive',
-                                  });
-                                }
-                              }}
-                              disabled={isExportingImage}
-                              className="text-xs"
-                            >
-                              <Download className="mr-1 h-3 w-3" />
-                              {isExportingImage ? '生成图片中...' : '导出图片'}
-                            </DropdownMenuItem>
-                            {isOrderCancelable(order.status) && (
-                              <DropdownMenuItem
-                                onClick={event =>
-                                  handleCancelOrderClick(order, event)
-                                }
-                                className="text-xs text-[hsl(var(--color-error))]"
-                              >
-                                <Ban className="mr-1 h-3 w-3" />
-                                取消
-                              </DropdownMenuItem>
-                            )}
-                            {order.status === 'confirmed' && (
-                              <DropdownMenuItem
-                                onClick={event =>
-                                  handleWithdrawOrderClick(order, event)
-                                }
-                                className="text-xs"
-                              >
-                                <Undo2 className="mr-1 h-3 w-3" />
-                                撤回确认
-                              </DropdownMenuItem>
-                            )}
-                            {order.status === 'cancelled' && (
-                              <DropdownMenuItem
-                                onClick={event =>
-                                  handleDeleteOrderClick(order, event)
-                                }
-                                className="text-xs text-[hsl(var(--color-error))]"
-                              >
-                                <Trash2 className="mr-1 h-3 w-3" />
-                                删除
-                              </DropdownMenuItem>
-                            )}
+                            {renderOrderActionMenuItems(order)}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -1079,7 +1228,7 @@ export function ERPSalesOrderList({
                 ) : (
                   <TableRow>
                     <TableCell colSpan={10} className="p-8">
-                      <EmptyState title="暂无销售订单数据" compact />
+                      <EmptyState title={emptyStateTitle} compact />
                     </TableCell>
                   </TableRow>
                 )}
@@ -1110,24 +1259,15 @@ export function ERPSalesOrderList({
               </div>
             ))
           ) : data?.data && data.data.length > 0 ? (
-            data.data.map(order => {
-              const handleCardClick = () => {
-                if (onOrderSelect) {
-                  onOrderSelect(order);
-                  return;
-                }
-                router.push(`/sales-orders/${order.id}`);
-              };
-
-              return (
+            data.data.map(order => (
                 <div
                   key={order.id}
                   className="card-shadow-light cursor-pointer rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3"
-                  onClick={handleCardClick}
+                  onClick={() => handleOpenOrder(order)}
                   onKeyDown={event => {
                     if (event.key === 'Enter' || event.key === ' ') {
                       event.preventDefault();
-                      handleCardClick();
+                      handleOpenOrder(order);
                     }
                   }}
                   role="button"
@@ -1204,7 +1344,7 @@ export function ERPSalesOrderList({
                           className="h-7 px-2 text-xs font-bold"
                           onClick={e => {
                             e.stopPropagation();
-                            handleConfirmShipment(order, e);
+                            handleConfirmShipment(order);
                           }}
                           disabled={updatingOrderId === order.id}
                         >
@@ -1220,19 +1360,34 @@ export function ERPSalesOrderList({
                         className="h-7 px-1 text-xs font-bold text-slate-500"
                         onClick={e => {
                           e.stopPropagation();
-                          router.push(`/sales-orders/${order.id}`);
+                          handleOpenOrder(order);
                         }}
                       >
                         <Eye className="mr-1 h-3 w-3" />
                         查看
                       </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 px-0 text-slate-500"
+                            onClick={event => event.stopPropagation()}
+                            aria-label="更多操作"
+                          >
+                            <MoreHorizontal className="h-3.5 w-3.5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40">
+                          {renderOrderActionMenuItems(order)}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                 </div>
-              );
-            })
+              ))
           ) : (
-            <EmptyState title="暂无销售订单数据" compact />
+            <EmptyState title={emptyStateTitle} compact />
           )}
         </div>
 
@@ -1306,7 +1461,7 @@ export function ERPSalesOrderList({
               确定要将订单 <strong>{orderPendingWithdraw?.orderNumber}</strong>{' '}
               撤回为草稿吗？
               <br />
-              撤回后可重新修改订单，系统会同步释放预留库存并关闭当前待收记录。
+              撤回后可重新修改订单，预留库存会恢复，相关待收记录也会一并关闭。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1402,7 +1557,12 @@ export function ERPSalesOrderList({
             <AlertDialogAction
               onClick={() => {
                 if (selectedOrder) {
-                  router.push(`/sales-orders/${selectedOrder.id}`);
+                  router.push(
+                    withReturnTo(
+                      `/sales-orders/${selectedOrder.id}`,
+                      getCurrentPathWithSearch() ?? '/sales-orders'
+                    )
+                  );
                 }
               }}
             >

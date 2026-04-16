@@ -10,6 +10,10 @@ import {
   reserveInventory,
   shouldReserveInventory,
 } from '@/lib/api/handlers/sales-orders/inventory';
+import {
+  isSameNullableNumber,
+  resolveSalesOrderItemSnapshot,
+} from '@/lib/api/handlers/sales-orders/item-snapshots';
 import { prisma, withTransaction } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import {
@@ -171,6 +175,11 @@ export interface OrderStatusUpdateResult {
   reservedInventoryReleased: boolean;
 }
 
+interface SalesOrderStatusUpdateOptions {
+  shippedAt?: Date;
+  tx?: SalesOrderStatusTransactionClient;
+}
+
 type SalesOrderStatusTransactionClient = Prisma.TransactionClient;
 
 type ReservableSalesOrder = {
@@ -195,9 +204,7 @@ async function releaseReservedInventoryForConfirmedOrder(
 
   const transferMode =
     order.orderType === 'TRANSFER'
-      ? ((order.transferMode ?? 'SUPPLIER_ONLY') as
-          | 'SUPPLIER_ONLY'
-          | 'MIXED')
+      ? ((order.transferMode ?? 'SUPPLIER_ONLY') as 'SUPPLIER_ONLY' | 'MIXED')
       : 'SUPPLIER_ONLY';
 
   const shouldReleaseReserved =
@@ -539,6 +546,8 @@ async function executeOrderConfirmation(
         const updateData: {
           variantId?: string | null;
           batchNumber?: string | null;
+          piecesPerUnit?: number | null;
+          weightSnapshot?: number | null;
         } = {};
 
         if (!orderItem.variantId && reservation.variantId) {
@@ -552,6 +561,24 @@ async function executeOrderConfirmation(
           reservedBatchNumber.length > 0
         ) {
           updateData.batchNumber = reservedBatchNumber;
+        }
+
+        const finalSnapshot = await resolveSalesOrderItemSnapshot(tx, {
+          productId: orderItem.productId,
+          variantId: updateData.variantId ?? orderItem.variantId,
+          colorCode: orderItem.colorCode,
+          batchNumber: updateData.batchNumber ?? orderItem.batchNumber,
+          isManualProduct: orderItem.isManualProduct,
+        });
+
+        if (!isSameNullableNumber(orderItem.piecesPerUnit, finalSnapshot.piecesPerUnit)) {
+          updateData.piecesPerUnit = finalSnapshot.piecesPerUnit;
+        }
+
+        if (
+          !isSameNullableNumber(orderItem.weightSnapshot, finalSnapshot.weightSnapshot)
+        ) {
+          updateData.weightSnapshot = finalSnapshot.weightSnapshot;
         }
 
         if (Object.keys(updateData).length > 0) {
@@ -650,10 +677,11 @@ async function executeOrderStatusUpdateWithInventory(
   orderId: string,
   status: string,
   remarks?: string,
-  operatorId?: string
+  operatorId?: string,
+  options: SalesOrderStatusUpdateOptions = {}
 ): Promise<OrderStatusUpdateResult> {
-  // 先查询订单信息
-  const existingOrder = await prisma.salesOrder.findUnique({
+  const db = options.tx ?? prisma;
+  const existingOrder = await db.salesOrder.findUnique({
     where: { id: orderId },
     include: {
       items: {
@@ -684,6 +712,7 @@ async function executeOrderStatusUpdateWithInventory(
 
   // 如果没有提供操作员ID,使用订单创建人ID
   const finalOperatorId = operatorId || existingOrder.userId;
+  const effectiveShippedAt = options.shippedAt ?? new Date();
 
   const transferMode =
     existingOrder.orderType === 'TRANSFER'
@@ -771,403 +800,401 @@ async function executeOrderStatusUpdateWithInventory(
         )
       : new Map<string, number>();
 
+  const executeInventoryUpdate = async (
+    tx: SalesOrderStatusTransactionClient
+  ) => {
+    // 第一步：先检查所有产品的库存，收集库存不足的信息
+    const insufficientStockItems: Array<{
+      productCode: string;
+      productName: string;
+      colorInfo: string;
+      availableQty: number;
+      requiredQty: number;
+      shortage: number;
+      unit: string;
+      batchNumber: string;
+      location: string;
+    }> = [];
+
+    const inventoryChecks: Array<{
+      item: (typeof existingOrder.items)[0];
+      productId: string;
+      outboundQuantity: number;
+      inventory: NonNullable<
+        Awaited<ReturnType<typeof findAvailableInventory>>
+      >;
+    }> = [];
+
+    for (const {
+      item,
+      productId,
+      transferReason,
+      outboundQuantity,
+    } of itemsWithInventory) {
+      if (transferReason) {
+        logger.info('sales-order-status', '跳过调货产品库存扣减', {
+          orderId: existingOrder.id,
+          orderNumber: existingOrder.orderNumber,
+          salesOrderItemId: item.id,
+          reason: transferReason,
+        });
+        continue;
+      }
+
+      if (outboundQuantity <= 0) {
+        // 调货混合模式中，本地发货数量为 0 的明细不需要扣减库存
+        continue;
+      }
+
+      // 使用类型安全的库存查找（支持变体和批次映射）
+      const inventory = await findAvailableInventory(
+        productId,
+        outboundQuantity,
+        {
+          colorCode: item.colorCode,
+          // 优先按销售订单明细中选择的批次号匹配库存；
+          // 只有在没有批次号时，才退回到按生产日期推导批次
+          batchNumber: item.batchNumber,
+          productionDate: item.productionDate,
+          tx,
+        }
+      );
+
+      if (!inventory) {
+        const existingInventory = await findAvailableInventory(productId, 0, {
+          colorCode: item.colorCode,
+          batchNumber: item.batchNumber,
+          productionDate: item.productionDate,
+          tx,
+        });
+
+        const productCode = item.product?.code || '未知编码';
+        const productName = item.product?.name || '未知产品';
+        const colorInfo = item.colorCode ? ` (色号: ${item.colorCode})` : '';
+        // 系统内部统一使用"片"作为单位，因为库存和订单数量都是以片为单位存储的
+        const unitLabel = '片';
+        const derivedBatch =
+          item.batchNumber ||
+          existingInventory?.batchNumber ||
+          (item.productionDate ? item.productionDate : null) ||
+          '未设置';
+        const resolvedLocation = existingInventory?.location || '未设置';
+
+        if (!existingInventory) {
+          throw new Error(
+            `产品 [${productCode}] ${productName}${colorInfo} 在仓库中尚未建立库存记录，请先入库或同步库存后再发货`
+          );
+        }
+
+        const availableQty = existingInventory.quantity;
+        const shortage = Math.max(0, outboundQuantity - availableQty);
+
+        insufficientStockItems.push({
+          productCode,
+          productName,
+          colorInfo,
+          availableQty,
+          requiredQty: outboundQuantity,
+          shortage,
+          unit: unitLabel,
+          batchNumber: derivedBatch,
+          location: resolvedLocation,
+        });
+        continue;
+      }
+
+      // ✅ 发货扣减：确认单本身已预留，因此这里校验“预留量足够本次发货”
+      if (inventory.reservedQuantity < outboundQuantity) {
+        const productCode = item.product?.code || '未知编码';
+        const productName = item.product?.name || '未知产品';
+        const colorInfo = item.colorCode ? ` (色号: ${item.colorCode})` : '';
+        throw new Error(
+          `产品 [${productCode}] ${productName}${colorInfo} 预留库存不足（当前预留：${inventory.reservedQuantity}片，本次发货：${outboundQuantity}片），请刷新后重试`
+        );
+      }
+
+      // 库存充足，保存检查结果用于后续更新
+      inventoryChecks.push({
+        item,
+        productId,
+        outboundQuantity,
+        inventory,
+      });
+    }
+
+    // 如果有库存不足的产品，抛出详细的错误信息
+    if (insufficientStockItems.length > 0) {
+      const formatTraceInfo = (item: (typeof insufficientStockItems)[number]) =>
+        `批次:${item.batchNumber} 位置:${item.location}`;
+
+      if (insufficientStockItems.length === 1) {
+        const item = insufficientStockItems[0];
+        throw new Error(
+          `产品 [${item.productCode}] ${item.productName}${item.colorInfo} 库存不足，当前库存：${item.availableQty}${item.unit}，需要：${item.requiredQty}${item.unit}，缺少：${item.shortage}${item.unit}（${formatTraceInfo(item)}）`
+        );
+      }
+
+      const errorMessages = insufficientStockItems.map(
+        item =>
+          `- [${item.productCode}] ${item.productName}${item.colorInfo}：当前库存 ${item.availableQty}${item.unit}，需要 ${item.requiredQty}${item.unit}，缺少 ${item.shortage}${item.unit}（${formatTraceInfo(item)}）`
+      );
+      throw new Error(
+        `以下 ${insufficientStockItems.length} 个产品库存不足：\n${errorMessages.join('\n')}`
+      );
+    }
+
+    // 第二步：更新库存并创建出库记录 - 使用乐观锁 + FIFO成本
+    // 同时收集最新的明细成本, 便于后续回写订单级成本/利润字段
+    const updatedItemCosts = new Map<string, number>();
+
+    const isMixedTransferOrder =
+      existingOrder.orderType === 'TRANSFER' && transferMode === 'MIXED';
+
+    for (const {
+      item,
+      productId,
+      inventory,
+      outboundQuantity,
+    } of inventoryChecks) {
+      const decrementReservedQty = outboundQuantity;
+
+      // 使用乐观锁更新库存数量和预留量，确保并发安全
+      const updatedCount = await tx.inventory.updateMany({
+        where: {
+          id: inventory.id,
+          updatedAt: inventory.updatedAt,
+          quantity: { gte: outboundQuantity }, // 再次确认库存足够
+          reservedQuantity: { gte: decrementReservedQty },
+        },
+        data: {
+          quantity: { decrement: outboundQuantity },
+          reservedQuantity: { decrement: decrementReservedQty },
+        },
+      });
+
+      if (updatedCount.count === 0) {
+        throw new Error(
+          `产品 ${item.product?.name || '未知产品'} 库存不足或已被其他订单占用,请重试`
+        );
+      }
+
+      const itemQuantity = outboundQuantity;
+
+      const unitCostHint = isMixedTransferOrder
+        ? inventory.unitCost !== undefined && inventory.unitCost !== null
+          ? Number(inventory.unitCost)
+          : item.unitCost !== undefined && item.unitCost !== null
+            ? Number(item.unitCost)
+            : null
+        : item.unitCost !== undefined && item.unitCost !== null
+          ? Number(item.unitCost)
+          : inventory.unitCost !== undefined && inventory.unitCost !== null
+            ? Number(inventory.unitCost)
+            : null;
+
+      await ensureFIFOQueueMatchesInventory(
+        {
+          inventoryId: inventory.id,
+          productId,
+          variantId: inventory.variantId,
+          batchNumber: inventory.batchNumber,
+          expectedInventoryQty: inventory.quantity,
+          unitCostHint,
+          userId: finalOperatorId,
+          source: `sales-order-outbound:${existingOrder.orderNumber}`,
+        },
+        tx
+      );
+
+      const fifoCost = await consumeFIFOQueueByBatch(
+        productId,
+        inventory.variantId,
+        inventory.batchNumber,
+        itemQuantity,
+        tx
+      );
+      const baseTotalCost = roundCurrency(fifoCost.totalCost);
+      const baseUnitCost =
+        itemQuantity > 0
+          ? roundCostPrice(fifoCost.totalCost / itemQuantity)
+          : fifoCost.averageUnitCost;
+
+      // 批次号真源：库存/订单显式批次号；生产日期仅用于匹配查找，不能写回/落库
+      const finalBatchNumber =
+        item.batchNumber || inventory.batchNumber || undefined;
+
+      const outboundRecordNumber = await generateUniqueOrderNumber(
+        OUTBOUND_RECORD_CONFIG,
+        { tx }
+      );
+
+      const allocatedExpense = expenseAllocations.get(item.id) ?? 0;
+      const localCostWithExpense =
+        baseTotalCost !== undefined || allocatedExpense > 0
+          ? roundCurrency((baseTotalCost ?? 0) + allocatedExpense)
+          : undefined;
+      const localUnitCostWithExpense =
+        localCostWithExpense !== undefined && itemQuantity > 0
+          ? roundCostPrice(localCostWithExpense / itemQuantity)
+          : baseUnitCost;
+
+      const transferQuantity = isMixedTransferOrder
+        ? Number(item.transferQuantity ?? 0)
+        : 0;
+      const transferUnitCost =
+        isMixedTransferOrder &&
+        item.unitCost !== undefined &&
+        item.unitCost !== null
+          ? roundCostPrice(Number(item.unitCost))
+          : 0;
+      const transferCost =
+        isMixedTransferOrder && transferQuantity > 0 && transferUnitCost > 0
+          ? roundCurrency(transferQuantity * transferUnitCost)
+          : 0;
+
+      const totalCostWithExpense = isMixedTransferOrder
+        ? baseTotalCost !== undefined ||
+          transferCost > 0 ||
+          allocatedExpense > 0
+          ? roundCurrency(
+              (baseTotalCost ?? 0) + transferCost + allocatedExpense
+            )
+          : undefined
+        : localCostWithExpense;
+
+      // 创建出库记录（使用事务内生成的单号 + FIFO成本）
+      const outboundReason = existingOrder.isSampleOrder
+        ? 'sample_outbound'
+        : 'sales_outbound';
+
+      await tx.outboundRecord.create({
+        data: {
+          recordNumber: outboundRecordNumber,
+          productId,
+          variantId: inventory.variantId,
+          batchNumber: finalBatchNumber,
+          inventoryId: inventory.id,
+          quantity: outboundQuantity,
+          unitCost: localUnitCostWithExpense ?? undefined,
+          totalCost: localCostWithExpense ?? undefined,
+          reason: outboundReason,
+          notes: `${existingOrder.isSampleOrder ? '样品单' : '销售订单'}发货：${existingOrder.orderNumber}`,
+          customerId: existingOrder.customerId,
+          salesOrderId: existingOrder.id,
+          operatorId: finalOperatorId,
+          createdAt: effectiveShippedAt,
+        },
+      });
+
+      // 将分配的费用和成本写回销售订单明细（利润仍按销售金额 - 成本计算）
+      const itemSubtotal =
+        item.subtotal === null || item.subtotal === undefined
+          ? undefined
+          : toNumber(item.subtotal);
+      await tx.salesOrderItem.update({
+        where: { id: item.id },
+        data: {
+          allocatedExpense,
+          costSubtotal: totalCostWithExpense,
+          ...(isMixedTransferOrder
+            ? {}
+            : { unitCost: localUnitCostWithExpense ?? undefined }),
+          profitAmount:
+            itemSubtotal !== undefined && totalCostWithExpense !== undefined
+              ? roundCurrency(itemSubtotal - (totalCostWithExpense ?? 0))
+              : undefined,
+          profitMargin:
+            itemSubtotal &&
+            itemSubtotal > 0 &&
+            totalCostWithExpense !== undefined
+              ? roundCurrency(
+                  ((itemSubtotal - (totalCostWithExpense ?? 0)) /
+                    itemSubtotal) *
+                    100
+                )
+              : undefined,
+        },
+      });
+
+      // 记录明细最新成本（含分摊费用），用于聚合到订单级成本
+      const finalCostForItem =
+        totalCostWithExpense !== undefined
+          ? totalCostWithExpense
+          : roundCurrency((baseTotalCost ?? 0) + transferCost);
+      updatedItemCosts.set(item.id, finalCostForItem);
+    }
+
+    // 汇总最新成本, 以“明细成本汇总 = 订单成本”的口径回写订单级字段
+    let aggregatedCostAmount = 0;
+    existingOrder.items.forEach(item => {
+      const updatedCost =
+        updatedItemCosts.get(item.id) ?? Number(item.costSubtotal ?? 0) ?? 0;
+      aggregatedCostAmount += updatedCost;
+    });
+    aggregatedCostAmount = roundCurrency(aggregatedCostAmount);
+
+    const itemsAmountValue =
+      existingOrder.itemsAmount !== undefined &&
+      existingOrder.itemsAmount !== null
+        ? Number(existingOrder.itemsAmount)
+        : existingOrder.items.reduce(
+            (sum, item) => sum + Number(item.subtotal ?? 0),
+            0
+          );
+    const normalizedExpenseAmount = roundCurrency(companyExpenseAmount);
+    const updatedCostAmount = aggregatedCostAmount;
+    const updatedProfitAmount =
+      itemsAmountValue !== 0
+        ? roundCurrency(itemsAmountValue - updatedCostAmount)
+        : (existingOrder.profitAmount ?? undefined);
+
+    // 第三步：更新订单状态（确保库存扣减成功后再标记发货）
+    const orderUpdate = await tx.salesOrder.updateMany({
+      where: { id: orderId, status: 'confirmed' },
+      data: {
+        status,
+        ...(remarks !== undefined && { remarks }),
+        ...(status === 'shipped' && { shippedAt: effectiveShippedAt }),
+        costAmount: updatedCostAmount,
+        profitAmount: updatedProfitAmount,
+        expenseAmount: normalizedExpenseAmount,
+      },
+    });
+
+    if (orderUpdate.count === 0) {
+      throw new Error('订单状态已变更，请刷新后重试');
+    }
+
+    const order = await tx.salesOrder.findUnique({
+      where: { id: orderId },
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        remarks: true,
+      },
+    });
+
+    if (!order) {
+      throw new Error('销售订单不存在');
+    }
+
+    return {
+      order,
+      inventoryUpdated: inventoryChecks.length > 0,
+      reservedInventoryReleased: false,
+    };
+  };
+
+  if (options.tx) {
+    return executeInventoryUpdate(options.tx);
+  }
+
   return await runWithFifoTransactionRetry({
     actionLabel: '销售订单发货',
     moduleName: 'sales-order-status',
     operation: () =>
-      withTransaction(async tx => {
-        // 第一步：先检查所有产品的库存，收集库存不足的信息
-        const insufficientStockItems: Array<{
-          productCode: string;
-          productName: string;
-          colorInfo: string;
-          availableQty: number;
-          requiredQty: number;
-          shortage: number;
-          unit: string;
-          batchNumber: string;
-          location: string;
-        }> = [];
-
-        const inventoryChecks: Array<{
-          item: (typeof existingOrder.items)[0];
-          productId: string;
-          outboundQuantity: number;
-          inventory: NonNullable<
-            Awaited<ReturnType<typeof findAvailableInventory>>
-          >;
-        }> = [];
-
-        for (const {
-          item,
-          productId,
-          transferReason,
-          outboundQuantity,
-        } of itemsWithInventory) {
-          if (transferReason) {
-            logger.info('sales-order-status', '跳过调货产品库存扣减', {
-              orderId: existingOrder.id,
-              orderNumber: existingOrder.orderNumber,
-              salesOrderItemId: item.id,
-              reason: transferReason,
-            });
-            continue;
-          }
-
-          if (outboundQuantity <= 0) {
-            // 调货混合模式中，本地发货数量为 0 的明细不需要扣减库存
-            continue;
-          }
-
-          // 使用类型安全的库存查找（支持变体和批次映射）
-          const inventory = await findAvailableInventory(
-            productId,
-            outboundQuantity,
-            {
-              colorCode: item.colorCode,
-              // 优先按销售订单明细中选择的批次号匹配库存；
-              // 只有在没有批次号时，才退回到按生产日期推导批次
-              batchNumber: item.batchNumber,
-              productionDate: item.productionDate,
-              tx,
-            }
-          );
-
-          if (!inventory) {
-            const existingInventory = await findAvailableInventory(
-              productId,
-              0,
-              {
-                colorCode: item.colorCode,
-                batchNumber: item.batchNumber,
-                productionDate: item.productionDate,
-                tx,
-              }
-            );
-
-            const productCode = item.product?.code || '未知编码';
-            const productName = item.product?.name || '未知产品';
-            const colorInfo = item.colorCode
-              ? ` (色号: ${item.colorCode})`
-              : '';
-            // 系统内部统一使用"片"作为单位，因为库存和订单数量都是以片为单位存储的
-            const unitLabel = '片';
-            const derivedBatch =
-              item.batchNumber ||
-              existingInventory?.batchNumber ||
-              (item.productionDate ? item.productionDate : null) ||
-              '未设置';
-            const resolvedLocation = existingInventory?.location || '未设置';
-
-            if (!existingInventory) {
-              throw new Error(
-                `产品 [${productCode}] ${productName}${colorInfo} 在仓库中尚未建立库存记录，请先入库或同步库存后再发货`
-              );
-            }
-
-            const availableQty = existingInventory.quantity;
-            const shortage = Math.max(0, outboundQuantity - availableQty);
-
-            insufficientStockItems.push({
-              productCode,
-              productName,
-              colorInfo,
-              availableQty,
-              requiredQty: outboundQuantity,
-              shortage,
-              unit: unitLabel,
-              batchNumber: derivedBatch,
-              location: resolvedLocation,
-            });
-            continue;
-          }
-
-          // ✅ 发货扣减：确认单本身已预留，因此这里校验“预留量足够本次发货”
-          if (inventory.reservedQuantity < outboundQuantity) {
-            const productCode = item.product?.code || '未知编码';
-            const productName = item.product?.name || '未知产品';
-            const colorInfo = item.colorCode
-              ? ` (色号: ${item.colorCode})`
-              : '';
-            throw new Error(
-              `产品 [${productCode}] ${productName}${colorInfo} 预留库存不足（当前预留：${inventory.reservedQuantity}片，本次发货：${outboundQuantity}片），请刷新后重试`
-            );
-          }
-
-          // 库存充足，保存检查结果用于后续更新
-          inventoryChecks.push({
-            item,
-            productId,
-            outboundQuantity,
-            inventory,
-          });
-        }
-
-        // 如果有库存不足的产品，抛出详细的错误信息
-        if (insufficientStockItems.length > 0) {
-          const formatTraceInfo = (
-            item: (typeof insufficientStockItems)[number]
-          ) => `批次:${item.batchNumber} 位置:${item.location}`;
-
-          if (insufficientStockItems.length === 1) {
-            const item = insufficientStockItems[0];
-            throw new Error(
-              `产品 [${item.productCode}] ${item.productName}${item.colorInfo} 库存不足，当前库存：${item.availableQty}${item.unit}，需要：${item.requiredQty}${item.unit}，缺少：${item.shortage}${item.unit}（${formatTraceInfo(item)}）`
-            );
-          } else {
-            const errorMessages = insufficientStockItems.map(
-              item =>
-                `- [${item.productCode}] ${item.productName}${item.colorInfo}：当前库存 ${item.availableQty}${item.unit}，需要 ${item.requiredQty}${item.unit}，缺少 ${item.shortage}${item.unit}（${formatTraceInfo(item)}）`
-            );
-            throw new Error(
-              `以下 ${insufficientStockItems.length} 个产品库存不足：\n${errorMessages.join('\n')}`
-            );
-          }
-        }
-
-        // 第二步：更新库存并创建出库记录 - 使用乐观锁 + FIFO成本
-        // 同时收集最新的明细成本, 便于后续回写订单级成本/利润字段
-        const updatedItemCosts = new Map<string, number>();
-
-        const isMixedTransferOrder =
-          existingOrder.orderType === 'TRANSFER' && transferMode === 'MIXED';
-
-        for (const {
-          item,
-          productId,
-          inventory,
-          outboundQuantity,
-        } of inventoryChecks) {
-          const decrementReservedQty = outboundQuantity;
-
-          // 使用乐观锁更新库存数量和预留量，确保并发安全
-          const updatedCount = await tx.inventory.updateMany({
-            where: {
-              id: inventory.id,
-              updatedAt: inventory.updatedAt,
-              quantity: { gte: outboundQuantity }, // 再次确认库存足够
-              reservedQuantity: { gte: decrementReservedQty },
-            },
-            data: {
-              quantity: { decrement: outboundQuantity },
-              reservedQuantity: { decrement: decrementReservedQty },
-            },
-          });
-
-          if (updatedCount.count === 0) {
-            throw new Error(
-              `产品 ${item.product?.name || '未知产品'} 库存不足或已被其他订单占用,请重试`
-            );
-          }
-
-          const itemQuantity = outboundQuantity;
-
-          const unitCostHint = isMixedTransferOrder
-            ? inventory.unitCost !== undefined && inventory.unitCost !== null
-              ? Number(inventory.unitCost)
-              : item.unitCost !== undefined && item.unitCost !== null
-                ? Number(item.unitCost)
-                : null
-            : item.unitCost !== undefined && item.unitCost !== null
-              ? Number(item.unitCost)
-              : inventory.unitCost !== undefined && inventory.unitCost !== null
-                ? Number(inventory.unitCost)
-                : null;
-
-          await ensureFIFOQueueMatchesInventory(
-            {
-              inventoryId: inventory.id,
-              productId,
-              variantId: inventory.variantId,
-              batchNumber: inventory.batchNumber,
-              expectedInventoryQty: inventory.quantity,
-              unitCostHint,
-              userId: finalOperatorId,
-              source: `sales-order-outbound:${existingOrder.orderNumber}`,
-            },
-            tx
-          );
-
-          const fifoCost = await consumeFIFOQueueByBatch(
-            productId,
-            inventory.variantId,
-            inventory.batchNumber,
-            itemQuantity,
-            tx
-          );
-          const baseTotalCost = roundCurrency(fifoCost.totalCost);
-          const baseUnitCost =
-            itemQuantity > 0
-              ? roundCostPrice(fifoCost.totalCost / itemQuantity)
-              : fifoCost.averageUnitCost;
-
-          // 批次号真源：库存/订单显式批次号；生产日期仅用于匹配查找，不能写回/落库
-          const finalBatchNumber =
-            item.batchNumber || inventory.batchNumber || undefined;
-
-          const outboundRecordNumber = await generateUniqueOrderNumber(
-            OUTBOUND_RECORD_CONFIG,
-            { tx }
-          );
-
-          const allocatedExpense = expenseAllocations.get(item.id) ?? 0;
-          const localCostWithExpense =
-            baseTotalCost !== undefined || allocatedExpense > 0
-              ? roundCurrency((baseTotalCost ?? 0) + allocatedExpense)
-              : undefined;
-          const localUnitCostWithExpense =
-            localCostWithExpense !== undefined && itemQuantity > 0
-              ? roundCostPrice(localCostWithExpense / itemQuantity)
-              : baseUnitCost;
-
-          const transferQuantity = isMixedTransferOrder
-            ? Number(item.transferQuantity ?? 0)
-            : 0;
-          const transferUnitCost =
-            isMixedTransferOrder &&
-            item.unitCost !== undefined &&
-            item.unitCost !== null
-              ? roundCostPrice(Number(item.unitCost))
-              : 0;
-          const transferCost =
-            isMixedTransferOrder && transferQuantity > 0 && transferUnitCost > 0
-              ? roundCurrency(transferQuantity * transferUnitCost)
-              : 0;
-
-          const totalCostWithExpense = isMixedTransferOrder
-            ? baseTotalCost !== undefined ||
-              transferCost > 0 ||
-              allocatedExpense > 0
-              ? roundCurrency(
-                  (baseTotalCost ?? 0) + transferCost + allocatedExpense
-                )
-              : undefined
-            : localCostWithExpense;
-
-          // 创建出库记录（使用事务内生成的单号 + FIFO成本）
-          const outboundReason = existingOrder.isSampleOrder
-            ? 'sample_outbound'
-            : 'sales_outbound';
-
-          await tx.outboundRecord.create({
-            data: {
-              recordNumber: outboundRecordNumber,
-              productId,
-              variantId: inventory.variantId,
-              batchNumber: finalBatchNumber,
-              inventoryId: inventory.id,
-              quantity: outboundQuantity,
-              unitCost: localUnitCostWithExpense ?? undefined,
-              totalCost: localCostWithExpense ?? undefined,
-              reason: outboundReason,
-              notes: `${existingOrder.isSampleOrder ? '样品单' : '销售订单'}发货：${existingOrder.orderNumber}`,
-              customerId: existingOrder.customerId,
-              salesOrderId: existingOrder.id,
-              operatorId: finalOperatorId,
-            },
-          });
-
-          // 将分配的费用和成本写回销售订单明细（利润仍按销售金额 - 成本计算）
-          const itemSubtotal =
-            item.subtotal === null || item.subtotal === undefined
-              ? undefined
-              : toNumber(item.subtotal);
-          await tx.salesOrderItem.update({
-            where: { id: item.id },
-            data: {
-              allocatedExpense,
-              costSubtotal: totalCostWithExpense,
-              ...(isMixedTransferOrder
-                ? {}
-                : { unitCost: localUnitCostWithExpense ?? undefined }),
-              profitAmount:
-                itemSubtotal !== undefined && totalCostWithExpense !== undefined
-                  ? roundCurrency(itemSubtotal - (totalCostWithExpense ?? 0))
-                  : undefined,
-              profitMargin:
-                itemSubtotal &&
-                itemSubtotal > 0 &&
-                totalCostWithExpense !== undefined
-                  ? roundCurrency(
-                      ((itemSubtotal - (totalCostWithExpense ?? 0)) /
-                        itemSubtotal) *
-                        100
-                    )
-                  : undefined,
-            },
-          });
-
-          // 记录明细最新成本（含分摊费用），用于聚合到订单级成本
-          const finalCostForItem =
-            totalCostWithExpense !== undefined
-              ? totalCostWithExpense
-              : roundCurrency((baseTotalCost ?? 0) + transferCost);
-          updatedItemCosts.set(item.id, finalCostForItem);
-        }
-
-        // 汇总最新成本, 以“明细成本汇总 = 订单成本”的口径回写订单级字段
-        let aggregatedCostAmount = 0;
-        existingOrder.items.forEach(item => {
-          const updatedCost =
-            updatedItemCosts.get(item.id) ??
-            Number(item.costSubtotal ?? 0) ??
-            0;
-          aggregatedCostAmount += updatedCost;
-        });
-        aggregatedCostAmount = roundCurrency(aggregatedCostAmount);
-
-        const itemsAmountValue =
-          existingOrder.itemsAmount !== undefined &&
-          existingOrder.itemsAmount !== null
-            ? Number(existingOrder.itemsAmount)
-            : existingOrder.items.reduce(
-                (sum, item) => sum + Number(item.subtotal ?? 0),
-                0
-              );
-        const normalizedExpenseAmount = roundCurrency(companyExpenseAmount);
-        const updatedCostAmount = aggregatedCostAmount;
-        const updatedProfitAmount =
-          itemsAmountValue !== 0
-            ? roundCurrency(itemsAmountValue - updatedCostAmount)
-            : (existingOrder.profitAmount ?? undefined);
-
-        // 第三步：更新订单状态（确保库存扣减成功后再标记发货）
-        const orderUpdate = await tx.salesOrder.updateMany({
-          where: { id: orderId, status: 'confirmed' },
-          data: {
-            status,
-            ...(remarks !== undefined && { remarks }),
-            ...(status === 'shipped' && { shippedAt: new Date() }),
-            costAmount: updatedCostAmount,
-            profitAmount: updatedProfitAmount,
-            expenseAmount: normalizedExpenseAmount,
-          },
-        });
-
-        if (orderUpdate.count === 0) {
-          throw new Error('订单状态已变更，请刷新后重试');
-        }
-
-        const order = await tx.salesOrder.findUnique({
-          where: { id: orderId },
-          select: {
-            id: true,
-            orderNumber: true,
-            status: true,
-            remarks: true,
-          },
-        });
-
-        if (!order) {
-          throw new Error('销售订单不存在');
-        }
-
-        return {
-          order,
-          inventoryUpdated: inventoryChecks.length > 0,
-          reservedInventoryReleased: false,
-        };
-      }, ORDER_STATUS_TRANSACTION_OPTIONS),
+      withTransaction(executeInventoryUpdate, ORDER_STATUS_TRANSACTION_OPTIONS),
   });
 }
 
@@ -1256,9 +1283,7 @@ async function executeOrderConfirmationWithdrawal(
       existingOrder.prepaymentUsages.length > 0 ||
       prepaymentAmount > 0.0001
     ) {
-      throw new Error(
-        '订单已使用预收款冲抵，不能撤回确认，请直接取消后重开'
-      );
+      throw new Error('订单已使用预收款冲抵，不能撤回确认，请直接取消后重开');
     }
 
     const updateResult = await tx.salesOrder.updateMany({
@@ -1647,7 +1672,8 @@ export async function updateSalesOrderStatus(
   newStatus: string,
   currentStatus: string,
   remarks?: string,
-  operatorId?: string
+  operatorId?: string,
+  options: SalesOrderStatusUpdateOptions = {}
 ): Promise<OrderStatusUpdateResult> {
   const shouldConfirmWithReservation =
     newStatus === 'confirmed' && currentStatus === 'draft';
@@ -1681,7 +1707,8 @@ export async function updateSalesOrderStatus(
       orderId,
       newStatus,
       remarks,
-      operatorId
+      operatorId,
+      options
     );
   } else if (shouldReleaseReservedInventory) {
     return await executeOrderCancellation(orderId, remarks, operatorId);

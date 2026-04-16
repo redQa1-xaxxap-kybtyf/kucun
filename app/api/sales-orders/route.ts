@@ -34,6 +34,7 @@ const getSalesOrdersHandler = withErrorHandling(
         orderType: searchParams.get('orderType'),
         isSampleOrder: searchParams.get('isSampleOrder'),
         hasReturns: searchParams.get('hasReturns'),
+        recordScope: searchParams.get('recordScope'),
         includeTest: searchParams.get('includeTest'),
         includeVoided: searchParams.get('includeVoided'),
       };

@@ -42,6 +42,67 @@ export const salesOrderQueryKeys = {
     [...salesOrderQueryKeys.all, 'customer', customerId] as const,
 };
 
+export interface SalesOrderImportPreviewRow {
+  row: number;
+  importOrderNo: string;
+  customerName: string;
+  orderDate: string;
+  productCode: string;
+  productName: string;
+  specification: string;
+  displayUnit: '片' | '件';
+  displayQuantity: number;
+  quantity: number;
+  unitPrice: number;
+  subtotal: number;
+  orderRemarks?: string;
+  itemRemarks?: string;
+}
+
+export interface SalesOrderImportError {
+  row: number;
+  importOrderNo?: string;
+  productCode?: string;
+  field?: string;
+  message: string;
+}
+
+export interface SalesOrderImportDuplicate {
+  row: number;
+  importOrderNo: string;
+  source: 'system';
+  existingOrderNumber?: string;
+  message: string;
+}
+
+export interface SalesOrderImportResult {
+  valid: boolean;
+  totalRowCount: number;
+  totalOrderCount: number;
+  validOrderCount: number;
+  autoCreateCustomerNames: string[];
+  duplicateOrderCount: number;
+  errorCount: number;
+  previewRows: SalesOrderImportPreviewRow[];
+  duplicates: SalesOrderImportDuplicate[];
+  errors: SalesOrderImportError[];
+  importedCount?: number;
+  importedOrders?: Array<{
+    id: string;
+    orderNumber: string;
+    importOrderNo: string;
+    customerName: string;
+    totalAmount: number;
+  }>;
+}
+
+export type SalesOrderImportTargetStatus = 'confirmed' | 'shipped';
+
+export interface SalesOrderImportRequestOptions {
+  shippedDate?: string;
+  targetStatus?: SalesOrderImportTargetStatus;
+}
+
 /**
  * 获取销售订单列表
  */
@@ -129,6 +190,87 @@ export async function createSalesOrder(
     throw new Error('创建销售订单失败：数据为空');
   }
   return data.data;
+}
+
+function parseFilenameFromContentDisposition(headerValue: string | null) {
+  if (!headerValue) {
+    return '销售记录导入模板.xlsx';
+  }
+
+  const utf8Match = headerValue.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) {
+    return decodeURIComponent(utf8Match[1]);
+  }
+
+  const asciiMatch = headerValue.match(/filename="?([^"]+)"?/i);
+  return asciiMatch?.[1] || '销售记录导入模板.xlsx';
+}
+
+export async function downloadSalesOrderImportTemplate(): Promise<{
+  blob: Blob;
+  filename: string;
+}> {
+  const response = await fetch(`${API_BASE}/import/template`, {
+    method: 'GET',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error('下载销售记录导入模板失败');
+  }
+
+  return {
+    blob: await response.blob(),
+    filename: parseFilenameFromContentDisposition(
+      response.headers.get('content-disposition')
+    ),
+  };
+}
+
+async function sendSalesOrderImportRequest(
+  file: File,
+  mode: 'dry-run' | 'import',
+  options: SalesOrderImportRequestOptions = {}
+): Promise<SalesOrderImportResult> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('mode', mode);
+  formData.append(
+    'targetStatus',
+    options.targetStatus === 'shipped' ? 'shipped' : 'confirmed'
+  );
+
+  if (options.shippedDate?.trim()) {
+    formData.append('shippedDate', options.shippedDate.trim());
+  }
+
+  const response = await csrfFetch(`${API_BASE}/import`, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+  });
+
+  const body = (await response.json()) as ApiResponse<SalesOrderImportResult>;
+
+  if (!response.ok || !body.success || !body.data) {
+    throw new Error(body.error || '销售记录导入失败');
+  }
+
+  return body.data;
+}
+
+export function previewSalesOrderImport(
+  file: File,
+  options: SalesOrderImportRequestOptions = {}
+) {
+  return sendSalesOrderImportRequest(file, 'dry-run', options);
+}
+
+export function importSalesOrders(
+  file: File,
+  options: SalesOrderImportRequestOptions = {}
+) {
+  return sendSalesOrderImportRequest(file, 'import', options);
 }
 
 // 更新销售订单
@@ -569,21 +711,27 @@ export function useUpdateSalesOrderStatus(
     onSuccess: (data, variables, onMutateResult, context) => {
       const { id } = variables;
 
-      // ✅ 立即刷新当前模块缓存（详情、列表、统计）
+      // 先将销售订单相关缓存整体标记为过期，避免返回列表时读到旧状态。
+      queryClient.invalidateQueries({
+        queryKey: salesOrderQueryKeys.all,
+      });
+
+      // 立即刷新当前模块缓存（详情、列表、统计）。
+      // 列表需要覆盖 inactive 缓存，因为用户常从详情页返回列表。
       queryClient.refetchQueries({
         queryKey: salesOrderQueryKeys.detail(id),
-        type: 'active',
+        type: 'all',
       });
       queryClient.refetchQueries({
         queryKey: salesOrderQueryKeys.lists(),
-        type: 'active',
+        type: 'all',
       });
       queryClient.refetchQueries({
         queryKey: salesOrderQueryKeys.statistics(),
-        type: 'active',
+        type: 'all',
       });
 
-      // ✅ 延迟刷新跨模块缓存
+      // 延迟刷新跨模块缓存
       queryClient.invalidateQueries({
         queryKey: queryKeys.inventory.all,
       });

@@ -8,6 +8,7 @@ import type { ParamConfig } from '@/hooks/url-search-params';
 import type {
   SalesOrderFilterStatus,
   SalesOrderQueryParams,
+  SalesOrderRecordScope,
   SalesOrderType,
 } from '@/lib/types/sales-order';
 
@@ -35,6 +36,7 @@ const sortOrderValues = ['asc', 'desc'] as const satisfies NonNullable<
 >[];
 
 const orderTypeValues = ['NORMAL', 'TRANSFER'] as const satisfies SalesOrderType[];
+const recordScopeValues = ['history'] as const satisfies SalesOrderRecordScope[];
 
 export const salesOrderParamsConfig: Record<
   keyof SalesOrderQueryParams,
@@ -58,6 +60,7 @@ export const salesOrderParamsConfig: Record<
   orderType: { type: 'enum', values: orderTypeValues, default: undefined },
   isSampleOrder: { type: 'boolean', default: undefined },
   hasReturns: { type: 'boolean', default: undefined },
+  recordScope: { type: 'enum', values: recordScopeValues, default: undefined },
   includeTest: { type: 'boolean', default: undefined },
   includeVoided: { type: 'boolean', default: undefined },
 };

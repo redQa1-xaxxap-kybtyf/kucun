@@ -96,6 +96,15 @@ function createSalesOrderTx(params: {
   customerId: string;
   productId: string;
   variantId: string;
+  productPiecesPerUnit?: number | null;
+  productWeight?: number | null;
+  batchSpecifications?: Array<{
+    productId: string;
+    batchNumber: string;
+    variantKey: string;
+    piecesPerUnit: number;
+    weight: number | null;
+  }>;
   inventories: Array<{
     id: string;
     productId: string;
@@ -122,6 +131,22 @@ function createSalesOrderTx(params: {
     },
     productVariant: {
       findFirst: jest.fn(async () => ({ id: params.variantId })),
+    },
+    product: {
+      findMany: jest.fn(async () => [
+        {
+          id: params.productId,
+          piecesPerUnit:
+            params.productPiecesPerUnit === undefined
+              ? 1
+              : params.productPiecesPerUnit,
+          weight:
+            params.productWeight === undefined ? null : params.productWeight,
+        },
+      ]),
+    },
+    batchSpecification: {
+      findMany: jest.fn(async () => params.batchSpecifications ?? []),
     },
     salesOrderItem: {
       update: jest.fn(async (args: any) => ({
@@ -208,6 +233,17 @@ describe('sales-order create integration', () => {
       customerId,
       productId,
       variantId,
+      productPiecesPerUnit: 24,
+      productWeight: 30,
+      batchSpecifications: [
+        {
+          productId,
+          batchNumber: 'B1',
+          variantKey: variantId,
+          piecesPerUnit: 20,
+          weight: 26,
+        },
+      ],
       inventories: [
         {
           id: 'inv-1',
@@ -266,12 +302,19 @@ describe('sales-order create integration', () => {
     expect(result.items).toHaveLength(1);
     expect(result.items?.[0]?.variantId).toBe(variantId);
     expect(result.items?.[0]?.batchNumber).toBe('B1');
+    expect(result.items?.[0]?.piecesPerUnit).toBe(20);
+    expect(result.items?.[0]?.weightSnapshot).toBe(26);
     expect(result.items?.[0]?.product?.id).toBe(productId);
 
     expect(tx.inventory.updateMany).toHaveBeenCalledTimes(1);
     expect(tx.salesOrderItem.update).toHaveBeenCalledWith({
       where: { id: 'item-1' },
-      data: { variantId, batchNumber: 'B1' },
+      data: {
+        variantId,
+        batchNumber: 'B1',
+        piecesPerUnit: 20,
+        weightSnapshot: 26,
+      },
     });
 
     expect(tx.paymentRecord.create).toHaveBeenCalledTimes(1);

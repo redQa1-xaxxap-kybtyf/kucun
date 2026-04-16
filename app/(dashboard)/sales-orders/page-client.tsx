@@ -9,6 +9,10 @@ import { useUrlSearchParams } from '@/hooks/url-search-params';
 import { salesOrderParamsConfig } from '@/lib/schemas/sales-order-params-config';
 import type { SalesOrderQueryParams } from '@/lib/types/sales-order';
 import { logger } from '@/lib/utils/console-logger';
+import {
+  getCurrentPathWithSearch,
+  withReturnTo,
+} from '@/lib/utils/sales-order-navigation';
 
 const ERPSalesOrderList = dynamic(
   () =>
@@ -48,6 +52,7 @@ export function SalesOrdersPageClient({
     handlePageChange,
     handleOrderSelect,
     handleClearFilters,
+    handleRecordScopeChange,
   } = useSalesOrdersController(initialParams);
   return (
     <SalesOrdersContent
@@ -59,6 +64,7 @@ export function SalesOrdersPageClient({
       onPageChange={handlePageChange}
       onOrderSelect={handleOrderSelect}
       onClearFilters={handleClearFilters}
+      onRecordScopeChange={handleRecordScopeChange}
     />
   );
 }
@@ -126,6 +132,12 @@ function buildFilterUpdates(
       };
     case 'hasReturns':
       return { ...base, hasReturns: value === 'true' ? true : undefined };
+    case 'recordScope':
+      return {
+        ...base,
+        recordScope: value === 'history' ? 'history' : undefined,
+        includeTest: undefined,
+      };
     case 'includeTest':
       return { ...base, includeTest: value === 'true' ? true : undefined };
     case 'includeVoided':
@@ -204,6 +216,13 @@ function useSalesOrdersController(initialParams: SalesOrderQueryParams) {
     [updateParams]
   );
 
+  const handleRecordScopeChange = React.useCallback(
+    (recordScope: SalesOrderQueryParams['recordScope']) => {
+      updateParams(buildFilterUpdates('recordScope', recordScope));
+    },
+    [updateParams]
+  );
+
   const handlePageChange = React.useCallback(
     (nextPage: number) => {
       if (nextPage !== params.page) setParam('page', nextPage);
@@ -226,14 +245,22 @@ function useSalesOrdersController(initialParams: SalesOrderQueryParams) {
       orderType: undefined,
       isSampleOrder: undefined,
       hasReturns: undefined,
+      recordScope: params.recordScope,
       includeTest: undefined,
       includeVoided: undefined,
       page: 1,
     });
-  }, [updateParams]);
+  }, [params.recordScope, updateParams]);
 
   const handleOrderSelect = React.useCallback(
-    (order: { id: string }) => router.push(`/sales-orders/${order.id}`),
+    (order: { id: string }) => {
+      router.push(
+        withReturnTo(
+          `/sales-orders/${order.id}`,
+          getCurrentPathWithSearch() ?? '/sales-orders'
+        )
+      );
+    },
     [router]
   );
 
@@ -246,6 +273,7 @@ function useSalesOrdersController(initialParams: SalesOrderQueryParams) {
     handlePageChange,
     handleOrderSelect,
     handleClearFilters,
+    handleRecordScopeChange,
   } as const;
 }
 
@@ -258,6 +286,7 @@ function SalesOrdersContent({
   onPageChange,
   onOrderSelect,
   onClearFilters,
+  onRecordScopeChange,
 }: {
   searchInput: string;
   isSearching: boolean;
@@ -267,11 +296,17 @@ function SalesOrdersContent({
   onPageChange: (page: number) => void;
   onOrderSelect: (order: { id: string }) => void;
   onClearFilters: () => void;
+  onRecordScopeChange: (
+    recordScope: SalesOrderQueryParams['recordScope']
+  ) => void;
 }) {
   return (
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="mb-4 flex-shrink-0 sm:mb-6">
-        <SalesOrderPageHeader />
+        <SalesOrderPageHeader
+          recordScope={currentQueryParams.recordScope}
+          onRecordScopeChange={onRecordScopeChange}
+        />
       </div>
       <div className="flex-1">
         <ERPSalesOrderList

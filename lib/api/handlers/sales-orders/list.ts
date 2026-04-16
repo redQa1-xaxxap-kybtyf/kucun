@@ -74,6 +74,7 @@ const buildWhere = (
     orderType,
     isSampleOrder,
     hasReturns,
+    recordScope,
     includeTest,
     includeVoided,
   }: SalesOrderQueryParams,
@@ -85,13 +86,16 @@ const buildWhere = (
     where.voidedAt = null;
   }
 
-  if (systemMode === 'production' && !includeTest) {
+  if (recordScope === 'history') {
+    where.dataTag = 'import';
+  } else if (systemMode === 'production' && !includeTest) {
     where.dataTag = 'prod';
   }
 
   if (search) {
     where.OR = [
       { orderNumber: { contains: search } },
+      { importKey: { contains: search } },
       { customer: { name: { contains: search } } },
       { customer: { phone: { contains: search } } },
       { customer: { address: { contains: search } } },
@@ -174,6 +178,7 @@ const shouldUsePrioritizedStatusOrdering = (params: SalesOrderQueryParams) => {
   const sortField = params.sortBy ?? DEFAULT_SORT_FIELD;
 
   return (
+    params.recordScope !== 'history' &&
     sortField === 'orderDate' &&
     (params.status === undefined || params.status === 'pending')
   );
@@ -285,7 +290,7 @@ const mapListOrder = (
       code: string;
       unit: string;
       specification: string | null;
-      piecesPerUnit: number;
+      piecesPerUnit: number | null;
       weight: number | null;
     }
   >

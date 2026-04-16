@@ -15,6 +15,7 @@ export type SalesOrderStatus =
   | 'cancelled';
 
 export type SalesOrderFilterStatus = SalesOrderStatus | 'pending';
+export type SalesOrderRecordScope = 'history';
 
 export const SALES_ORDER_PENDING_FILTER_STATUSES = [
   'draft',
@@ -66,6 +67,7 @@ export interface SalesOrderItem {
   displayUnit?: string; // 显示单位（片/件）
   displayQuantity?: number; // 显示数量
   piecesPerUnit?: number; // 每件片数
+  weightSnapshot?: number; // 销售单行重量快照（每件重量）
   specification?: string; // 规格
   remarks?: string; // 备注
 
@@ -99,6 +101,7 @@ export interface SalesOrder {
   prepaymentAmount?: number; // 预收款冲抵金额
 
   remarks?: string;
+  importKey?: string;
   orderDate?: string;
   shippedAt?: string;
   createdAt: string;
@@ -148,6 +151,7 @@ export interface SalesOrderQueryParams {
   orderType?: SalesOrderType;
   isSampleOrder?: boolean;
   hasReturns?: boolean;
+  recordScope?: SalesOrderRecordScope;
   includeTest?: boolean;
   includeVoided?: boolean;
 }

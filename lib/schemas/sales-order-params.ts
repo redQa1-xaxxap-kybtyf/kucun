@@ -61,6 +61,9 @@ export const salesOrderParamsSchema = z.object({
   // 是否包含退货订单
   hasReturns: z.boolean().optional(),
 
+  // 记录视角筛选
+  recordScope: z.enum(['history']).optional(),
+
   // 是否包含测试数据（production 模式默认隐藏）
   includeTest: z.boolean().optional(),
 

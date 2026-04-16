@@ -28,6 +28,11 @@ import {
   normalizeTransferMode,
 } from './financials';
 import { reserveInventory, shouldReserveInventory } from './inventory';
+import {
+  isSameNullableNumber,
+  resolveSalesOrderItemSnapshot,
+  resolveSalesOrderItemSnapshots,
+} from './item-snapshots';
 import { maybeCreatePayable } from './payable';
 import { applyPrepaymentToOrder } from './prepayment';
 import { recordCustomerPriceHistory } from './price-history';
@@ -42,7 +47,7 @@ import {
   buildTemporaryProductDataFromOrderItem,
   findOrCreateTemporaryProduct,
 } from './temporary-products';
-import type { CreateInput } from './types';
+import type { CreateInput, Tx } from './types';
 import {
   ensureCustomerExists,
   ensureProductsExist,
@@ -70,6 +75,7 @@ const createSelect = {
   totalAmount: true,
   paidAmount: true,
   remarks: true,
+  importKey: true,
   shippedAt: true,
   createdAt: true,
   updatedAt: true,
@@ -114,7 +120,7 @@ const mapCreatedOrder = (
       code: string;
       unit: string;
       specification: string | null;
-      piecesPerUnit: number;
+      piecesPerUnit: number | null;
       weight: number | null;
     }
   >
@@ -205,6 +211,345 @@ function isRetryableSalesOrderCreateConflict(error: unknown) {
 }
 
 export async function createSalesOrder(data: CreateInput, userId: string) {
+  return createSalesOrderWithOptions(data, userId);
+}
+
+export interface CreateSalesOrderOptions {
+  dataTag?: string;
+  recordPriceHistory?: boolean;
+  importKey?: string;
+  pendingPaymentDate?: Date;
+  tx?: Tx;
+}
+
+type PersistSalesOrderContext = {
+  effectiveDataTag: string;
+  financials: ReturnType<typeof calculateFinancials>;
+  pendingPaymentDate?: Date;
+  orderNumber: string;
+  resolvedOrderDate: Date;
+  sampleSettlementType: string;
+  shouldRecordPriceHistory: boolean;
+  transferMode: ReturnType<typeof normalizeTransferMode>;
+  tx: Tx;
+  userId: string;
+  validatedData: CreateInput;
+  importKey?: string;
+};
+
+async function persistSalesOrderInTransaction({
+  effectiveDataTag,
+  financials,
+  importKey,
+  pendingPaymentDate,
+  orderNumber,
+  resolvedOrderDate,
+  sampleSettlementType,
+  shouldRecordPriceHistory,
+  transferMode,
+  tx,
+  userId,
+  validatedData,
+}: PersistSalesOrderContext): Promise<CreatedOrderResult> {
+  await ensureCustomerExists(tx, validatedData.customerId);
+  await ensureSupplierExists(tx, validatedData.supplierId);
+  await ensureProductsExist(tx, validatedData.items);
+
+  // 处理临时产品：为调货销售的手动输入产品创建/查找临时产品记录
+  const temporaryProductIds = new Map<number, string>(); // itemIndex -> temporaryProductId
+
+  if (validatedData.orderType === 'TRANSFER' && validatedData.supplierId) {
+    for (let i = 0; i < validatedData.items.length; i++) {
+      const item = validatedData.items[i];
+      const tempProductData = buildTemporaryProductDataFromOrderItem(
+        item,
+        validatedData.supplierId,
+        userId
+      );
+
+      if (tempProductData) {
+        const tempProduct = await findOrCreateTemporaryProduct(
+          tx,
+          tempProductData
+        );
+        temporaryProductIds.set(i, tempProduct.id);
+      }
+    }
+  }
+
+  const itemSnapshots = await resolveSalesOrderItemSnapshots(
+    tx,
+    validatedData.items
+  );
+
+  const salesOrder = await tx.salesOrder.create({
+    data: {
+      orderNumber,
+      customerId: validatedData.customerId,
+      userId,
+      supplierId: validatedData.supplierId,
+      status: validatedData.status || 'draft',
+      orderType: validatedData.orderType,
+      transferMode,
+      orderDate: resolvedOrderDate,
+      isSampleOrder: validatedData.isSampleOrder ?? false,
+      sampleSettlementType,
+      costAmount: financials.costAmount,
+      profitAmount: financials.profitAmount,
+      itemsAmount: financials.itemsAmount,
+      additionalFees: financials.additionalFees,
+      expenseAmount: financials.expenseAmount,
+      roundingAdjustment: financials.roundingAdjustment,
+      totalAmount: financials.totalAmount,
+      remarks: validatedData.remarks,
+      importKey,
+      dataTag: effectiveDataTag,
+      items: {
+        create: buildOrderItemsInput(
+          validatedData,
+          transferMode,
+          temporaryProductIds,
+          itemSnapshots
+        ),
+      },
+      feeItems: {
+        create: buildFeeItemsInput(validatedData),
+      },
+    },
+    select: createSelect,
+  });
+
+  if (shouldReserveInventory(validatedData, transferMode)) {
+    const reservationInput = {
+      ...validatedData,
+      items: salesOrder.items.map(item => ({
+        id: item.id,
+        productId: item.productId ?? undefined,
+        variantId: item.variantId ?? undefined,
+        batchNumber: item.batchNumber ?? undefined,
+        colorCode: item.colorCode ?? undefined,
+        productionDate: item.productionDate ?? undefined,
+        quantity: Number(item.quantity ?? 0),
+        localQuantity: Number(item.localQuantity ?? 0),
+        isManualProduct: Boolean(item.isManualProduct),
+      })),
+    };
+
+    const reservations = await reserveInventory(
+      tx,
+      reservationInput as any,
+      transferMode
+    );
+
+    const itemsById = new Map(salesOrder.items.map(item => [item.id, item]));
+    for (const reservation of reservations) {
+      if (!reservation.salesOrderItemId) {
+        continue;
+      }
+
+      const orderItem = itemsById.get(reservation.salesOrderItemId);
+      if (!orderItem) {
+        continue;
+      }
+
+      const updateData: {
+        variantId?: string | null;
+        batchNumber?: string | null;
+        piecesPerUnit?: number | null;
+        weightSnapshot?: number | null;
+      } = {};
+
+      if (!orderItem.variantId && reservation.variantId) {
+        updateData.variantId = reservation.variantId;
+      }
+
+      const existingBatchNumber = (orderItem.batchNumber ?? '').trim();
+      const reservedBatchNumber = (reservation.batchNumber ?? '').trim();
+      if (existingBatchNumber.length === 0 && reservedBatchNumber.length > 0) {
+        updateData.batchNumber = reservedBatchNumber;
+      }
+
+      const finalSnapshot = await resolveSalesOrderItemSnapshot(tx, {
+        productId: orderItem.productId,
+        variantId: updateData.variantId ?? orderItem.variantId,
+        colorCode: orderItem.colorCode,
+        batchNumber: updateData.batchNumber ?? orderItem.batchNumber,
+        isManualProduct: orderItem.isManualProduct,
+      });
+
+      if (!isSameNullableNumber(orderItem.piecesPerUnit, finalSnapshot.piecesPerUnit)) {
+        updateData.piecesPerUnit = finalSnapshot.piecesPerUnit;
+      }
+
+      if (
+        !isSameNullableNumber(
+          (orderItem as { weightSnapshot?: unknown }).weightSnapshot,
+          finalSnapshot.weightSnapshot
+        )
+      ) {
+        updateData.weightSnapshot = finalSnapshot.weightSnapshot;
+      }
+
+      if (Object.keys(updateData).length > 0) {
+        await tx.salesOrderItem.update({
+          where: { id: orderItem.id },
+          data: updateData,
+        });
+
+        if (updateData.variantId) {
+          orderItem.variantId = updateData.variantId;
+        }
+        if (updateData.batchNumber) {
+          orderItem.batchNumber = updateData.batchNumber;
+        }
+        if ('piecesPerUnit' in updateData) {
+          orderItem.piecesPerUnit = updateData.piecesPerUnit ?? null;
+        }
+        if ('weightSnapshot' in updateData) {
+          (orderItem as { weightSnapshot?: unknown }).weightSnapshot =
+            updateData.weightSnapshot ?? null;
+        }
+      }
+    }
+  }
+
+  // 阶段2：自动创建公司承担费用的 ExpenseRecord（幂等，必须成功）
+  if (
+    env.EXPENSE_AUTO_CREATE &&
+    validatedData.feeItems &&
+    validatedData.feeItems.length > 0
+  ) {
+    try {
+      await ensureCompanyExpenses({
+        tx,
+        sourceType: 'sales_order',
+        sourceId: salesOrder.id,
+        sourceNumber: salesOrder.orderNumber,
+        userId,
+        supplierId: validatedData.supplierId ?? null,
+        feeItems: validatedData.feeItems,
+      });
+    } catch (e) {
+      logger.error('sales-orders', '自动创建费用记录失败，将回滚订单事务', e, {
+        orderId: salesOrder.id,
+        orderNumber: salesOrder.orderNumber,
+      });
+      // 费用台账是利润报表的唯一真源，这里必须失败即回滚，避免订单创建成功但费用缺失
+      throw e;
+    }
+  }
+
+  if (shouldRecordPriceHistory) {
+    await recordCustomerPriceHistory(tx, validatedData, salesOrder.id);
+  }
+  await maybeCreatePayable(tx, validatedData, financials.costAmount, userId, {
+    id: salesOrder.id,
+    orderNumber: salesOrder.orderNumber,
+  });
+
+  // 客户直发订单自动创建采购订单
+  if (
+    validatedData.orderType === 'TRANSFER' &&
+    transferMode === 'SUPPLIER_ONLY' &&
+    validatedData.status === 'confirmed' &&
+    validatedData.supplierId &&
+    financials.costAmount > 0
+  ) {
+    try {
+      await createPurchaseOrderForTransfer(
+        tx,
+        {
+          ...validatedData,
+          // 后端统一真源：采购总额应使用本次计算出的成本汇总，而非依赖前端传入
+          costAmount: financials.costAmount,
+        },
+        salesOrder,
+        userId
+      );
+    } catch (error) {
+      logger.error('sales-orders', '创建采购订单失败', error, {
+        salesOrderId: salesOrder.id,
+        salesOrderNumber: salesOrder.orderNumber,
+      });
+      // 调货直发订单必须成功创建采购订单，否则会造成事务不一致（订单已确认但缺采购单）
+      throw new Error('创建采购订单失败，已回滚订单创建，请重试');
+    }
+  }
+
+  const roundedTotalAmount = Number(
+    Number(financials.totalAmount ?? 0).toFixed(2)
+  );
+  const roundedRoundingAmount = Number(
+    Number(financials.roundingAdjustment ?? 0).toFixed(2)
+  );
+  const receivableEnabled = shouldCreateReceivableForOrder({
+    isSampleOrder: salesOrder.isSampleOrder,
+    sampleSettlementType: salesOrder.sampleSettlementType,
+  });
+  const actualOrderDue = getSalesOrderReceivableTotal({
+    isSampleOrder: salesOrder.isSampleOrder,
+    sampleSettlementType: salesOrder.sampleSettlementType,
+    totalAmount: roundedTotalAmount,
+    roundingAdjustment: roundedRoundingAmount,
+  });
+
+  if (
+    salesOrder.status === 'confirmed' &&
+    receivableEnabled &&
+    actualOrderDue > 0
+  ) {
+    const paymentNumber = await generatePaymentNumber(tx);
+    const paymentAmount = roundedTotalAmount;
+    await tx.paymentRecord.create({
+      data: {
+        paymentNumber,
+        salesOrderId: salesOrder.id,
+        customerId: salesOrder.customerId,
+        userId,
+        paymentType: 'order_payment',
+        paymentMethod: 'cash',
+        paymentAmount,
+        actualPaymentAmount: 0,
+        roundingAmount: roundedRoundingAmount,
+        appliedAmount: 0,
+        paymentDate: pendingPaymentDate ?? new Date(),
+        status: 'pending',
+        remarks: `系统自动生成：销售订单 ${salesOrder.orderNumber} 确认应收`,
+      },
+    });
+  }
+
+  if (validatedData.usePrepayment && receivableEnabled && actualOrderDue > 0) {
+    const prepaymentResult = await applyPrepaymentToOrder(
+      tx,
+      validatedData.customerId,
+      salesOrder.id,
+      actualOrderDue,
+      validatedData.prepaymentAmount ?? undefined
+    );
+
+    if (prepaymentResult.totalApplied > 0) {
+      await tx.salesOrder.update({
+        where: { id: salesOrder.id },
+        data: {
+          paidAmount: prepaymentResult.totalApplied,
+        },
+      });
+
+      salesOrder.paidAmount = new PrismaClient.Decimal(
+        prepaymentResult.totalApplied
+      );
+    }
+  }
+
+  return salesOrder;
+}
+
+export async function createSalesOrderWithOptions(
+  data: CreateInput,
+  userId: string,
+  options: CreateSalesOrderOptions = {}
+) {
   const validatedData = salesOrderCreateSchema.parse(data);
   const transferMode = normalizeTransferMode(validatedData);
   const financials = calculateFinancials(validatedData, transferMode);
@@ -212,298 +557,72 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
     validatedData.sampleSettlementType ?? DEFAULT_SAMPLE_SETTLEMENT_TYPE;
   const resolvedOrderDate =
     parseLocalDateString(validatedData.orderDate) ?? new Date();
+  const effectiveDataTag = options.dataTag?.trim() || 'prod';
+  const effectiveImportKey = options.importKey?.trim() || undefined;
+  const shouldRecordPriceHistory =
+    options.recordPriceHistory ?? effectiveDataTag === 'prod';
 
   const maxCreateRetries = 10;
   let attempt = 0;
   let order: CreatedOrderResult | undefined;
 
   while (!order) {
-    const orderNumber = await generateSalesOrderNumber();
+    const orderNumber = await generateSalesOrderNumber(
+      options.tx ? { tx: options.tx } : undefined
+    );
 
     try {
-      order = await prisma.$transaction(async tx => {
-        await ensureCustomerExists(tx, validatedData.customerId);
-        await ensureSupplierExists(tx, validatedData.supplierId);
-        await ensureProductsExist(tx, validatedData.items);
-
-        // 处理临时产品：为调货销售的手动输入产品创建/查找临时产品记录
-        const temporaryProductIds = new Map<number, string>(); // itemIndex -> temporaryProductId
-
-        if (
-          validatedData.orderType === 'TRANSFER' &&
-          validatedData.supplierId
-        ) {
-          for (let i = 0; i < validatedData.items.length; i++) {
-            const item = validatedData.items[i];
-            const tempProductData = buildTemporaryProductDataFromOrderItem(
-              item,
-              validatedData.supplierId,
-              userId
-            );
-
-            if (tempProductData) {
-              const tempProduct = await findOrCreateTemporaryProduct(
-                tx,
-                tempProductData
-              );
-              temporaryProductIds.set(i, tempProduct.id);
-            }
-          }
-        }
-
-        const salesOrder = await tx.salesOrder.create({
-          data: {
-            orderNumber,
-            customerId: validatedData.customerId,
-            userId,
-            supplierId: validatedData.supplierId,
-            status: validatedData.status || 'draft',
-            orderType: validatedData.orderType,
-            transferMode,
-            orderDate: resolvedOrderDate,
-            isSampleOrder: validatedData.isSampleOrder ?? false,
-            sampleSettlementType,
-            costAmount: financials.costAmount,
-            profitAmount: financials.profitAmount,
-            itemsAmount: financials.itemsAmount,
-            additionalFees: financials.additionalFees,
-            expenseAmount: financials.expenseAmount,
-            roundingAdjustment: financials.roundingAdjustment,
-            totalAmount: financials.totalAmount,
-            remarks: validatedData.remarks,
-            items: {
-              create: buildOrderItemsInput(
-                validatedData,
-                transferMode,
-                temporaryProductIds
-              ),
-            },
-            feeItems: {
-              create: buildFeeItemsInput(validatedData),
-            },
-          },
-          select: createSelect,
-        });
-
-        if (shouldReserveInventory(validatedData, transferMode)) {
-          const reservationInput = {
-            ...validatedData,
-            items: salesOrder.items.map(item => ({
-              id: item.id,
-              productId: item.productId ?? undefined,
-              variantId: item.variantId ?? undefined,
-              batchNumber: item.batchNumber ?? undefined,
-              colorCode: item.colorCode ?? undefined,
-              productionDate: item.productionDate ?? undefined,
-              quantity: Number(item.quantity ?? 0),
-              localQuantity: Number(item.localQuantity ?? 0),
-              isManualProduct: Boolean(item.isManualProduct),
-            })),
-          };
-
-          const reservations = await reserveInventory(
-            tx,
-            reservationInput as any,
-            transferMode
-          );
-
-          const itemsById = new Map(
-            salesOrder.items.map(item => [item.id, item])
-          );
-          for (const reservation of reservations) {
-            if (!reservation.salesOrderItemId) {
-              continue;
-            }
-
-            const orderItem = itemsById.get(reservation.salesOrderItemId);
-            if (!orderItem) {
-              continue;
-            }
-
-            const updateData: {
-              variantId?: string | null;
-              batchNumber?: string | null;
-            } = {};
-
-            if (!orderItem.variantId && reservation.variantId) {
-              updateData.variantId = reservation.variantId;
-            }
-
-            const existingBatchNumber = (orderItem.batchNumber ?? '').trim();
-            const reservedBatchNumber = (reservation.batchNumber ?? '').trim();
-            if (
-              existingBatchNumber.length === 0 &&
-              reservedBatchNumber.length > 0
-            ) {
-              updateData.batchNumber = reservedBatchNumber;
-            }
-
-            if (Object.keys(updateData).length > 0) {
-              await tx.salesOrderItem.update({
-                where: { id: orderItem.id },
-                data: updateData,
-              });
-
-              if (updateData.variantId) {
-                orderItem.variantId = updateData.variantId;
-              }
-              if (updateData.batchNumber) {
-                orderItem.batchNumber = updateData.batchNumber;
-              }
-            }
-          }
-        }
-
-        // 阶段2：自动创建公司承担费用的 ExpenseRecord（幂等，必须成功）
-        if (
-          env.EXPENSE_AUTO_CREATE &&
-          validatedData.feeItems &&
-          validatedData.feeItems.length > 0
-        ) {
-          try {
-            await ensureCompanyExpenses({
-              tx,
-              sourceType: 'sales_order',
-              sourceId: salesOrder.id,
-              sourceNumber: salesOrder.orderNumber,
-              userId,
-              supplierId: validatedData.supplierId ?? null,
-              feeItems: validatedData.feeItems,
-            });
-          } catch (e) {
-            logger.error(
-              'sales-orders',
-              '自动创建费用记录失败，将回滚订单事务',
-              e,
-              {
-                orderId: salesOrder.id,
-                orderNumber: salesOrder.orderNumber,
-              }
-            );
-            // 费用台账是利润报表的唯一真源，这里必须失败即回滚，避免订单创建成功但费用缺失
-            throw e;
-          }
-        }
-
-        await recordCustomerPriceHistory(tx, validatedData, salesOrder.id);
-        await maybeCreatePayable(
-          tx,
-          validatedData,
-          financials.costAmount,
+      if (options.tx) {
+        order = await persistSalesOrderInTransaction({
+          effectiveDataTag,
+          financials,
+          importKey: effectiveImportKey,
+          pendingPaymentDate: options.pendingPaymentDate,
+          orderNumber,
+          resolvedOrderDate,
+          sampleSettlementType,
+          shouldRecordPriceHistory,
+          transferMode,
+          tx: options.tx,
           userId,
-          {
-            id: salesOrder.id,
-            orderNumber: salesOrder.orderNumber,
-          }
-        );
-
-        // 客户直发订单自动创建采购订单
-        if (
-          validatedData.orderType === 'TRANSFER' &&
-          transferMode === 'SUPPLIER_ONLY' &&
-          validatedData.status === 'confirmed' &&
-          validatedData.supplierId &&
-          financials.costAmount > 0
-        ) {
-          try {
-            await createPurchaseOrderForTransfer(
+          validatedData,
+        });
+      } else {
+        order = await prisma.$transaction(
+          async tx =>
+            persistSalesOrderInTransaction({
+              effectiveDataTag,
+              financials,
+              importKey: effectiveImportKey,
+              pendingPaymentDate: options.pendingPaymentDate,
+              orderNumber,
+              resolvedOrderDate,
+              sampleSettlementType,
+              shouldRecordPriceHistory,
+              transferMode,
               tx,
-              {
-                ...validatedData,
-                // ✅ 后端统一真源：采购总额应使用本次计算出的成本汇总，而非依赖前端传入
-                costAmount: financials.costAmount,
-              },
-              salesOrder,
-              userId
-            );
-          } catch (error) {
-            logger.error('sales-orders', '创建采购订单失败', error, {
-              salesOrderId: salesOrder.id,
-              salesOrderNumber: salesOrder.orderNumber,
-            });
-            // 调货直发订单必须成功创建采购订单，否则会造成事务不一致（订单已确认但缺采购单）
-            throw new Error('创建采购订单失败，已回滚订单创建，请重试');
-          }
-        }
-
-        const roundedTotalAmount = Number(
-          Number(financials.totalAmount ?? 0).toFixed(2)
-        );
-        const roundedRoundingAmount = Number(
-          Number(financials.roundingAdjustment ?? 0).toFixed(2)
-        );
-        const receivableEnabled = shouldCreateReceivableForOrder({
-          isSampleOrder: salesOrder.isSampleOrder,
-          sampleSettlementType: salesOrder.sampleSettlementType,
-        });
-        const actualOrderDue = getSalesOrderReceivableTotal({
-          isSampleOrder: salesOrder.isSampleOrder,
-          sampleSettlementType: salesOrder.sampleSettlementType,
-          totalAmount: roundedTotalAmount,
-          roundingAdjustment: roundedRoundingAmount,
-        });
-
-        if (
-          salesOrder.status === 'confirmed' &&
-          receivableEnabled &&
-          actualOrderDue > 0
-        ) {
-          const paymentNumber = await generatePaymentNumber(tx);
-          const paymentAmount = roundedTotalAmount;
-          await tx.paymentRecord.create({
-            data: {
-              paymentNumber,
-              salesOrderId: salesOrder.id,
-              customerId: salesOrder.customerId,
               userId,
-              paymentType: 'order_payment',
-              paymentMethod: 'cash',
-              paymentAmount,
-              actualPaymentAmount: 0,
-              roundingAmount: roundedRoundingAmount,
-              appliedAmount: 0,
-              paymentDate: new Date(),
-              status: 'pending',
-              remarks: `系统自动生成：销售订单 ${salesOrder.orderNumber} 确认应收`,
-            },
-          });
-        }
-
-        if (
-          validatedData.usePrepayment &&
-          receivableEnabled &&
-          actualOrderDue > 0
-        ) {
-          const prepaymentResult = await applyPrepaymentToOrder(
-            tx,
-            validatedData.customerId,
-            salesOrder.id,
-            actualOrderDue,
-            validatedData.prepaymentAmount ?? undefined
-          );
-
-          if (prepaymentResult.totalApplied > 0) {
-            await tx.salesOrder.update({
-              where: { id: salesOrder.id },
-              data: {
-                paidAmount: prepaymentResult.totalApplied,
-              },
-            });
-
-            salesOrder.paidAmount = new PrismaClient.Decimal(
-              prepaymentResult.totalApplied
-            );
-          }
-        }
-
-        return salesOrder;
-      }, getLongTransactionOptions());
+              validatedData,
+            }),
+          getLongTransactionOptions()
+        );
+      }
     } catch (error) {
       attempt += 1;
       const isOrderNumberConflict =
         isSalesOrderOrderNumberUniqueConstraintError(error);
       const isRetryableTransactionConflict =
         isRetryableSalesOrderCreateConflict(error);
+
+      if (options.tx) {
+        if (attempt < maxCreateRetries && isOrderNumberConflict) {
+          const delayMs = Math.min(300, 50 * attempt);
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+          continue;
+        }
+
+        throw error;
+      }
 
       if (
         attempt >= maxCreateRetries ||
@@ -568,22 +687,25 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
 
   if (ledgerEligibleStatuses.has(order.status) && actualOrderDue > 0) {
     try {
-      await recordPartnerTransaction({
-        partnerId: order.customerId,
-        partnerRole: 'customer',
-        entityType: 'customer',
-        transactionType: 'sale',
-        amount: actualOrderDue,
-        referenceId: order.id,
-        referenceNumber: order.orderNumber,
-        description: `销售订单 ${order.orderNumber} 创建并已确认`,
-        userId: order.userId,
-        occurredAt: order.orderDate,
-        metadata: {
-          status: order.status,
-          triggeredBy: 'order:create',
+      await recordPartnerTransaction(
+        {
+          partnerId: order.customerId,
+          partnerRole: 'customer',
+          entityType: 'customer',
+          transactionType: 'sale',
+          amount: actualOrderDue,
+          referenceId: order.id,
+          referenceNumber: order.orderNumber,
+          description: `销售订单 ${order.orderNumber} 创建并已确认`,
+          userId: order.userId,
+          occurredAt: order.orderDate,
+          metadata: {
+            status: order.status,
+            triggeredBy: 'order:create',
+          },
         },
-      });
+        options.tx
+      );
     } catch (error) {
       logger.error('sales-orders', '记录往来账失败', error, {
         orderId: order.id,
@@ -619,7 +741,7 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
       code: string;
       unit: string;
       specification: string | null;
-      piecesPerUnit: number;
+      piecesPerUnit: number | null;
       weight: number | null;
     }
   >(
