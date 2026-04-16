@@ -320,10 +320,10 @@ test.describe('财务页面实际操作级回归', () => {
     ).toBeVisible();
 
     await gotoRoute(page, '/finance');
-    await page.getByRole('link', { name: /费用记录/ }).click();
+    await page.getByRole('link', { name: /费用管理/ }).click();
     await expect(page).toHaveURL(/\/finance\/expenses/);
     await expect(
-      page.getByRole('heading', { name: '费用记录' })
+      page.getByRole('heading', { name: '费用管理' })
     ).toBeVisible();
   });
 
@@ -335,12 +335,14 @@ test.describe('财务页面实际操作级回归', () => {
       page.getByRole('heading', { name: '往来对账' })
     ).toBeVisible();
 
-    const searchInput = page.getByPlaceholder('搜索客户、供应商、联系人或编号');
+    const searchInput = page.getByRole('searchbox', {
+      name: '搜索客户、供应商、联系人或编号',
+    });
     await expect(searchInput).toBeVisible();
-    await expect(page.getByLabel('往来对象类型')).toBeVisible();
+    await expect(page.getByLabel('对象')).toBeVisible();
 
     if (!candidate) {
-      await page.getByLabel('往来对象类型').selectOption('customer');
+      await page.getByLabel('对象').selectOption('customer');
       await expectQueryParam(
         page,
         'type',
@@ -360,7 +362,7 @@ test.describe('财务页面实际操作级回归', () => {
     );
     await expect(page.getByText(candidate.name).first()).toBeVisible();
 
-    await page.getByLabel('往来对象类型').selectOption(candidate.type);
+    await page.getByLabel('对象').selectOption(candidate.type);
     await expectQueryParam(
       page,
       'type',
@@ -380,7 +382,7 @@ test.describe('财务页面实际操作级回归', () => {
 
     await gotoRoute(page, '/finance/expenses');
     await expect(
-      page.getByRole('heading', { name: '费用记录' })
+      page.getByRole('heading', { name: '费用管理' })
     ).toBeVisible();
     await expect(page.getByLabel('费用类型')).toBeVisible();
     await expect(
@@ -413,11 +415,35 @@ test.describe('财务页面实际操作级回归', () => {
       await expect(page.getByText('暂无费用记录')).toBeVisible();
     }
 
-    await page.getByRole('link', { name: '新增费用' }).click();
+    await page.getByRole('link', { name: '登记费用' }).click();
     await expect(page).toHaveURL(/\/finance\/expenses\/create/);
     await expect(
-      page.getByRole('heading', { name: '创建费用记录' })
+      page.getByRole('heading', { name: '登记费用' })
     ).toBeVisible();
+  });
+
+  test('月报页应支持切换月份并刷新报表', async ({ page }) => {
+    await gotoRoute(page, '/finance/reports/monthly');
+    await expect(
+      page.getByRole('heading', { name: '月度报表' })
+    ).toBeVisible({ timeout: 20_000 });
+
+    const yearSelect = page.getByLabel('年份');
+    const monthSelect = page.getByLabel('月份');
+    const refreshButton = page.getByRole('button', { name: '刷新报表' });
+
+    await expect(yearSelect).toBeVisible();
+    await expect(monthSelect).toBeVisible();
+    await expect(refreshButton).toBeVisible();
+    await expect(page.getByText('本月净利润')).toBeVisible({ timeout: 20_000 });
+
+    await monthSelect.selectOption({ label: '1月' });
+    await refreshButton.click();
+
+    await expect(page.getByText('报表已刷新', { exact: true })).toBeVisible({
+      timeout: 20_000,
+    });
+    await expect(page.getByText('本月净利润')).toBeVisible();
   });
 
   test('已收款记录应支持搜索、状态筛选、清空和进入新建页', async ({ page }) => {
