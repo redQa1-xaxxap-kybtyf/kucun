@@ -1,6 +1,6 @@
 'use client';
 
-import { Calculator, Package, Plus } from 'lucide-react';
+import { Calculator, Plus } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import React, { useCallback, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
@@ -16,7 +16,11 @@ import type { FactoryShipmentOrderItem } from '@/lib/types/factory-shipment';
 import type { PriceHistoryData } from '@/lib/types/price-history';
 import type { Product } from '@/lib/types/product';
 import { toPieceOrSheetLabel } from '@/lib/utils/inventory-unit-conversion';
-import type { FactoryShipmentOrderFormData } from '@/lib/validations/factory-shipment';
+import {
+  findFactoryShipmentDuplicateGroups,
+  getFactoryShipmentDuplicateItemMessage,
+  type FactoryShipmentOrderFormData,
+} from '@/lib/validations/factory-shipment';
 
 const PricingResultDialog = dynamic(
   () =>
@@ -60,6 +64,36 @@ export const ItemsTable = React.memo<ItemsTableProps>(
     );
     const [totalExpenses, setTotalExpenses] = useState(0);
     const [defaultSupplierId, setDefaultSupplierId] = useState('');
+    const watchedItems = form.watch(
+      'items'
+    ) as FactoryShipmentOrderFormData['items'] | undefined;
+    const duplicateGroups = React.useMemo(
+      () => findFactoryShipmentDuplicateGroups(watchedItems ?? []),
+      [watchedItems]
+    );
+    const duplicateRowIndexes = React.useMemo(() => {
+      const indexes = new Set<number>();
+
+      duplicateGroups.forEach(group => {
+        group.forEach(index => indexes.add(index));
+      });
+
+      return indexes;
+    }, [duplicateGroups]);
+    const duplicateSignature = React.useMemo(
+      () => duplicateGroups.map(group => group.join('-')).join('|'),
+      [duplicateGroups]
+    );
+    const hasInitializedDuplicateValidation = React.useRef(false);
+
+    React.useEffect(() => {
+      if (!hasInitializedDuplicateValidation.current) {
+        hasInitializedDuplicateValidation.current = true;
+        return;
+      }
+
+      void form.trigger('items');
+    }, [duplicateSignature, form]);
 
     // 计算单个明细的金额
     const calculateItemAmount = (index: number): number => {
@@ -248,9 +282,9 @@ export const ItemsTable = React.memo<ItemsTableProps>(
     // 使用 useCallback 稳定回调函数
     const handleProductChange = useCallback(
       (index: number) => (product: Product | null) => {
-        if (product && selectedCustomerId && product.code) {
+        if (product) {
           // 自动填充产品编码
-          form.setValue(`items.${index}.productCode`, product.code);
+          form.setValue(`items.${index}.productCode`, product.code || '');
 
           // 自动填充产品名称
           form.setValue(`items.${index}.displayName`, product.name || '');
@@ -285,23 +319,45 @@ export const ItemsTable = React.memo<ItemsTableProps>(
           }
 
           // 自动填充客户历史价格
-          const customerPrice = getLatestPrice(
-            customerPriceHistoryData?.data,
-            product.code,
-            'FACTORY'
-          );
+          const customerPrice =
+            selectedCustomerId && product.code
+              ? getLatestPrice(
+                  customerPriceHistoryData?.data,
+                  product.code,
+                  'FACTORY'
+                )
+              : undefined;
+          const currentItems =
+            (form.getValues(
+              'items'
+            ) as FactoryShipmentOrderFormData['items']) || [];
+          const duplicateGroup = findFactoryShipmentDuplicateGroups(
+            currentItems
+          ).find(group => group.includes(index));
+          const duplicateMessage =
+            duplicateGroup && currentItems[index]
+              ? `第 ${index + 1} 行与${duplicateGroup
+                  .filter(itemIndex => itemIndex !== index)
+                  .map(itemIndex => `第 ${itemIndex + 1} 行`)
+                  .join('、')}重复，${getFactoryShipmentDuplicateItemMessage(
+                  currentItems[index]
+                )}`
+              : '';
+
           if (customerPrice !== undefined) {
             form.setValue(`items.${index}.unitPrice`, customerPrice);
             toast({
-              title: '已自动填充',
-              description: `产品信息和历史价格已自动填充`,
-              duration: 2000,
+              title: duplicateMessage ? '发现重复明细' : '已带出产品信息',
+              description: duplicateMessage || '已带出产品信息和历史参考价',
+              duration: duplicateMessage ? 3200 : 2000,
+              variant: duplicateMessage ? 'destructive' : 'default',
             });
           } else {
             toast({
-              title: '已自动填充',
-              description: `产品信息已自动填充`,
-              duration: 2000,
+              title: duplicateMessage ? '发现重复明细' : '已带出产品信息',
+              description: duplicateMessage || '已带出产品信息',
+              duration: duplicateMessage ? 3200 : 2000,
+              variant: duplicateMessage ? 'destructive' : 'default',
             });
           }
         }
@@ -309,68 +365,74 @@ export const ItemsTable = React.memo<ItemsTableProps>(
       [form, selectedCustomerId, customerPriceHistoryData, toast]
     );
 
+    const estimatedTotalAmount = fields
+      .reduce((sum, _, index) => sum + calculateItemAmount(index), 0)
+      .toFixed(2);
+
     return (
-      <div className="space-y-6">
-        {/* 表头 */}
-        <div className="flex flex-col gap-3 rounded-lg border border-[hsl(var(--color-border-secondary))] p-4">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <Package className="h-4 w-4" />
-            产品明细
-          </div>
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
-            <div className="flex flex-1 flex-col gap-2 xl:flex-row xl:items-end">
-              <div className="w-full max-w-sm space-y-1">
-                <div className="text-sm font-medium">默认供应商</div>
+      <div className="space-y-3">
+        <div className="rounded-md border border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))]/25 px-4 py-3">
+          <div className="flex flex-col gap-3 lg:grid lg:grid-cols-[auto_minmax(260px,320px)_auto] lg:items-end">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+              <span className="font-medium text-[hsl(var(--color-text-primary))]">
+                共 {fields.length} 行明细
+              </span>
+              <span className="text-[hsl(var(--color-text-secondary))]">
+                预计金额 ￥{estimatedTotalAmount}
+              </span>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-[minmax(0,220px)_auto_auto] lg:items-end">
+              <div className="min-w-0">
+                <div className="mb-1 text-xs font-medium text-[hsl(var(--color-text-secondary))]">
+                  默认供应商
+                </div>
                 <SupplierSelector
                   value={defaultSupplierId}
                   onValueChange={setDefaultSupplierId}
-                  placeholder="选择常用供应商"
+                  placeholder="选择默认供应商"
                 />
               </div>
-              <div className="grid gap-2 sm:grid-cols-2 xl:flex xl:flex-wrap xl:items-center">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="h-9 w-full"
-                  onClick={() => handleApplyDefaultSupplier('blank')}
-                  disabled={!defaultSupplierId || fields.length === 0}
-                >
-                  应用到空白行
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="h-9 w-full"
-                  onClick={() => handleApplyDefaultSupplier('all')}
-                  disabled={!defaultSupplierId || fields.length === 0}
-                >
-                  应用到全部明细
-                </Button>
-              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-9 w-full text-[hsl(var(--color-text-secondary))] sm:w-auto"
+                onClick={() => handleApplyDefaultSupplier('blank')}
+                disabled={!defaultSupplierId || fields.length === 0}
+              >
+                带入空白行
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-9 w-full text-[hsl(var(--color-text-secondary))] sm:w-auto"
+                onClick={() => handleApplyDefaultSupplier('all')}
+                disabled={!defaultSupplierId || fields.length === 0}
+              >
+                覆盖全部行
+              </Button>
             </div>
-            <div className="grid gap-2 sm:grid-cols-2 xl:flex xl:flex-wrap xl:items-center">
+            <div className="grid gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center lg:justify-end">
               <Button
                 type="button"
                 onClick={handleCalculatePricing}
                 size="sm"
                 variant="outline"
-                className="h-9 w-full"
+                className="h-9 w-full lg:w-auto"
                 disabled={isCalculating || fields.length === 0}
               >
                 <Calculator className="mr-1 h-3 w-3" />
-                {isCalculating ? '计算中...' : '计算建议销售价'}
+                {isCalculating ? '计算中...' : '建议售价'}
               </Button>
               <Button
                 type="button"
-                onClick={() => onAddItem(defaultSupplierId)}
                 size="sm"
-                variant="outline"
-                className="h-9 w-full"
+                onClick={() => onAddItem(defaultSupplierId)}
+                className="h-9 w-full lg:w-auto"
               >
                 <Plus className="mr-1 h-3 w-3" />
-                添加产品
+                新增一行
               </Button>
             </div>
           </div>
@@ -380,6 +442,7 @@ export const ItemsTable = React.memo<ItemsTableProps>(
           form={form}
           products={products}
           fields={fields}
+          duplicateRowIndexes={duplicateRowIndexes}
           onRemoveItem={onRemoveItem}
           onProductChange={handleProductChange}
           calculateItemAmount={calculateItemAmount}
@@ -387,7 +450,7 @@ export const ItemsTable = React.memo<ItemsTableProps>(
         />
 
         {/* 底部汇总栏 */}
-        <div className="bg-muted/10 flex flex-col gap-3 rounded-lg border px-4 py-4 sm:flex-row sm:items-center sm:justify-end sm:gap-8 sm:px-6">
+        <div className="bg-muted/10 flex flex-col gap-3 rounded-md border px-4 py-3 sm:flex-row sm:items-center sm:justify-end sm:gap-8 sm:px-5">
           <div className="text-sm">
             <span className="text-muted-foreground mr-2">总数量:</span>
             <span className="font-medium">
@@ -423,7 +486,7 @@ export const ItemsTable = React.memo<ItemsTableProps>(
 
                 // 当所有带“件”的行的每件片数完全一致时，使用该值做件/片精确表示
                 const uniquePpu = [...ppuSet].filter(v => v > 0);
-                if (uniquePpu.length === 1) {
+                if (uniquePpu.length === 1 && uniquePpu[0] > 1) {
                   const ppu = uniquePpu[0];
                   const fullUnits = Math.floor(totalPieces / ppu);
                   const remaining = totalPieces % ppu;
@@ -442,10 +505,7 @@ export const ItemsTable = React.memo<ItemsTableProps>(
           <div className="flex items-baseline text-sm sm:justify-end">
             <span className="text-muted-foreground mr-2">预计总金额:</span>
             <span className="font-mono text-xl font-bold text-orange-600">
-              ￥
-              {fields
-                .reduce((sum, _, index) => sum + calculateItemAmount(index), 0)
-                .toFixed(2)}
+              ￥{estimatedTotalAmount}
             </span>
           </div>
         </div>
