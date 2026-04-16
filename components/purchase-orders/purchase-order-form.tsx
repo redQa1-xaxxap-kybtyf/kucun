@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import { invalidatePurchaseOrderCaches } from '@/lib/cache/invalidation-helpers';
 import { useFormErrorHandling } from '@/lib/hooks/useFormErrorHandling';
 import { queryKeys } from '@/lib/queryKeys';
@@ -83,7 +84,7 @@ export function PurchaseOrderForm({
   onCancel,
 }: PurchaseOrderFormProps) {
   const { toast } = useToast();
-  const _router = useRouter();
+  const router = useRouter();
   const queryClient = useQueryClient();
 
   const form = useForm<PurchaseOrderFormValues>({
@@ -208,7 +209,7 @@ export function PurchaseOrderForm({
   const updateMutation = useMutation({
     mutationFn: async (data: PurchaseOrderFormData) => {
       if (!orderId) {
-        throw new Error('订单ID不能为空');
+        throw new Error('缺少采购订单信息');
       }
 
       const response = await fetch(
@@ -268,11 +269,30 @@ export function PurchaseOrderForm({
     errors: FieldErrors<PurchaseOrderFormValues>
   ) => {
     showValidationToast(errors, {
-      description: '请检查标红字段后再次提交。所有带 * 的字段均为必填项。',
+      description:
+        '请检查未填写完整的内容后再次提交。所有带 * 的项目均为必填项。',
     });
   };
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
+  const hasUnsavedChanges = form.formState.isDirty && !isSubmitting;
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前采购单内容尚未保存，确定要离开吗？',
+  });
+
+  const handleCancel = () => {
+    if (!confirmLeavePage()) {
+      return;
+    }
+
+    if (onCancel) {
+      onCancel();
+      return;
+    }
+
+    router.back();
+  };
 
   return (
     <Form {...form}>
@@ -450,7 +470,7 @@ export function PurchaseOrderForm({
         </Card>
 
         <div className="flex justify-end gap-4">
-          <Button type="button" variant="outline" onClick={onCancel}>
+          <Button type="button" variant="outline" onClick={handleCancel}>
             取消
           </Button>
           <Button type="submit" disabled={isSubmitting}>

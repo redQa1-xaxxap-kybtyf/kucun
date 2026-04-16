@@ -26,6 +26,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 
 export type PurchaseOrderShippingFormValues = {
   containerNumber?: string;
@@ -132,9 +133,38 @@ export function PurchaseOrderShippingDialog({
     }
   }, [defaultValues, form, mode, open]);
 
-  const handleClose = () => {
+  const forceClose = () => {
     onOpenChange(false);
     onCancel?.();
+  };
+  const hasUnsavedChanges = open && form.formState.isDirty && !isSubmitting;
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message:
+      mode === 'confirm_shipment'
+        ? '当前发货信息尚未保存，确定要关闭吗？'
+        : '当前船公司信息尚未保存，确定要关闭吗？',
+  });
+
+  const handleCloseAttempt = (nextOpen: boolean) => {
+    if (!nextOpen && !confirmLeavePage()) {
+      return;
+    }
+
+    if (!nextOpen) {
+      forceClose();
+      return;
+    }
+
+    onOpenChange(nextOpen);
+  };
+
+  const handleCancel = () => {
+    if (!confirmLeavePage()) {
+      return;
+    }
+
+    forceClose();
   };
 
   const handleSubmit = form.handleSubmit(values => {
@@ -158,7 +188,7 @@ export function PurchaseOrderShippingDialog({
       : `请补充订单 ${orderNumber} 的船公司信息，用于自动跟踪运输状态`;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleCloseAttempt}>
       <DialogContent className="sm:max-w-[430px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -190,7 +220,7 @@ export function PurchaseOrderShippingDialog({
               <Button
                 type="button"
                 variant="outline"
-                onClick={handleClose}
+                onClick={handleCancel}
                 disabled={isSubmitting}
               >
                 取消

@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import { purchaseOrderQueryKeys } from '@/lib/api/purchase-orders';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 
@@ -243,15 +244,36 @@ export function PurchaseOrderShippingCompanyEditDialog({
       onOpenChange,
       onSuccess,
     });
+  const hasUnsavedChanges = open && form.formState.isDirty && !isSubmitting;
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前船运公司信息尚未保存，确定要关闭吗？',
+  });
+
+  const handleCloseAttempt = (nextOpen: boolean) => {
+    if (!nextOpen && !confirmLeavePage()) {
+      return;
+    }
+
+    onOpenChange(nextOpen);
+  };
+
+  const handleProtectedCancel = () => {
+    if (!confirmLeavePage()) {
+      return;
+    }
+
+    handleCancel();
+  };
 
   return (
     <PurchaseOrderShippingCompanyEditDialogView
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={handleCloseAttempt}
       orderNumber={order.orderNumber}
       form={form}
       isSubmitting={isSubmitting}
-      onCancel={handleCancel}
+      onCancel={handleProtectedCancel}
       onSubmit={handleSubmit}
     />
   );
