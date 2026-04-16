@@ -240,7 +240,7 @@ export function CustomerStatementsPageClient({
                   e.target.value as 'receivable' | 'payable' | 'all'
                 )
               }
-              className="h-11 w-full rounded-lg border border-[hsl(var(--color-border-primary))] bg-white pr-8 pl-10 text-sm focus:outline-hidden focus:ring-2 focus:ring-[hsl(var(--color-primary-light))]"
+              className="h-11 w-full rounded-lg border border-[hsl(var(--color-border-primary))] bg-white pr-8 pl-10 text-sm focus:ring-2 focus:ring-[hsl(var(--color-primary-light))] focus:outline-hidden"
               aria-label="余额维度筛选"
             >
               <option value="all">全部客户</option>
@@ -397,7 +397,7 @@ export function CustomerStatementsPageClient({
                               {statement.customerPhone || '未留联系方式'}
                             </div>
                             <span className="text-xs font-bold tracking-normal text-slate-400 uppercase">
-                              ID: {statement.customerId.slice(-6)}
+                              客户编号: {statement.customerId.slice(-6)}
                             </span>
                           </div>
                         </div>
@@ -506,14 +506,14 @@ export function CustomerStatementsPageClient({
                           <ArrowUpRight className="h-3.5 w-3.5 text-slate-400" />
                           交易笔数{' '}
                           <span className="ml-1 text-blue-600">
-                            {statement.transactionCount} 笔已审计
+                            {statement.transactionCount} 笔
                           </span>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold tracking-wider text-slate-400 uppercase">
-                          安全审计已校验
+                          数据已更新
                         </span>
                         <div className="flex h-3 w-3 items-center justify-center rounded-sm bg-emerald-500/20">
                           <div className="h-1 w-1 rounded-full bg-emerald-500" />
@@ -532,7 +532,7 @@ export function CustomerStatementsPageClient({
           <div className="flex flex-col items-center justify-between gap-6 border-t border-slate-100 pt-8 sm:flex-row">
             <div className="text-xs font-bold tracking-wider text-slate-500 uppercase">
               第 <span className="text-slate-900">{pagination.page}</span> 页 /
-              共 {pagination.totalPages} 页 — {pagination.total} 条记录已审计
+              共 {pagination.totalPages} 页 — {pagination.total} 条记录
             </div>
             <div className="flex gap-3">
               <Button

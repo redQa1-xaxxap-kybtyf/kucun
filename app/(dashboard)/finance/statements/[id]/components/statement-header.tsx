@@ -113,11 +113,11 @@ export function StatementHeader({
               className="h-12 border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900"
             >
               <Download className="mr-2 h-4 w-4" />
-              导出账单
+              导出对账单
             </Button>
             <Button className="h-12 bg-blue-600 text-white shadow-lg shadow-blue-500/20 transition-all hover:scale-105 hover:bg-blue-700 active:scale-95">
               <Receipt className="mr-2 h-4 w-4" />
-              核销处理
+              结清处理
             </Button>
           </div>
         </div>

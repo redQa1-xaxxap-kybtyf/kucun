@@ -109,7 +109,7 @@ export function StatementsPageClient({
               >
                 <Link href="/customers">
                   <Users className="mr-2 h-4 w-4" />
-                  客户档案
+                  客户资料
                 </Link>
               </Button>
             </>

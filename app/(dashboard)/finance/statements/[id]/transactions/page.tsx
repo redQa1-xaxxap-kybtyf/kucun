@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { queryKeys } from '@/lib/queryKeys';
 import type { AccountStatementDetail } from '@/lib/types/statement';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
 import { StatementTransactions } from '../components/statement-transactions';
 
@@ -23,7 +24,7 @@ export default function StatementTransactionsPage() {
 
   const fetchStatementDetail = async (): Promise<AccountStatementDetail> => {
     if (!id) {
-      throw new Error('账单ID不能为空');
+      throw new Error('缺少账单编号');
     }
 
     const response = await fetch(`/api/finance/statements/${id}`);
@@ -58,11 +59,11 @@ export default function StatementTransactionsPage() {
             onClick={() => router.push('/finance/statements')}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            返回往来账单列表
+            返回往来对账
           </Button>
           <ErrorMessage
-            title="缺少账单信息"
-            message="无法识别往来账单ID，请从列表重新进入。"
+            title="缺少对账信息"
+            message="无法识别这条往来对账，请从列表重新进入。"
           />
         </div>
       </div>
@@ -84,16 +85,19 @@ export default function StatementTransactionsPage() {
               onClick={() => router.push(`/finance/statements/${id}`)}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              返回账单详情
+              返回对账详情
             </Button>
-            <h1 className="text-2xl font-semibold">往来账交易记录</h1>
+            <h1 className="text-2xl font-semibold">往来交易明细</h1>
           </div>
           <ErrorMessage
             title="加载失败"
-            message={
-              error instanceof Error ? error.message : '获取交易记录失败'
-            }
-            onRetry={() => refetch()}
+            message={getFriendlyErrorMessage(
+              error,
+              '往来交易明细暂时无法加载，请稍后重试'
+            )}
+            onRetry={() => {
+              void refetch();
+            }}
           />
         </div>
       </div>
@@ -111,10 +115,10 @@ export default function StatementTransactionsPage() {
               onClick={() => router.push(`/finance/statements/${id}`)}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              返回账单详情
+              返回对账详情
             </Button>
             <div>
-              <h1 className="text-2xl font-semibold">往来账交易记录</h1>
+              <h1 className="text-2xl font-semibold">往来交易明细</h1>
               <p className="text-muted-foreground text-sm">
                 {statement.entity?.name ?? statement.entityName}
               </p>

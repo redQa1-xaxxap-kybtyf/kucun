@@ -68,7 +68,7 @@ export function StatementTransactions({
             : 'border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
         )}
       >
-        {isPending ? '待入账' : '已核销'}
+        {isPending ? '待入账' : '已结清'}
       </Badge>
     );
   };
@@ -107,7 +107,7 @@ export function StatementTransactions({
                 记账时间
               </TableHead>
               <TableHead className="py-4 font-black text-slate-700">
-                核销状态
+                处理状态
               </TableHead>
               <TableHead className="py-4 text-right font-black text-slate-700">
                 操作

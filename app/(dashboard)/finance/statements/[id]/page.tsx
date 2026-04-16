@@ -19,6 +19,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { queryKeys } from '@/lib/queryKeys';
 import type { AccountStatementDetail } from '@/lib/types/statement';
 import { formatCurrency } from '@/lib/utils/format';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
 import { StatementBasicInfo } from './components/statement-basic-info';
 import { StatementHeader } from './components/statement-header';
@@ -136,7 +137,7 @@ export default function StatementDetailPage() {
   // API 调用函数 - 添加日期参数
   const fetchStatementDetail = async (): Promise<AccountStatementDetail> => {
     if (!id) {
-      throw new Error('ID 不能为空');
+      throw new Error('缺少账单编号');
     }
 
     // 构建查询参数
@@ -193,9 +194,9 @@ export default function StatementDetailPage() {
               onClick={() => router.push('/finance/statements')}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              返回列表
+              返回往来对账
             </Button>
-            <h1 className="text-2xl font-semibold">往来账单详情</h1>
+            <h1 className="text-2xl font-semibold">往来对账详情</h1>
           </div>
           <Card>
             <CardContent className="p-8">
@@ -215,7 +216,7 @@ export default function StatementDetailPage() {
   }
 
   if (isLoading) {
-    return <ContentLoading text="加载账单详情..." />;
+    return <ContentLoading text="正在加载对账单..." />;
   }
 
   if (isError || !statement) {
@@ -226,7 +227,10 @@ export default function StatementDetailPage() {
             加载失败
           </h2>
           <p className="text-muted-foreground mt-2 text-sm">
-            {error instanceof Error ? error.message : '获取账单详情失败'}
+            {getFriendlyErrorMessage(
+              error,
+              '往来对账暂时无法加载，请稍后重试'
+            )}
           </p>
         </div>
         <div className="flex gap-2">
@@ -235,9 +239,11 @@ export default function StatementDetailPage() {
             onClick={() => router.push('/finance/statements')}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            返回列表
+            返回往来对账
           </Button>
-          <Button onClick={() => window.location.reload()}>重试</Button>
+          <Button onClick={() => void refetch()} disabled={isFetching}>
+            {isFetching ? '重试中...' : '重试'}
+          </Button>
         </div>
       </div>
     );
@@ -412,7 +418,7 @@ export default function StatementDetailPage() {
                   <RefreshCw
                     className={`mr-2 h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`}
                   />
-                  同步账务
+                  刷新对账单
                 </Button>
               </div>
             </div>

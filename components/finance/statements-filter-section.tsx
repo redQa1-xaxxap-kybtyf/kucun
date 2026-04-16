@@ -168,7 +168,7 @@ function StatementsList({
       <div className="mt-6 space-y-4">
         <EmptyState
           icon={<FileText className="text-muted-foreground h-8 w-8" />}
-          title="暂无往来对账记录"
+          title="暂无往来对账"
           compact
         />
       </div>

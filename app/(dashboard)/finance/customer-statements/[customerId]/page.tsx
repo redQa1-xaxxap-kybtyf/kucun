@@ -31,10 +31,13 @@ import {
 } from '@/lib/types/customer-statement';
 import { cn, formatCurrency } from '@/lib/utils';
 import { formatDate, formatDateTime } from '@/lib/utils/datetime';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
 const DateRangePicker = dynamic(
   () =>
-    import('@/components/ui/date-range-picker').then(mod => mod.DateRangePicker),
+    import('@/components/ui/date-range-picker').then(
+      mod => mod.DateRangePicker
+    ),
   {
     ssr: false,
     loading: () => (
@@ -47,8 +50,8 @@ const DEFAULT_RANGE_DAYS = 30;
 
 function formatTransactionStatus(status: string): string {
   const STATUS_LABELS: Record<string, string> = {
-    pending: '待确认',
-    confirmed: '已确认',
+    pending: '待确认到账',
+    confirmed: '已到账',
     cancelled: '已取消',
     completed: '已完成',
     processing: '待退款',
@@ -280,7 +283,7 @@ export default function CustomerStatementDetailPage() {
     return (
       <div className="mx-auto max-w-[1680px] space-y-4 p-10">
         <Button variant="ghost" size="sm" onClick={() => router.back()}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> 返回列表
+          <ArrowLeft className="mr-2 h-4 w-4" /> 返回客户往来
         </Button>
         <ErrorMessage
           title="日期范围无效"
@@ -291,19 +294,20 @@ export default function CustomerStatementDetailPage() {
     );
   }
 
-  if (isLoading) return <ContentLoading text="正在同步账务记录..." />;
+  if (isLoading) return <ContentLoading text="正在加载客户对账单..." />;
 
   if (error || !statementDetail) {
     return (
       <div className="mx-auto max-w-[1680px] space-y-4 p-10">
         <Button variant="ghost" size="sm" onClick={() => router.back()}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> 返回列表
+          <ArrowLeft className="mr-2 h-4 w-4" /> 返回客户往来
         </Button>
         <ErrorMessage
-          title={error ? '获取失败' : '暂无数据'}
-          message={
-            error instanceof Error ? error.message : '未发现相关对账记录'
-          }
+          title={error ? '加载失败' : '暂无数据'}
+          message={getFriendlyErrorMessage(
+            error,
+            '暂时没有查到相关往来记录，请稍后重试'
+          )}
           onRetry={() => refetch()}
         />
       </div>
@@ -350,7 +354,7 @@ export default function CustomerStatementDetailPage() {
                   </h1>
                   <Badge className="rounded-full border-none bg-emerald-500/10 px-4 py-1.5 text-[10px] font-black tracking-widest text-emerald-600 uppercase ring-1 ring-emerald-500/20">
                     <ShieldCheck className="mr-1.5 h-3.5 w-3.5" />
-                    实名认证往来账户
+                    往来客户
                   </Badge>
                 </div>
 
@@ -358,7 +362,7 @@ export default function CustomerStatementDetailPage() {
                   <div className="flex items-center gap-2.5">
                     <div className="h-1.5 w-1.5 rounded-full bg-slate-300" />
                     <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
-                      审计周期
+                      统计期间
                     </span>
                     <span className="text-sm font-black text-slate-700">
                       {formatDate(statementDetail.periodStart)} —{' '}
@@ -389,7 +393,7 @@ export default function CustomerStatementDetailPage() {
                 <RefreshCw
                   className={cn('mr-2 h-5 w-5', isFetching && 'animate-spin')}
                 />
-                同步
+                刷新对账单
               </Button>
               <Button
                 size="lg"
@@ -398,7 +402,7 @@ export default function CustomerStatementDetailPage() {
                 className="h-14 rounded-2xl bg-slate-900 px-10 font-black text-white shadow-xl transition-all hover:shadow-slate-200 active:scale-95"
               >
                 <Download className="mr-2 h-5 w-5" />
-                {isExporting ? '正在打包报表...' : '导出审计对账报告'}
+                {isExporting ? '正在生成...' : '导出当前对账单'}
               </Button>
             </div>
           </div>
@@ -459,30 +463,30 @@ export default function CustomerStatementDetailPage() {
               icon: Layers,
             },
             {
-              label: '待退应付',
+              label: '待退款',
               value: refundSummary.pendingRefundAmount,
               subValue: `累计退货 ${formatCurrency(refundSummary.totalReturnAmount)}`,
               color: 'amber',
               icon: AlertCircle,
             },
             {
-              label: '核心应收',
+              label: '待收金额',
               value: summary.receivables.receivableBalance,
-              subValue: `净销流动 ${formatCurrency(receivableOverview.netSales)}`,
+              subValue: `净销售额 ${formatCurrency(receivableOverview.netSales)}`,
               color: 'emerald',
               icon: TrendingUp,
             },
             {
-              label: '负债应付',
+              label: '待付金额',
               value: summary.payables.payableBalance,
-              subValue: `生成债务 ${formatCurrency(payableOverview.totalGenerated)}`,
+              subValue: `应付款合计 ${formatCurrency(payableOverview.totalGenerated)}`,
               color: 'rose',
               icon: TrendingDown,
             },
             {
-              label: '审计结余',
+              label: '期末余额',
               value: statementDetail.closingBalance,
-              subValue: `审计净值 ${formatCurrency(summary.netBalance)}`,
+              subValue: `往来净额 ${formatCurrency(summary.netBalance)}`,
               color: 'slate',
               icon: Wallet,
             },
@@ -542,7 +546,7 @@ export default function CustomerStatementDetailPage() {
             <div className="flex flex-col items-center justify-center rounded-[2.5rem] border border-dashed border-slate-200 bg-white/20 py-24">
               <FileText className="mb-4 h-12 w-12 text-slate-200" />
               <p className="text-sm font-black tracking-widest text-slate-400 uppercase">
-                审计期间暂无交易流水
+                当前期间暂无往来记录
               </p>
             </div>
           ) : (
@@ -588,7 +592,7 @@ export default function CustomerStatementDetailPage() {
                     <div className="grid grid-cols-2 gap-8 lg:min-w-[360px] lg:border-l lg:border-slate-100 lg:pl-10">
                       <div className="space-y-1">
                         <span className="text-[9px] font-black tracking-widest text-slate-300 uppercase">
-                          账务变动 (借/贷)
+                          本次变动
                         </span>
                         <div className="flex items-baseline gap-2">
                           <span
@@ -611,7 +615,7 @@ export default function CustomerStatementDetailPage() {
                       </div>
                       <div className="space-y-1">
                         <span className="text-[9px] font-black tracking-widest text-slate-300 uppercase">
-                          计算余
+                          余额
                         </span>
                         <div className="text-sm font-black text-slate-900">
                           {formatCurrency(tx.balance)}

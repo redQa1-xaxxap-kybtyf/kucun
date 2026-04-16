@@ -34,6 +34,16 @@ const STATEMENT_PAYMENT_METHOD_LABELS: Record<string, string> = {
 const roundCurrency = (value: number): number =>
   Math.round(Number(value || 0) * 100) / 100;
 
+function buildActivePayableWhere(
+  where: Prisma.PayableRecordWhereInput = {}
+): Prisma.PayableRecordWhereInput {
+  return {
+    ...where,
+    status: { not: 'cancelled' },
+    voidedAt: null,
+  };
+}
+
 function computeReceivableBalance(params: {
   salesAmount: number;
   salesReturnAmount: number;
@@ -335,10 +345,10 @@ export async function getCustomerStatements(
       await Promise.all([
         prisma.payableRecord.groupBy({
           by: ['supplierId'],
-          where: {
+          where: buildActivePayableWhere({
             supplierId: { in: supplierIds },
             ...(hasDateFilter && { createdAt: dateFilter }),
-          },
+          }),
           _sum: { payableAmount: true },
         }),
         prisma.paymentOutRecord.groupBy({
@@ -887,6 +897,7 @@ export async function getCustomerStatementStatistics(): Promise<CustomerStatemen
   const [payableAggregate, paymentPaidAggregate, prepaymentPaidAggregate] =
     await Promise.all([
       prisma.payableRecord.aggregate({
+        where: buildActivePayableWhere(),
         _sum: { payableAmount: true },
       }),
       prisma.paymentOutRecord.aggregate({
@@ -1268,10 +1279,10 @@ export async function calculateCustomerStatementSummary(
     const [payableAggregate, paymentPaidAggregate, prepaymentPaidAggregate] =
       await Promise.all([
         prisma.payableRecord.aggregate({
-          where: {
+          where: buildActivePayableWhere({
             supplierId,
             ...(hasDateFilter && { createdAt: dateFilter }),
-          },
+          }),
           _sum: { payableAmount: true },
         }),
         prisma.paymentOutRecord.aggregate({
@@ -1764,10 +1775,10 @@ async function getCustomerTransactions(
     let supplierPayableCursor: string | undefined;
     while (true) {
       const supplierPayables = await prisma.payableRecord.findMany({
-        where: {
+        where: buildActivePayableWhere({
           supplierId: customerAsSupplier.id,
           createdAt: dateFilter,
-        },
+        }),
         select: {
           id: true,
           payableNumber: true,
@@ -2044,10 +2055,10 @@ async function calculateOpeningBalance(
     const [payableAggregate, paymentPaidAggregate, prepaymentPaidAggregate] =
       await Promise.all([
         prisma.payableRecord.aggregate({
-          where: {
+          where: buildActivePayableWhere({
             supplierId,
             createdAt: dateFilter,
-          },
+          }),
           _sum: { payableAmount: true },
         }),
         prisma.paymentOutRecord.aggregate({
