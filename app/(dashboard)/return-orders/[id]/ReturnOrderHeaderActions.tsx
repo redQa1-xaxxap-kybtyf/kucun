@@ -1,13 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  Ban,
-  CheckCircle,
-  Edit,
-  MoreHorizontal,
-  Printer,
-} from 'lucide-react';
+import { Ban, CheckCircle, Edit, MoreHorizontal, Printer } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -31,6 +25,7 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { queryKeys } from '@/lib/queryKeys';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
 interface ReturnOrderHeaderActionsProps {
   id: string;
@@ -89,7 +84,7 @@ export function ReturnOrderHeaderActions({
     },
     onSuccess: (_data, nextStatus) => {
       toast({
-        title: nextStatus === 'completed' ? '完成成功' : '操作成功',
+        title: nextStatus === 'completed' ? '退货已完成' : '操作成功',
         description:
           processType === 'refund'
             ? '退货已完成，库存已回补；如需退款，请继续处理退款'
@@ -104,8 +99,11 @@ export function ReturnOrderHeaderActions({
     },
     onError: (error: Error) => {
       toast({
-        title: '操作失败',
-        description: error.message,
+        title: '处理失败',
+        description: getFriendlyErrorMessage(
+          error,
+          '退货状态暂时无法更新，请稍后重试'
+        ),
         variant: 'destructive',
       });
       setProcessingAction(null);
@@ -138,7 +136,7 @@ export function ReturnOrderHeaderActions({
     onSuccess: () => {
       toast({
         title: '取消成功',
-        description: '退货订单已取消',
+        description: '这张退货单已取消',
         variant: 'success',
       });
       queryClient.invalidateQueries({
@@ -150,7 +148,10 @@ export function ReturnOrderHeaderActions({
     onError: (error: Error) => {
       toast({
         title: '取消失败',
-        description: error.message,
+        description: getFriendlyErrorMessage(
+          error,
+          '这张退货单暂时无法取消，请稍后重试'
+        ),
         variant: 'destructive',
       });
     },
@@ -175,7 +176,8 @@ export function ReturnOrderHeaderActions({
             disabled={statusMutation.isPending || cancelMutation.isPending}
           >
             <CheckCircle className="mr-2 h-4 w-4" />
-            {processingAction === primaryAction.nextStatus && statusMutation.isPending
+            {processingAction === primaryAction.nextStatus &&
+            statusMutation.isPending
               ? primaryAction.loadingLabel
               : primaryAction.label}
           </Button>
@@ -206,7 +208,7 @@ export function ReturnOrderHeaderActions({
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end">
             {canCancel && (
               <DropdownMenuItem
                 className="text-destructive"
@@ -232,7 +234,7 @@ export function ReturnOrderHeaderActions({
               <ul className="mt-2 list-inside list-disc space-y-1">
                 <li>该退货订单将被标记为已取消状态</li>
                 <li>已取消的订单不会影响往来账单余额</li>
-                <li>订单记录仍会保留在系统中用于审计追踪</li>
+                <li>订单记录仍会保留，方便后续查询</li>
                 <li>此操作不可撤销</li>
               </ul>
             </AlertDialogDescription>
@@ -246,7 +248,7 @@ export function ReturnOrderHeaderActions({
               disabled={cancelMutation.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {cancelMutation.isPending ? '取消中...' : '确认取消'}
+              {cancelMutation.isPending ? '处理中...' : '确认取消'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

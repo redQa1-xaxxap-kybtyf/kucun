@@ -3,7 +3,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import dynamic from 'next/dynamic';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
 import { useBreadcrumbTitle } from '@/components/common/BreadcrumbContext';
@@ -11,8 +11,10 @@ import { ContentLoading } from '@/components/common/loading';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { useToast } from '@/components/ui/use-toast';
 import { useUpdateSalesOrderStatus } from '@/lib/api/sales-orders';
+import { RETURN_ALLOWED_SALES_ORDER_STATUSES } from '@/lib/config/sales-order';
 import { queryKeys } from '@/lib/queryKeys';
 import { getErrorMessage } from '@/lib/utils/error-handler';
+import { sanitizeReturnTo } from '@/lib/utils/sales-order-navigation';
 
 import { AmountSummaryCards } from './components/AmountSummaryCards';
 import { BasicInfoCard } from './components/BasicInfoCard';
@@ -106,7 +108,9 @@ async function fetchSalesOrderDetail(id: string): Promise<SalesOrderDetail> {
 export default function SalesOrderDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const id = params.id as string;
+  const returnTo = sanitizeReturnTo(searchParams.get('returnTo'));
   const { toast } = useToast();
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [density, setDensity] = useState<'compact' | 'comfortable'>(
@@ -218,7 +222,7 @@ export default function SalesOrderDetailPage() {
             : (order.prepaymentTotalApplied ?? 0) > 0 ||
                 (order.prepaymentUsages?.length ?? 0) > 0 ||
                 Number(order.prepaymentAmount ?? 0) > 0
-              ? '订单已使用预收款冲抵，不能撤回确认，请直接取消后重开'
+              ? '订单已使用预收款抵扣，不能撤回确认，请直接取消后重开'
               : undefined;
 
   const handleWithdrawConfirmation = () => {
@@ -299,6 +303,9 @@ export default function SalesOrderDetailPage() {
   const canEditOrder = order.status === 'draft';
   const canConfirmOrder =
     order.status === 'draft' && Array.isArray(order.items) && order.items.length > 0;
+  const canQuickReturn = RETURN_ALLOWED_SALES_ORDER_STATUSES.includes(
+    order.status as (typeof RETURN_ALLOWED_SALES_ORDER_STATUSES)[number]
+  );
 
   return (
     <div className="flex h-full flex-col overflow-auto bg-slate-50/30">
@@ -309,8 +316,10 @@ export default function SalesOrderDetailPage() {
         <HeaderCard
           order={order}
           id={id}
+          returnTo={returnTo}
           canEditOrder={canEditOrder}
           canConfirmOrder={canConfirmOrder}
+          canQuickReturn={canQuickReturn}
           withdrawConfirmationDisabledReason={
             withdrawConfirmationDisabledReason
           }

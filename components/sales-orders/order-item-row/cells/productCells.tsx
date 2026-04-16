@@ -13,6 +13,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { TableCell } from '@/components/ui/table';
 import type { Product } from '@/lib/types/product';
+import { requiresProductBatchSelection } from '@/lib/utils/product-inventory';
 
 import type { OrderFormInstance } from '../types';
 
@@ -253,9 +254,18 @@ export function BatchSelectorCell({
                   }
                 }}
                 disabled={disabled}
+                triggerProps={{
+                  'data-sales-order-focus-target': 'batch',
+                }}
               />
             </FormControl>
             <FormMessage className="text-xs" />
+            {!isManualProduct &&
+              requiresProductBatchSelection(resolvedProduct, field.value) && (
+                <p className="text-[11px] text-amber-600">
+                  存在多个可用批次，请先选择批次
+                </p>
+              )}
           </FormItem>
         )}
       />

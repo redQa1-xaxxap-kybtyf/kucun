@@ -51,6 +51,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 // API and Types
 import {
   useCreateReturnOrder,
@@ -206,26 +207,43 @@ export function ReturnOrderForm({
   };
 
   const isLoading = createMutation.isPending || updateMutation.isPending;
+  const hasUnsavedChanges = form.formState.isDirty && !isLoading;
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前退货单内容尚未保存，确定要离开吗？',
+  });
   const error = createMutation.error || updateMutation.error;
+  const handleCancel = () => {
+    if (!confirmLeavePage()) {
+      return;
+    }
+
+    onCancel?.();
+  };
 
   return (
     <div className="container mx-auto space-y-6 py-6">
       {/* 页面标题 */}
       <div className="flex items-center space-x-4">
         {onCancel && (
-          <Button type="button" variant="outline" size="sm" onClick={onCancel}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleCancel}
+          >
             <ArrowLeft className="mr-2 h-4 w-4" />
             返回
           </Button>
         )}
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            {mode === 'create' ? '新建退货订单' : '编辑退货订单'}
+            {mode === 'create' ? '新建退货单' : '编辑退货单'}
           </h1>
           <p className="text-muted-foreground">
             {mode === 'create'
               ? '填写退货信息并添加退货明细'
-              : '修改退货订单信息'}
+              : '修改退货单信息'}
           </p>
         </div>
       </div>
@@ -713,7 +731,7 @@ export function ReturnOrderForm({
           {/* 操作按钮 */}
           <div className="flex items-center justify-end space-x-2">
             {onCancel && (
-              <Button type="button" variant="outline" onClick={onCancel}>
+              <Button type="button" variant="outline" onClick={handleCancel}>
                 取消
               </Button>
             )}

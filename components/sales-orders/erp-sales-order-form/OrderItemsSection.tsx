@@ -29,6 +29,7 @@ import type {
   TransferFulfillmentMode,
 } from '@/lib/types/sales-order';
 import type { HistoricalTemporaryProduct } from '@/lib/types/temporary-product';
+import { toPieceOrSheetLabel } from '@/lib/utils/inventory-unit-conversion';
 import type { SalesOrderCreateFormData } from '@/lib/validations/sales-order';
 
 const HistoricalTemporaryProductDialog = dynamic(
@@ -63,6 +64,7 @@ interface OrderItemsSectionProps {
   remove: UseFieldArrayRemove;
   onAddItem: () => void;
   isSubmitting: boolean;
+  highlightedRowIndexes?: ReadonlySet<number>;
   products: Product[];
   onSelectedProduct?: (product: Product | null) => void;
   orderType: SalesOrderType | undefined;
@@ -109,7 +111,7 @@ function populateProductSelection({
     `items.${index}.piecesPerUnit`,
     product.piecesPerUnit ?? undefined
   );
-  form.setValue(`items.${index}.displayUnit`, '片');
+  form.setValue(`items.${index}.displayUnit`, toPieceOrSheetLabel(product.unit));
   form.setValue(`items.${index}.displayQuantity`, 1);
   form.setValue(`items.${index}.quantity`, 1);
   form.setValue(`items.${index}.remarks`, '');
@@ -132,6 +134,7 @@ export function OrderItemsSection({
   remove,
   onAddItem,
   isSubmitting,
+  highlightedRowIndexes,
   products,
   onSelectedProduct,
   orderType,
@@ -213,7 +216,10 @@ export function OrderItemsSection({
         );
         form.setValue(`items.${newIndex}.unit`, product.unit);
 
-        form.setValue(`items.${newIndex}.displayUnit`, '片');
+        form.setValue(
+          `items.${newIndex}.displayUnit`,
+          toPieceOrSheetLabel(product.unit)
+        );
         form.setValue(`items.${newIndex}.displayQuantity`, 1);
         form.setValue(`items.${newIndex}.quantity`, 1);
 
@@ -342,6 +348,7 @@ export function OrderItemsSection({
                     <OrderItemRow
                       key={field.id}
                       index={index}
+                      isHighlighted={highlightedRowIndexes?.has(index) ?? false}
                       products={products}
                       onRemove={remove}
                       onProductChange={handleProductChange}

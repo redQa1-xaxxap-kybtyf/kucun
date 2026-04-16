@@ -167,6 +167,7 @@ function QuantityInputCell({
                 value={field.value ?? ''}
                 className="h-8 text-xs"
                 placeholder="数量"
+                data-sales-order-focus-target="quantity"
                 onChange={event => {
                   const inputValue = event.target.value;
                   // 允许输入数字、小数点、空字符串

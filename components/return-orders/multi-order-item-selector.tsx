@@ -26,7 +26,7 @@ import type { ReturnOrderItem } from '@/lib/types/return-order';
 import type { SalesOrder } from '@/lib/types/sales-order';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/utils/datetime';
-import { calculatePieceDisplay } from '@/lib/utils/piece-calculation';
+import { formatDetailedPieceSummary } from '@/lib/utils/piece-calculation';
 
 interface MultiOrderItemSelectorProps {
   customerId: string;
@@ -319,20 +319,8 @@ function SalesOrderSection({
 
     const unitLabel = normalizeUnitLabel(item.displayUnit ?? item.product.unit);
 
-    if (piecesPerUnit && unitLabel === '件') {
-      const { fullUnits, remainingPieces, totalPieces } = calculatePieceDisplay(
-        qty,
-        piecesPerUnit
-      );
-
-      if (fullUnits === 0) {
-        return `${totalPieces}片`;
-      }
-      if (remainingPieces === 0) {
-        return `${fullUnits}件（共${totalPieces}片）`;
-      }
-
-      return `${fullUnits}件${remainingPieces}片（共${totalPieces}片）`;
+    if (piecesPerUnit && piecesPerUnit > 1 && unitLabel === '件') {
+      return formatDetailedPieceSummary(qty, piecesPerUnit);
     }
 
     // 默认：数量 + 单位（通常是片）

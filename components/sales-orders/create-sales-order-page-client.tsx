@@ -1,7 +1,10 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
+
+import type { Customer } from '@/lib/types/customer';
+import type { SalesOrder } from '@/lib/types/sales-order';
+import { withReturnTo } from '@/lib/utils/sales-order-navigation';
 
 const ERPSalesOrderForm = dynamic(
   () =>
@@ -20,6 +23,10 @@ const ERPSalesOrderForm = dynamic(
 
 interface CreateSalesOrderPageClientProps {
   initialOrderNumber: string;
+  duplicateSourceOrder?: SalesOrder;
+  prefillCustomer?: Pick<Customer, 'id' | 'name' | 'phone' | 'address'>;
+  cancelHref?: string;
+  returnTo?: string;
 }
 
 /**
@@ -28,19 +35,19 @@ interface CreateSalesOrderPageClientProps {
  */
 export function CreateSalesOrderPageClient({
   initialOrderNumber,
+  duplicateSourceOrder,
+  prefillCustomer,
+  cancelHref = '/sales-orders',
+  returnTo,
 }: CreateSalesOrderPageClientProps) {
-  const router = useRouter();
-
   return (
     <ERPSalesOrderForm
-      key={initialOrderNumber} // 强制以订单号作为key，确保每次新建都完全重置表单状态
+      key={`${initialOrderNumber}:${duplicateSourceOrder?.id ?? 'new'}:${prefillCustomer?.id ?? 'no-customer'}`}
       initialOrderNumber={initialOrderNumber}
-      onSuccess={order => {
-        router.push(`/sales-orders/${order.id}`);
-      }}
-      onCancel={() => {
-        router.push('/sales-orders');
-      }}
+      duplicateSourceOrder={duplicateSourceOrder}
+      prefillCustomer={prefillCustomer}
+      successHref={order => withReturnTo(`/sales-orders/${order.id}`, returnTo)}
+      cancelHref={cancelHref}
     />
   );
 }

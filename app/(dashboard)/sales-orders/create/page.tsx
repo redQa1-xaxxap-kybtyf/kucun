@@ -4,7 +4,15 @@ import Link from 'next/link';
 import { CreateSalesOrderPageClient } from '@/components/sales-orders/create-sales-order-page-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { getCustomerDetail } from '@/lib/api/customer-handlers';
+import { getSalesOrderById } from '@/lib/api/handlers/sales-orders';
 import { generateSalesOrderNumber } from '@/lib/services/simple-order-number-generator';
+import type { Customer } from '@/lib/types/customer';
+import type { SalesOrder } from '@/lib/types/sales-order';
+import {
+  sanitizeReturnTo,
+  withReturnTo,
+} from '@/lib/utils/sales-order-navigation';
 
 /**
  * 新建销售订单页面
@@ -14,9 +22,56 @@ import { generateSalesOrderNumber } from '@/lib/services/simple-order-number-gen
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export default async function CreateSalesOrderPage() {
-  // 服务端预先生成订单号，无延迟
-  const initialOrderNumber = await generateSalesOrderNumber();
+export default async function CreateSalesOrderPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const params = await searchParams;
+  const copyFrom =
+    typeof params.copyFrom === 'string' ? params.copyFrom.trim() : '';
+  const customerId =
+    typeof params.customerId === 'string' ? params.customerId.trim() : '';
+  const rawReturnTo =
+    typeof params.returnTo === 'string' ? params.returnTo : undefined;
+  const returnTo = sanitizeReturnTo(rawReturnTo);
+
+  const [initialOrderNumber, duplicateSourceOrder, prefillCustomer] =
+    await Promise.all([
+    generateSalesOrderNumber(),
+    copyFrom
+      ? (getSalesOrderById(copyFrom) as Promise<SalesOrder | null>)
+      : Promise.resolve(null),
+    !copyFrom && customerId
+      ? (getCustomerDetail(customerId)
+          .then(customer => ({
+            id: customer.id,
+            name: customer.name,
+            phone: customer.phone,
+            address: customer.address,
+          }))
+          .catch(() => null) as Promise<
+            Pick<Customer, 'id' | 'name' | 'phone' | 'address'> | null
+          >)
+      : Promise.resolve(null),
+    ]);
+
+  const isDuplicating = Boolean(duplicateSourceOrder);
+  const isCustomerPrefilled = Boolean(prefillCustomer) && !isDuplicating;
+  const cancelHref = isDuplicating
+    ? withReturnTo(`/sales-orders/${duplicateSourceOrder?.id}`, returnTo)
+    : (returnTo ??
+        (prefillCustomer ? `/customers/${prefillCustomer.id}` : '/sales-orders'));
+  const pageTitle = isDuplicating
+    ? '复制销售订单'
+    : isCustomerPrefilled
+      ? `为 ${prefillCustomer?.name} 新建销售订单`
+      : '新建销售订单';
+  const pageDescription = isDuplicating
+    ? `基于订单 ${duplicateSourceOrder?.orderNumber} 预填客户、明细和费用，可调整后保存为新订单`
+    : isCustomerPrefilled
+      ? '已自动带入客户信息，可以直接补充商品、费用和备注后保存'
+      : '创建新的销售订单';
 
   return (
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
@@ -31,10 +86,10 @@ export default async function CreateSalesOrderPage() {
                 </div>
                 <div>
                   <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
-                    新建销售订单
+                    {pageTitle}
                   </h1>
                   <p className="text-xs text-gray-600 sm:text-sm">
-                    创建新的销售订单
+                    {pageDescription}
                   </p>
                 </div>
               </div>
@@ -44,7 +99,7 @@ export default async function CreateSalesOrderPage() {
                 asChild
                 className="h-10 shadow-md transition-all hover:scale-105 hover:shadow-lg sm:h-11"
               >
-                <Link href="/sales-orders">
+                <Link href={cancelHref}>
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   返回
                 </Link>
@@ -54,7 +109,13 @@ export default async function CreateSalesOrderPage() {
         </Card>
 
         {/* 表单 - 传递预生成的订单号 */}
-        <CreateSalesOrderPageClient initialOrderNumber={initialOrderNumber} />
+        <CreateSalesOrderPageClient
+          initialOrderNumber={initialOrderNumber}
+          duplicateSourceOrder={duplicateSourceOrder ?? undefined}
+          prefillCustomer={prefillCustomer ?? undefined}
+          cancelHref={cancelHref}
+          returnTo={returnTo}
+        />
       </div>
     </div>
   );

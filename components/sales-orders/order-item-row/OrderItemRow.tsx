@@ -6,6 +6,7 @@ import { useFormContext } from 'react-hook-form';
 import { TableRow } from '@/components/ui/table';
 import type { Product } from '@/lib/types/product';
 import type { TransferFulfillmentMode } from '@/lib/types/sales-order';
+import { cn } from '@/lib/utils';
 import type { SalesOrderCreateFormData } from '@/lib/validations/sales-order';
 
 import {
@@ -35,6 +36,7 @@ import type { OrderFormInstance } from './types';
 
 interface OrderItemRowProps {
   index: number;
+  isHighlighted?: boolean;
   products: Product[];
   onRemove: (index: number) => void;
   onProductChange?: (index: number, product: Product | null) => void;
@@ -45,6 +47,7 @@ interface OrderItemRowProps {
 interface OrderItemRowViewProps {
   form: OrderFormInstance;
   index: number;
+  isHighlighted: boolean;
   products: Product[];
   onRemove: (index: number) => void;
   orderType: 'NORMAL' | 'TRANSFER';
@@ -66,6 +69,7 @@ interface OrderItemRowViewProps {
 
 const OrderItemRowComponent = ({
   index,
+  isHighlighted = false,
   products,
   onRemove,
   onProductChange,
@@ -74,6 +78,7 @@ const OrderItemRowComponent = ({
 }: OrderItemRowProps) => {
   const controller = useOrderItemRowController({
     index,
+    isHighlighted,
     products,
     onRemove,
     onProductChange,
@@ -90,6 +95,7 @@ OrderItemRow.displayName = 'OrderItemRow';
 function OrderItemRowView({
   form,
   index,
+  isHighlighted,
   products,
   onRemove,
   orderType,
@@ -105,7 +111,15 @@ function OrderItemRowView({
   onProductOverride,
 }: OrderItemRowViewProps) {
   return (
-    <TableRow className="h-10 border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] transition-colors hover:bg-[hsl(var(--color-bg-tertiary))]">
+    <TableRow
+      id={`sales-order-item-row-${index}`}
+      data-sales-order-row-index={index}
+      className={cn(
+        'h-10 border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] transition-colors hover:bg-[hsl(var(--color-bg-tertiary))]',
+        isHighlighted &&
+          'bg-amber-100/80 shadow-[inset_0_0_0_1px_rgba(245,158,11,0.45)]'
+      )}
+    >
       <ProductCodeCell
         form={form}
         index={index}
@@ -172,6 +186,7 @@ interface UseOrderItemRowControllerParams extends OrderItemRowProps {}
 
 function useOrderItemRowController({
   index,
+  isHighlighted,
   products,
   onRemove,
   onProductChange,
@@ -254,6 +269,7 @@ function useOrderItemRowController({
   return {
     form,
     index,
+    isHighlighted: Boolean(isHighlighted),
     products,
     onRemove,
     orderType,

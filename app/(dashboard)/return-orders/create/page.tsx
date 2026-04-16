@@ -3,10 +3,11 @@
 import { ArrowLeft, PackageX } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
+import { readQuickReturnPrefill } from '@/lib/utils/sales-order-navigation';
 
 const ERPReturnOrderForm = dynamic(
   () =>
@@ -29,14 +30,28 @@ const ERPReturnOrderForm = dynamic(
  */
 export default function CreateReturnOrderPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const quickReturnPrefill = readQuickReturnPrefill(searchParams);
+  const hasQuickReturnPrefill = Boolean(quickReturnPrefill.salesOrderId);
+  const returnHref = quickReturnPrefill.returnTo ?? '/return-orders';
 
   // 处理创建成功
   const handleSuccess = () => {
+    if (quickReturnPrefill.returnTo) {
+      router.push(quickReturnPrefill.returnTo);
+      return;
+    }
+
     router.push('/return-orders');
   };
 
   // 处理取消
   const handleCancel = () => {
+    if (quickReturnPrefill.returnTo) {
+      router.push(quickReturnPrefill.returnTo);
+      return;
+    }
+
     router.back();
   };
 
@@ -46,14 +61,18 @@ export default function CreateReturnOrderPage() {
         {/* 页面标题 */}
         <PageHeader
           title="新建退货订单"
-          description="新建退货订单，处理客户退货申请"
+          description={
+            hasQuickReturnPrefill
+              ? '已从销售单带入客户和待退明细，补充退货数量后即可保存或提交。'
+              : '新建退货订单，处理客户退货申请'
+          }
           icon={<PackageX className="h-6 w-6 text-white" />}
           iconBgColor="hsl(var(--color-error))"
           actions={
             <Button variant="outline" size="lg" asChild className="h-11 gap-2">
-              <Link href="/return-orders">
+              <Link href={returnHref}>
                 <ArrowLeft className="h-4 w-4" />
-                返回列表
+                {hasQuickReturnPrefill ? '返回销售单' : '返回列表'}
               </Link>
             </Button>
           }
@@ -64,6 +83,8 @@ export default function CreateReturnOrderPage() {
           mode="create"
           onSuccess={handleSuccess}
           onCancel={handleCancel}
+          presetSalesOrderId={quickReturnPrefill.salesOrderId}
+          presetCustomerId={quickReturnPrefill.customerId}
         />
       </div>
     </div>

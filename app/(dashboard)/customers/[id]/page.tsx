@@ -21,12 +21,16 @@ import { cn } from '@/lib/utils';
 import { logger } from '@/lib/utils/console-logger';
 import { formatDateTime } from '@/lib/utils/datetime';
 import { getErrorMessage } from '@/lib/utils/error-handler';
+import {
+  getCurrentPathWithSearch,
+  withReturnTo,
+} from '@/lib/utils/sales-order-navigation';
 
 const CustomerActivityTabs = dynamic(
   () =>
-    import('@/components/customers/customer-detail/customer-activity-tabs').then(
-      mod => mod.CustomerActivityTabs
-    ),
+    import(
+      '@/components/customers/customer-detail/customer-activity-tabs'
+    ).then(mod => mod.CustomerActivityTabs),
   {
     ssr: false,
     loading: () => (
@@ -152,14 +156,14 @@ function CustomerHeader({
                     : 'bg-slate-100 text-slate-500'
                 )}
               >
-                {getStatusLabel(customer.status)}账户
+                {getStatusLabel(customer.status)}
               </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-6">
               <div className="flex items-center gap-2 text-sm font-bold text-slate-400">
                 <span className="text-xs tracking-wider text-slate-500 uppercase">
-                  档案编号
+                  客户编号
                 </span>
                 <span className="font-bold text-slate-600">
                   {customer.id.substring(0, 8).toUpperCase()}
@@ -168,7 +172,7 @@ function CustomerHeader({
               <span className="h-1 w-1 rounded-full bg-slate-200" />
               <div className="flex items-center gap-2 text-sm font-bold text-slate-400">
                 <span className="text-xs tracking-wider text-slate-500 uppercase">
-                  合作始于
+                  建档时间
                 </span>
                 <span className="font-bold text-slate-600">
                   {formatDateTime(customer.createdAt).split(' ')[0]}
@@ -186,17 +190,22 @@ function CustomerHeader({
             className="h-14 rounded-2xl border-none bg-white px-8 font-black text-slate-600 shadow-sm transition-all hover:bg-slate-900 hover:text-white active:scale-95"
           >
             <Edit className="mr-2 h-5 w-5" />
-            修订档案
+            编辑资料
           </Button>
           <Button
             size="lg"
             className="h-14 rounded-2xl bg-slate-900 px-10 font-black text-white shadow-xl transition-all hover:shadow-slate-200 active:scale-95"
             onClick={() =>
-              router.push(`/sales-orders/create?customerId=${customer.id}`)
+              router.push(
+                withReturnTo(
+                  `/sales-orders/create?customerId=${customer.id}`,
+                  getCurrentPathWithSearch() ?? `/customers/${customer.id}`
+                )
+              )
             }
           >
             <ShoppingCart className="mr-2 h-5 w-5" />
-            快速建立订单
+            新建销售单
           </Button>
         </div>
       </div>
@@ -276,10 +285,10 @@ function CustomerDetailContent({ customer }: { customer: CustomerDetail }) {
         <div className="rounded-[2.5rem] border border-white bg-white/40 p-1 shadow-sm backdrop-blur-md">
           <div className="p-8 pb-4">
             <h2 className="text-2xl font-black tracking-tight text-slate-900">
-              往来审计与近期活动
+              业务往来与近期记录
             </h2>
             <p className="mt-1 text-sm font-bold text-slate-400">
-              追踪未结订单、历史销售及退货的完整生命周期。
+              集中查看销售、退货和待收款情况。
             </p>
           </div>
           <div className="p-2">

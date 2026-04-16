@@ -7,6 +7,7 @@ import {
   Download,
   Edit,
   MoreHorizontal,
+  PackageX,
   Printer,
   Truck,
   Undo2,
@@ -42,6 +43,11 @@ import {
   TRANSFER_MODE_LABELS,
 } from '@/lib/types/sales-order';
 import { getSalesOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
+import {
+  buildQuickReturnPath,
+  getCurrentPathWithSearch,
+  withReturnTo,
+} from '@/lib/utils/sales-order-navigation';
 
 import type { SalesOrderDetail } from './types';
 
@@ -56,8 +62,10 @@ const PrintTemplatePreviewDialog = dynamic(
 interface Props {
   order: SalesOrderDetail;
   id: string;
+  returnTo?: string;
   canEditOrder: boolean;
   canConfirmOrder: boolean;
+  canQuickReturn: boolean;
   withdrawConfirmationDisabledReason?: string;
   isUpdatingStatus: boolean;
   onConfirmOrder: () => void;
@@ -75,6 +83,7 @@ interface Props {
 interface HeaderActionsProps {
   canEditOrder: boolean;
   canConfirmOrder: boolean;
+  canQuickReturn: boolean;
   isDraft: boolean;
   isConfirmed: boolean;
   withdrawConfirmationDisabledReason?: string;
@@ -86,10 +95,12 @@ interface HeaderActionsProps {
   onConfirmOrder: () => void;
   onRequestWithdrawConfirmation: () => void;
   onConfirmShipment: () => void;
+  onQuickReturn: () => void;
   onPrint: () => void;
   onExportImage: () => void;
   onExportExcel: () => void;
   onExportCompleteExcel: () => void;
+  onDuplicate: () => void;
 }
 
 interface SalesOrderMetaProps {
@@ -179,6 +190,7 @@ function SalesOrderMeta({ order }: SalesOrderMetaProps) {
 function HeaderActions({
   canEditOrder,
   canConfirmOrder,
+  canQuickReturn,
   isDraft,
   isConfirmed,
   withdrawConfirmationDisabledReason,
@@ -190,10 +202,12 @@ function HeaderActions({
   onConfirmOrder,
   onRequestWithdrawConfirmation,
   onConfirmShipment,
+  onQuickReturn,
   onPrint,
   onExportImage,
   onExportExcel,
   onExportCompleteExcel,
+  onDuplicate,
 }: HeaderActionsProps) {
   return (
     <div className="flex flex-wrap items-center gap-2 sm:justify-end">
@@ -210,7 +224,7 @@ function HeaderActions({
         variant="outline"
         size="sm"
         onClick={onEdit}
-        disabled={!canEditOrder}
+        title={!canEditOrder ? '只有草稿订单支持直接编辑' : undefined}
         className="h-8 px-3 text-xs sm:h-9 sm:px-4"
       >
         <Edit className="mr-1.5 h-3.5 w-3.5" />
@@ -251,6 +265,17 @@ function HeaderActions({
         >
           <Truck className="mr-1.5 h-3.5 w-3.5" />
           {isUpdatingStatus ? '处理中...' : '确认发货'}
+        </Button>
+      )}
+      {canQuickReturn && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onQuickReturn}
+          className="h-8 px-3 text-xs sm:h-9 sm:px-4"
+        >
+          <PackageX className="mr-1.5 h-3.5 w-3.5" />
+          快速退货
         </Button>
       )}
       <DropdownMenu>
@@ -303,7 +328,10 @@ function HeaderActions({
             </span>
           </DropdownMenuItem>
           <div className="my-1.5 h-px bg-slate-100" />
-          <DropdownMenuItem className="cursor-pointer py-2.5 font-bold text-blue-600 focus:bg-blue-50 focus:text-blue-700">
+          <DropdownMenuItem
+            onClick={onDuplicate}
+            className="cursor-pointer py-2.5 font-bold text-blue-600 focus:bg-blue-50 focus:text-blue-700"
+          >
             复制并创建新订单
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -315,8 +343,10 @@ function HeaderActions({
 export function HeaderCard({
   order,
   id,
+  returnTo,
   canEditOrder,
   canConfirmOrder,
+  canQuickReturn,
   withdrawConfirmationDisabledReason,
   isUpdatingStatus,
   onConfirmOrder,
@@ -357,20 +387,38 @@ export function HeaderCard({
 
   const handleEdit = useCallback(() => {
     if (canEditOrder) {
-      router.push(`/sales-orders/${id}/edit`);
+      router.push(withReturnTo(`/sales-orders/${id}/edit`, returnTo));
       return;
     }
 
     onShowToast(
       '无法编辑',
-      '只有未确认的草稿订单才能直接编辑，请先通过草稿方式保存订单。',
+      '只有草稿状态的订单才能直接编辑，如需调整请先撤回确认或复制新订单。',
       'destructive'
     );
-  }, [canEditOrder, id, onShowToast, router]);
+  }, [canEditOrder, id, onShowToast, returnTo, router]);
+
+  const handleDuplicateOrder = useCallback(() => {
+    router.push(
+      withReturnTo(`/sales-orders/create?copyFrom=${order.id}`, returnTo)
+    );
+  }, [order.id, returnTo, router]);
 
   const handlePrint = useCallback(() => {
     setIsPrintDialogOpen(true);
   }, []);
+
+  const handleQuickReturn = useCallback(() => {
+    const currentPath =
+      getCurrentPathWithSearch() ?? withReturnTo(`/sales-orders/${id}`, returnTo);
+
+    router.push(
+      buildQuickReturnPath(order.id, {
+        customerId: order.customerId,
+        returnTo: currentPath,
+      })
+    );
+  }, [id, order.customerId, order.id, returnTo, router]);
 
   const handleRequestWithdrawConfirmation = useCallback(() => {
     if (withdrawConfirmationDisabledReason) {
@@ -394,6 +442,7 @@ export function HeaderCard({
           <HeaderActions
             canEditOrder={canEditOrder}
             canConfirmOrder={canConfirmOrder}
+            canQuickReturn={canQuickReturn}
             isDraft={order.status === 'draft'}
             isConfirmed={order.status === 'confirmed'}
             withdrawConfirmationDisabledReason={
@@ -402,15 +451,17 @@ export function HeaderCard({
             isUpdatingStatus={isUpdatingStatus}
             isExportingImage={isExportingImage}
             isExportingExcel={isExportingExcel}
-            onBack={() => router.back()}
+            onBack={() => router.push(returnTo ?? '/sales-orders')}
             onEdit={handleEdit}
             onConfirmOrder={onConfirmOrder}
             onRequestWithdrawConfirmation={handleRequestWithdrawConfirmation}
             onConfirmShipment={onConfirmShipment}
+            onQuickReturn={handleQuickReturn}
             onPrint={handlePrint}
             onExportImage={handleExportImage}
             onExportExcel={handleExportExcel}
             onExportCompleteExcel={handleExportCompleteExcel}
+            onDuplicate={handleDuplicateOrder}
           />
         </div>
       </CardContent>
@@ -440,7 +491,7 @@ export function HeaderCard({
               <strong>草稿</strong>
               状态，可重新修改后再确认。
               <br />
-              系统会同步释放预留库存，并关闭当前待收记录。
+              这张订单预留的库存会恢复，相关待收记录也会一并关闭。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

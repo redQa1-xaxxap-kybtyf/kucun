@@ -33,6 +33,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
 import {
   useCreateReturnOrder,
@@ -58,6 +59,8 @@ interface ERPReturnOrderFormProps {
   initialData?: ReturnOrder;
   onSuccess?: (result: ReturnOrder) => void;
   onCancel?: () => void;
+  presetSalesOrderId?: string;
+  presetCustomerId?: string;
 }
 
 /**
@@ -69,15 +72,19 @@ export function ERPReturnOrderForm({
   initialData,
   onSuccess,
   onCancel,
+  presetSalesOrderId,
+  presetCustomerId,
 }: ERPReturnOrderFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const returnOrderFormId = 'erp-return-order-form';
   const submitIntentRef = useRef<'save' | 'submit' | null>(null);
-  const [selectedSalesOrderId, setSelectedSalesOrderId] = useState<string>('');
+  const [selectedSalesOrderId, setSelectedSalesOrderId] = useState<string>(
+    initialData?.salesOrderId || presetSalesOrderId || ''
+  );
   // ✅ 修复：初始化时同步 initialData.customerId，确保编辑模式下客户下拉框显示已选客户
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>(
-    initialData?.customerId || ''
+    initialData?.customerId || presetCustomerId || ''
   );
   // 单订单模式下：用于展示“原始/已退/可退”数量提示（仅展示，不参与提交）
   const [returnableInfoMap, setReturnableInfoMap] = useState<
@@ -100,7 +107,11 @@ export function ERPReturnOrderForm({
     resolver: (standardSchemaResolver as any)(returnOrderFormSchema) as any,
     defaultValues:
       mode === 'create'
-        ? createReturnOrderDefaults
+        ? {
+            ...createReturnOrderDefaults,
+            salesOrderId: presetSalesOrderId || '',
+            customerId: presetCustomerId || '',
+          }
         : {
             id: initialData?.id,
             returnMode: initialData?.returnMode || 'single_order',
@@ -177,6 +188,32 @@ export function ERPReturnOrderForm({
       setSelectedCustomerId(initialData.customerId);
     }
   }, [initialData?.customerId]);
+
+  useEffect(() => {
+    if (mode !== 'create' || !presetCustomerId) {
+      return;
+    }
+
+    setSelectedCustomerId(presetCustomerId);
+    form.setValue('customerId', presetCustomerId, {
+      shouldDirty: false,
+      shouldTouch: false,
+      shouldValidate: false,
+    });
+  }, [form, mode, presetCustomerId]);
+
+  useEffect(() => {
+    if (mode !== 'create' || !presetSalesOrderId) {
+      return;
+    }
+
+    setSelectedSalesOrderId(presetSalesOrderId);
+    form.setValue('salesOrderId', presetSalesOrderId, {
+      shouldDirty: false,
+      shouldTouch: false,
+      shouldValidate: false,
+    });
+  }, [form, mode, presetSalesOrderId]);
 
   // 监听销售订单变化
 
@@ -281,8 +318,8 @@ export function ERPReturnOrderForm({
   const updateStatusMutation = useUpdateReturnOrderStatus({
     onSuccess: response => {
       toast({
-        title: '提交成功',
-        description: `退货订单 ${response.data.returnNumber} 已提交审核`,
+        title: '退货单已提交',
+        description: `退货单 ${response.data.returnNumber} 已提交，等待审核处理。`,
         variant: 'success',
       });
       submitIntentRef.current = null;
@@ -290,8 +327,8 @@ export function ERPReturnOrderForm({
     },
     onError: error => {
       toast({
-        title: '提交失败',
-        description: error.message || '提交退货订单时发生错误',
+        title: '退货单提交失败',
+        description: error.message || '这张退货单暂时提交失败，请稍后再试。',
         variant: 'destructive',
       });
       submitIntentRef.current = null;
@@ -310,8 +347,8 @@ export function ERPReturnOrderForm({
       }
 
       toast({
-        title: '草稿已保存',
-        description: `退货订单 ${response.data.returnNumber} 已保存为草稿，可继续编辑或提交处理。`,
+        title: '已保存到草稿',
+        description: `退货单 ${response.data.returnNumber} 已保存，可稍后继续填写或直接提交。`,
         variant: 'success',
       });
       submitIntentRef.current = null;
@@ -320,12 +357,12 @@ export function ERPReturnOrderForm({
     onError: error => {
       const isSubmitIntent = submitIntentRef.current === 'submit';
       toast({
-        title: isSubmitIntent ? '提交失败' : '草稿保存失败',
+        title: isSubmitIntent ? '退货单提交失败' : '草稿保存失败',
         description:
           error.message ||
           (isSubmitIntent
-            ? '提交退货订单时发生错误'
-            : '保存退货草稿时发生错误'),
+            ? '这张退货单暂时提交失败，请稍后再试。'
+            : '草稿暂时没保存成功，请稍后再试。'),
         variant: 'destructive',
       });
       submitIntentRef.current = null;
@@ -343,8 +380,8 @@ export function ERPReturnOrderForm({
       }
 
       toast({
-        title: '更新成功',
-        description: `退货订单 ${response.data.returnNumber} 已更新`,
+        title: '退货单已更新',
+        description: `退货单 ${response.data.returnNumber} 的内容已经保存。`,
         variant: 'success',
       });
       submitIntentRef.current = null;
@@ -352,8 +389,8 @@ export function ERPReturnOrderForm({
     },
     onError: error => {
       toast({
-        title: '更新失败',
-        description: error.message || '更新退货订单时发生错误',
+        title: '退货单更新失败',
+        description: error.message || '这张退货单暂时没保存成功，请稍后再试。',
         variant: 'destructive',
       });
       submitIntentRef.current = null;
@@ -424,69 +461,45 @@ export function ERPReturnOrderForm({
     [append, setProductInfoMap]
   );
 
-  // ✅ 表单提交（仅保存，不改变状态 -> 草稿）
-  const onSubmit = (data: ReturnOrderFormData) => {
-    submitIntentRef.current = 'save';
+  const submitReturnOrder = useCallback(
+    (data: ReturnOrderFormData, submitIntent: 'save' | 'submit') => {
+      submitIntentRef.current = submitIntent;
 
-    if (mode === 'edit' && initialData) {
-      const updateData = {
-        id: initialData.id,
-        data: {
-          id: initialData.id, // ✅ 使用 initialData.id 而非 data.id,确保类型正确
-          returnMode: data.returnMode,
-          salesOrderId: data.salesOrderId,
-          customerId: data.customerId,
-          type: data.type,
-          processType: data.processType,
-          reason: data.reason,
-          remarks: data.remarks,
-          items: data.items,
-        },
-      };
-      updateMutation.mutate(updateData);
-    } else {
-      // 创建模式:移除 id 字段
-      const { id: _id, ...createData } = data;
-      createMutation.mutate(createData);
-    }
-  };
-
-  // ✅ 提交退货订单：保存后立即将状态改为 submitted
-  const onSubmitAndSubmit = (data: ReturnOrderFormData) => {
-    submitIntentRef.current = 'submit';
-
-    if (mode === 'edit' && initialData) {
-      const updateData = {
-        id: initialData.id,
-        data: {
+      if (mode === 'edit' && initialData) {
+        const updateData = {
           id: initialData.id,
-          returnMode: data.returnMode,
-          salesOrderId: data.salesOrderId,
-          customerId: data.customerId,
-          type: data.type,
-          processType: data.processType,
-          reason: data.reason,
-          remarks: data.remarks,
-          items: data.items,
-        },
-      };
+          data: {
+            id: initialData.id, // ✅ 使用 initialData.id 而非 data.id,确保类型正确
+            returnMode: data.returnMode,
+            salesOrderId: data.salesOrderId,
+            customerId: data.customerId,
+            type: data.type,
+            processType: data.processType,
+            reason: data.reason,
+            remarks: data.remarks,
+            items: data.items,
+          },
+        };
+        updateMutation.mutate(updateData);
+      } else {
+        // 创建模式:移除 id 字段
+        const { id: _id, ...createData } = data;
+        createMutation.mutate(createData);
+      }
+    },
+    [createMutation, initialData, mode, updateMutation]
+  );
 
-      updateMutation.mutate(updateData);
-    } else {
-      const { id: _id, ...createData } = data;
-      createMutation.mutate(createData);
-    }
-  };
-
+  // ✅ 表单提交（仅保存，不改变状态 -> 草稿）
   const handleFormSubmit = form.handleSubmit(
     data => {
       const submitIntent = submitIntentRef.current ?? 'save';
       if (submitIntent === 'submit') {
-        onSubmitAndSubmit(data);
+        submitReturnOrder(data, 'submit');
         return;
       }
 
-      onSubmit(data);
+      submitReturnOrder(data, 'save');
     },
     () => {
       submitIntentRef.current = null;
@@ -501,8 +514,11 @@ export function ERPReturnOrderForm({
     submitIntentRef.current = 'submit';
   };
 
-  // 处理取消
   const handleCancel = () => {
+    if (!confirmLeavePage()) {
+      return;
+    }
+
     if (onCancel) {
       onCancel();
     } else {
@@ -514,6 +530,11 @@ export function ERPReturnOrderForm({
     createMutation.isPending ||
     updateMutation.isPending ||
     updateStatusMutation.isPending;
+  const hasUnsavedChanges = form.formState.isDirty && !isLoading;
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前退货单内容尚未保存，确定要离开吗？',
+  });
   const error = createMutation.error || updateMutation.error;
 
   return (
@@ -533,10 +554,12 @@ export function ERPReturnOrderForm({
           </Button>
           <div>
             <h1 className="text-lg font-semibold">
-              {mode === 'create' ? '新建退货订单' : '编辑退货订单'}
+              {mode === 'create' ? '新建退货单' : '修改退货单'}
             </h1>
             <p className="text-muted-foreground text-sm">
-              {mode === 'create' ? '填写退货信息' : '修改退货信息'}
+              {mode === 'create'
+                ? '填写退货信息并确认处理方式'
+                : '修改退货信息'}
             </p>
           </div>
         </div>
@@ -577,7 +600,7 @@ export function ERPReturnOrderForm({
               ) : (
                 <Save className="mr-2 h-4 w-4" />
               )}
-              提交退货订单
+              提交退货单
             </Button>
           )}
         </div>
@@ -588,9 +611,9 @@ export function ERPReturnOrderForm({
         <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border px-4 py-3 text-sm">
           {mode === 'create'
             ? submitIntentRef.current === 'submit'
-              ? '提交失败'
+              ? '退货单提交失败'
               : '草稿保存失败'
-            : '更新失败'}
+            : '退货单更新失败'}
           : {error.message}
         </div>
       )}
@@ -671,8 +694,8 @@ export function ERPReturnOrderForm({
                           replace([]);
                           setProductInfoMap({});
                           toast({
-                            title: '已选择销售订单',
-                            description: `订单号：${salesOrder.orderNumber}`,
+                            title: '已选中销售单',
+                            description: `销售单号：${salesOrder.orderNumber}`,
                             variant: 'default',
                           });
                         }}
@@ -822,4 +845,3 @@ export function ERPReturnOrderForm({
     </div>
   );
 }
-

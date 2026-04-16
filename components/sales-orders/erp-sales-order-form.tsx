@@ -32,11 +32,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useToast } from '@/components/ui/use-toast';
 import {
   useCustomerPriceHistory,
   type PriceType,
 } from '@/hooks/use-price-history';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import {
   useCreateSalesOrder,
@@ -62,7 +69,11 @@ import type { Supplier } from '@/lib/types/supplier';
 import { logger } from '@/lib/utils/console-logger';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { formatDate } from '@/lib/utils/datetime';
-import { getProductAvailableQuantity } from '@/lib/utils/product-inventory';
+import {
+  getProductAvailableQuantity,
+  getProductSelectableInventoryBatches,
+  requiresProductBatchSelection,
+} from '@/lib/utils/product-inventory';
 import { mergeProductsById } from '@/lib/utils/product-selection';
 import {
   transformFormDataToCreateInput,
@@ -120,6 +131,229 @@ const coerceNumeric = (value: unknown): number => {
 const buildInventoryRequestKey = (productId: string, batchNumber?: string) =>
   `${productId}::${(batchNumber ?? '').trim()}`;
 
+interface SalesOrderInventoryBlockingSummary {
+  missingBatchEntries: SalesOrderInventoryBlockingEntry[];
+  shortageEntries: SalesOrderInventoryBlockingEntry[];
+  missingBatchMessages: string[];
+  shortageMessages: string[];
+  missingBatchCount: number;
+  totalShortageCount: number;
+  batchShortageCount: number;
+  hasBlockingIssue: boolean;
+  helperText: string;
+}
+
+interface SalesOrderInventoryBlockingEntry {
+  kind: 'missing_batch' | 'total_shortage' | 'batch_shortage';
+  message: string;
+  rowIndexes: number[];
+}
+
+type SalesOrderInventoryFocusTarget = 'batch' | 'quantity';
+
+function sortInventoryBlockingRowIndexes(rowIndexes: number[]) {
+  return [...new Set(rowIndexes)].sort((left, right) => left - right);
+}
+
+function formatInventoryBlockingRowLabel(rowIndexes: number[]) {
+  const normalized = sortInventoryBlockingRowIndexes(rowIndexes);
+
+  return normalized.map(index => `第 ${index + 1} 行`).join('、');
+}
+
+function getInventoryBlockingFocusTarget(
+  kind: SalesOrderInventoryBlockingEntry['kind']
+): SalesOrderInventoryFocusTarget {
+  switch (kind) {
+    case 'missing_batch':
+    case 'batch_shortage':
+      return 'batch';
+    case 'total_shortage':
+    default:
+      return 'quantity';
+  }
+}
+
+function getInventoryBlockingActionLabel(
+  kind: SalesOrderInventoryBlockingEntry['kind']
+) {
+  switch (kind) {
+    case 'missing_batch':
+      return '请先选择批次';
+    case 'batch_shortage':
+      return '请调整批次或数量';
+    case 'total_shortage':
+    default:
+      return '请调整数量';
+  }
+}
+
+function InventoryBlockingEntryButton({
+  entry,
+  onLocate,
+}: {
+  entry: SalesOrderInventoryBlockingEntry;
+  onLocate: (entry: SalesOrderInventoryBlockingEntry) => void;
+}) {
+  const rowLabel = formatInventoryBlockingRowLabel(entry.rowIndexes);
+
+  return (
+    <button
+      type="button"
+      onClick={() => onLocate(entry)}
+      className="block w-full rounded px-2 py-1 text-left leading-5 text-slate-700 transition-colors hover:bg-white/80 hover:text-slate-900"
+    >
+      <div>{entry.message}</div>
+      <div className="text-[11px] text-red-700">查看 {rowLabel}</div>
+    </button>
+  );
+}
+
+function buildSalesOrderInventoryBlockingSummary(params: {
+  items: SalesOrderItemFormData[];
+  orderType?: CreateSalesOrderData['orderType'];
+  transferMode?: TransferFulfillmentMode;
+  productMap: Map<string, Product>;
+}): SalesOrderInventoryBlockingSummary {
+  const { items, orderType, transferMode, productMap } = params;
+  const shouldCheckInventory =
+    orderType !== 'TRANSFER' || transferMode === 'MIXED';
+
+  if (!shouldCheckInventory || items.length === 0) {
+    return {
+      missingBatchEntries: [],
+      shortageEntries: [],
+      missingBatchMessages: [],
+      shortageMessages: [],
+      missingBatchCount: 0,
+      totalShortageCount: 0,
+      batchShortageCount: 0,
+      hasBlockingIssue: false,
+      helperText: '',
+    };
+  }
+
+  const requestedByBucket = new Map<
+    string,
+    {
+      productId: string;
+      batchNumber?: string;
+      requestedQty: number;
+      rowIndexes: number[];
+    }
+  >();
+
+  for (const [index, item] of items.entries()) {
+    if (!item || !item.productId || item.isManualProduct) {
+      continue;
+    }
+
+    const productId = item.productId.toString().trim();
+    if (!productId) {
+      continue;
+    }
+
+    const effectiveQty =
+      orderType === 'TRANSFER' && transferMode === 'MIXED'
+        ? Number(item.localQuantity ?? 0)
+        : Number(item.quantity ?? 0);
+
+    if (!Number.isFinite(effectiveQty) || effectiveQty <= 0) {
+      continue;
+    }
+
+    const batchNumber = (item.batchNumber ?? '').toString().trim();
+    const key = buildInventoryRequestKey(productId, batchNumber);
+    const existing = requestedByBucket.get(key);
+
+    requestedByBucket.set(key, {
+      productId,
+      batchNumber: batchNumber || undefined,
+      requestedQty: (existing?.requestedQty ?? 0) + effectiveQty,
+      rowIndexes: [...(existing?.rowIndexes ?? []), index],
+    });
+  }
+
+  const missingBatchEntries: SalesOrderInventoryBlockingEntry[] = [];
+  const shortageEntries: SalesOrderInventoryBlockingEntry[] = [];
+  const missingBatchMessages: string[] = [];
+  const shortageMessages: string[] = [];
+  let totalShortageCount = 0;
+  let batchShortageCount = 0;
+
+  requestedByBucket.forEach(
+    ({ productId, batchNumber, requestedQty, rowIndexes }) => {
+      const normalizedRowIndexes = sortInventoryBlockingRowIndexes(rowIndexes);
+      const product = productMap.get(productId);
+      const available = getProductAvailableQuantity(product, batchNumber);
+      const safeAvailable =
+        available !== undefined && Number.isFinite(available) ? available : 0;
+      const selectableBatchCount =
+        getProductSelectableInventoryBatches(product).length;
+      const code = product?.code || productId;
+      const name = product?.name || '未知产品';
+
+      if (
+        requiresProductBatchSelection(product, batchNumber) &&
+        safeAvailable >= requestedQty
+      ) {
+        const message = `[${code}] ${name}：总可用 ${safeAvailable} 片，共 ${selectableBatchCount} 个可用批次，请先指定批次号`;
+        missingBatchEntries.push({
+          kind: 'missing_batch',
+          message,
+          rowIndexes: normalizedRowIndexes,
+        });
+        missingBatchMessages.push(message);
+        return;
+      }
+
+      if (safeAvailable < requestedQty) {
+        if (batchNumber) {
+          batchShortageCount += 1;
+          const message = `[${code}] ${name} / 批次 ${batchNumber}：批次可用 ${safeAvailable} 片，需要 ${requestedQty} 片`;
+          shortageEntries.push({
+            kind: 'batch_shortage',
+            message,
+            rowIndexes: normalizedRowIndexes,
+          });
+          shortageMessages.push(message);
+          return;
+        }
+
+        totalShortageCount += 1;
+        const message = `[${code}] ${name}：总可用 ${safeAvailable} 片，需要 ${requestedQty} 片`;
+        shortageEntries.push({
+          kind: 'total_shortage',
+          message,
+          rowIndexes: normalizedRowIndexes,
+        });
+        shortageMessages.push(message);
+      }
+    }
+  );
+
+  const helperParts = [
+    missingBatchMessages.length > 0
+      ? `${missingBatchMessages.length} 个产品待选批次`
+      : '',
+    totalShortageCount > 0 ? `${totalShortageCount} 个产品总库存不足` : '',
+    batchShortageCount > 0 ? `${batchShortageCount} 个产品批次库存不足` : '',
+  ].filter(Boolean);
+
+  return {
+    missingBatchEntries,
+    shortageEntries,
+    missingBatchMessages,
+    shortageMessages,
+    missingBatchCount: missingBatchMessages.length,
+    totalShortageCount,
+    batchShortageCount,
+    hasBlockingIssue:
+      missingBatchMessages.length > 0 || shortageMessages.length > 0,
+    helperText: helperParts.join('，'),
+  };
+}
+
 // 记住“新建销售订单”页面最近一次选择的订单类型，避免刷新/重载后总是回到 NORMAL
 const ORDER_TYPE_STORAGE_KEY = 'salesOrders.create.defaultOrderType';
 
@@ -131,6 +365,16 @@ interface ERPSalesOrderFormProps {
   orderId?: string;
   initialData?: SalesOrder;
   initialOrderNumber?: string; // 新增：服务端预生成的订单号
+  duplicateSourceOrder?: SalesOrder;
+  prefillCustomer?: Pick<Customer, 'id' | 'name' | 'phone' | 'address'>;
+  successHref?:
+    | string
+    | ((order: {
+        id: string;
+        orderNumber?: string;
+        status?: SalesOrderStatus;
+      }) => string);
+  cancelHref?: string;
   onSuccess?: (order: {
     id: string;
     orderNumber?: string;
@@ -149,12 +393,24 @@ export function ERPSalesOrderForm({
   orderId,
   initialData,
   initialOrderNumber,
+  duplicateSourceOrder,
+  prefillCustomer,
+  successHref,
+  cancelHref,
   onSuccess,
   onCancel,
 }: ERPSalesOrderFormProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const prefillSourceOrder =
+    mode === 'edit' ? initialData : duplicateSourceOrder;
+  const fallbackPrefillCustomer = prefillCustomer ?? undefined;
+  const resolvedPrefillCustomer =
+    (prefillSourceOrder?.customer as Customer | undefined) ??
+    (fallbackPrefillCustomer as Customer | undefined);
+  const prefillMode =
+    mode === 'edit' ? 'edit' : duplicateSourceOrder ? 'duplicate' : null;
 
   // 客户数据查询已移至 CustomerSelector 组件内部
   // 不再需要在表单组件中预加载客户列表
@@ -176,14 +432,12 @@ export function ERPSalesOrderForm({
   );
 
   const [resolvedCustomer, setResolvedCustomer] =
-    React.useState<Customer | null>(
-      () => (initialData?.customer as Customer) ?? null
-    ); // ✅ 类型断言
+    React.useState<Customer | null>(() => resolvedPrefillCustomer ?? null); // ✅ 类型断言
   React.useEffect(() => {
-    if (mode === 'edit' && initialData?.customer) {
-      setResolvedCustomer(initialData.customer as Customer); // ✅ 类型断言
+    if (resolvedPrefillCustomer) {
+      setResolvedCustomer(resolvedPrefillCustomer);
     }
-  }, [mode, initialData?.customer]);
+  }, [resolvedPrefillCustomer]);
 
   const mapFormDataForTransform = React.useCallback(
     (payload: CreateSalesOrderData): SalesOrderFormData => ({
@@ -380,10 +634,10 @@ export function ERPSalesOrderForm({
 
   const initialOrderProducts = React.useMemo(
     () =>
-      (initialData?.items ?? [])
+      (prefillSourceOrder?.items ?? [])
         .map(item => item.product)
         .filter((product): product is Product => Boolean(product?.id)),
-    [initialData?.items]
+    [prefillSourceOrder?.items]
   );
 
   React.useEffect(() => {
@@ -432,11 +686,18 @@ export function ERPSalesOrderForm({
       // - 立即刷新: 销售订单列表、统计
       // - 延迟刷新: 库存、客户、产品、仪表盘、财务（包括应收款、应付款、财务概览）
 
-      onSuccess?.({
+      const nextOrder = {
         id: data.id,
         orderNumber: data.orderNumber,
         status: data.status,
-      });
+      };
+
+      onSuccess?.(nextOrder);
+
+      const nextHref = resolveSuccessHref(nextOrder);
+      if (nextHref) {
+        navigateWithinApp(nextHref, { replace: true });
+      }
     },
     onError: (error: Error) => {
       const isConfirmed = form.getValues('status') === 'confirmed';
@@ -469,11 +730,18 @@ export function ERPSalesOrderForm({
       // - 延迟刷新: 库存、客户、产品、仪表盘、财务（包括应收款、财务概览）
 
       if (order) {
-        onSuccess?.({
+        const nextOrder = {
           id: order.id,
           orderNumber: order.orderNumber,
           status: order.status,
-        });
+        };
+
+        onSuccess?.(nextOrder);
+
+        const nextHref = resolveSuccessHref(nextOrder);
+        if (nextHref) {
+          navigateWithinApp(nextHref, { replace: true });
+        }
       }
     },
     onError: (error: Error) => {
@@ -789,65 +1057,94 @@ export function ERPSalesOrderForm({
     [watchedItems, productMap]
   );
 
-  // 是否存在库存不足的产品（用于禁用“保存并确认”按钮）
-  const hasInventoryShortage = React.useMemo(() => {
-    const currentOrderType = orderType;
-    const currentTransferMode = transferMode;
+  const inventoryBlockingSummary = React.useMemo(
+    () =>
+      buildSalesOrderInventoryBlockingSummary({
+        items: watchedItems,
+        orderType,
+        transferMode,
+        productMap,
+      }),
+    [orderType, transferMode, watchedItems, productMap]
+  );
+  const inventoryBlockingEntries = React.useMemo(
+    () => [
+      ...inventoryBlockingSummary.missingBatchEntries,
+      ...inventoryBlockingSummary.shortageEntries,
+    ],
+    [inventoryBlockingSummary]
+  );
+  const inventoryBlockingPreviewEntries = React.useMemo(
+    () => inventoryBlockingEntries.slice(0, 3),
+    [inventoryBlockingEntries]
+  );
+  const inventoryBlockingRemainingCount = Math.max(
+    inventoryBlockingEntries.length - inventoryBlockingPreviewEntries.length,
+    0
+  );
+  const [highlightedInventoryRowIndexes, setHighlightedInventoryRowIndexes] =
+    React.useState<ReadonlySet<number>>(new Set());
+  const inventoryRowHighlightTimeoutRef = React.useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
 
-    const shouldCheckInventory =
-      currentOrderType !== 'TRANSFER' || currentTransferMode === 'MIXED';
+  React.useEffect(
+    () => () => {
+      if (inventoryRowHighlightTimeoutRef.current) {
+        clearTimeout(inventoryRowHighlightTimeoutRef.current);
+      }
+    },
+    []
+  );
 
-    if (!shouldCheckInventory || !watchedItems || watchedItems.length === 0) {
-      return false;
-    }
+  const focusInventoryBlockingEntry = React.useCallback(
+    (entry: SalesOrderInventoryBlockingEntry) => {
+      const normalizedRowIndexes = sortInventoryBlockingRowIndexes(
+        entry.rowIndexes
+      );
+      if (normalizedRowIndexes.length === 0) {
+        return;
+      }
 
-    const requestedByBucket = new Map<
-      string,
-      { productId: string; batchNumber?: string; requestedQty: number }
-    >();
+      setHighlightedInventoryRowIndexes(new Set(normalizedRowIndexes));
 
-    for (const item of watchedItems) {
-      if (!item || !item.productId || item.isManualProduct) continue;
+      if (inventoryRowHighlightTimeoutRef.current) {
+        clearTimeout(inventoryRowHighlightTimeoutRef.current);
+      }
 
-      const productId = item.productId.toString().trim();
-      if (!productId) continue;
+      inventoryRowHighlightTimeoutRef.current = setTimeout(() => {
+        setHighlightedInventoryRowIndexes(new Set());
+        inventoryRowHighlightTimeoutRef.current = null;
+      }, 2600);
 
-      const effectiveQty =
-        currentOrderType === 'TRANSFER' && currentTransferMode === 'MIXED'
-          ? Number(item.localQuantity ?? 0)
-          : Number(item.quantity ?? 0);
-
-      if (!Number.isFinite(effectiveQty) || effectiveQty <= 0) continue;
-
-      const batchNumber = (item.batchNumber ?? '').toString().trim();
-      const key = buildInventoryRequestKey(productId, batchNumber);
-      const existing = requestedByBucket.get(key);
-
-      requestedByBucket.set(key, {
-        productId,
-        batchNumber: batchNumber || undefined,
-        requestedQty: (existing?.requestedQty ?? 0) + effectiveQty,
+      const target = document.querySelector<HTMLElement>(
+        `[data-sales-order-row-index="${normalizedRowIndexes[0]}"]`
+      );
+      target?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'nearest',
       });
-    }
 
-    for (const bucket of requestedByBucket.values()) {
-      const product = productMap.get(bucket.productId);
-      const available = getProductAvailableQuantity(
-        product,
-        bucket.batchNumber
+      const focusTarget = getInventoryBlockingFocusTarget(entry.kind);
+      const focusElement = target?.querySelector<HTMLElement>(
+        `[data-sales-order-focus-target="${focusTarget}"]`
       );
 
-      if (
-        available !== undefined &&
-        Number.isFinite(available) &&
-        available < bucket.requestedQty
-      ) {
-        return true;
+      if (focusElement) {
+        window.requestAnimationFrame(() => {
+          focusElement.focus({ preventScroll: true });
+          if (
+            focusElement instanceof HTMLInputElement ||
+            focusElement instanceof HTMLTextAreaElement
+          ) {
+            focusElement.select();
+          }
+        });
       }
-    }
-
-    return false;
-  }, [orderType, transferMode, watchedItems, productMap]);
+    },
+    []
+  );
 
   // 添加产品
   const addOrderItem = () => {
@@ -894,20 +1191,26 @@ export function ERPSalesOrderForm({
   }, [mode, initialData?.createdAt]);
 
   const initializedOrderRef = React.useRef<string | null>(null);
+  const initializedCustomerRef = React.useRef<string | null>(null);
 
-  // 编辑模式：填充初始数据
+  // 编辑/复制模式：填充初始数据
   React.useEffect(() => {
-    if (mode !== 'edit') {
+    if (!prefillMode) {
       initializedOrderRef.current = null;
       return;
     }
 
-    if (!initialData) {
+    if (!prefillSourceOrder) {
       return;
     }
 
     const orderKey =
-      [initialData.id, initialData.orderNumber, initialData.updatedAt]
+      [
+        prefillMode,
+        prefillSourceOrder.id,
+        prefillSourceOrder.orderNumber,
+        prefillSourceOrder.updatedAt,
+      ]
         .filter(Boolean)
         .join('__') || 'unknown-order';
 
@@ -916,68 +1219,74 @@ export function ERPSalesOrderForm({
     }
 
     initializedOrderRef.current = orderKey;
+    const isDuplicateMode = prefillMode === 'duplicate';
 
-    const mappedItems: SalesOrderItemFormData[] = (initialData.items ?? []).map(
-      (item: SalesOrderItem) => {
-        const product = item.product;
-        const normalizedUnit =
-          product?.unit && typeof product.unit === 'string'
-            ? (UNIT_MAPPING[
-                product.unit.toLowerCase() as keyof typeof UNIT_MAPPING
-              ] ?? product.unit)
-            : (product?.unit ?? '');
+    const mappedItems: SalesOrderItemFormData[] = (
+      prefillSourceOrder.items ?? []
+    ).map((item: SalesOrderItem) => {
+      const product = item.product;
+      const normalizedUnit =
+        product?.unit && typeof product.unit === 'string'
+          ? (UNIT_MAPPING[
+              product.unit.toLowerCase() as keyof typeof UNIT_MAPPING
+            ] ?? product.unit)
+          : (product?.unit ?? '');
 
-        return {
-          productId: item.productId ?? '',
-          productCode: item.productCode ?? product?.code ?? '',
-          batchNumber: item.batchNumber ?? '',
-          colorCode: item.colorCode ?? '',
-          productionDate: item.productionDate ?? '',
-          specification: item.specification ?? product?.specification ?? '',
-          unit: normalizedUnit,
-          displayUnit: (item.displayUnit as '片' | '件' | null) ?? '片',
-          displayQuantity: item.displayQuantity ?? item.quantity ?? 0,
-          quantity: item.quantity ?? 0,
-          unitPrice: item.unitPrice ?? 0,
-          unitCost: item.unitCost ?? undefined,
-          costSubtotal: item.costSubtotal ?? undefined,
-          profitAmount: item.profitAmount ?? undefined,
-          piecesPerUnit:
-            item.piecesPerUnit ?? product?.piecesPerUnit ?? undefined,
-          remarks: item.remarks ?? '',
-          subtotal:
-            item.subtotal ?? (item.quantity ?? 0) * (item.unitPrice ?? 0),
-          isManualProduct: item.isManualProduct ?? false,
-          manualProductName: item.manualProductName ?? '',
-          manualSpecification: item.manualSpecification ?? '',
-          manualWeight: item.manualWeight ?? undefined,
-          manualUnit: item.manualUnit ?? '',
-          localQuantity: item.localQuantity ?? undefined,
-          transferQuantity: item.transferQuantity ?? undefined,
-          weightPerPieceKg: undefined,
-        };
-      }
-    );
+      return {
+        productId: item.productId ?? '',
+        productCode: item.productCode ?? product?.code ?? '',
+        batchNumber: item.batchNumber ?? '',
+        colorCode: item.colorCode ?? '',
+        productionDate: item.productionDate ?? '',
+        specification: item.specification ?? product?.specification ?? '',
+        unit: normalizedUnit,
+        displayUnit: (item.displayUnit as '片' | '件' | null) ?? '片',
+        displayQuantity: item.displayQuantity ?? item.quantity ?? 0,
+        quantity: item.quantity ?? 0,
+        unitPrice: item.unitPrice ?? 0,
+        unitCost: item.unitCost ?? undefined,
+        costSubtotal: item.costSubtotal ?? undefined,
+        profitAmount: item.profitAmount ?? undefined,
+        piecesPerUnit:
+          item.piecesPerUnit ?? product?.piecesPerUnit ?? undefined,
+        remarks: item.remarks ?? '',
+        subtotal: item.subtotal ?? (item.quantity ?? 0) * (item.unitPrice ?? 0),
+        isManualProduct: item.isManualProduct ?? false,
+        manualProductName: item.manualProductName ?? '',
+        manualSpecification: item.manualSpecification ?? '',
+        manualWeight: item.manualWeight ?? undefined,
+        manualUnit: item.manualUnit ?? '',
+        localQuantity: item.localQuantity ?? undefined,
+        transferQuantity: item.transferQuantity ?? undefined,
+        weightPerPieceKg: undefined,
+      };
+    });
 
     form.reset({
-      orderNumber: initialData.orderNumber,
-      customerId: initialData.customerId,
-      status: initialData.status,
-      orderType: initialData.orderType,
-      orderDate: formatDate(initialData.orderDate ?? initialData.createdAt),
-      isSampleOrder: initialData.isSampleOrder ?? false,
+      orderNumber: isDuplicateMode ? undefined : prefillSourceOrder.orderNumber,
+      customerId: prefillSourceOrder.customerId,
+      status: isDuplicateMode ? 'draft' : prefillSourceOrder.status,
+      orderType: prefillSourceOrder.orderType,
+      orderDate: isDuplicateMode
+        ? formatDate(new Date())
+        : formatDate(
+            prefillSourceOrder.orderDate ?? prefillSourceOrder.createdAt
+          ),
+      isSampleOrder: prefillSourceOrder.isSampleOrder ?? false,
       sampleSettlementType:
-        initialData.sampleSettlementType ?? DEFAULT_SAMPLE_SETTLEMENT_TYPE,
+        prefillSourceOrder.sampleSettlementType ??
+        DEFAULT_SAMPLE_SETTLEMENT_TYPE,
       transferMode:
-        (initialData.transferMode as TransferFulfillmentMode | undefined) ??
-        'SUPPLIER_ONLY',
-      supplierId: initialData.supplierId ?? '',
-      remarks: initialData.remarks ?? '',
-      roundingAdjustment: initialData.roundingAdjustment ?? undefined,
+        (prefillSourceOrder.transferMode as
+          | TransferFulfillmentMode
+          | undefined) ?? 'SUPPLIER_ONLY',
+      supplierId: prefillSourceOrder.supplierId ?? '',
+      remarks: prefillSourceOrder.remarks ?? '',
+      roundingAdjustment: prefillSourceOrder.roundingAdjustment ?? undefined,
       items: mappedItems,
-      feeItems: Array.isArray(initialData.feeItems)
-        ? initialData.feeItems.map(fee => ({
-            id: fee.id ?? undefined,
+      feeItems: Array.isArray(prefillSourceOrder.feeItems)
+        ? prefillSourceOrder.feeItems.map(fee => ({
+            id: isDuplicateMode ? undefined : (fee.id ?? undefined),
             feeType: fee.feeType,
             feeName: fee.feeName,
             feeAmount: fee.feeAmount,
@@ -986,7 +1295,25 @@ export function ERPSalesOrderForm({
           }))
         : [],
     });
-  }, [form, mode, initialData]);
+  }, [form, prefillMode, prefillSourceOrder]);
+
+  React.useEffect(() => {
+    if (mode !== 'create' || prefillMode || !fallbackPrefillCustomer?.id) {
+      initializedCustomerRef.current = null;
+      return;
+    }
+
+    if (initializedCustomerRef.current === fallbackPrefillCustomer.id) {
+      return;
+    }
+
+    initializedCustomerRef.current = fallbackPrefillCustomer.id;
+    setResolvedCustomer(fallbackPrefillCustomer as Customer);
+    form.setValue('customerId', fallbackPrefillCustomer.id, {
+      shouldDirty: false,
+      shouldValidate: false,
+    });
+  }, [fallbackPrefillCustomer, form, mode, prefillMode]);
 
   // 页面加载时设置订单号（仅创建模式）
   // 优化：优先使用服务端预生成的订单号，消除加载延迟
@@ -1076,6 +1403,59 @@ export function ERPSalesOrderForm({
     },
     []
   );
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+  const isDirty = form.formState.isDirty;
+  const hasUnsavedChanges = isDirty && !isSubmitting;
+  const { confirmLeavePage, navigateWithinApp } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前订单内容尚未保存，确定要离开吗？',
+  });
+
+  const resolveSuccessHref = React.useCallback(
+    (order: {
+      id: string;
+      orderNumber?: string;
+      status?: SalesOrderStatus;
+    }) => {
+      if (!successHref) {
+        return undefined;
+      }
+
+      return typeof successHref === 'function'
+        ? successHref(order)
+        : successHref;
+    },
+    [successHref]
+  );
+
+  const handleCancel = React.useCallback(() => {
+    if (isSubmitting) {
+      return;
+    }
+
+    if (!confirmLeavePage()) {
+      return;
+    }
+
+    if (cancelHref) {
+      navigateWithinApp(cancelHref, { replace: true });
+      return;
+    }
+
+    if (onCancel) {
+      onCancel();
+      return;
+    }
+
+    router.back();
+  }, [
+    cancelHref,
+    confirmLeavePage,
+    isSubmitting,
+    navigateWithinApp,
+    onCancel,
+    router,
+  ]);
 
   const handleSupplierCreated = (supplier: Supplier) => {
     // ✅ 确保新建供应商后，订单仍保持在“调货销售”模式
@@ -1227,116 +1607,51 @@ export function ERPSalesOrderForm({
     // 提交为“已确认”时，先在前端做一次库存充足性快速检查
     // 目的：在点击提交前就给销售明确提示，减少来回修改的次数
     if (status === 'confirmed') {
-      const currentOrderType = snapshot.orderType;
-      const currentTransferMode = snapshot.transferMode as
-        | TransferFulfillmentMode
-        | undefined;
-
-      // 与后端库存预留逻辑保持一致：
-      // - 普通销售：检查本地库存
-      // - 调货销售：只在 MIXED 模式下检查本地库存
-      const shouldCheckInventory =
-        currentOrderType !== 'TRANSFER' || currentTransferMode === 'MIXED';
-
-      if (shouldCheckInventory && watchedItems.length > 0) {
-        const requestedByBucket = new Map<
-          string,
-          { productId: string; batchNumber?: string; requestedQty: number }
-        >();
-        const missingBatchMessages: string[] = [];
-
-        for (const item of watchedItems) {
-          if (!item || !item.productId || item.isManualProduct) {
-            continue;
-          }
-
-          const productId = item.productId.toString().trim();
-          if (!productId) continue;
-
-          const effectiveQty =
-            currentOrderType === 'TRANSFER' && currentTransferMode === 'MIXED'
-              ? Number(item.localQuantity ?? 0)
-              : Number(item.quantity ?? 0);
-
-          if (!Number.isFinite(effectiveQty) || effectiveQty <= 0) {
-            continue;
-          }
-
-          const product = productMap.get(productId);
-          const batchNumber = (item.batchNumber ?? '').toString().trim();
-          const selectableBatchCount =
-            product?.inventory?.batches?.filter(batch => {
-              const available = getProductAvailableQuantity(
-                product,
-                batch.batchNumber
-              );
-              return available !== undefined && available > 0;
-            }).length ?? 0;
-
-          if (!batchNumber && selectableBatchCount > 1) {
-            const name = product?.name || '未知产品';
-            const code = product?.code || productId;
-            missingBatchMessages.push(
-              `[${code}] ${name}：存在多个可用批次，请先指定批次号`
-            );
-          }
-
-          const key = buildInventoryRequestKey(productId, batchNumber);
-          const existing = requestedByBucket.get(key);
-          requestedByBucket.set(key, {
-            productId,
-            batchNumber: batchNumber || undefined,
-            requestedQty: (existing?.requestedQty ?? 0) + effectiveQty,
-          });
+      if (inventoryBlockingSummary.hasBlockingIssue) {
+        let title = '库存检查未通过，暂时不能确认订单';
+        if (
+          inventoryBlockingSummary.missingBatchCount > 0 &&
+          inventoryBlockingSummary.shortageMessages.length === 0
+        ) {
+          title = '还有产品未选择批次，暂时不能确认订单';
+        } else if (
+          inventoryBlockingSummary.missingBatchCount === 0 &&
+          inventoryBlockingSummary.totalShortageCount > 0 &&
+          inventoryBlockingSummary.batchShortageCount === 0
+        ) {
+          title = '总库存不足，无法提交为已确认';
+        } else if (
+          inventoryBlockingSummary.missingBatchCount === 0 &&
+          inventoryBlockingSummary.batchShortageCount > 0 &&
+          inventoryBlockingSummary.totalShortageCount === 0
+        ) {
+          title = '批次库存不足，无法提交为已确认';
+        } else if (
+          inventoryBlockingSummary.missingBatchCount === 0 &&
+          inventoryBlockingSummary.shortageMessages.length > 0
+        ) {
+          title = '库存不足，无法提交为已确认';
         }
 
-        if (missingBatchMessages.length > 0) {
-          toast({
-            variant: 'destructive',
-            title: '请先选择批次后再确认订单',
-            description:
-              missingBatchMessages.length === 1
-                ? missingBatchMessages[0]
-                : `以下产品需要先指定批次：\n${missingBatchMessages.join('\n')}`,
-          });
-          return;
+        const firstBlockingEntry = inventoryBlockingEntries[0];
+        if (firstBlockingEntry) {
+          focusInventoryBlockingEntry(firstBlockingEntry);
         }
 
-        const shortageMessages: string[] = [];
+        const remainingCount = Math.max(inventoryBlockingEntries.length - 1, 0);
+        const focusDescription = firstBlockingEntry
+          ? `已定位到${formatInventoryBlockingRowLabel(firstBlockingEntry.rowIndexes)}，${getInventoryBlockingActionLabel(firstBlockingEntry.kind)}。${firstBlockingEntry.message}`
+          : inventoryBlockingSummary.helperText;
 
-        requestedByBucket.forEach(
-          ({ productId, batchNumber, requestedQty }) => {
-            const product = productMap.get(productId);
-            const available =
-              getProductAvailableQuantity(product, batchNumber) ?? undefined;
-
-            if (
-              available !== undefined &&
-              Number.isFinite(available) &&
-              available < requestedQty
-            ) {
-              const name = product?.name || '未知产品';
-              const code = product?.code || productId;
-              shortageMessages.push(
-                batchNumber
-                  ? `[${code}] ${name} / 批次 ${batchNumber}：可用 ${available} 片，需要 ${requestedQty} 片`
-                  : `[${code}] ${name}：可用 ${available} 片，需要 ${requestedQty} 片`
-              );
-            }
-          }
-        );
-
-        if (shortageMessages.length > 0) {
-          toast({
-            variant: 'destructive',
-            title: '库存不足，无法提交为已确认',
-            description:
-              shortageMessages.length === 1
-                ? shortageMessages[0]
-                : `以下产品库存不足：\n${shortageMessages.join('\n')}`,
-          });
-          return;
-        }
+        toast({
+          variant: 'destructive',
+          title,
+          description:
+            remainingCount > 0
+              ? `${focusDescription}。另有 ${remainingCount} 条问题，可在下方问题清单继续查看。`
+              : focusDescription,
+        });
+        return;
       }
     }
 
@@ -1364,7 +1679,8 @@ export function ERPSalesOrderForm({
       toast({
         variant: 'destructive',
         title: '请检查订单信息',
-        description: firstError?.message || '部分字段填写不完整，请检查后再试',
+        description:
+          firstError?.message || '还有信息没有填写完整，请检查后再试',
       });
     })();
   };
@@ -1396,7 +1712,7 @@ export function ERPSalesOrderForm({
                   <p className="text-xs text-gray-500">
                     {mode === 'edit'
                       ? '编辑现有订单'
-                      : '系统将自动生成唯一订单号'}
+                      : '保存时自动生成订单号'}
                   </p>
                 </div>
 
@@ -1430,7 +1746,7 @@ export function ERPSalesOrderForm({
                     {creationDisplayText}
                   </div>
                   <p className="text-xs text-gray-500">
-                    系统审计时间，不可手动修改
+                    这里显示建单时间，不能手动修改
                   </p>
                 </div>
               </div>
@@ -1453,7 +1769,7 @@ export function ERPSalesOrderForm({
                           placeholder="搜索并选择客户"
                           onCustomerCreated={handleCustomerCreated}
                           onCustomerResolved={handleCustomerResolved}
-                          initialCustomer={initialData?.customer}
+                          initialCustomer={resolvedPrefillCustomer}
                           className="h-9"
                           onBlur={field.onBlur}
                         />
@@ -1578,7 +1894,7 @@ export function ERPSalesOrderForm({
                                 {SAMPLE_SETTLEMENT_TYPE_LABELS.FREE}
                               </span>
                               <span className="block text-xs leading-5 text-emerald-800/80">
-                                默认方案，不自动生成客户应收，也不能用预收款冲抵。
+                                默认按免费处理，不生成应收，也不能使用客户预收款。
                               </span>
                             </Label>
                           </div>
@@ -1771,7 +2087,8 @@ export function ERPSalesOrderForm({
             fields={fields}
             remove={remove}
             onAddItem={addOrderItem}
-            isSubmitting={createMutation.isPending || updateMutation.isPending}
+            isSubmitting={isSubmitting}
+            highlightedRowIndexes={highlightedInventoryRowIndexes}
             products={availableProducts}
             onSelectedProduct={rememberSelectedProduct}
             orderType={orderType}
@@ -1793,15 +2110,15 @@ export function ERPSalesOrderForm({
             <div className="space-y-3 p-3">
               <FeeItemsFormField
                 control={form.control}
-                disabled={createMutation.isPending || updateMutation.isPending}
+                disabled={isSubmitting}
               />
             </div>
           </div>
 
-          {/* 预收款冲抵 */}
+          {/* 预收款抵扣 */}
           <div className="bg-card rounded border">
             <div className="bg-muted/30 border-b px-3 py-2">
-              <h3 className="text-sm font-medium">预收款冲抵</h3>
+              <h3 className="text-sm font-medium">预收款抵扣</h3>
             </div>
             <div className="p-3">
               {sampleReceivableEnabled ? (
@@ -1809,16 +2126,14 @@ export function ERPSalesOrderForm({
                   form={form}
                   customerId={form.watch('customerId')}
                   orderTotal={orderTotalWithFees}
-                  disabled={
-                    createMutation.isPending || updateMutation.isPending
-                  }
+                  disabled={isSubmitting}
                 />
               ) : (
                 <Alert className="border-emerald-200 bg-emerald-50/80">
                   <AlertCircle className="h-4 w-4 text-emerald-600" />
                   <AlertDescription className="text-sm text-emerald-800">
-                    免费样品单不进入客户应收，因此这里不支持预收款冲抵。
-                    如果这张样品单需要收费，请把上方样品结算方式切换为“收费样品”。
+                    免费样品单不计入应收，所以这里不能使用预收款。
+                    如果这张样品需要收费，请先把上方结算方式改成“收费样品”。
                   </AlertDescription>
                 </Alert>
               )}
@@ -1967,8 +2282,8 @@ export function ERPSalesOrderForm({
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => onCancel?.() || router.back()}
-                  disabled={createMutation.isPending}
+                  onClick={handleCancel}
+                  disabled={isSubmitting}
                   className="h-8 w-full text-xs sm:w-auto"
                 >
                   取消
@@ -1976,38 +2291,96 @@ export function ERPSalesOrderForm({
               </div>
 
               <div className="grid gap-2 sm:grid-cols-2 xl:flex xl:items-center">
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={
-                    createMutation.isPending ||
-                    updateMutation.isPending ||
-                    fields.length === 0 ||
-                    !form.watch('customerId') ||
-                    hasInventoryShortage
-                  }
-                  className="h-8 w-full text-xs"
-                  onClick={() => submitWithStatus('confirmed')}
-                >
-                  {createMutation.isPending || updateMutation.isPending ? (
-                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                  ) : (
-                    <Save className="mr-1 h-3 w-3" />
+                <div className="flex w-full items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={
+                      isSubmitting ||
+                      inventoryBlockingSummary.hasBlockingIssue ||
+                      fields.length === 0 ||
+                      !form.watch('customerId')
+                    }
+                    className="h-8 w-full text-xs"
+                    onClick={() => submitWithStatus('confirmed')}
+                  >
+                    {isSubmitting ? (
+                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                    ) : (
+                      <Save className="mr-1 h-3 w-3" />
+                    )}
+                    {mode === 'edit' ? '保存并确认' : '保存并确认'}
+                  </Button>
+                  {inventoryBlockingSummary.hasBlockingIssue && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 shrink-0 text-red-600 hover:bg-red-50 hover:text-red-700"
+                            aria-label="查看无法确认的原因"
+                            title="查看无法确认的原因"
+                          >
+                            <AlertCircle className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent
+                          side="top"
+                          align="end"
+                          className="max-w-md space-y-3 p-3 text-xs"
+                        >
+                          <div className="font-medium text-red-700">
+                            当前无法确认订单
+                          </div>
+                          {inventoryBlockingSummary.missingBatchMessages
+                            .length > 0 && (
+                            <div className="space-y-1">
+                              <div className="font-medium text-amber-700">
+                                待选批次
+                              </div>
+                              {inventoryBlockingSummary.missingBatchEntries.map(
+                                (entry, index) => (
+                                  <InventoryBlockingEntryButton
+                                    key={`missing-batch-${index}`}
+                                    entry={entry}
+                                    onLocate={focusInventoryBlockingEntry}
+                                  />
+                                )
+                              )}
+                            </div>
+                          )}
+                          {inventoryBlockingSummary.shortageMessages.length >
+                            0 && (
+                            <div className="space-y-1">
+                              <div className="font-medium text-red-700">
+                                库存不足
+                              </div>
+                              {inventoryBlockingSummary.shortageEntries.map(
+                                (entry, index) => (
+                                  <InventoryBlockingEntryButton
+                                    key={`stock-shortage-${index}`}
+                                    entry={entry}
+                                    onLocate={focusInventoryBlockingEntry}
+                                  />
+                                )
+                              )}
+                            </div>
+                          )}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   )}
-                  {mode === 'edit' ? '保存并确认' : '保存并确认'}
-                </Button>
+                </div>
                 <Button
                   type="button"
                   variant="default"
-                  disabled={
-                    createMutation.isPending ||
-                    updateMutation.isPending ||
-                    !form.watch('customerId')
-                  }
+                  disabled={isSubmitting || !form.watch('customerId')}
                   className="h-8 w-full text-xs"
                   onClick={() => submitWithStatus('draft')}
                 >
-                  {createMutation.isPending || updateMutation.isPending ? (
+                  {isSubmitting ? (
                     <Loader2 className="mr-1 h-3 w-3 animate-spin" />
                   ) : (
                     <Save className="mr-1 h-3 w-3" />
@@ -2016,6 +2389,29 @@ export function ERPSalesOrderForm({
                 </Button>
               </div>
             </div>
+
+            {fields.length > 0 && inventoryBlockingSummary.hasBlockingIssue && (
+              <div className="mt-2 space-y-2 rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                <div>
+                  当前无法确认订单：{inventoryBlockingSummary.helperText}
+                </div>
+                <div className="space-y-1 text-slate-700">
+                  {inventoryBlockingPreviewEntries.map((entry, index) => (
+                    <InventoryBlockingEntryButton
+                      key={`inventory-blocking-preview-${index}`}
+                      entry={entry}
+                      onLocate={focusInventoryBlockingEntry}
+                    />
+                  ))}
+                  {inventoryBlockingRemainingCount > 0 && (
+                    <div className="text-red-700">
+                      另有 {inventoryBlockingRemainingCount}{' '}
+                      条问题，请继续查看完整问题清单。
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="mt-2 text-center">
               <p className="text-xs text-gray-500">

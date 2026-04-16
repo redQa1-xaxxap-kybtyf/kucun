@@ -1,9 +1,9 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 
 import type { SalesOrder } from '@/lib/types/sales-order';
+import { withReturnTo } from '@/lib/utils/sales-order-navigation';
 
 const ERPSalesOrderForm = dynamic(
   () =>
@@ -23,22 +23,21 @@ const ERPSalesOrderForm = dynamic(
 interface Props {
   orderId: string;
   initialData: SalesOrder;
+  returnTo?: string;
 }
 
-export function EditSalesOrderPageClient({ orderId, initialData }: Props) {
-  const router = useRouter();
-
+export function EditSalesOrderPageClient({
+  orderId,
+  initialData,
+  returnTo,
+}: Props) {
   return (
     <ERPSalesOrderForm
       mode="edit"
       orderId={orderId}
       initialData={initialData}
-      onSuccess={order => {
-        router.push(`/sales-orders/${order.id}`);
-      }}
-      onCancel={() => {
-        router.push(`/sales-orders/${orderId}`);
-      }}
+      successHref={order => withReturnTo(`/sales-orders/${order.id}`, returnTo)}
+      cancelHref={withReturnTo(`/sales-orders/${orderId}`, returnTo)}
     />
   );
 }
