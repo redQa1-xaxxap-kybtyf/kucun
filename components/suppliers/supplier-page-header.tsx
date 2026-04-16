@@ -16,7 +16,7 @@ export function SupplierPageHeader() {
           供应商管理
         </h2>
         <p className="max-w-2xl text-sm leading-relaxed font-bold text-slate-400">
-          建立供应链中枢记录，监控供货频次、应付清算及合作伙伴信誉评价。
+          统一维护供应商资料，查看供货记录、应付款和合作状态。
         </p>
       </div>
 
@@ -29,7 +29,7 @@ export function SupplierPageHeader() {
         >
           <Link href="/suppliers/export">
             <Download className="mr-2 h-4 w-4" />
-            导出供应报表
+            导出供应商列表
           </Link>
         </Button>
         <Button

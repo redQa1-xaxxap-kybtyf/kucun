@@ -103,14 +103,14 @@ export function SupplierDetailPageClient({
                         : 'bg-slate-100 text-slate-500'
                     )}
                   >
-                    {supplier.status === 'active' ? '正式启用' : '暂停合作'}
+                    {supplier.status === 'active' ? '正常合作' : '暂停合作'}
                   </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-6">
                   <div className="flex items-center gap-2 text-sm font-bold text-slate-500">
                     <span className="text-xs font-bold tracking-widest text-slate-400 uppercase">
-                      证照编码
+                      供应商编号
                     </span>
                     <span className="font-black text-slate-700">
                       {supplier.id.substring(0, 8).toUpperCase()}
@@ -135,7 +135,7 @@ export function SupplierDetailPageClient({
                 className="h-14 rounded-2xl border-none bg-white px-8 font-black text-slate-600 shadow-sm transition-all hover:bg-slate-900 hover:text-white active:scale-95"
               >
                 <Edit className="mr-2 h-5 w-5" />
-                修订档案
+                编辑资料
               </Button>
               <Button
                 size="lg"
@@ -147,7 +147,7 @@ export function SupplierDetailPageClient({
                 }
               >
                 <Truck className="mr-2 h-5 w-5" />
-                建立发货单
+                新建厂家发货单
               </Button>
             </div>
           </div>
@@ -161,15 +161,15 @@ export function SupplierDetailPageClient({
                 <div className="flex items-center gap-3">
                   <MapPin className="h-5 w-5 text-slate-400" />
                   <span className="text-xs font-black tracking-widest text-slate-500 uppercase">
-                    地理位置与联系信息
+                    联系信息
                   </span>
                 </div>
                 <p className="text-xl leading-tight font-black text-slate-900">
-                  {supplier.address || '暂无登记物理地址'}
+                  {supplier.address || '未填写地址'}
                 </p>
                 <div className="flex items-center gap-4 pt-4">
                   <div className="text-xs font-bold text-slate-500">
-                    合作始于{' '}
+                    建档时间{' '}
                     <span className="ml-1 text-slate-900">
                       {formatDate(supplier.createdAt)}
                     </span>
@@ -205,7 +205,7 @@ export function SupplierDetailPageClient({
                     supplier.payableRecords.filter(r => r.remainingAmount > 0)
                       .length
                   }{' '}
-                  笔待处理应收款项
+                  笔待付款
                 </p>
               </div>
             </div>
@@ -224,7 +224,7 @@ export function SupplierDetailPageClient({
                   <div className="flex items-center gap-2">
                     <div className="h-2 w-2 rounded-full bg-blue-500" />
                     <span className="text-xs font-bold text-slate-600">
-                      累计发
+                      累计供货金额
                     </span>
                   </div>
                   <span className="text-sm font-black text-slate-900">
@@ -235,7 +235,7 @@ export function SupplierDetailPageClient({
                   <div className="flex items-center gap-2">
                     <div className="h-2 w-2 rounded-full bg-amber-500" />
                     <span className="text-xs font-bold text-slate-600">
-                      供货频次
+                      发货单数
                     </span>
                   </div>
                   <span className="text-sm font-black text-slate-900">
@@ -246,7 +246,7 @@ export function SupplierDetailPageClient({
                   <div className="flex items-center gap-2">
                     <div className="h-2 w-2 rounded-full bg-slate-300" />
                     <span className="text-xs font-bold text-slate-600">
-                      应付笔数
+                      应付单数
                     </span>
                   </div>
                   <span className="text-sm font-black text-slate-900">
@@ -262,10 +262,10 @@ export function SupplierDetailPageClient({
         <div className="rounded-[2.5rem] border border-white bg-white/40 p-1 shadow-sm backdrop-blur-md">
           <div className="p-8 pb-4">
             <h2 className="text-2xl font-black tracking-tight text-slate-900">
-              供货审计与账务往来
+              供货记录与应付款
             </h2>
             <p className="mt-1 text-sm font-bold text-slate-400">
-              追踪厂家发货的物流状态及对应的财务结算全生命周期。
+              查看厂家发货进度和对应应付款情况。
             </p>
           </div>
 
@@ -276,13 +276,13 @@ export function SupplierDetailPageClient({
                   value="shipments"
                   className="h-10 rounded-xl px-6 font-black transition-all data-[state=active]:bg-white data-[state=active]:shadow-xl"
                 >
-                  发货审计 ({supplier._count.factoryShipments})
+                  发货记录 ({supplier._count.factoryShipments})
                 </TabsTrigger>
                 <TabsTrigger
                   value="payables"
                   className="h-10 rounded-xl px-6 font-black transition-all data-[state=active]:bg-white data-[state=active]:shadow-xl"
                 >
-                  账务结算 ({supplier._count.payableRecords})
+                  应付款 ({supplier._count.payableRecords})
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -316,7 +316,7 @@ export function SupplierDetailPageClient({
                               </div>
                             </div>
                             <p className="text-xs font-bold text-slate-500">
-                              登记于 {formatDateTime(shipment.createdAt)}
+                              创建于 {formatDateTime(shipment.createdAt)}
                             </p>
                           </div>
                         </div>
@@ -326,7 +326,7 @@ export function SupplierDetailPageClient({
                               {formatCurrency(shipment.totalAmount)}
                             </p>
                             <span className="text-xs font-bold tracking-widest text-slate-400 uppercase italic">
-                              出货金额
+                              发货金额
                             </span>
                           </div>
                           <ChevronRight className="h-5 w-5 text-slate-200 transition-all group-hover:translate-x-1 group-hover:text-slate-900" />
@@ -338,7 +338,7 @@ export function SupplierDetailPageClient({
                   <div className="m-6 flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-slate-50/50 py-20">
                     <History className="mb-4 h-10 w-10 text-slate-200" />
                     <p className="text-sm font-black tracking-widest text-slate-400 uppercase">
-                      暂无发货审计记录
+                      暂无厂家发货记录
                     </p>
                   </div>
                 )}

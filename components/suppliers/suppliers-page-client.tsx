@@ -42,6 +42,7 @@ import type { Supplier, SupplierQueryParams } from '@/lib/types/supplier';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/utils/datetime';
 import { formatSupplierStatus } from '@/lib/utils/supplier-display';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
 interface SuppliersPageClientProps {
   initialParams: {
@@ -171,7 +172,10 @@ export function SuppliersPageClient({
     onError: error => {
       toast({
         title: '删除失败',
-        description: error.message || '删除供应商失败',
+        description: getFriendlyErrorMessage(
+          error,
+          '这位供应商暂时无法删除，请稍后重试'
+        ),
         variant: 'destructive',
       });
     },
@@ -305,8 +309,8 @@ export function SuppliersPageClient({
         {isError && (
           <div className="animate-in fade-in slide-in-from-top-4 mb-8 flex items-center gap-3 rounded-2xl border border-rose-100 bg-rose-50/50 px-6 py-4 text-sm font-bold text-rose-600 duration-500">
             <div className="h-2 w-2 animate-pulse rounded-full bg-rose-500" />
-            同步供应中枢数据失败：
-            {error instanceof Error ? error.message : '发生未知错误'}
+            加载供应商资料失败：
+            {getFriendlyErrorMessage(error, '请稍后重试')}
           </div>
         )}
 
@@ -315,7 +319,7 @@ export function SuppliersPageClient({
           {isLoading ? (
             <div className="flex min-h-[400px] items-center justify-center rounded-[2.5rem] border border-white bg-white/40 backdrop-blur-md">
               <EmptyState
-                title="正在同步供应中枢..."
+                title="正在加载供应商资料..."
                 icon={
                   <Loader2 className="h-10 w-10 animate-spin text-slate-300" />
                 }
@@ -325,14 +329,14 @@ export function SuppliersPageClient({
           ) : suppliers.length === 0 ? (
             <div className="rounded-[2.5rem] border border-dashed border-slate-200 bg-white/20 p-20 text-center">
               <EmptyState
-                title="暂无往来供应商登记"
-                description="完善供应链的第一步从这里开始"
+                title="还没有供应商资料"
+                description="先新增一位供应商，后续更方便录入采购和对账"
                 action={
                   <Button
                     onClick={() => router.push('/suppliers/create')}
                     className="h-12 rounded-2xl bg-slate-900 px-8 font-black"
                   >
-                    登记首位供应商
+                    新增供应商
                   </Button>
                 }
                 compact
@@ -364,7 +368,7 @@ export function SuppliersPageClient({
                         <div className="flex items-center gap-3 text-xs font-bold text-slate-400">
                           <span className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
-                            合作始于 {formatDate(supplier.createdAt)}
+                            建档时间 {formatDate(supplier.createdAt)}
                           </span>
                           <span className="h-1 w-1 rounded-full bg-slate-200" />
                           <span className="text-xs font-bold tracking-widest text-slate-400 uppercase">
@@ -385,7 +389,7 @@ export function SuppliersPageClient({
                       <div className="flex max-w-[240px] items-center gap-2 truncate rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
                         <MapPin className="h-3.5 w-3.5 text-slate-400" />
                         <span className="truncate text-sm font-bold text-slate-600">
-                          {supplier.address || '无登记地址'}
+                          {supplier.address || '未填写地址'}
                         </span>
                       </div>
                     </div>
@@ -394,23 +398,25 @@ export function SuppliersPageClient({
                     <div className="grid min-w-[240px] grid-cols-2 gap-3">
                       <div className="flex flex-col items-center justify-center rounded-2xl border border-amber-100/50 bg-amber-50/50 px-4 py-3">
                         <span className="mb-1 text-xs font-black tracking-widest text-amber-600 uppercase">
-                          供应频次
+                          合作状态
                         </span>
                         <div className="flex items-center gap-1 text-amber-700">
                           <Truck className="h-3 w-3" />
-                          <span className="text-sm font-black text-amber-900/40">
-                            活跃数据
+                          <span className="text-sm font-black text-amber-900">
+                            {formatSupplierStatus(supplier.status)}
                           </span>
                         </div>
                       </div>
                       <div className="flex flex-col items-center justify-center rounded-2xl border border-blue-100/50 bg-blue-50/50 px-4 py-3">
                         <span className="mb-1 text-xs font-black tracking-widest text-blue-600 uppercase">
-                          结算信用
+                          联系资料
                         </span>
                         <div className="flex items-center gap-1 text-blue-700">
                           <TrendingUp className="h-3 w-3" />
-                          <span className="text-sm font-black text-blue-900/40">
-                            优秀
+                          <span className="text-sm font-black text-blue-900">
+                            {supplier.phone || supplier.address
+                              ? '已完善'
+                              : '待补充'}
                           </span>
                         </div>
                       </div>
@@ -453,7 +459,7 @@ export function SuppliersPageClient({
                   供应规模
                 </span>
                 <span className="text-sm font-black text-slate-900">
-                  {pagination.total} 家合作伙伴
+                  {pagination.total} 家供应商
                 </span>
               </div>
               <Pagination

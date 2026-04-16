@@ -40,7 +40,7 @@ export function SupplierRowActions({
             href={`/suppliers/${supplierId}`}
             onClick={event => event.stopPropagation()}
           >
-            <TrendingUp className="mr-2 h-4 w-4" /> 察看合作详情
+            <TrendingUp className="mr-2 h-4 w-4" /> 查看详情
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem className="rounded-xl py-2.5 font-bold" asChild>
@@ -48,7 +48,7 @@ export function SupplierRowActions({
             href={`/suppliers/${supplierId}/edit`}
             onClick={event => event.stopPropagation()}
           >
-            <Edit className="mr-2 h-4 w-4" /> 修订档案
+            <Edit className="mr-2 h-4 w-4" /> 编辑资料
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem
@@ -58,10 +58,9 @@ export function SupplierRowActions({
             onDelete();
           }}
         >
-          <Trash2 className="mr-2 h-4 w-4" /> 归档并中止
+          <Trash2 className="mr-2 h-4 w-4" /> 删除供应商
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
 }
-

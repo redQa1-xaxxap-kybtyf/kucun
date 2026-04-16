@@ -82,7 +82,7 @@ const updateSupplierSchema = z.object({
 });
 
 const updateSupplierStatusSchema = z.object({
-  supplierId: z.string().min(1, '供应商 ID 不能为空'),
+  supplierId: z.string().min(1, '供应商不能为空'),
   status: z.enum(['active', 'inactive', 'suspended']),
 });
 
