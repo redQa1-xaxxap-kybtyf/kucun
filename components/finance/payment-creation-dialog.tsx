@@ -25,9 +25,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import { invalidateFinanceCaches } from '@/lib/cache/invalidation-helpers';
 import { queryKeys } from '@/lib/queryKeys';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
 import { OrderSummaryCard } from './order-summary-card';
 import { PaymentForm } from './payment-creation-dialog-form';
@@ -228,11 +230,11 @@ export function PaymentCreationDialog({
 
       return result;
     },
-    onSuccess: data => {
+    onSuccess: () => {
       // ✅ 先显示成功提示
       toast({
-        title: '创建成功',
-        description: data.message || '收款记录已成功创建',
+        title: '收款已登记',
+        description: '这笔收款已登记为待确认到账',
         variant: 'success',
       });
 
@@ -247,29 +249,49 @@ export function PaymentCreationDialog({
     },
     onError: (error: Error) => {
       toast({
-        title: '创建失败',
-        description: error.message,
+        title: '登记失败',
+        description: getFriendlyErrorMessage(
+          error,
+          '这笔收款暂时无法登记，请稍后重试'
+        ),
         variant: 'destructive',
       });
     },
   });
+  const hasUnsavedChanges =
+    open && form.formState.isDirty && !createPaymentMutation.isPending;
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前收款内容尚未保存，确定要关闭吗？',
+  });
+
+  const handleCloseAttempt = useCallback(
+    (nextOpen: boolean) => {
+      if (!nextOpen && !confirmLeavePage()) {
+        return;
+      }
+
+      handleDialogOpenChange(nextOpen);
+    },
+    [confirmLeavePage, handleDialogOpenChange]
+  );
 
   const handleSubmit: SubmitHandler<PaymentFormData> = data => {
     createPaymentMutation.mutate(data);
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleDialogOpenChange}>
+    <Dialog open={open} onOpenChange={handleCloseAttempt}>
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-r from-[hsl(var(--color-primary))] to-[hsl(var(--color-primary))]/90">
               <DollarSign className="h-5 w-5 text-white" />
             </div>
-            创建收款记录
+            登记待确认收款
           </DialogTitle>
           <DialogDescription>
-            为订单创建收款记录，填写实际收款信息
+            先登记这笔收款，核对无误后再确认到账
           </DialogDescription>
         </DialogHeader>
 
@@ -281,7 +303,7 @@ export function PaymentCreationDialog({
           paymentMethod={paymentMethod}
           onRoundingToggle={handleRoundingToggle}
           onSubmit={handleSubmit}
-          onCancel={() => handleDialogOpenChange(false)}
+          onCancel={() => handleCloseAttempt(false)}
           isSubmitting={createPaymentMutation.isPending}
         />
       </DialogContent>

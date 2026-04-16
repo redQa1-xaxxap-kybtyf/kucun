@@ -112,7 +112,7 @@ function PaymentAmountInput({ form, enableRounding }: PaymentAmountInputProps) {
       name="paymentAmount"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>应收金额 *</FormLabel>
+          <FormLabel>本次收款金额 *</FormLabel>
           <FormControl>
             <Input
               type="number"
@@ -131,7 +131,7 @@ function PaymentAmountInput({ form, enableRounding }: PaymentAmountInputProps) {
           </FormControl>
           <FormDescription>
             {enableRounding
-              ? '启用差额调整后，应收金额不可修改，请在"实际到账金额"中输入'
+              ? '开启后，本次收款金额不可修改，请在“实际到账金额”里填写客户实际打款'
               : '输入本次收款金额（支持全额或部分收款）'}
           </FormDescription>
           <FormMessage />
@@ -150,9 +150,9 @@ function RoundingToggle({ checked, onToggle }: RoundingToggleProps) {
   return (
     <div className="flex items-center justify-between rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))]/50 p-4">
       <div className="space-y-0.5">
-        <label className="text-sm font-medium">启用收款差额调整</label>
+        <label className="text-sm font-medium">本次收款有尾差</label>
         <p className="text-xs text-[hsl(var(--color-text-tertiary))]">
-          当实际收款金额与应收金额不一致时启用（如抹零、四舍五入等）
+          客户实际到账和本次记账金额不一致时打开，比如抹零、四舍五入
         </p>
       </div>
       <Switch checked={checked} onCheckedChange={onToggle} />
@@ -185,7 +185,7 @@ function ActualAmountField({ form }: FormComponentProps) {
             />
           </FormControl>
           <FormDescription>
-            客户实际支付的金额（可以少于收款金额）
+            这里填客户实际打款的金额
           </FormDescription>
           <FormMessage />
         </FormItem>
@@ -207,7 +207,7 @@ function RoundingAmountField({ form }: FormComponentProps) {
 
         return (
           <FormItem>
-            <FormLabel>收款差额</FormLabel>
+            <FormLabel>抹零金额</FormLabel>
             <FormControl>
               <Input
                 type="number"
@@ -220,7 +220,7 @@ function RoundingAmountField({ form }: FormComponentProps) {
               />
             </FormControl>
             <FormDescription>
-              自动计算：收款金额 - 实际到账（正数=优惠/少收，负数=多收）
+              根据收款金额和实际到账自动计算；正数表示少收结清，负数表示多收
             </FormDescription>
             <FormMessage />
           </FormItem>
@@ -275,7 +275,7 @@ function BankInfoField({ form, paymentMethod }: BankInfoFieldProps) {
           <FormControl>
             <Input placeholder="收款账户、交易流水号等信息" {...field} />
           </FormControl>
-          <FormDescription>记录收款账户或交易流水号等信息</FormDescription>
+          <FormDescription>填写收款账户或交易流水号等信息</FormDescription>
           <FormMessage />
         </FormItem>
       )}
@@ -327,7 +327,7 @@ function FormActions({ onCancel, isSubmitting }: FormActionsProps) {
         className="bg-gradient-to-r from-[hsl(var(--color-primary))] to-[hsl(var(--color-primary))]/90"
       >
         <Save className="mr-2 h-4 w-4" />
-        {isSubmitting ? '保存中...' : '新建收款记录'}
+        {isSubmitting ? '保存中...' : '登记待确认收款'}
       </Button>
     </DialogFooter>
   );

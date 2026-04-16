@@ -111,7 +111,7 @@ export function PaymentsTableList({
     return (
       <EmptyState
         icon={<Receipt className="text-muted-foreground h-8 w-8" />}
-        title="暂无收款记录"
+        title="暂无收款"
         compact
       />
     );
@@ -131,7 +131,7 @@ export function PaymentsTableList({
               <TableHead className="w-[100px]">收款方式</TableHead>
               <TableHead className="w-[110px] text-right">应收金额</TableHead>
               <TableHead className="w-[110px] text-right">实际到账</TableHead>
-              <TableHead className="w-[100px] text-right">收款差额</TableHead>
+              <TableHead className="w-[100px] text-right">抹零金额</TableHead>
               <TableHead className="w-[140px]">收款日期</TableHead>
               <TableHead className="w-[100px]">状态</TableHead>
               <TableHead className="w-[120px] text-center">操作</TableHead>
@@ -355,7 +355,7 @@ function PaymentCard({
           </div>
         </div>
         <div className="space-y-1">
-          <div className="text-muted-foreground">收款差额</div>
+          <div className="text-muted-foreground">抹零金额</div>
           <RoundingAmountDisplay amount={payment.roundingAmount} />
         </div>
       </div>
@@ -383,7 +383,7 @@ function PaymentCard({
               disabled={confirmingId === payment.id || isConfirming}
               className="h-9 w-full bg-green-600 px-3 text-xs text-white hover:bg-green-700"
             >
-              {confirmingId === payment.id ? '确认中...' : '确认收款'}
+              {confirmingId === payment.id ? '确认中...' : '确认到账'}
             </Button>
           )}
           <Button
@@ -447,7 +447,7 @@ function StatusBadge({ status }: { status: PaymentStatus }) {
     PaymentStatus,
     { label: string; variant: BadgeProps['variant']; icon: React.ElementType }
   > = {
-    pending: { label: '待确认', variant: 'secondary', icon: Clock },
+    pending: { label: '待确认到账', variant: 'secondary', icon: Clock },
     confirmed: { label: '已到账', variant: 'default', icon: CheckCircle },
     applied: { label: '已入账', variant: 'outline', icon: Receipt },
     cancelled: { label: '已取消', variant: 'destructive', icon: XCircle },
@@ -580,7 +580,7 @@ function PaymentRowActions({
           disabled={confirmingId === payment.id || isConfirming}
           className="h-6 bg-green-600 px-2 text-xs text-white hover:bg-green-700"
         >
-          {confirmingId === payment.id ? '确认中...' : '确认收款'}
+          {confirmingId === payment.id ? '确认中...' : '确认到账'}
         </Button>
       )}
 

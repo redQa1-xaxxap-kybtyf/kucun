@@ -16,8 +16,8 @@ export const PAYMENT_METHODS = [
  */
 export const paymentSchema = z.object({
   paymentType: z.literal('order_payment'), // 移除.default(),在defaultValues中设置
-  salesOrderId: z.string().min(1, { message: '销售订单ID不能为空' }),
-  customerId: z.string().min(1, { message: '客户ID不能为空' }),
+  salesOrderId: z.string().min(1, { message: '请选择销售订单' }),
+  customerId: z.string().min(1, { message: '客户不能为空' }),
   // ✅ 与后端 lib/validations/payment.ts 保持一致
   paymentMethod: z.enum(
     ['cash', 'wechat_transfer', 'abc_qr', 'icbc_qr', 'ccb_qr', 'cib_qr'],

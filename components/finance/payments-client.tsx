@@ -22,6 +22,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useCancelPayment, useConfirmPayment } from '@/lib/api/payments';
 import type { PaymentStatus } from '@/lib/types/payment';
 import { formatCurrency } from '@/lib/utils/format';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
 interface PaymentRecord {
   id: string;
@@ -216,16 +217,21 @@ function usePaymentEventHandlers({
         await confirmPaymentMutation.mutateAsync({ id: paymentId });
         toast({
           title: '收款已到账',
-          description: '该收款记录已确认到账。',
+          description: '这笔收款已经确认到账。',
           variant: 'success',
         });
         externalOnRefresh?.();
+        return true;
       } catch (error) {
         toast({
           title: '确认失败',
-          description: error instanceof Error ? error.message : '请稍后重试',
+          description: getFriendlyErrorMessage(
+            error,
+            '这笔收款暂时无法确认，请稍后重试'
+          ),
           variant: 'destructive',
         });
+        return false;
       } finally {
         setConfirmingId(null);
       }
@@ -262,6 +268,8 @@ export function PaymentsClient({
   const [searchValue, setSearchValue] = React.useState(
     initialParams?.search ?? ''
   );
+  const [confirmingPaymentRecord, setConfirmingPaymentRecord] =
+    React.useState<PaymentRecord | null>(null);
   const [cancellingPayment, setCancellingPayment] =
     React.useState<PaymentRecord | null>(null);
   const [cancelNotes, setCancelNotes] = React.useState('');
@@ -295,6 +303,33 @@ export function PaymentsClient({
     [baseHandleSearch]
   );
 
+  const handleConfirmRequest = React.useCallback(
+    (paymentId: string) => {
+      if (isConfirming || cancelPaymentMutation.isPending) {
+        return;
+      }
+
+      const payment = payments.find(item => item.id === paymentId);
+      if (!payment) {
+        return;
+      }
+
+      setConfirmingPaymentRecord(payment);
+    },
+    [cancelPaymentMutation.isPending, isConfirming, payments]
+  );
+
+  const handleConfirmSubmit = React.useCallback(async () => {
+    if (!confirmingPaymentRecord) {
+      return;
+    }
+
+    const confirmed = await handleConfirm(confirmingPaymentRecord.id);
+    if (confirmed) {
+      setConfirmingPaymentRecord(null);
+    }
+  }, [confirmingPaymentRecord, handleConfirm]);
+
   const handleCancelRequest = React.useCallback(
     (payment: PaymentRecord) => {
       if (cancelPaymentMutation.isPending) {
@@ -322,7 +357,7 @@ export function PaymentsClient({
 
       toast({
         title: '收款已取消',
-        description: '该待确认收款已取消，不会继续进入到账流程。',
+        description: '这笔待确认到账已取消，不会继续进入到账流程。',
         variant: 'success',
       });
 
@@ -331,7 +366,10 @@ export function PaymentsClient({
     } catch (error) {
       toast({
         title: '取消失败',
-        description: error instanceof Error ? error.message : '请稍后重试',
+        description: getFriendlyErrorMessage(
+          error,
+          '这笔收款暂时无法取消，请稍后重试'
+        ),
         variant: 'destructive',
       });
     } finally {
@@ -371,7 +409,7 @@ export function PaymentsClient({
           payments={payments}
           pagination={pagination}
           onPageChange={handlePageChange}
-          onConfirm={handleConfirm}
+          onConfirm={handleConfirmRequest}
           onCancel={handleCancelRequest}
           confirmingId={confirmingId}
           isConfirming={isConfirming}
@@ -379,6 +417,46 @@ export function PaymentsClient({
           isCancelling={cancelPaymentMutation.isPending}
         />
       </div>
+
+      <AlertDialog
+        open={Boolean(confirmingPaymentRecord)}
+        onOpenChange={open => {
+          if (!open) {
+            setConfirmingPaymentRecord(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认这笔收款已经到账？</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmingPaymentRecord ? (
+                <>
+                  将把收款单{' '}
+                  <strong>{confirmingPaymentRecord.paymentNumber}</strong>{' '}
+                  记为已到账。
+                  <br />
+                  确认后，这笔收款会记入已收金额，对应订单的已收也会一起更新。
+                </>
+              ) : (
+                '确认当前收款已经到账。'
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isConfirming}>
+              我再核对一下
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmSubmit}
+              disabled={isConfirming || cancelPaymentMutation.isPending}
+            >
+              {isConfirming ? '确认中...' : '确认收款到账'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog
         open={Boolean(cancellingPayment)}
@@ -397,10 +475,10 @@ export function PaymentsClient({
                   将取消收款单{' '}
                   <strong>{cancellingPayment.paymentNumber}</strong>。
                   <br />
-                  取消后会关闭这笔待确认收款，保留记录，但不会继续算作到账。
+                  取消后会关闭这笔待确认到账记录，保留单据，但不会继续算作到账。
                 </>
               ) : (
-                '确认取消当前待确认收款。'
+                '确认取消当前待确认到账记录。'
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -410,7 +488,7 @@ export function PaymentsClient({
             <Textarea
               value={cancelNotes}
               onChange={event => setCancelNotes(event.target.value)}
-              placeholder="例如：客户改期 / 误录收款 / 重新登记..."
+              placeholder="例如：客户延后付款 / 金额录错 / 改为其他收款方式"
               disabled={cancelPaymentMutation.isPending}
               rows={3}
             />
@@ -465,16 +543,14 @@ function PaymentStatisticsCards({
             {formatCurrency(statistics.totalAmount)}
           </div>
           <p className="text-muted-foreground text-xs">
-            {statistics.recordCount} 条收款记录
+            {statistics.recordCount} 笔收款
           </p>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">
-            已到账金额
-          </CardTitle>
+          <CardTitle className="text-sm font-medium">已到账金额</CardTitle>
           <CheckCircle className="h-4 w-4 text-[hsl(var(--color-primary))]" />
         </CardHeader>
         <CardContent>
@@ -496,7 +572,7 @@ function PaymentStatisticsCards({
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">待确认收款</CardTitle>
+          <CardTitle className="text-sm font-medium">待确认到账</CardTitle>
           <Clock className="h-4 w-4 text-[hsl(var(--color-warning))]" />
         </CardHeader>
         <CardContent>
@@ -561,7 +637,7 @@ function PaymentFilters({
           key: 'status',
           label: '状态',
           options: [
-            { label: '待确认', value: 'pending' },
+            { label: '待确认到账', value: 'pending' },
             { label: '已到账', value: 'confirmed' },
             { label: '已入账', value: 'applied' },
             { label: '已取消', value: 'cancelled' },

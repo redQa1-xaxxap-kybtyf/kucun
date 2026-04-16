@@ -142,7 +142,7 @@ const AccountsReceivableComponent = React.forwardRef<
           icon: Clock,
         },
         pending: {
-          label: '待确认',
+          label: '待确认到账',
           variant: 'warning' as const,
           icon: Clock,
         },
@@ -278,7 +278,7 @@ const AccountsReceivableComponent = React.forwardRef<
               {onCreatePayment && receivable.remainingAmount > 0 && (
                 <DropdownMenuItem onClick={() => onCreatePayment(receivable)}>
                   <Plus className="mr-2 h-4 w-4" />
-                  创建收款
+                  登记收款
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
@@ -492,7 +492,7 @@ const AccountsReceivableComponent = React.forwardRef<
                     <SelectItem value="">全部状态</SelectItem>
                     <SelectItem value="unpaid">未收款</SelectItem>
                     <SelectItem value="partial">部分收款</SelectItem>
-                    <SelectItem value="pending">待确认</SelectItem>
+                    <SelectItem value="pending">待确认到账</SelectItem>
                     <SelectItem value="paid">已收款</SelectItem>
                   </SelectContent>
                 </Select>

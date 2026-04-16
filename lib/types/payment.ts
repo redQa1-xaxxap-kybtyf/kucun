@@ -333,8 +333,8 @@ export const PAYMENT_STATUS_VARIANTS: Record<
 export const DEFAULT_PAYMENT_STATUSES: PaymentStatusConfig[] = [
   {
     status: 'pending',
-    label: '待确认',
-    description: '收款记录已创建，等待确认',
+    label: '待确认到账',
+    description: '收款信息已登记，等待确认到账',
     color: 'yellow',
     isActive: true,
   },
@@ -347,7 +347,7 @@ export const DEFAULT_PAYMENT_STATUSES: PaymentStatusConfig[] = [
   },
   {
     status: 'confirmed',
-    label: '已确认',
+    label: '已到账',
     description: '收款已确认到账',
     color: 'green',
     isActive: true,

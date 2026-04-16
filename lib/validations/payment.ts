@@ -338,9 +338,9 @@ export const accountsReceivableExportQuerySchema = addDateRangeValidation(
 export const paymentConfirmationSchema = z.object({
   paymentRecordId: z
     .string({
-      error: '收款记录ID不能为空',
+      error: '收款记录编号不能为空',
     })
-    .min(1, '收款记录ID不能为空'),
+    .min(1, '收款记录编号不能为空'),
 
   confirmationDate: z
     .string({

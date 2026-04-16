@@ -11,8 +11,8 @@ import { getStandardTransactionOptions } from '@/lib/db/transaction-options';
 import { publishFinanceEvent } from '@/lib/events';
 import { logger } from '@/lib/logger';
 import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
-import { getSystemMode } from '@/lib/services/system-mode-service';
 import { buildExcludeAutoReceivableConfirmationWhere } from '@/lib/services/receivables-helpers';
+import { getSystemMode } from '@/lib/services/system-mode-service';
 import { generatePaymentNumber } from '@/lib/utils/payment-number-generator';
 import { shouldCreateReceivableForOrder } from '@/lib/utils/sample-order';
 import {
@@ -72,7 +72,7 @@ export const GET = withAuth(
         return NextResponse.json(
           {
             success: false,
-            error: '查询参数验证失败',
+            error: '查询条件有误，请检查后重试',
             details: queryResult.error.issues,
           },
           { status: 400 }
@@ -557,3 +557,4 @@ export const POST = withAuth(
   },
   { permissions: ['finance:manage'] }
 );
+

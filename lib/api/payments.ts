@@ -529,9 +529,9 @@ export const paymentUtils = {
 
   formatPaymentStatus: (status: PaymentStatus): string => {
     const statusMap = {
-      pending: '待确认',
+      pending: '待确认到账',
       applied: '已冲抵',
-      confirmed: '已确认',
+      confirmed: '已到账',
       cancelled: '已取消',
     };
     return statusMap[status] || status;

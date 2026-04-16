@@ -475,10 +475,10 @@ export function PaymentsPageClient({
                 </div>
                 <div>
                   <h1 className="text-lg font-semibold tracking-tight text-[hsl(var(--color-text-primary))] sm:text-2xl sm:font-bold">
-                    已收款记录
+                    收款管理
                   </h1>
                   <p className="mt-1 text-xs text-[hsl(var(--color-text-secondary))] sm:text-sm">
-                    查看待确认和已到账的收款记录，方便快速核对
+                    查看待确认与已到账收款，方便快速核对
                   </p>
                 </div>
               </div>
@@ -500,7 +500,7 @@ export function PaymentsPageClient({
                 >
                   <Link href="/finance/payments/create">
                     <Plus className="mr-2 h-4 w-4" />
-                    新建收款
+                    登记收款
                   </Link>
                 </Button>
               </div>

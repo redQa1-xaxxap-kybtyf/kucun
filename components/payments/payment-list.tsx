@@ -209,7 +209,7 @@ const createActionsColumn = (
         {actions.onConfirm && payment.status === 'pending' && (
           <DropdownMenuItem onClick={() => actions.onConfirm?.(payment)}>
             <Check className="mr-2 h-4 w-4" />
-            确认收款
+            确认到账
           </DropdownMenuItem>
         )}
         {actions.onCancel && payment.status === 'pending' && (
@@ -469,7 +469,7 @@ const PaymentListData: React.FC<PaymentListDataProps> = ({
       <CardContent className="p-8">
         <EmptyState
           icon={<ChineseYuan className="text-muted-foreground h-8 w-8" />}
-          title="暂无收款记录"
+          title="暂无收款"
           compact
         />
       </CardContent>
@@ -672,7 +672,7 @@ function PaymentListSkeleton() {
     <div className="space-y-4">
       <Card>
         <CardContent className="p-6">
-          <ContentLoading text="加载收款记录..." />
+          <ContentLoading text="加载收款中..." />
         </CardContent>
       </Card>
     </div>

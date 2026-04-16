@@ -36,8 +36,8 @@ type PaymentSortField = (typeof ALLOWED_PAYMENT_SORT_FIELDS)[number];
 import { PaymentsPageClient } from './page-client';
 
 export const metadata: Metadata = {
-  title: '收款记录 - 财务管理',
-  description: '管理销售订单的收款记录，跟踪收款状态和金额',
+  title: '收款管理 - 财务管理',
+  description: '查看客户收款，区分待确认到账与已到账金额',
 };
 
 // ✅ Next.js 15 Route Segment Config

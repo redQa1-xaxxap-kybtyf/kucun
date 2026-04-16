@@ -33,6 +33,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { formatCurrency } from '@/lib/utils';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { formatDateTime, formatPaymentDateTime } from '@/lib/utils/datetime';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
 interface PaymentRecord {
   id: string;
@@ -92,13 +93,13 @@ interface PaymentDetailClientProps {
 function StatusBadge({ status }: { status: string }) {
   const statusConfig = {
     pending: {
-      label: '待确认',
+      label: '待确认到账',
       icon: Clock,
       className:
         'border-[hsl(var(--color-warning))] bg-[hsl(var(--color-warning-light))] text-[hsl(var(--color-warning))]',
     },
     confirmed: {
-      label: '已确认',
+      label: '已到账',
       icon: CheckCircle,
       className:
         'border-[hsl(var(--color-success))] bg-[hsl(var(--color-success-light))] text-[hsl(var(--color-success))]',
@@ -166,6 +167,7 @@ export function PaymentDetailClient({
   const { toast } = useToast();
   const [payment, setPayment] = useState(initialPayment);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelNotes, setCancelNotes] = useState('');
   const [isCancelling, setIsCancelling] = useState(false);
@@ -198,8 +200,8 @@ export function PaymentDetailClient({
       }
 
       toast({
-        title: '确认成功',
-        description: '收款记录已确认',
+        title: '收款已到账',
+        description: '这笔收款已经确认到账。',
         variant: 'success',
       });
 
@@ -208,13 +210,17 @@ export function PaymentDetailClient({
         ...payment,
         status: 'confirmed',
       });
+      setShowConfirmDialog(false);
 
       // 刷新页面数据
       router.refresh();
     } catch (error) {
       toast({
         title: '确认失败',
-        description: error instanceof Error ? error.message : '确认收款失败',
+        description: getFriendlyErrorMessage(
+          error,
+          '这笔收款暂时无法确认，请稍后重试'
+        ),
         variant: 'destructive',
       });
     } finally {
@@ -249,7 +255,7 @@ export function PaymentDetailClient({
 
       toast({
         title: '取消成功',
-        description: '收款记录已取消',
+        description: '这笔收款已取消',
         variant: 'success',
       });
 
@@ -262,7 +268,10 @@ export function PaymentDetailClient({
     } catch (error) {
       toast({
         title: '取消失败',
-        description: error instanceof Error ? error.message : '取消收款失败',
+        description: getFriendlyErrorMessage(
+          error,
+          '这笔收款暂时无法取消，请稍后重试'
+        ),
         variant: 'destructive',
       });
     } finally {
@@ -279,14 +288,14 @@ export function PaymentDetailClient({
             <Button variant="outline" size="sm" asChild className="gap-1.5">
               <Link href="/finance/payments">
                 <ArrowLeft className="h-3.5 w-3.5" />
-                返回列表
+                返回收款管理
               </Link>
             </Button>
             <div className="h-5 w-px bg-gray-300"></div>
             <h1 className="text-lg font-semibold text-gray-900">
               {isSystemReceivableConfirmation
-                ? '系统应收建账详情'
-                : '收款记录详情'}
+                ? '应收登记详情'
+                : '收款详情'}
             </h1>
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
@@ -296,11 +305,11 @@ export function PaymentDetailClient({
                   <Button
                     size="sm"
                     className="gap-1.5 bg-green-600 hover:bg-green-700"
-                    onClick={handleConfirm}
+                    onClick={() => setShowConfirmDialog(true)}
                     disabled={isConfirming || isCancelling}
                   >
                     <CheckCircle className="h-3.5 w-3.5" />
-                    {isConfirming ? '确认中...' : '确认收款'}
+                    {isConfirming ? '确认中...' : '确认到账'}
                   </Button>
                   <Button
                     variant="destructive"
@@ -320,15 +329,43 @@ export function PaymentDetailClient({
           </div>
         </div>
 
+        <AlertDialog
+          open={showConfirmDialog}
+          onOpenChange={setShowConfirmDialog}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>确认这笔收款已经到账？</AlertDialogTitle>
+              <AlertDialogDescription>
+                将把收款单 <strong>{payment.paymentNumber}</strong> 记为已到账。
+                <br />
+                确认后，这笔收款会记入已收金额，对应订单的已收也会一起更新。
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isConfirming}>
+                我再核对一下
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleConfirm}
+                disabled={isConfirming || isCancelling}
+              >
+                {isConfirming ? '确认中...' : '确认收款到账'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         {isSystemReceivableConfirmation && (
           <Card className="border-amber-200 bg-amber-50/70 shadow-sm">
             <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="space-y-2">
                 <div className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">
-                  系统应收建账
+                  应收登记
                 </div>
                 <p className="text-sm text-amber-900">
-                  这条记录用于确认订单应收已建立，不代表客户已经付款，也不会计入真实收款列表。
+                  这条记录只表示这张订单的应收已经登记，不代表客户已经付款，也不会计入实际收款列表。
                 </p>
                 <p className="text-xs text-amber-700">
                   如需查看客户真实到账，请查看下方订单收款汇总或前往销售订单详情。
@@ -413,7 +450,7 @@ export function PaymentDetailClient({
               {/* 1. 记账金额 */}
               <div className="flex flex-col items-center justify-center bg-white px-4 py-4 transition-colors hover:bg-[hsl(var(--color-bg-secondary))]">
                 <span className="mb-1.5 text-xs font-semibold tracking-wider text-[hsl(var(--color-text-tertiary))] uppercase">
-                  {isSystemReceivableConfirmation ? '应收建账' : '记账金额'}
+                  {isSystemReceivableConfirmation ? '应收金额' : '记账金额'}
                 </span>
                 <span className="text-xl font-bold tracking-tight text-[hsl(var(--color-primary))]">
                   {formatCurrency(payment.paymentAmount)}
@@ -423,7 +460,7 @@ export function PaymentDetailClient({
               {/* 2. 收款差额 */}
               <div className="flex flex-col items-center justify-center bg-white px-4 py-4 transition-colors hover:bg-[hsl(var(--color-bg-secondary))]">
                 <span className="mb-1.5 text-xs font-semibold tracking-wider text-[hsl(var(--color-text-tertiary))] uppercase">
-                  {isSystemReceivableConfirmation ? '建账差额' : '收款差额'}
+                  {isSystemReceivableConfirmation ? '金额差额' : '抹零金额'}
                 </span>
                 {payment.roundingAmount !== 0 ? (
                   <div className="flex flex-col items-center">
@@ -485,7 +522,7 @@ export function PaymentDetailClient({
                 </p>
                 {isSystemReceivableConfirmation ? (
                   <p className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
-                    系统应收建账
+                    应收登记
                   </p>
                 ) : (
                   <PaymentMethodDisplay method={payment.paymentMethod} />
@@ -493,7 +530,7 @@ export function PaymentDetailClient({
               </div>
               <div className="rounded-lg bg-white/80 p-2.5 shadow-sm">
                 <p className="mb-1 text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
-                  {isSystemReceivableConfirmation ? '建账时间' : '收款日期'}
+                  {isSystemReceivableConfirmation ? '登记时间' : '收款日期'}
                 </p>
                 <p className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
                   {formatPaymentDateTime(
@@ -593,7 +630,7 @@ export function PaymentDetailClient({
                     </p>
                     {isSystemReceivableConfirmation && (
                       <p className="mt-1 text-xs text-gray-500">
-                        系统建账单不会计入上方已收金额。
+                        这条应收登记不算已收金额。
                       </p>
                     )}
                   </div>
@@ -611,10 +648,10 @@ export function PaymentDetailClient({
               <CardContent className="space-y-2.5 p-3">
                 <div className="rounded-lg border border-amber-100 bg-gradient-to-br from-amber-50 to-white p-3 shadow-sm">
                   <p className="text-sm text-gray-700">
-                    该收款记录未直接关联销售订单，通常为客户预收款（定金）。
+                    这笔收款未直接关联销售订单，通常为客户预收款（定金）。
                   </p>
                   <p className="mt-2 text-xs text-amber-700">
-                    如下方存在“预收款使用明细”，表示该预收款已被一部分销售订单冲抵。
+                    如果下方有“预收款使用明细”，表示这笔预收款已经被部分订单抵扣。
                   </p>
                 </div>
               </CardContent>
@@ -734,12 +771,12 @@ export function PaymentDetailClient({
                           </p>
                         )}
                         <p className="text-xs text-gray-500">
-                          冲抵记录创建时间：{formatDateTime(usage.createdAt)}
+                          抵扣时间：{formatDateTime(usage.createdAt)}
                         </p>
                       </div>
                       <div className="text-right">
                         <p className="text-muted-foreground text-xs">
-                          冲抵金额
+                          抵扣金额
                         </p>
                         <p className="text-base font-semibold text-emerald-600">
                           -{formatCurrency(usage.appliedAmount)}

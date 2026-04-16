@@ -51,6 +51,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import { paymentUtils } from '@/lib/api/payments';
 import {
   DEFAULT_PAYMENT_METHODS,
@@ -174,9 +175,18 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
 
     // 处理取消
     const handleCancel = () => {
+      if (!confirmLeavePage()) {
+        return;
+      }
+
       form.reset();
       onCancel?.();
     };
+    const hasUnsavedChanges = form.formState.isDirty && !isSubmitting;
+    const { confirmLeavePage } = useUnsavedChangesGuard({
+      enabled: hasUnsavedChanges,
+      message: '当前收款内容尚未保存，确定要离开吗？',
+    });
 
     if (isLoading) {
       return <PaymentFormSkeleton />;
@@ -187,10 +197,12 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <ChineseYuan className="h-5 w-5" />
-            <span>{isEditing ? '编辑收款记录' : '创建收款记录'}</span>
+            <span>{isEditing ? '编辑收款信息' : '登记待确认收款'}</span>
           </CardTitle>
           <CardDescription>
-            {isEditing ? '修改收款记录信息' : '填写收款记录详细信息'}
+            {isEditing
+              ? '修改收款信息'
+              : '填写收款信息，核对无误后再确认到账'}
           </CardDescription>
         </CardHeader>
 
