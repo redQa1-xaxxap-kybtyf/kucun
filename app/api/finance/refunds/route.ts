@@ -77,7 +77,7 @@ export const GET = withAuth(
 
     if (!validationResult.success) {
       return errorResponse(
-        `查询参数验证失败: ${validationResult.error.issues[0]?.message}`,
+        `查询条件有误： ${validationResult.error.issues[0]?.message}`,
         400
       );
     }
@@ -314,7 +314,7 @@ export const POST = withAuth(
       if (validatedData.returnOrderId) {
         // 修复：验证退货订单号必须同时提供
         if (!validatedData.returnOrderNumber) {
-          throw new Error('退货订单ID和退货订单号必须同时提供');
+          throw new Error('退货订单编号和退货订单号必须同时提供');
         }
 
         // 修复：检查是否已存在相同退货单的退款记录，防止重复退款
@@ -493,3 +493,4 @@ export const POST = withAuth(
   },
   { permissions: ['finance:manage'] }
 );
+

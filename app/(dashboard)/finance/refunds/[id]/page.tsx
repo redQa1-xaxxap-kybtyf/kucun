@@ -44,7 +44,7 @@ export async function generateMetadata({
   const { id } = await params;
   return {
     title: `退款详情 #${id} - 库存管理工具`,
-    description: '查看退款记录详细信息和处理状态',
+    description: '查看退款详情和处理状态',
   };
 }
 

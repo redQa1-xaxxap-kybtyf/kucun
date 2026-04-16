@@ -375,7 +375,7 @@ export function RefundsClient({
           {/* 退款申请列表 */}
           {errorMessage && (
             <div className="border-destructive/30 bg-destructive/10 text-destructive mt-4 rounded-md border px-3 py-2 text-sm">
-              加载退款数据失败：{errorMessage}
+              退款暂时无法加载：{errorMessage}
             </div>
           )}
 
@@ -408,7 +408,7 @@ export function RefundsClient({
                 ) : refunds.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="h-24 text-center">
-                      <EmptyState title="暂无退款记录" compact />
+                      <EmptyState title="暂无退款" compact />
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -547,7 +547,7 @@ export function RefundsClient({
                 加载中...
               </div>
             ) : refunds.length === 0 ? (
-              <EmptyState title="暂无退款记录" compact />
+              <EmptyState title="暂无退款" compact />
             ) : (
               refunds.map(refund => renderRefundCard(refund))
             )}

@@ -20,7 +20,7 @@ import { RefundsPageClient } from './page-client';
 
 export const metadata: Metadata = {
   title: '退款处理 - 财务管理',
-  description: '管理退货产生的退款记录，跟踪待处理和待退款状态',
+  description: '查看退货产生的退款，跟踪待处理和待退款情况',
 };
 
 export const dynamic = 'force-dynamic';

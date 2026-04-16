@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import { useProcessRefund } from '@/lib/api/finance';
 import { useRefundDetail } from '@/lib/api/refunds';
 import { cn } from '@/lib/utils';
@@ -76,11 +77,13 @@ export function RefundProcessForm({
 }: RefundProcessFormProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const [formData, setFormData] = React.useState<RefundFormState>(() =>
-    createInitialFormState()
-  );
-
   const effectiveRefundId = refundId ?? '';
+  const initialFormState = React.useMemo(
+    () => createInitialFormState(),
+    [effectiveRefundId]
+  );
+  const [formData, setFormData] =
+    React.useState<RefundFormState>(initialFormState);
 
   // 获取退款详情
   const { data: refund, isLoading, error } = useRefundDetail(effectiveRefundId);
@@ -89,8 +92,8 @@ export function RefundProcessForm({
   const processRefundMutation = useProcessRefund();
 
   React.useEffect(() => {
-    setFormData(createInitialFormState());
-  }, [effectiveRefundId]);
+    setFormData(initialFormState);
+  }, [initialFormState]);
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('zh-CN', {
@@ -173,9 +176,20 @@ export function RefundProcessForm({
       );
     }
   }, [formData.status]);
+  const hasUnsavedChanges =
+    !processRefundMutation.isPending &&
+    JSON.stringify(formData) !== JSON.stringify(initialFormState);
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前退款处理内容尚未保存，确定要离开吗？',
+  });
 
   const handleCancel = React.useCallback(() => {
-    setFormData(createInitialFormState());
+    if (!confirmLeavePage()) {
+      return;
+    }
+
+    setFormData(initialFormState);
     if (variant === 'page') {
       if (onCancel) {
         onCancel();
@@ -185,15 +199,15 @@ export function RefundProcessForm({
     } else {
       onCancel?.();
     }
-  }, [onCancel, router, variant]);
+  }, [confirmLeavePage, initialFormState, onCancel, router, variant]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
     if (!effectiveRefundId) {
       toast({
-        title: '数据错误',
-        description: '未找到对应的退款记录，请刷新后重试。',
+        title: '找不到退款单',
+        description: '这笔退款单不存在或已失效，请刷新后再试。',
         variant: 'destructive',
       });
       return;
@@ -203,7 +217,7 @@ export function RefundProcessForm({
 
     if (Number.isNaN(processedAmountValue) || processedAmountValue < 0) {
       toast({
-        title: '输入错误',
+        title: '金额填写不正确',
         description: '请输入正确的处理金额',
         variant: 'destructive',
       });
@@ -217,8 +231,8 @@ export function RefundProcessForm({
       processedAmountValue === 0
     ) {
       toast({
-        title: '输入错误',
-        description: '批准退款时处理金额必须大于0，或勾选“抹平剩余金额”。',
+        title: '金额填写不正确',
+        description: '确认退款时，处理金额必须大于 0，或者勾选“剩余零头不再退款”。',
         variant: 'destructive',
       });
       return;
@@ -237,13 +251,13 @@ export function RefundProcessForm({
       });
 
       toast({
-        title: '处理成功',
+        title: '处理完成',
         description:
-          formData.status === 'completed' ? '退款已完成' : '退款已关闭',
+          formData.status === 'completed' ? '这笔退款已经处理完成' : '这笔退款已经关闭',
         variant: 'success',
       });
 
-      setFormData(createInitialFormState());
+      setFormData(initialFormState);
       onSuccess?.();
       if (variant === 'page') {
         router.replace('/finance/refunds');
@@ -256,7 +270,7 @@ export function RefundProcessForm({
         description:
           submitError instanceof Error
             ? submitError.message
-            : '处理退款失败，请重试',
+            : '这笔退款暂时处理不了，请稍后再试',
         variant: 'destructive',
       });
     }
@@ -278,7 +292,7 @@ export function RefundProcessForm({
     return (
       <Card className="border border-[hsl(var(--color-error))] shadow-[var(--shadow-light)]">
         <CardContent className="bg-[hsl(var(--color-error-light))] pt-6 text-center">
-          {error ? '加载退款详情失败' : '退款记录不存在'}
+          {error ? '加载退款详情失败' : '未找到这笔退款'}
         </CardContent>
       </Card>
     );
@@ -475,13 +489,13 @@ export function RefundProcessForm({
                     <SelectItem value="completed">
                       <div className="flex items-center gap-2">
                         <CheckCircle className="h-4 w-4 text-[hsl(var(--color-success))]" />
-                        批准退款
+                        确认退款
                       </div>
                     </SelectItem>
                     <SelectItem value="rejected">
                       <div className="flex items-center gap-2">
                         <XCircle className="h-4 w-4 text-[hsl(var(--color-error))]" />
-                        拒绝退款
+                        关闭退款
                       </div>
                     </SelectItem>
                   </SelectContent>
@@ -505,17 +519,17 @@ export function RefundProcessForm({
                         htmlFor="closeRemaining"
                         className="flex items-center gap-2 font-medium text-[hsl(var(--color-text-primary))]"
                       >
-                        抹平剩余金额
+                        剩余零头不再退款
                         <Badge variant="outline">
                           剩余 {formatCurrency(refund.remainingAmount)}
                         </Badge>
                       </Label>
                       <p className="text-muted-foreground text-xs">
-                        已确认无需退还剩余零头时勾选，系统会将剩余金额记为核销并更新应退金额。
+                        确认剩余零头不用再退时勾选，保存后会把这部分一起结清。
                       </p>
                       {formData.status !== 'completed' && (
                         <p className="text-xs text-[hsl(var(--color-warning))]">
-                          仅在选择“批准退款”时可核销剩余金额。
+                          只有选择“确认退款”时，才可以把剩余零头一起结清。
                         </p>
                       )}
                     </div>
@@ -531,7 +545,7 @@ export function RefundProcessForm({
                   onChange={event =>
                     handleInputChange('remarks', event.target.value)
                   }
-                  placeholder="请输入处理备注（可选）"
+                  placeholder="例如：已原路退款 / 客户确认不退尾差"
                   rows={3}
                 />
               </div>
@@ -565,8 +579,8 @@ export function RefundProcessForm({
                         <XCircle className="mr-2 h-4 w-4" />
                       )}
                       {formData.status === 'completed'
-                        ? '批准退款'
-                        : '拒绝退款'}
+                        ? '确认退款'
+                        : '关闭退款'}
                     </>
                   )}
                 </Button>

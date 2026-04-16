@@ -34,9 +34,13 @@ export function RefundProcessDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] w-full max-w-4xl overflow-y-auto">
+      <DialogContent
+        className="max-h-[90vh] w-full max-w-4xl overflow-y-auto [&>button]:hidden"
+        onEscapeKeyDown={event => event.preventDefault()}
+        onInteractOutside={event => event.preventDefault()}
+      >
         <DialogHeader>
-          <DialogTitle>处理退款</DialogTitle>
+          <DialogTitle>办理退款</DialogTitle>
         </DialogHeader>
         <RefundProcessForm
           refundId={refundId}

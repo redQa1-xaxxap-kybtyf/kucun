@@ -16,6 +16,7 @@ import type {
   RefundListQueryParams,
   RefundStatus,
 } from '@/lib/types/refund';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
 type RefundsQueryParams = RefundListQueryParams;
 
@@ -137,8 +138,9 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
   );
 
   const pagination = resolvedData.pagination;
-  const loadError =
-    error instanceof Error ? error.message : error ? String(error) : null;
+  const loadError = error
+    ? getFriendlyErrorMessage(error, '退款暂时无法加载，请稍后重试')
+    : null;
 
   // 防抖更新URL - 避免每次输入都触发导航
   const debouncedUpdateURL = useDebouncedCallback(
@@ -393,7 +395,7 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
       <div className="space-y-4 sm:space-y-6">
         <PageHeader
           title="退款处理"
-          description="跟踪退货产生的退款，优先处理待处理和待退款记录。"
+          description="跟踪退货产生的退款，优先处理待处理和待退款款项。"
           icon={<TrendingDown className="h-6 w-6 text-white" />}
           iconBgColor="hsl(var(--color-warning))"
           actions={

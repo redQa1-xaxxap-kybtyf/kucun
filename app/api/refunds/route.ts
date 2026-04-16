@@ -41,7 +41,7 @@ export const GET = withAuth(async (request: NextRequest) => {
       return NextResponse.json(
         {
           success: false,
-          error: '查询参数验证失败',
+          error: '查询条件有误，请检查后重试',
           details: queryResult.error.issues,
         },
         { status: 400 }
@@ -256,3 +256,4 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
     );
   }
 });
+

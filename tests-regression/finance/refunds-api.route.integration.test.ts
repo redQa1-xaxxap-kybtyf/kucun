@@ -74,7 +74,7 @@ describe('/api/refunds（集成回归）', () => {
     });
   });
 
-  test('GET /api/refunds：非法查询参数应返回 400', async () => {
+  test('GET /api/refunds：非法查询参数应返回更友好的 400 提示', async () => {
     const { GET } = await import('@/app/api/refunds/route');
     const response = await GET({
       nextUrl: new URL('http://localhost/api/refunds?status=not-a-status'),
@@ -86,7 +86,7 @@ describe('/api/refunds（集成回归）', () => {
     expect(body).toEqual(
       expect.objectContaining({
         success: false,
-        error: '查询参数验证失败',
+        error: '查询条件有误，请检查后重试',
         details: expect.any(Array),
       })
     );
