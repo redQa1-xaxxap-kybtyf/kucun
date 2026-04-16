@@ -7,6 +7,7 @@
 import { revalidatePath } from 'next/cache';
 
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import {
   PrintTemplateSchema,
   type PrintTemplate,
@@ -17,6 +18,10 @@ import {
   isSystemTemplateId,
   listSystemTemplates,
 } from '@/lib/print-designer/system-templates';
+import {
+  PRINT_TEMPLATE_STORAGE_UNAVAILABLE_MESSAGE,
+  isMissingPrintTemplatesTableError,
+} from '@/lib/print-designer/template-storage-guard';
 
 import { requireAdminUser, requireAuthUser } from './auth';
 
@@ -53,6 +58,70 @@ function parseTemplateContent(content: unknown): PrintTemplate | null {
   return result.success ? result.data : null;
 }
 
+type StoredTemplateListItem = Omit<TemplateListItem, 'createdAt' | 'updatedAt'> & {
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+function buildTemplateList(
+  storedTemplates: StoredTemplateListItem[],
+  type?: string
+): TemplateListItem[] {
+  const existingIds = new Set(storedTemplates.map(template => template.id));
+  const persistedDefaultTypes = new Set(
+    storedTemplates
+      .filter(template => template.isDefault)
+      .map(template => template.type)
+  );
+
+  const virtualSystemTemplates = listSystemTemplates(type)
+    .filter(template => !existingIds.has(template.id))
+    .map<TemplateListItem>(template => ({
+      id: template.id,
+      name: template.name,
+      type: template.type,
+      isDefault: !persistedDefaultTypes.has(template.type),
+      isSystem: true,
+      createdAt: template.createdAt ?? new Date().toISOString(),
+      updatedAt: template.updatedAt ?? new Date().toISOString(),
+    }));
+
+  return [...storedTemplates, ...virtualSystemTemplates]
+    .map(template => ({
+      ...template,
+      createdAt:
+        typeof template.createdAt === 'string'
+          ? template.createdAt
+          : template.createdAt.toISOString(),
+      updatedAt:
+        typeof template.updatedAt === 'string'
+          ? template.updatedAt
+          : template.updatedAt.toISOString(),
+    }))
+    .sort((left, right) => {
+      if (left.isDefault !== right.isDefault) {
+        return left.isDefault ? -1 : 1;
+      }
+
+      if (left.isSystem !== right.isSystem) {
+        return left.isSystem ? -1 : 1;
+      }
+
+      return right.updatedAt.localeCompare(left.updatedAt);
+    });
+}
+
+function logMissingPrintTemplatesTable(
+  action: string,
+  context?: Record<string, string | number | boolean | null | undefined>
+) {
+  logger.warn(
+    'print-templates',
+    `print_templates table missing; ${action}`,
+    context
+  );
+}
+
 // ============================================================================
 // CRUD Actions
 // ============================================================================
@@ -80,52 +149,19 @@ export async function getTemplates(
       },
     });
 
-    const existingIds = new Set(templates.map(template => template.id));
-    const persistedDefaultTypes = new Set(
-      templates
-        .filter(template => template.isDefault)
-        .map(template => template.type)
-    );
-
-    const virtualSystemTemplates = listSystemTemplates(type)
-      .filter(template => !existingIds.has(template.id))
-      .map<TemplateListItem>(template => ({
-        id: template.id,
-        name: template.name,
-        type: template.type,
-        isDefault: !persistedDefaultTypes.has(template.type),
-        isSystem: true,
-        createdAt: template.createdAt ?? new Date().toISOString(),
-        updatedAt: template.updatedAt ?? new Date().toISOString(),
-      }));
-
     return {
       success: true,
-      data: [...templates, ...virtualSystemTemplates]
-        .map(template => ({
-          ...template,
-          createdAt:
-            typeof template.createdAt === 'string'
-              ? template.createdAt
-              : template.createdAt.toISOString(),
-          updatedAt:
-            typeof template.updatedAt === 'string'
-              ? template.updatedAt
-              : template.updatedAt.toISOString(),
-        }))
-        .sort((left, right) => {
-          if (left.isDefault !== right.isDefault) {
-            return left.isDefault ? -1 : 1;
-          }
-
-          if (left.isSystem !== right.isSystem) {
-            return left.isSystem ? -1 : 1;
-          }
-
-          return right.updatedAt.localeCompare(left.updatedAt);
-        }),
+      data: buildTemplateList(templates, type),
     };
   } catch (error) {
+    if (isMissingPrintTemplatesTableError(error)) {
+      logMissingPrintTemplatesTable('using system templates only', { type });
+      return {
+        success: true,
+        data: buildTemplateList([], type),
+      };
+    }
+
     return {
       success: false,
       error: error instanceof Error ? error.message : '获取模板列表失败',
@@ -168,6 +204,20 @@ export async function getTemplate(
 
     return { success: false, error: '模板不存在' };
   } catch (error) {
+    if (isMissingPrintTemplatesTableError(error)) {
+      logMissingPrintTemplatesTable('serving system template only', { id });
+
+      const systemTemplate = getSystemTemplateById(id);
+      if (systemTemplate) {
+        return {
+          success: true,
+          data: systemTemplate,
+        };
+      }
+
+      return { success: false, error: '模板不存在' };
+    }
+
     return {
       success: false,
       error: error instanceof Error ? error.message : '获取模板失败',
@@ -244,6 +294,17 @@ export async function saveTemplate(
       data: { id: validTemplate.id },
     };
   } catch (error) {
+    if (isMissingPrintTemplatesTableError(error)) {
+      logMissingPrintTemplatesTable('save blocked', {
+        templateId: template.id,
+        templateType: template.type,
+      });
+      return {
+        success: false,
+        error: PRINT_TEMPLATE_STORAGE_UNAVAILABLE_MESSAGE,
+      };
+    }
+
     return {
       success: false,
       error: error instanceof Error ? error.message : '保存模板失败',
@@ -258,12 +319,19 @@ export async function deleteTemplate(id: string): Promise<ActionResult> {
   try {
     await requireAdminUser();
 
+    if (isSystemTemplateId(id)) {
+      return {
+        success: false,
+        error: '系统内置模板不可删除，请复制后编辑自定义版本。',
+      };
+    }
+
     const existing = await prisma.printTemplate.findUnique({
       where: { id },
       select: { isSystem: true },
     });
 
-    if (existing?.isSystem || isSystemTemplateId(id)) {
+    if (existing?.isSystem) {
       return {
         success: false,
         error: '系统内置模板不可删除，请复制后编辑自定义版本。',
@@ -278,6 +346,14 @@ export async function deleteTemplate(id: string): Promise<ActionResult> {
 
     return { success: true };
   } catch (error) {
+    if (isMissingPrintTemplatesTableError(error)) {
+      logMissingPrintTemplatesTable('delete blocked', { id });
+      return {
+        success: false,
+        error: PRINT_TEMPLATE_STORAGE_UNAVAILABLE_MESSAGE,
+      };
+    }
+
     return {
       success: false,
       error: error instanceof Error ? error.message : '删除模板失败',
@@ -336,6 +412,14 @@ export async function setDefaultTemplate(
 
     return { success: true };
   } catch (error) {
+    if (isMissingPrintTemplatesTableError(error)) {
+      logMissingPrintTemplatesTable('set default blocked', { id, type });
+      return {
+        success: false,
+        error: PRINT_TEMPLATE_STORAGE_UNAVAILABLE_MESSAGE,
+      };
+    }
+
     return {
       success: false,
       error: error instanceof Error ? error.message : '设置默认模板失败',
@@ -396,6 +480,14 @@ export async function duplicateTemplate(
       data: { id: newId },
     };
   } catch (error) {
+    if (isMissingPrintTemplatesTableError(error)) {
+      logMissingPrintTemplatesTable('duplicate blocked', { id });
+      return {
+        success: false,
+        error: PRINT_TEMPLATE_STORAGE_UNAVAILABLE_MESSAGE,
+      };
+    }
+
     return {
       success: false,
       error: error instanceof Error ? error.message : '复制模板失败',
@@ -434,6 +526,14 @@ export async function getDefaultTemplate(
       data: systemTemplate,
     };
   } catch (error) {
+    if (isMissingPrintTemplatesTableError(error)) {
+      logMissingPrintTemplatesTable('using system default template', { type });
+      return {
+        success: true,
+        data: getSystemTemplate(type),
+      };
+    }
+
     return {
       success: false,
       error: error instanceof Error ? error.message : '获取默认模板失败',

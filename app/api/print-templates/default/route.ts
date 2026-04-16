@@ -2,12 +2,14 @@ import { NextResponse } from 'next/server';
 
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import {
   PrintTemplateSchema,
   TemplateTypeSchema,
   type PrintTemplate,
 } from '@/lib/print-designer/schemas';
 import { getSystemTemplate } from '@/lib/print-designer/system-templates';
+import { isMissingPrintTemplatesTableError } from '@/lib/print-designer/template-storage-guard';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,13 +32,34 @@ export const GET = withAuth(async request => {
     );
   }
 
-  const template = await prisma.printTemplate.findFirst({
-    where: {
-      type: typeResult.data,
-      isDefault: true,
-    },
-    orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
-  });
+  let template = null;
+
+  try {
+    template = await prisma.printTemplate.findFirst({
+      where: {
+        type: typeResult.data,
+        isDefault: true,
+      },
+      orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+    });
+  } catch (error) {
+    if (!isMissingPrintTemplatesTableError(error)) {
+      throw error;
+    }
+
+    logger.warn(
+      'print-templates',
+      'print_templates table missing; fallback to system template',
+      {
+        templateType: typeResult.data,
+      }
+    );
+
+    return NextResponse.json({
+      success: true,
+      data: getSystemTemplate(typeResult.data),
+    });
+  }
 
   if (template) {
     const content = parseTemplateContent(template.content);
