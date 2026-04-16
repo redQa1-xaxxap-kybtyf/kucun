@@ -34,10 +34,10 @@ export function ExpenseDeleteDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>确认删除</AlertDialogTitle>
           <AlertDialogDescription>
-            确定要删除费用记录 <strong>{expenseNumber}</strong> 吗？
+            确定要删除费用 <strong>{expenseNumber}</strong> 吗？
             <br />
             <span className="text-destructive font-medium">
-              此操作不可撤销，删除后将无法恢复费用记录数据。
+              此操作不可撤销，删除后将无法恢复这笔费用。
             </span>
           </AlertDialogDescription>
         </AlertDialogHeader>
@@ -62,4 +62,3 @@ export function ExpenseDeleteDialog({
     </AlertDialog>
   );
 }
-
