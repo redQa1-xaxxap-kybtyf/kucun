@@ -14,13 +14,13 @@ const prisma = new PrismaClient();
 
 // 数据验证模式
 export const OrderValidationSchema = z.object({
-  customerId: z.string().uuid('客户ID格式无效'),
-  userId: z.string().uuid('用户ID格式无效'),
+  customerId: z.string().uuid('客户信息格式无效'),
+  userId: z.string().uuid('用户编号格式无效'),
   items: z
     .array(
       z.object({
-        productId: z.string().uuid('产品ID格式无效').optional(),
-        variantId: z.string().uuid('变体ID格式无效').optional(),
+        productId: z.string().uuid('产品信息格式无效').optional(),
+        variantId: z.string().uuid('规格信息格式无效').optional(),
         quantity: z.number().positive('数量必须大于0'),
         unitPrice: z.number().min(0, '单价不能为负数'),
         unitCost: z
@@ -36,8 +36,8 @@ export const OrderValidationSchema = z.object({
 });
 
 export const InventoryReservationSchema = z.object({
-  productId: z.string().uuid('产品ID格式无效'),
-  variantId: z.string().uuid('变体ID格式无效').optional(),
+  productId: z.string().uuid('产品信息格式无效'),
+  variantId: z.string().uuid('规格信息格式无效').optional(),
   quantity: z.number().positive('预留数量必须大于0'),
   expirationHours: z.number().min(1).max(168).optional(), // 1小时到7天
 });
