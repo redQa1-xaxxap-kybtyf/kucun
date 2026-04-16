@@ -58,7 +58,7 @@ export const POST = withAuth(async (request: NextRequest) => {
       return NextResponse.json(
         {
           success: false,
-          error: '参数验证失败',
+          error: '提交内容有误，请检查后重试',
           details: validationResult.error.issues,
         },
         { status: 400 }
@@ -94,3 +94,4 @@ export const POST = withAuth(async (request: NextRequest) => {
     );
   }
 });
+

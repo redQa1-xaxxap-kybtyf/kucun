@@ -39,8 +39,8 @@ export type ActionResult<T = unknown> = {
 
 const createPaymentSchema = z
   .object({
-    salesOrderId: z.string().min(1, '销售订单 ID 不能为空'),
-    customerId: z.string().min(1, '客户 ID 不能为空'),
+    salesOrderId: z.string().min(1, '销售订单编号不能为空'),
+    customerId: z.string().min(1, '客户不能为空'),
     paymentAmount: z.number().positive('收款金额必须大于 0'),
     actualPaymentAmount: z.number().min(0, '实际收款金额不能为负'),
     roundingAmount: z
@@ -216,7 +216,7 @@ export async function confirmPaymentRecord(
 // ============================================
 
 const createPayableSchema = z.object({
-  supplierId: z.string().min(1, '供应商 ID 不能为空'),
+  supplierId: z.string().min(1, '供应商不能为空'),
   payableAmount: z.number().positive('应付金额必须大于 0'),
   sourceType: z.enum(['purchase', 'return', 'other']),
   sourceId: z.string().optional(),
@@ -291,7 +291,7 @@ export async function createPayableRecord(
 // ============================================
 
 const createPaymentOutSchema = z.object({
-  payableRecordId: z.string().min(1, '应付款 ID 不能为空'),
+  payableRecordId: z.string().min(1, '应付款编号不能为空'),
   paymentAmount: z.number().positive('付款金额必须大于 0'),
   paymentMethod: z.enum(['cash', 'bank_transfer', 'check', 'other']),
   paymentDate: z.date(),
@@ -428,9 +428,9 @@ export async function confirmPaymentOutRecord(
 // ============================================
 
 const createRefundSchema = z.object({
-  returnOrderId: z.string().min(1, '退货订单 ID 不能为空'),
-  salesOrderId: z.string().min(1, '销售订单 ID 不能为空'),
-  customerId: z.string().min(1, '客户 ID 不能为空'),
+  returnOrderId: z.string().min(1, '退货订单编号不能为空'),
+  salesOrderId: z.string().min(1, '销售订单编号不能为空'),
+  customerId: z.string().min(1, '客户不能为空'),
   refundType: z.enum(['full_refund', 'partial_refund', 'exchange_refund']),
   refundAmount: z.number().positive('退款金额必须大于 0'),
   refundMethod: z.enum([
@@ -577,3 +577,4 @@ export async function confirmRefundRecord(
     return { success: false, error: '确认退款记录失败' };
   }
 }
+
