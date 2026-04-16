@@ -91,10 +91,7 @@ export function InboundSummaryCard({
     () => can(session?.user ?? null, 'inventory:adjust'),
     [session?.user]
   );
-  const piecesPerUnit =
-    record.batchSpecification?.piecesPerUnit ??
-    record.product?.piecesPerUnit ??
-    0;
+  const piecesPerUnit = record.batchSpecification?.piecesPerUnit ?? 0;
   const hasDamage = Boolean(
     record.damagedQuantity && record.damagedQuantity > 0
   );
@@ -193,7 +190,7 @@ export function InboundSummaryCard({
           ...(hasDamage
             ? [
                 {
-                  label: '破损参考金额',
+                  label: '破损金额参考',
                   value:
                     record.damageTotalCost !== undefined &&
                     record.damageTotalCost !== null
@@ -224,7 +221,7 @@ export function InboundSummaryCard({
           <div className="space-y-1.5 text-left">
             <CardTitle className="flex items-center justify-start gap-2 text-lg font-black tracking-tight text-slate-900 sm:text-xl">
               <Package className="h-5 w-5 text-blue-600" />
-              数字入库单 {record.recordNumber}
+              入库单 {record.recordNumber}
             </CardTitle>
             <p className="flex flex-wrap items-center justify-start gap-2 text-xs font-bold text-slate-400">
               <span className="flex items-center gap-1">
@@ -233,7 +230,7 @@ export function InboundSummaryCard({
               {updatedAt && (
                 <>
                   <span className="h-3 w-px bg-slate-200" />
-                  <span>最后修订：{updatedAt}</span>
+                  <span>最后更新：{updatedAt}</span>
                 </>
               )}
             </p>

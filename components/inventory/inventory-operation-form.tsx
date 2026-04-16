@@ -9,6 +9,7 @@ import { AlertCircle, Package, TrendingDown, TrendingUp } from 'lucide-react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Form } from '@/components/ui/form';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import type { Inventory } from '@/lib/types/inventory';
 
 import { InventoryAvailabilityAlert } from './forms/InventoryAvailabilityAlert';
@@ -17,6 +18,7 @@ import { InventoryDetailForm } from './forms/InventoryDetailForm';
 import { InventoryFormActions } from './forms/InventoryFormActions';
 import { InventoryFormHeader } from './forms/InventoryFormHeader';
 import {
+  type FormValuesByMode,
   type OperationMode,
   useInventoryOperationForm,
 } from './hooks/useInventoryOperationForm';
@@ -25,12 +27,14 @@ interface InventoryOperationFormProps {
   mode: OperationMode;
   onSuccess?: (result: Inventory) => void;
   onCancel?: () => void;
+  initialValues?: Partial<FormValuesByMode[OperationMode]>;
 }
 
 export function InventoryOperationForm({
   mode,
   onSuccess,
   onCancel,
+  initialValues,
 }: InventoryOperationFormProps) {
   const {
     form,
@@ -40,7 +44,7 @@ export function InventoryOperationForm({
     isLoading,
     onSubmit,
     getTypeOptions,
-  } = useInventoryOperationForm({ mode, onSuccess });
+  } = useInventoryOperationForm({ mode, onSuccess, initialValues } as const);
 
   // 获取图标组件
   const getIconComponent = () => {
@@ -57,6 +61,18 @@ export function InventoryOperationForm({
   };
 
   const IconComponent = getIconComponent();
+  const hasUnsavedChanges = form.formState.isDirty && !isLoading;
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前库存操作内容尚未保存，确定要离开吗？',
+  });
+  const handleCancel = () => {
+    if (!confirmLeavePage()) {
+      return;
+    }
+
+    onCancel?.();
+  };
 
   return (
     <div className="container mx-auto space-y-6 py-6">
@@ -65,7 +81,7 @@ export function InventoryOperationForm({
         title={formConfig.title}
         description={formConfig.description}
         IconComponent={IconComponent}
-        onCancel={onCancel}
+        onCancel={handleCancel}
       />
 
       {/* 错误提示 */}
@@ -103,7 +119,7 @@ export function InventoryOperationForm({
           <InventoryFormActions
             mode={mode}
             isLoading={isLoading}
-            onCancel={onCancel}
+            onCancel={handleCancel}
           />
         </form>
       </Form>

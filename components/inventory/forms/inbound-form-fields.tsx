@@ -174,7 +174,7 @@ export function InboundSpecificationFields({ form }: InboundFormFieldsProps) {
                 />
               </FormControl>
               <FormDescription className="text-xs text-gray-500">
-                当前按件录入，系统需要用装箱数折算成片数。
+                当前按件录入，系统会按这里填写的数量换算成片数。
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -189,21 +189,21 @@ export function InboundSpecificationFields({ form }: InboundFormFieldsProps) {
         </div>
       )}
 
-      {/* 每件重量 */}
+      {/* 本批次实际每件重量 */}
       <FormField
         control={form.control}
         name="weight"
         render={({ field }) => (
           <FormItem>
             <FormLabel className="text-sm font-semibold text-slate-700">
-              每件重量 (kg)
+              本批次实际每件重量 (kg)
             </FormLabel>
             <FormControl>
               <Input
                 type="number"
                 min="0.01"
                 step="0.01"
-                placeholder="可选，不填也能提交"
+                placeholder="不填则本次不记录重量"
                 className="h-9"
                 name={field.name}
                 ref={field.ref}
@@ -214,6 +214,9 @@ export function InboundSpecificationFields({ form }: InboundFormFieldsProps) {
                 }
               />
             </FormControl>
+            <FormDescription className="text-xs text-slate-500">
+              这里填这次到货这一批的实际重量；不填也可以。
+            </FormDescription>
             <FormMessage />
           </FormItem>
         )}
@@ -405,7 +408,7 @@ export function InboundPurchaseDamageSection({ form }: InboundFormFieldsProps) {
   return (
     <div className="space-y-4 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 sm:p-5">
       <p className="text-sm leading-6 font-medium text-amber-900">
-        这里只登记收货当场已经确认的破损。系统会自动从到货数量中扣减破损数量，库存只记合格数量。
+        这里只填写收货时已经确认的破损。提交后会从到货数量里扣掉这部分，库存只记能正常入库的数量。
       </p>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -461,7 +464,7 @@ export function InboundPurchaseDamageSection({ form }: InboundFormFieldsProps) {
                 />
               </FormControl>
               <FormDescription className="text-xs text-slate-500">
-                按同一装箱数自动折算，不计入库存
+                会按同样的每件片数自动换算，这部分不计入库存
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -503,7 +506,7 @@ export function InboundPurchaseDamageSection({ form }: InboundFormFieldsProps) {
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
         <div className="rounded-xl border border-white/70 bg-white/80 p-4">
           <p className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
-            合格入库
+            实际入库
           </p>
           <p className="mt-1 text-lg font-black text-slate-900">
             {formatNumber(acceptedQuantity)}片

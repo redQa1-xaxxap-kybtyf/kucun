@@ -3,6 +3,10 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
+import {
+  getBatchPiecesPerUnitFromMap,
+  loadBatchPiecesPerUnitMap,
+} from '@/lib/utils/batch-pieces-per-unit';
 
 type RouteParams =
   | {
@@ -24,7 +28,7 @@ const getInventoryAdjustmentDetail = async (
 
     if (!id) {
       return NextResponse.json(
-        { success: false, error: '调整记录ID不能为空' },
+        { success: false, error: '调整记录编号不能为空' },
         { status: 400 }
       );
     }
@@ -83,6 +87,18 @@ const getInventoryAdjustmentDetail = async (
       );
     }
 
+    const batchPiecesMap = await loadBatchPiecesPerUnitMap([
+      {
+        productId: adjustment.productId,
+        variantId: adjustment.variantId,
+        batchNumber: adjustment.batchNumber,
+      },
+    ]);
+    const batchPiecesPerUnit = getBatchPiecesPerUnitFromMap(
+      batchPiecesMap,
+      adjustment
+    );
+
     // 格式化数据
     const formattedAdjustment = {
       id: adjustment.id,
@@ -90,6 +106,7 @@ const getInventoryAdjustmentDetail = async (
       productId: adjustment.productId,
       variantId: adjustment.variantId,
       batchNumber: adjustment.batchNumber,
+      batchPiecesPerUnit,
       beforeQuantity: adjustment.beforeQuantity,
       adjustQuantity: adjustment.adjustQuantity,
       afterQuantity: adjustment.afterQuantity,

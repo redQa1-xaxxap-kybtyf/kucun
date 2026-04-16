@@ -1,5 +1,6 @@
-import { createInMemoryPrisma } from '../helpers/in-memory-prisma';
 import { buildFifoConflictUserMessage } from '@/lib/services/fifo-transaction-retry';
+
+import { createInMemoryPrisma } from '../helpers/in-memory-prisma';
 
 jest.mock('@/lib/logger', () => ({
   logger: {
@@ -983,6 +984,73 @@ describe('库存核心链路（集成回归）', () => {
         userId
       )
     ).rejects.toThrow('不能低于预留数量');
+  });
+
+  test('库存调整（报损）：应自动生成手工报损台账并带出处理方式', async () => {
+    const productId = 'prod-8a';
+    const batchNumber = 'B8A';
+    const userId = 'user-8a';
+
+    const { store } = resetPrisma({
+      products: [{ id: productId, name: '产品I', code: 'P008A', unit: '片' }],
+      users: [{ id: userId, name: '报损员' }],
+      inventories: [
+        {
+          id: 'inv-8a',
+          productId,
+          variantId: null,
+          batchNumber,
+          quantity: 10,
+          reservedQuantity: 0,
+          unitCost: 7,
+          updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+        },
+      ],
+      fifoQueue: [
+        {
+          id: 'q-8a',
+          productId,
+          variantId: null,
+          batchNumber,
+          inboundRecordId: 'inb-8a',
+          remainingQty: 10,
+          unitCost: 7,
+          inboundDate: new Date('2025-12-31T00:00:00.000Z'),
+          updatedAt: new Date('2025-12-31T00:00:01.000Z'),
+        },
+      ],
+    });
+
+    const { executeAdjustmentTransaction } = await import(
+      '@/app/api/inventory/adjust/route'
+    );
+
+    const result = await executeAdjustmentTransaction(
+      {
+        productId,
+        batchNumber,
+        adjustQuantity: -2,
+        reason: 'damage_loss',
+        damageCategory: 'scrap',
+        damageHandling: 'supplier_claim',
+        notes: '两片边角破损，等待工厂确认',
+      },
+      userId
+    );
+
+    expect((result.adjustment as any).totalCost).toBe(-14);
+    expect(store.manualDamageLedgersById.size).toBe(1);
+
+    const ledger = Array.from(store.manualDamageLedgersById.values())[0] as any;
+    expect(ledger.adjustmentId).toBe((result.adjustment as any).id);
+    expect(ledger.productId).toBe(productId);
+    expect(ledger.batchNumber).toBe(batchNumber);
+    expect(ledger.damagedQuantity).toBe(2);
+    expect(ledger.damageCategory).toBe('scrap');
+    expect(ledger.damageHandling).toBe('supplier_claim');
+    expect(ledger.status).toBe('pending_claim');
+    expect(ledger.referenceAmount).toBe(14);
+    expect(ledger.remarks).toContain('等待工厂确认');
   });
 
   test('库存调整：批次号缺失应强校验失败', async () => {

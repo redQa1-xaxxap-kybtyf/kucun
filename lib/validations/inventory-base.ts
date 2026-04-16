@@ -14,7 +14,7 @@ import {
 
 // 基础验证规则
 export const baseValidations = {
-  productId: z.string().min(1, '请选择产品').uuid('产品ID格式不正确'),
+  productId: z.string().min(1, '请选择产品').uuid('产品信息格式不正确'),
 
   quantity: z
     .number()
@@ -37,15 +37,15 @@ export const baseValidations = {
 
   supplierId: z
     .string()
-    .uuid('供应商ID格式不正确')
+    .uuid('供应商信息格式不正确')
     .optional()
     .or(z.literal('')),
 
-  customerId: z.string().uuid('客户ID格式不正确').optional().or(z.literal('')),
+  customerId: z.string().uuid('客户信息格式不正确').optional().or(z.literal('')),
 
   salesOrderId: z
     .string()
-    .uuid('销售订单ID格式不正确')
+    .uuid('销售订单信息格式不正确')
     .optional()
     .or(z.literal('')),
 

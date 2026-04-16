@@ -31,7 +31,7 @@ export function BatchPageHeader({
               批次规格管理
             </h1>
             <p className="max-w-md text-sm leading-relaxed font-medium text-slate-500">
-              精准维护每个产品批次的装箱数与重量参数，确保全系统数据一致性。
+              在这里维护每个批次的每件片数和重量，方便入库、出库和库存核对时直接使用。
             </p>
           </div>
         </div>
@@ -54,7 +54,7 @@ export function BatchPageHeader({
               onClick={onCreate}
             >
               <Plus className="h-5 w-5 transition-transform group-hover:rotate-90" />
-              新建批次规格
+              新增批次资料
             </Button>
           )}
         </div>

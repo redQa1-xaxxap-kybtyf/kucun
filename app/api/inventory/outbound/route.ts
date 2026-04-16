@@ -87,7 +87,7 @@ type OutboundRecordWithProduct = {
     code: string;
     name: string;
     specification: string | null;
-    piecesPerUnit: number;
+    piecesPerUnit: number | null;
   };
 };
 
@@ -102,7 +102,7 @@ function formatOutboundRecord(record: OutboundRecordWithProduct) {
     productCode: record.product.code,
     productName: record.product.name,
     productSpecification: record.product.specification,
-    piecesPerUnit: record.product.piecesPerUnit,
+    piecesPerUnit: record.product.piecesPerUnit ?? undefined,
     batchNumber: record.batchNumber,
     quantity: record.quantity,
     type: record.reason,

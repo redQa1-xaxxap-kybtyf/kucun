@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { reportErrorBoundary } from '@/lib/services/error-reporting-service';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
 /**
  * 库存模块错误边界
@@ -40,11 +41,11 @@ export default function InventoryError({
         </h2>
 
         <p className="mb-6 text-gray-600">
-          {error.message || '发生了未知错误，请稍后重试'}
+          {getFriendlyErrorMessage(error, '页面暂时无法打开，请稍后重试')}
         </p>
 
         {error.digest && (
-          <p className="mb-4 text-xs text-gray-500">错误 ID: {error.digest}</p>
+          <p className="mb-4 text-xs text-gray-500">参考编号：{error.digest}</p>
         )}
 
         <div className="flex justify-center gap-3">

@@ -75,14 +75,14 @@ const getActualWeight = (record: OutboundRecord) => {
 
 // 格式化数量显示
 const formatQuantity = (quantity: number, piecesPerUnit?: number) => {
-  if (!piecesPerUnit || piecesPerUnit <= 0) {
-    return `${quantity} 片`;
+  if (!piecesPerUnit || piecesPerUnit <= 1) {
+    return `${quantity}片`;
   }
   const units = Math.floor(quantity / piecesPerUnit);
   const pieces = quantity % piecesPerUnit;
 
-  if (units === 0) return `${pieces} 片`;
-  if (pieces === 0) return `${units} 件`;
+  if (units === 0) return `${pieces}片`;
+  if (pieces === 0) return `${units}件`;
   return `${units}件 + ${pieces}片`;
 };
 

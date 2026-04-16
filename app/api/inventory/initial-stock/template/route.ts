@@ -3,9 +3,9 @@ import * as XLSX from 'xlsx';
 
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
-import { toNumberOrNull } from '@/lib/utils/number';
 
 type InitialStockTemplateSource = 'blank' | 'products';
+const ACTUAL_BATCH_WEIGHT_HEADER = '本批次实际每件重量(kg)';
 
 type TemplateRow = {
   产品编码: string;
@@ -14,7 +14,7 @@ type TemplateRow = {
   色号: string;
   批次号: string;
   装箱数: number | string;
-  '每件重量(kg)': number | string;
+  '本批次实际每件重量(kg)': number | string;
   数量: number | string;
   数量单位: string;
   单片成本: number | string;
@@ -29,8 +29,6 @@ type ProductReferenceRow = {
   规格: string;
   色号: string;
   色号名称: string;
-  装箱数: number | string;
-  '默认重量(kg)': number | string;
   产品状态: string;
 };
 
@@ -49,8 +47,8 @@ function readTemplateSource(request: NextRequest): InitialStockTemplateSource {
 function createInstructionSheet(source: InitialStockTemplateSource) {
   const sourceTip =
     source === 'products'
-      ? '当前模板已按产品库自动预填产品编码、名称、规格、色号和装箱数，建议直接填写批次号、数量、数量单位、单片成本、库位和备注。日常瓷砖盘点多数按“件”录入，系统会自动按装箱数换算成片；单片成本始终按“每片”填写。单片成本支持 3 位小数。'
-      : '建议优先下载“产品库模板”，系统会自动预填产品信息和装箱数，用户只需填写数量、数量单位和单片成本。日常按件盘点时，数量单位请直接填“件”；单片成本始终按“每片”填写。单片成本支持 3 位小数。';
+      ? '当前模板会自动预填产品编码、名称、规格和色号，建议直接填写批次号、数量、数量单位、单片成本、库位和备注。若按“件”录入，必须在该行填写装箱数；单片成本始终按“每片”填写。单片成本支持 3 位小数。'
+      : '建议优先下载“产品库模板”，系统会自动预填产品基础信息，用户只需补充批次号、数量、数量单位、装箱数和单片成本。日常按件盘点时，数量单位请直接填“件”，并在当前行填写装箱数；单片成本始终按“每片”填写。单片成本支持 3 位小数。';
 
   return XLSX.utils.aoa_to_sheet([
     ['字段', '是否必填', '说明'],
@@ -79,12 +77,12 @@ function createInstructionSheet(source: InitialStockTemplateSource) {
     [
       '装箱数',
       '否',
-      '填写后用于本次导入批次的装箱数；若留空，系统默认使用产品管理中维护的装箱数',
+      '按“件”导入时必填，用于把件数换算成片数；按“片”导入时可留空',
     ],
     [
-      '每件重量(kg)',
+      ACTUAL_BATCH_WEIGHT_HEADER,
       '否',
-      '填写后用于本次导入批次的每件重量；若留空，系统默认使用产品管理中维护的重量',
+      '填写后用于记录本次导入批次的实际每件重量；留空则本次不记录重量',
     ],
     ['数量', '是', '填写录入数量，必须为大于 0 的整数'],
     [
@@ -107,7 +105,7 @@ function createInstructionSheet(source: InitialStockTemplateSource) {
     [
       '导入规则',
       '说明',
-      '正式导入时，只允许导入产品管理中已存在且通过校验的产品；数量单位填写“件”时，若模板和产品档案都没有装箱数，会直接报错，防止把件数错当片数',
+      '正式导入时，只允许导入产品管理中已存在且通过校验的产品；数量单位填写“件”时，当前行必须填写装箱数，防止把件数错当片数',
     ],
     ['推荐流程', '说明', sourceTip],
   ]);
@@ -118,8 +116,6 @@ function buildTemplateRows(
     code: string;
     name: string;
     specification: string | null;
-    piecesPerUnit: number;
-    weight: unknown;
     variants: Array<{
       colorCode: string;
       colorName: string | null;
@@ -146,10 +142,10 @@ function buildTemplateRows(
             规格: product.specification ?? '',
             色号: '',
             批次号: '',
-            装箱数: product.piecesPerUnit ?? '',
-            '每件重量(kg)': toNumberOrNull(product.weight) ?? '',
+            装箱数: '',
+            [ACTUAL_BATCH_WEIGHT_HEADER]: '',
             数量: '',
-            数量单位: '件',
+            数量单位: '',
             单片成本: '',
             供应商: '',
             库位: '',
@@ -164,10 +160,10 @@ function buildTemplateRows(
         规格: product.specification ?? '',
         色号: variant.colorCode,
         批次号: '',
-        装箱数: product.piecesPerUnit ?? '',
-        '每件重量(kg)': toNumberOrNull(product.weight) ?? '',
+        装箱数: '',
+        [ACTUAL_BATCH_WEIGHT_HEADER]: '',
         数量: '',
-        数量单位: '件',
+        数量单位: '',
         单片成本: '',
         供应商: '',
         库位: '',
@@ -188,7 +184,7 @@ function buildTemplateRows(
       色号: 'A01',
       批次号: '2026-03',
       装箱数: 4,
-      '每件重量(kg)': 32,
+      [ACTUAL_BATCH_WEIGHT_HEADER]: 32,
       数量: 100,
       数量单位: '件',
       单片成本: 12.5,
@@ -203,7 +199,7 @@ function buildTemplateRows(
       色号: 'A02',
       批次号: '2026-03',
       装箱数: 4,
-      '每件重量(kg)': 32,
+      [ACTUAL_BATCH_WEIGHT_HEADER]: 32,
       数量: 80,
       数量单位: '件',
       单片成本: 12.5,
@@ -218,7 +214,7 @@ function buildTemplateRows(
       色号: 'A01',
       批次号: '2026-04',
       装箱数: 4,
-      '每件重量(kg)': 32.5,
+      [ACTUAL_BATCH_WEIGHT_HEADER]: 32.5,
       数量: 60,
       数量单位: '件',
       单片成本: 12.8,
@@ -234,8 +230,6 @@ function buildProductReferenceRows(
     code: string;
     name: string;
     specification: string | null;
-    piecesPerUnit: number;
-    weight: unknown;
     status: string;
     variants: Array<{
       colorCode: string;
@@ -253,8 +247,6 @@ function buildProductReferenceRows(
           规格: product.specification ?? '',
           色号: '',
           色号名称: '',
-          装箱数: product.piecesPerUnit ?? '',
-          '默认重量(kg)': toNumberOrNull(product.weight) ?? '',
           产品状态: product.status === 'active' ? '启用' : '停用',
         },
       ];
@@ -266,8 +258,6 @@ function buildProductReferenceRows(
       规格: product.specification ?? '',
       色号: variant.colorCode,
       色号名称: variant.colorName ?? '',
-      装箱数: product.piecesPerUnit ?? '',
-      '默认重量(kg)': toNumberOrNull(product.weight) ?? '',
       产品状态:
         product.status === 'active' && variant.status === 'active'
           ? '启用'
@@ -287,8 +277,6 @@ function buildProductReferenceRows(
       规格: '',
       色号: '',
       色号名称: '',
-      装箱数: '',
-      '默认重量(kg)': '',
       产品状态: '',
     },
   ];
@@ -305,7 +293,8 @@ function buildSupplierReferenceRows(
   if (suppliers.length === 0) {
     return [
       {
-        供应商名称: '当前系统还没有供应商数据，请先在供应商管理中维护后再导入。',
+        供应商名称:
+          '当前系统还没有供应商数据，请先在供应商管理中维护后再导入。',
         供应商编码: '',
         联系电话: '',
         状态: '',
@@ -333,8 +322,6 @@ export const GET = withAuth(
           code: true,
           name: true,
           specification: true,
-          piecesPerUnit: true,
-          weight: true,
           status: true,
           variants: {
             select: {

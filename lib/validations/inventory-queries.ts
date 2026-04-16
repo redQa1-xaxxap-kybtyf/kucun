@@ -311,7 +311,7 @@ export const inventoryQuerySchema = z
 // 库存搜索表单验证
 export const inventorySearchSchema = z.object({
   search: z.string().max(100, '搜索关键词不能超过100个字符').optional(),
-  productId: z.string().uuid('产品ID格式不正确').optional().or(z.literal('')),
+  productId: z.string().uuid('产品信息格式不正确').optional().or(z.literal('')),
   batchNumber: z
     .string()
     .max(50, '批次号不能超过50个字符')
@@ -333,8 +333,8 @@ export const inboundRecordSearchSchema = z
       .enum(['normal_inbound', 'return_inbound', 'adjust_inbound'])
       .optional()
       .or(z.literal('')),
-    productId: z.string().uuid('产品ID格式不正确').optional().or(z.literal('')),
-    userId: z.string().uuid('用户ID格式不正确').optional().or(z.literal('')),
+    productId: z.string().uuid('产品信息格式不正确').optional().or(z.literal('')),
+    userId: z.string().uuid('用户编号格式不正确').optional().or(z.literal('')),
     startDate: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, '开始日期格式不正确')
@@ -373,22 +373,23 @@ export const outboundRecordSearchSchema = z
         'normal_outbound',
         'sales_outbound',
         'sample_outbound',
+        'internal_use_outbound',
         'adjust_outbound',
       ])
       .optional()
       .or(z.literal('')),
-    productId: z.string().uuid('产品ID格式不正确').optional().or(z.literal('')),
+    productId: z.string().uuid('产品信息格式不正确').optional().or(z.literal('')),
     customerId: z
       .string()
-      .uuid('客户ID格式不正确')
+      .uuid('客户信息格式不正确')
       .optional()
       .or(z.literal('')),
     salesOrderId: z
       .string()
-      .uuid('销售订单ID格式不正确')
+      .uuid('销售订单信息格式不正确')
       .optional()
       .or(z.literal('')),
-    userId: z.string().uuid('用户ID格式不正确').optional().or(z.literal('')),
+    userId: z.string().uuid('用户编号格式不正确').optional().or(z.literal('')),
     startDate: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, '开始日期格式不正确')

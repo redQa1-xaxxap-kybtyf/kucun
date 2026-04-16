@@ -1,5 +1,5 @@
 import { Building2, Calculator } from 'lucide-react';
-import type { Control, Path } from 'react-hook-form';
+import { useWatch, type Control, type Path } from 'react-hook-form';
 
 import { CustomerSelector } from '@/components/customers/customer-hierarchy';
 import {
@@ -25,7 +25,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { ADJUST_REASON_LABELS } from '@/lib/validations/inventory-operations';
+import {
+  ADJUST_REASON_LABELS,
+  MANUAL_DAMAGE_CATEGORY_LABELS,
+  MANUAL_DAMAGE_HANDLING_LABELS,
+} from '@/lib/validations/inventory-operations';
 
 import type {
   FormValuesByMode,
@@ -47,6 +51,22 @@ export function InventoryDetailForm<M extends OperationMode>({
   mode,
   isLoading,
 }: InventoryDetailFormProps<M>) {
+  const outboundControl =
+    control as unknown as Control<FormValuesByMode['outbound']>;
+  const adjustControl = control as unknown as Control<FormValuesByMode['adjust']>;
+  const watchedOutboundType = useWatch({
+    control: outboundControl,
+    name: 'type',
+  });
+  const watchedAdjustReason = useWatch({
+    control: adjustControl,
+    name: 'reason',
+  });
+  const outboundType = mode === 'outbound' ? watchedOutboundType : undefined;
+  const adjustReason = mode === 'adjust' ? watchedAdjustReason : undefined;
+  const requiresCustomer =
+    outboundType === 'sales_outbound' || outboundType === 'sample_outbound';
+
   return (
     <Card>
       <CardHeader>
@@ -82,7 +102,7 @@ export function InventoryDetailForm<M extends OperationMode>({
           )}
         />
 
-        {mode === 'outbound' && (
+        {mode === 'outbound' && requiresCustomer && (
           <FormField
             control={
               control as unknown as Control<FormValuesByMode['outbound']>
@@ -111,6 +131,12 @@ export function InventoryDetailForm<M extends OperationMode>({
             )}
           />
         )}
+
+        {mode === 'outbound' && !requiresCustomer ? (
+          <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-500">
+            当前类型无需选择客户。若本次是发给客户的销售或客户样品，请回到上方改为“销售出库”或“样品出库”。
+          </div>
+        ) : null}
 
         {mode === 'adjust' && (
           <FormField
@@ -142,6 +168,76 @@ export function InventoryDetailForm<M extends OperationMode>({
             )}
           />
         )}
+
+        {mode === 'adjust' && adjustReason === 'damage_loss' ? (
+          <>
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
+              报损保存后会自动登记到“手工报损台账”。如果后续需要找工厂赔付，在这里先选好处理方式，后面台账里可以继续跟进。
+            </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <FormField
+                control={control}
+                name={'damageCategory' as Path<FormValuesByMode[M]>}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>报损类型</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value as string | undefined}
+                      disabled={isLoading}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="请选择报损类型" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {Object.entries(MANUAL_DAMAGE_CATEGORY_LABELS).map(
+                          ([value, label]) => (
+                            <SelectItem key={value} value={value}>
+                              {label}
+                            </SelectItem>
+                          )
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={control}
+                name={'damageHandling' as Path<FormValuesByMode[M]>}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>处理方式</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value as string | undefined}
+                      disabled={isLoading}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="请选择处理方式" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {Object.entries(MANUAL_DAMAGE_HANDLING_LABELS).map(
+                          ([value, label]) => (
+                            <SelectItem key={value} value={value}>
+                              {label}
+                            </SelectItem>
+                          )
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </>
+        ) : null}
 
         <FormField
           control={control}

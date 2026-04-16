@@ -15,6 +15,7 @@ import {
   getWeightedAverageCostFromFIFOByBatch,
 } from '@/lib/services/fifo-cost-service';
 import { runWithFifoTransactionRetry } from '@/lib/services/fifo-transaction-retry';
+import { upsertManualDamageLedgerFromAdjustment } from '@/lib/services/manual-damage-ledger-service';
 import { generateAdjustmentNumber } from '@/lib/utils/adjustment-number-generator';
 import { roundCostPrice } from '@/lib/utils/cost-price';
 import { withIdempotency } from '@/lib/utils/idempotency';
@@ -30,6 +31,8 @@ interface AdjustmentData {
   batchNumber?: string;
   variantId?: string;
   notes?: string;
+  damageCategory?: 'damage' | 'scrap' | 'loss' | 'other';
+  damageHandling?: 'pending_confirm' | 'supplier_claim' | 'internal_loss';
 }
 
 /**
@@ -39,8 +42,16 @@ export async function executeAdjustmentTransaction(
   data: AdjustmentData,
   userId: string
 ) {
-  const { productId, adjustQuantity, reason, batchNumber, variantId, notes } =
-    data;
+  const {
+    productId,
+    adjustQuantity,
+    reason,
+    batchNumber,
+    variantId,
+    notes,
+    damageCategory,
+    damageHandling,
+  } = data;
 
   const normalizedBatchNumber =
     typeof batchNumber === 'string' ? batchNumber.trim() : '';
@@ -264,6 +275,22 @@ export async function executeAdjustmentTransaction(
               approvedAt: new Date(),
             },
           });
+
+          if (reason === 'damage_loss' && adjustQuantity < 0) {
+            await upsertManualDamageLedgerFromAdjustment(tx, {
+              adjustmentId: adjustmentRecord.id,
+              productId,
+              variantId: variantIdOrNull,
+              batchNumber: batchNumberOrNull,
+              damagedQuantity: Math.abs(adjustQuantity),
+              damageCategory: damageCategory ?? 'damage',
+              damageHandling: damageHandling ?? 'internal_loss',
+              referenceAmount:
+                totalCost === null ? null : Math.abs(roundCurrency(totalCost)),
+              remarks: notes,
+              createdById: userId,
+            });
+          }
 
           return { inventory: updatedInventory, adjustment: adjustmentRecord };
         },

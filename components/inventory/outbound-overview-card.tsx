@@ -32,6 +32,7 @@ const OUTBOUND_REASON_LABELS: Record<string, string> = {
   normal_outbound: '正常出库',
   sales_outbound: '销售出库',
   sample_outbound: '样品出库',
+  internal_use_outbound: '内部领用',
   transfer: '调拨出库',
   damage: '报损出库',
   adjust_outbound: '调整出库',

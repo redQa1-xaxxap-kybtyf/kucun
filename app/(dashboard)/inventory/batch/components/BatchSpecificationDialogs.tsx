@@ -72,7 +72,7 @@ export function BatchSpecificationDialogs({
         await createMutation.mutateAsync(values);
         toast({
           title: '创建成功',
-          description: '批次规格参数已创建并同步至库存。',
+          description: '批次资料已创建并同步到库存。',
           variant: 'success',
         });
       } else if (editingSpec) {
@@ -86,7 +86,7 @@ export function BatchSpecificationDialogs({
         });
         toast({
           title: '更新成功',
-          description: '批次规格参数已更新。',
+          description: '批次资料已更新。',
           variant: 'success',
         });
       }
@@ -145,7 +145,7 @@ export function BatchSpecificationDialogs({
               {formMode === 'create' ? '新建批次规格' : '编辑批次规格'}
             </DialogTitle>
             <DialogDescription className="sr-only">
-              维护批次规格参数，保存后会同步到对应库存和产品规格信息。
+              维护批次资料，保存后会同步到对应库存和产品资料中。
             </DialogDescription>
           </DialogHeader>
           <BatchSpecificationForm
@@ -184,7 +184,7 @@ export function BatchSpecificationDialogs({
             <AlertDialogDescription>
               {deletingSpec
                 ? `批次 ${deletingSpec.batchNumber} 删除后，将无法恢复。`
-                : '确认删除该批次规格参数吗？'}
+                : '确认删除这条批次资料吗？'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

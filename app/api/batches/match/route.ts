@@ -10,12 +10,12 @@ import { toNumberOrNull } from '@/lib/utils/number';
 
 // 批次匹配查询参数验证
 const batchMatchQuerySchema = z.object({
-  productId: z.string().uuid('产品ID格式不正确'),
+  productId: z.string().uuid('产品信息格式不正确'),
   productCode: z.string().min(1, '产品编码不能为空'),
   // 供应商ID 改为可选：仅用于补充显示，不再作为过滤条件
   supplierId: z
     .string()
-    .uuid('供应商ID格式不正确')
+    .uuid('供应商信息格式不正确')
     .optional()
     .or(z.literal('')),
   specification: z.string().optional(),
@@ -178,7 +178,7 @@ export async function GET(request: NextRequest) {
         {
           data: null,
           error: {
-            message: '参数验证失败',
+            message: '提交内容有误，请检查后重试',
             details: error.issues,
           },
         },
@@ -198,3 +198,4 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+

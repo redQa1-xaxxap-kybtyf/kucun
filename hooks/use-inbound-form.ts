@@ -109,26 +109,24 @@ export function calculateFinalQuantity(
 
     // ✅ 如果入库单位是"件"，必须有件片比才能换算
     if (inputUnit === 'units') {
-      if (!piecesPerUnit || piecesPerUnit <= 0) {
+      if (
+        !Number.isInteger(piecesPerUnit) ||
+        !piecesPerUnit ||
+        piecesPerUnit <= 0
+      ) {
         return undefined; // 缺少件片比，无法换算
       }
 
-      // 确保 piecesPerUnit 是有效的正整数
-      const validPiecesPerUnit =
-        Number.isInteger(piecesPerUnit) && piecesPerUnit > 0
-          ? piecesPerUnit
-          : 1;
-
       return calculateTotalPieces(
         { value: inputQuantity, unit: inputUnit },
-        validPiecesPerUnit
+        piecesPerUnit
       );
     }
 
     // 其他单位，直接返回输入数量
     return inputQuantity;
   } catch {
-    return inputQuantity;
+    return undefined;
   }
 }
 
@@ -213,33 +211,19 @@ export function useProductSelection(
       shouldDirty: false,
       shouldValidate: false,
     });
-    const hasPiecesPerUnit =
-      product.piecesPerUnit !== undefined && product.piecesPerUnit !== null;
-    form.setValue(
-      'piecesPerUnit',
-      hasPiecesPerUnit ? product.piecesPerUnit : undefined,
-      hasPiecesPerUnit
-        ? { shouldDirty: true, shouldValidate: false }
-        : { shouldDirty: false, shouldValidate: false }
-    );
+    form.setValue('piecesPerUnit', undefined, {
+      shouldDirty: false,
+      shouldValidate: false,
+    });
     form.setValue('batchNumber', '', {
       shouldDirty: false,
       shouldTouch: false,
       shouldValidate: false,
     });
-    const productWithWeight = product as ProductOption & {
-      weight?: number | null;
-    };
-    const hasWeight =
-      productWithWeight.weight !== undefined &&
-      productWithWeight.weight !== null;
-    form.setValue(
-      'weight',
-      hasWeight ? (productWithWeight.weight ?? undefined) : undefined,
-      hasWeight
-        ? { shouldDirty: true, shouldValidate: false }
-        : { shouldDirty: false, shouldValidate: false }
-    );
+    form.setValue('weight', undefined, {
+      shouldDirty: false,
+      shouldValidate: false,
+    });
 
     form.clearErrors([
       'productId',

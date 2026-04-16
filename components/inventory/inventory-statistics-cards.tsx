@@ -69,7 +69,7 @@ function buildStatCards(
           separator=","
         />
       ),
-      description: '当前全仓库存总评估价值',
+      description: '当前库存按成本估算的总金额',
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-500/10',
     });

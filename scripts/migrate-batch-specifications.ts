@@ -94,6 +94,16 @@ async function migrateBatchSpecifications(): Promise<MigrationResult> {
 
         // 3. 为每个批次创建规格参数记录
         for (const batchNumber of uniqueBatches) {
+          if (
+            typeof product.piecesPerUnit !== 'number' ||
+            product.piecesPerUnit <= 0
+          ) {
+            console.log(
+              `  ⏭️ 跳过批次 ${batchNumber}：产品未维护有效装箱数，无法迁移批次规格`
+            );
+            continue;
+          }
+
           try {
             const batchSpec = await prisma.batchSpecification.upsert({
               where: {

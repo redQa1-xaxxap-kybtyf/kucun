@@ -34,6 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import {
   downloadInitialStockImportTemplate,
   importInitialStock,
@@ -55,9 +56,8 @@ function getDefaultQuantityUnitCount(result: InitialStockImportResult | null) {
     return 0;
   }
 
-  return result.previewRows.filter(
-    row => row.quantityUnitSource === 'default'
-  ).length;
+  return result.previewRows.filter(row => row.quantityUnitSource === 'default')
+    .length;
 }
 
 function getQuantityUnitHintText(result: InitialStockImportResult | null) {
@@ -142,7 +142,7 @@ function InitialStockPreviewTable({
               <TableHead>色号</TableHead>
               <TableHead>批次号</TableHead>
               <TableHead>装箱数</TableHead>
-              <TableHead>每件重量(kg)</TableHead>
+              <TableHead>本批次实际每件重量(kg)</TableHead>
               <TableHead>录入数量</TableHead>
               <TableHead>数量单位</TableHead>
               <TableHead>入库片数</TableHead>
@@ -170,7 +170,7 @@ function InitialStockPreviewTable({
                       <div className="text-[11px] text-slate-500">
                         {row.piecesPerUnitSource === 'row'
                           ? '模板填写'
-                          : '产品档案'}
+                          : '产品资料'}
                       </div>
                     </div>
                   ) : (
@@ -182,7 +182,7 @@ function InitialStockPreviewTable({
                     <div className="space-y-0.5">
                       <div>{row.weight}</div>
                       <div className="text-[11px] text-slate-500">
-                        {row.weightSource === 'row' ? '模板填写' : '产品档案'}
+                        {row.weightSource === 'row' ? '模板填写' : '产品默认'}
                       </div>
                     </div>
                   ) : (
@@ -344,25 +344,25 @@ export function InitialStockImportDialog({
       const quantityUnitHint = getQuantityUnitHintText(previewResult);
 
       if (!previewResult.canImport) {
-        showWarning('预校验完成', {
+        showWarning('导入检查完成', {
           description: `没有可导入的数据，请根据错误明细修正后重试${quantityUnitHint}`,
         });
         return;
       }
 
       if (previewResult.duplicateCount > 0 || previewResult.errorCount > 0) {
-        showWarning('预校验完成', {
+        showWarning('导入检查完成', {
           description: `可导入 ${previewResult.validCount} 条，跳过 ${previewResult.duplicateCount} 条，错误 ${previewResult.errorCount} 条${quantityUnitHint}`,
         });
         return;
       }
 
-      showSuccess('预校验通过', {
+      showSuccess('导入检查通过', {
         description: `共 ${previewResult.validCount} 条数据可导入${quantityUnitHint}`,
       });
     },
     onError: error => {
-      showError('预校验失败', {
+      showError('导入检查失败', {
         description: error instanceof Error ? error.message : '请稍后重试',
       });
     },
@@ -423,6 +423,14 @@ export function InitialStockImportDialog({
   }, [onOpenChange, resetDialogState, router]);
 
   const isBusy = previewMutation.isPending || importMutation.isPending;
+  const hasImportedRows =
+    typeof result?.importedCount === 'number' && result.importedCount > 0;
+  const hasUnsavedChanges =
+    open && !isBusy && !hasImportedRows && file !== null;
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前导入内容尚未完成，确定要关闭吗？',
+  });
 
   const handleDialogOpenChange = (nextOpen: boolean) => {
     if (isBusy) {
@@ -430,6 +438,10 @@ export function InitialStockImportDialog({
     }
 
     if (!nextOpen) {
+      if (!confirmLeavePage()) {
+        return;
+      }
+
       resetDialogState();
     }
 
@@ -479,7 +491,7 @@ export function InitialStockImportDialog({
             期初库存批量导入
           </DialogTitle>
           <DialogDescription className="text-sm text-slate-600">
-            正式导入只会导入产品库中已存在且通过校验的产品。建议优先下载产品库模板，直接填写批次、装箱数、每件重量、数量、数量单位、单片成本、供应商和库位；数量单位填“件”时会按装箱数自动换算成片，但单片成本始终按“每片”填写；留空只会兼容旧模板按“片”处理。
+            正式导入只会导入产品库中已存在且检查通过的产品。建议优先下载产品库模板，直接填写批次、装箱数、本批次实际每件重量、数量、数量单位、单片成本、供应商和库位；数量单位填“件”时会按装箱数自动换算成片，但单片成本始终按“每片”填写；留空只会兼容旧模板按“片”处理。
           </DialogDescription>
         </DialogHeader>
 
@@ -487,8 +499,9 @@ export function InitialStockImportDialog({
           <Alert className="border-blue-200 bg-blue-50/80 text-blue-900">
             <PackageSearch className="h-4 w-4" />
             <AlertDescription className="leading-6">
-              推荐流程：先点“导出产品库模板”，系统会自动带出产品编码、名称、规格、色号；上传后先做预校验，再正式导入。一行只表示一个“产品编码
-              + 色号 + 批次”组合，同编号多个色号或多个批次请拆成多行。数量单位建议明确填写“件”或“片”，其中“件”会自动按装箱数换算成片；装箱数、每件重量不填时默认使用产品管理里的值；供应商按名称精确匹配，不填也可导入。遇到重复批次、已有库存或错误行时，系统会自动跳过并给出明细。
+              推荐流程：先点“导出产品库模板”，系统会自动带出产品编码、名称、规格、色号；上传后先做导入检查，再正式导入。一行只表示一个“产品编码
+              + 色号 +
+              批次”组合，同编号多个色号或多个批次请拆成多行。数量单位建议明确填写“件”或“片”，其中“件”会自动按装箱数换算成片；装箱数、本批次实际每件重量不填时默认使用产品管理里的默认值；供应商按名称精确匹配，不填也可导入。遇到重复批次、已有库存或错误行时，系统会自动跳过并给出明细。
             </AlertDescription>
           </Alert>
 
@@ -569,14 +582,16 @@ export function InitialStockImportDialog({
                     : '导入完成，成功导入的行已经直接写入库存，无需审核。'
                   : result.canImport
                     ? result.duplicateCount > 0 || result.errorCount > 0
-                      ? '正式导入时只会导入通过校验的行，跳过行和错误行都会保留明细。'
-                      : '预校验通过，可以直接执行正式导入。'
+                      ? '正式导入时只会导入检查通过的行，跳过行和错误行都会保留明细。'
+                      : '导入检查通过，可以直接执行正式导入。'
                     : '当前没有可导入数据，请根据错误明细修正后再重试。'}
               </AlertDescription>
             </Alert>
           )}
 
-          {result?.importedCount && result.importedCount > 0 && result.importBatchId ? (
+          {result?.importedCount &&
+          result.importedCount > 0 &&
+          result.importBatchId ? (
             <div className="rounded-2xl border border-blue-200 bg-blue-50/70 p-4">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div className="space-y-1">
@@ -636,7 +651,7 @@ export function InitialStockImportDialog({
             {previewMutation.isPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : null}
-            预校验
+            导入检查
           </Button>
           <Button
             type="button"

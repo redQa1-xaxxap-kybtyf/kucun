@@ -28,13 +28,13 @@ export const countItemStatusSchema = z.enum([
 // 盘点明细验证规则
 export const inventoryCountItemSchema = z.object({
   productId: z
-    .string({ message: '产品ID不能为空' })
-    .uuid('产品ID格式不正确')
+    .string({ message: '请选择产品' })
+    .uuid('产品信息格式不正确')
     .describe('产品ID'),
 
   variantId: z
     .string()
-    .uuid('产品变体ID格式不正确')
+    .uuid('产品规格信息格式不正确')
     .optional()
     .describe('产品变体ID（可选）'),
 
@@ -103,7 +103,7 @@ export const createInventoryCountSchema = z.object({
 
   categoryId: z
     .string()
-    .uuid('盘点分类ID格式不正确')
+    .uuid('盘点分类信息格式不正确')
     .optional()
     .describe('盘点分类ID（可选）'),
 
@@ -167,7 +167,7 @@ export const updateInventoryCountSchema = z.object({
 
   categoryId: z
     .string()
-    .uuid('盘点分类ID格式不正确')
+    .uuid('盘点分类信息格式不正确')
     .optional()
     .describe('盘点分类ID（可选）'),
 
@@ -225,7 +225,7 @@ export const inventoryCountFormSchema = z.object({
 
   categoryId: z
     .string()
-    .uuid('盘点分类ID格式不正确')
+    .uuid('盘点分类信息格式不正确')
     .optional()
     .describe('盘点分类ID（可选）'),
 
@@ -246,8 +246,8 @@ export const submitCountDataSchema = z.object({
     .array(
       z.object({
         id: z
-          .string({ message: '盘点明细ID不能为空' })
-          .uuid('盘点明细ID格式不正确')
+          .string({ message: '盘点明细编号不能为空' })
+          .uuid('盘点明细编号格式不正确')
           .describe('盘点明细ID'),
 
         actualQuantity: z
@@ -286,7 +286,7 @@ export const inventoryCountQuerySchema = z.object({
 
   categoryId: z
     .string()
-    .uuid('分类ID格式不正确')
+    .uuid('分类信息格式不正确')
     .optional()
     .describe('分类筛选（可选）'),
 
@@ -329,7 +329,7 @@ export const inventoryCountQuerySchema = z.object({
 
 // 盘点ID验证
 export const countIdSchema = z.object({
-  id: z.string().min(1, '盘点ID不能为空').uuid('盘点ID格式不正确'),
+  id: z.string().min(1, '盘点编号不能为空').uuid('盘点编号格式不正确'),
 });
 
 // 类型导出

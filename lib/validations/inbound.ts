@@ -111,7 +111,7 @@ export const createInboundSchema = z
 
     productId: z.string().min(1, '请选择产品'),
 
-    variantId: z.string().uuid('产品变体ID格式不正确').optional(),
+    variantId: z.string().uuid('产品规格信息格式不正确').optional(),
 
     // 用户输入的数量（根据选择的单位）
     // ✅ 使用 z.preprocess 正确处理 undefined、null、空字符串
@@ -222,7 +222,7 @@ export const createInboundSchema = z
 
     purchaseOrderId: z
       .string()
-      .uuid('采购订单ID格式不正确')
+      .uuid('采购订单信息格式不正确')
       .optional()
       .or(z.literal(''))
       .transform(val =>
@@ -231,7 +231,7 @@ export const createInboundSchema = z
 
     purchaseOrderItemId: z
       .string()
-      .uuid('采购订单明细ID格式不正确')
+      .uuid('采购订单明细信息格式不正确')
       .optional()
       .or(z.literal(''))
       .transform(val =>
@@ -241,7 +241,7 @@ export const createInboundSchema = z
     // 供应商字段（服务端创建入库时可选，按需要携带）
     supplierId: z
       .string()
-      .uuid('供应商ID格式不正确')
+      .uuid('供应商信息格式不正确')
       .optional()
       .or(z.literal(''))
       .transform(val =>
@@ -453,7 +453,7 @@ export const inboundQuerySchema = z.object({
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
           val
         ),
-      '产品ID格式不正确'
+      '产品信息格式不正确'
     ),
 
   reason: z
@@ -496,7 +496,7 @@ export const inboundQuerySchema = z.object({
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
           val
         ),
-      '用户ID格式不正确'
+      '用户编号格式不正确'
     ),
 
   startDate: z
@@ -543,7 +543,7 @@ export const batchInboundSchema = z.object({
 
 // 入库记录ID验证
 export const inboundIdSchema = z.object({
-  id: z.string().min(1, '入库记录ID不能为空').uuid('入库记录ID格式不正确'),
+  id: z.string().min(1, '入库记录编号不能为空').uuid('入库记录编号格式不正确'),
 });
 
 // 产品搜索验证
@@ -563,7 +563,7 @@ export const inboundFormSchema = z
   .object({
     productId: z.string().min(1, '请选择产品'),
 
-    variantId: z.string().uuid('产品变体ID格式不正确').optional(),
+    variantId: z.string().uuid('产品规格信息格式不正确').optional(),
 
     // 用户输入的数量（根据选择的单位）- ✅ 修复：使用 optional + refine 实现必填验证
     inputQuantity: z
@@ -683,20 +683,20 @@ export const inboundFormSchema = z
 
     purchaseOrderId: z
       .string()
-      .uuid('采购订单ID格式不正确')
+      .uuid('采购订单信息格式不正确')
       .optional()
       .or(z.literal('')),
 
     purchaseOrderItemId: z
       .string()
-      .uuid('采购订单明细ID格式不正确')
+      .uuid('采购订单明细信息格式不正确')
       .optional()
       .or(z.literal('')),
 
     // 供应商字段：普通入库必填，期初入库可选
     supplierId: z
       .string()
-      .uuid('供应商ID格式不正确')
+      .uuid('供应商信息格式不正确')
       .optional()
       .or(z.literal('')),
 

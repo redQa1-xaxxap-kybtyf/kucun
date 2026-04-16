@@ -11,6 +11,7 @@ import {
   ArrowUpFromLine,
   Package,
   Settings,
+  ShieldAlert,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -35,12 +36,12 @@ export function InventoryPageOverviewHeader() {
               库存总览管理
             </h1>
             <p className="text-sm font-medium text-slate-500">
-              实时穿透全仓产品库存状态 · 精准掌握周转效率与财务存证
+              一眼看清库存、周转和异常情况，仓库和财务都更方便核对
             </p>
           </div>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-3 xl:flex xl:w-auto xl:flex-wrap">
+        <div className="grid gap-3 md:grid-cols-4 xl:flex xl:w-auto xl:flex-wrap">
           {/* 入库入口 */}
           <Button
             variant="outline"
@@ -61,6 +62,18 @@ export function InventoryPageOverviewHeader() {
           >
             <ArrowUpFromLine className="mr-2 h-4 w-4" />
             办理出库
+          </Button>
+
+          <Button
+            variant="outline"
+            size="lg"
+            className="h-12 w-full border-slate-200 bg-white text-slate-600 shadow-sm hover:border-amber-100 hover:bg-amber-50 hover:text-amber-700"
+            onClick={() =>
+              router.push('/inventory/adjust?reason=damage_loss&open=1')
+            }
+          >
+            <ShieldAlert className="mr-2 h-4 w-4" />
+            报损处理
           </Button>
 
           {/* 调整/盘点入口 */}

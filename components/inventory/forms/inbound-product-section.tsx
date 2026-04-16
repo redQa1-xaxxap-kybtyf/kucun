@@ -44,7 +44,7 @@ export function InboundProductSection({
 
   const batchSpecs = selectedProduct?.batchSpecs ?? [];
   const isMultipleBatches = batchSpecs.length > 1;
-  const piecesPerUnitDisplay = useMemo(() => {
+  const batchSummaryDisplay = useMemo(() => {
     if (!selectedProduct) {
       return '—';
     }
@@ -53,21 +53,21 @@ export function InboundProductSection({
       !selectedProduct.batchSpecs ||
       selectedProduct.batchSpecs.length === 0
     ) {
-      const fallback = selectedProduct.piecesPerUnit;
-      return `${fallback ?? 1} 片`;
+      return '还没有历史批次';
     }
 
     if (selectedProduct.batchSpecs.length === 1) {
-      return `${selectedProduct.batchSpecs[0].piecesPerUnit} 片`;
+      return `${selectedProduct.batchSpecs[0].piecesPerUnit} 片/件`;
     }
 
-    return '多批次，可选现有批次或直接输入新批次';
+    return '有多个历史批次，可直接选，也可以手动录入新批次';
   }, [selectedProduct]);
 
   const handleBatchSelect = (spec: {
     batchNumber: string;
     piecesPerUnit: number;
     quantity: number;
+    weight?: number | null;
   }) => {
     form.setValue('batchNumber', spec.batchNumber, {
       shouldDirty: true,
@@ -77,17 +77,45 @@ export function InboundProductSection({
       shouldDirty: true,
       shouldValidate: false,
     });
+    form.setValue('weight', spec.weight ?? undefined, {
+      shouldDirty: true,
+      shouldValidate: false,
+    });
     // 重置数量，避免旧数据与新批次规格不一致
     form.setValue('inputQuantity', undefined, {
       shouldDirty: false,
       shouldTouch: false,
       shouldValidate: false,
     });
-    form.setValue('quantity', 0, {
+    form.setValue('quantity', undefined, {
       shouldDirty: false,
       shouldValidate: false,
     });
-    form.clearErrors(['batchNumber', 'piecesPerUnit', 'inputQuantity']);
+    form.setValue('damagedInputQuantity', undefined, {
+      shouldDirty: false,
+      shouldTouch: false,
+      shouldValidate: false,
+    });
+    form.setValue('damagedQuantity', undefined, {
+      shouldDirty: false,
+      shouldValidate: false,
+    });
+    form.setValue('damageHandling', undefined, {
+      shouldDirty: false,
+      shouldValidate: false,
+    });
+    form.setValue('damageRemarks', '', {
+      shouldDirty: false,
+      shouldValidate: false,
+    });
+    form.clearErrors([
+      'batchNumber',
+      'piecesPerUnit',
+      'inputQuantity',
+      'damagedInputQuantity',
+      'damagedQuantity',
+      'damageHandling',
+    ]);
   };
 
   const handleClearBatchSelection = () => {
@@ -96,9 +124,12 @@ export function InboundProductSection({
       shouldTouch: false,
       shouldValidate: false,
     });
-    const fallbackPiecesPerUnit = selectedProduct?.piecesPerUnit || undefined;
-    form.setValue('piecesPerUnit', fallbackPiecesPerUnit, {
-      shouldDirty: !!fallbackPiecesPerUnit,
+    form.setValue('piecesPerUnit', undefined, {
+      shouldDirty: false,
+      shouldValidate: false,
+    });
+    form.setValue('weight', undefined, {
+      shouldDirty: false,
       shouldValidate: false,
     });
     form.clearErrors(['batchNumber', 'piecesPerUnit']);
@@ -162,14 +193,14 @@ export function InboundProductSection({
               </span>
             </div>
             <div className="flex flex-col gap-0.5">
-              <span className="text-gray-600">装箱数</span>
+              <span className="text-gray-600">已有批次</span>
               <span
                 className={cn(
                   'font-medium',
                   isMultipleBatches ? 'text-amber-600' : 'text-gray-800'
                 )}
               >
-                {piecesPerUnitDisplay}
+                {batchSummaryDisplay}
               </span>
             </div>
             <div className="flex flex-col gap-0.5">
@@ -180,7 +211,7 @@ export function InboundProductSection({
             </div>
             {batchSpecs.length > 0 && (
               <div className="flex flex-col gap-1.5 border-t border-green-200 pt-3 sm:col-span-2 xl:col-span-6">
-                <span className="font-medium text-gray-600">现有批次参考</span>
+                <span className="font-medium text-gray-600">历史批次可参考</span>
                 <p className="text-muted-foreground text-xs">
                   如果现有入库数量和现有批次相同可直接选择，新增批次请直接输入。
                 </p>
@@ -234,11 +265,29 @@ export function InboundProductSection({
                             （共 {spec.quantity} 片）
                           </span>
                         </span>
-                        {selectedBatchNumber === spec.batchNumber && (
-                          <span className="ml-auto rounded-full bg-[hsl(var(--color-primary))] px-2 py-0.5 text-[11px] font-semibold text-white">
-                            已选中
-                          </span>
+                        {typeof spec.weight === 'number' && spec.weight > 0 && (
+                          <>
+                            <span className="text-gray-400">|</span>
+                            <span className="text-xs text-gray-700">
+                              实际重量{' '}
+                              <span className="font-semibold text-slate-900">
+                                {spec.weight}kg
+                              </span>
+                            </span>
+                          </>
                         )}
+                        <span
+                          className={cn(
+                            'ml-auto rounded-full px-2 py-0.5 text-[11px] font-semibold',
+                            selectedBatchNumber === spec.batchNumber
+                              ? 'bg-[hsl(var(--color-primary))] text-white'
+                              : 'bg-slate-100 text-slate-500'
+                          )}
+                        >
+                          {selectedBatchNumber === spec.batchNumber
+                            ? '已选中'
+                            : '未选中'}
+                        </span>
                       </button>
                     );
                   })}

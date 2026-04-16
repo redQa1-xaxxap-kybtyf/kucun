@@ -14,7 +14,7 @@ import { BatchSpecificationPageClient } from './page-client';
 
 export const metadata: Metadata = {
   title: '批次管理 - 库存管理',
-  description: '管理产品批次规格参数，维护每批次的片数、重量等信息',
+  description: '维护产品批次的装箱数、重量等信息',
 };
 
 export const dynamic = 'force-dynamic';

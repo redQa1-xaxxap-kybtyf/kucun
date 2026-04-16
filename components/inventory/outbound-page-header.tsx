@@ -7,7 +7,7 @@
  * 与入库页面保持高度一致的视觉语言
  */
 
-import { History, PackageX, Plus } from 'lucide-react';
+import { FlaskConical, PackageX, Plus, ShieldAlert } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
@@ -36,19 +36,31 @@ export function OutboundPageHeader() {
           </div>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-2 xl:flex xl:w-auto xl:flex-wrap">
-          {/* 出库历史/报表入口 - 预留 */}
+        <div className="grid gap-3 sm:grid-cols-2 xl:flex xl:w-auto xl:flex-wrap">
           <Button
             variant="outline"
             size="lg"
             className="h-12 w-full border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900"
-            onClick={() => router.push('/inventory/outbound/history')}
+            onClick={() =>
+              router.push('/inventory/outbound/create?type=sample_outbound')
+            }
           >
-            <History className="mr-2 h-4 w-4" />
-            查看汇总报表
+            <FlaskConical className="mr-2 h-4 w-4" />
+            客户样品
           </Button>
 
-          {/* 新增出库按钮 */}
+          <Button
+            variant="outline"
+            size="lg"
+            className="h-12 w-full border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900"
+            onClick={() =>
+              router.push('/inventory/adjust?reason=damage_loss&open=1')
+            }
+          >
+            <ShieldAlert className="mr-2 h-4 w-4" />
+            报损处理
+          </Button>
+
           <Button
             size="lg"
             className="h-12 w-full bg-rose-600 text-white shadow-lg shadow-rose-500/20 transition-all hover:bg-rose-700"

@@ -4,7 +4,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { getInventories, inventoryQueryKeys } from '@/lib/api/inventory';
 import type {
@@ -33,20 +33,20 @@ export function useInventoryAdjustPage() {
     data?.inventories || [];
 
   // 处理调整成功
-  const handleAdjustSuccess = () => {
+  const handleAdjustSuccess = useCallback(() => {
     setShowAdjustDialog(false);
     refetch();
-  };
+  }, [refetch]);
 
   // 打开调整对话框
-  const openAdjustDialog = () => {
+  const openAdjustDialog = useCallback(() => {
     setShowAdjustDialog(true);
-  };
+  }, []);
 
   // 关闭调整对话框
-  const closeAdjustDialog = () => {
+  const closeAdjustDialog = useCallback(() => {
     setShowAdjustDialog(false);
-  };
+  }, []);
 
   return {
     // 状态

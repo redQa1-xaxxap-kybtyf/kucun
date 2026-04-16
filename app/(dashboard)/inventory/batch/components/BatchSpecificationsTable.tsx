@@ -77,7 +77,7 @@ export function BatchSpecificationsTable({
                     装箱数
                   </TableHead>
                   <TableHead className="py-4 text-right font-black text-slate-500">
-                    重量 (kg)
+                    本批次实际每件重量 (kg)
                   </TableHead>
                   <TableHead className="py-4 font-black text-slate-500">
                     创建时间
@@ -288,7 +288,7 @@ export function BatchSpecificationsTable({
                     </div>
                     <div className="flex flex-col gap-1">
                       <span className="text-[9px] font-black tracking-wider text-slate-400 uppercase">
-                        重量
+                        本批次实际每件重量
                       </span>
                       <span className="text-sm font-black text-slate-700 tabular-nums">
                         {spec.weight

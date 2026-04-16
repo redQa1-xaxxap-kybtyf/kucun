@@ -29,6 +29,7 @@ import { getInventoryStatus } from '@/lib/types/inventory-status';
 import { PRODUCT_UNIT_LABELS } from '@/lib/types/product';
 import { formatCostPrice } from '@/lib/utils/cost-price';
 import { formatCurrency } from '@/lib/utils/format';
+import { formatInventoryGroupSummary } from '@/lib/utils/inventory-group-display';
 import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 
 interface InventoryGroupedTableProps {
@@ -48,8 +49,9 @@ interface ProductGroup {
   thumbnailUrl?: string; // 产品缩略图URL
   items: Inventory[];
   totalPieces: number; // 总片数
-  totalUnits: number; // 总件数
-  remainingPieces: number; // 剩余片数（汇总时保留不同包装的零头）
+  totalQuantityDisplay: string;
+  totalAvailablePieces: number;
+  totalAvailableDisplay: string;
 }
 
 /**
@@ -71,8 +73,9 @@ function groupByProduct(inventories: Inventory[]): ProductGroup[] {
         thumbnailUrl: inventory.product?.thumbnailUrl,
         items: [inventory],
         totalPieces: 0,
-        totalUnits: 0,
-        remainingPieces: 0,
+        totalQuantityDisplay: '0片',
+        totalAvailablePieces: 0,
+        totalAvailableDisplay: '0片',
       });
     } else {
       existingGroup.items.push(inventory);
@@ -85,18 +88,19 @@ function groupByProduct(inventories: Inventory[]): ProductGroup[] {
       (sum, item) => sum + item.quantity,
       0
     );
-    const firstItem = group.items[0];
-    const packaging =
-      firstItem.batchPiecesPerUnit ?? firstItem.product?.piecesPerUnit ?? 0;
-
     group.totalPieces = totalPieces;
-    if (packaging > 0) {
-      group.totalUnits = Math.floor(totalPieces / packaging);
-      group.remainingPieces = totalPieces % packaging;
-    } else {
-      group.totalUnits = 0;
-      group.remainingPieces = totalPieces;
-    }
+    group.totalQuantityDisplay = formatInventoryGroupSummary(
+      group.items,
+      'quantity'
+    );
+    group.totalAvailablePieces = group.items.reduce((sum, item) => {
+      const available = Math.max(item.quantity - (item.reservedQuantity ?? 0), 0);
+      return sum + available;
+    }, 0);
+    group.totalAvailableDisplay = formatInventoryGroupSummary(
+      group.items,
+      'available'
+    );
   });
 
   return Array.from(groups.values());
@@ -381,10 +385,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                       <div className="flex flex-col items-end gap-1.5">
                         {isFirstInGroup && group.items.length > 1 && (
                           <div className="rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-black text-white shadow-md ring-2 ring-white">
-                            汇总: {group.totalUnits}件
-                            {group.remainingPieces > 0
-                              ? `+${group.remainingPieces}片`
-                              : ''}
+                            汇总: {group.totalQuantityDisplay}
                           </div>
                         )}
                         <div
@@ -404,8 +405,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                         <div className="flex flex-col items-end gap-1.5">
                           {isFirstInGroup && group.items.length > 1 && (
                             <div className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[9px] font-black text-slate-600">
-                              总可用:{' '}
-                              {availableDisplay.replace('总计', '').trim()}
+                              总可用: {group.totalAvailableDisplay}
                             </div>
                           )}
                           <div

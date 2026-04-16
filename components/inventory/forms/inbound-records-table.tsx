@@ -25,6 +25,7 @@ import {
   INBOUND_REASON_LABELS,
   type InboundRecord as BaseInboundRecord,
 } from '@/lib/types/inbound';
+import { formatDetailedPieceSummary } from '@/lib/utils/piece-calculation';
 
 interface InboundRecordWithProduct
   extends Omit<BaseInboundRecord, 'product' | 'batchSpecification'> {
@@ -32,7 +33,7 @@ interface InboundRecordWithProduct
     code: string;
     name: string;
     specification?: string;
-    piecesPerUnit: number;
+    piecesPerUnit?: number;
     weight?: number | null;
   };
   batchSpecification?: {
@@ -109,36 +110,16 @@ const formatSpecification = (specification?: string) => {
 };
 
 // 格式化数量显示（X件Y片（共XX片））
-const formatQuantity = (quantity: number, piecesPerUnit: number) => {
-  // 数据验证
-  if (!quantity || !piecesPerUnit || piecesPerUnit <= 0) {
-    return `${quantity || 0}片`;
-  }
-
-  const units = Math.floor(quantity / piecesPerUnit);
-  const pieces = quantity % piecesPerUnit;
-
-  if (units === 0) {
-    return `${pieces}片`;
-  }
-
-  if (pieces === 0) {
-    return `${units}件（共${quantity}片）`;
-  }
-
-  return `${units}件${pieces}片（共${quantity}片）`;
-};
+const formatQuantity = (quantity: number, piecesPerUnit?: number | null) =>
+  formatDetailedPieceSummary(quantity, piecesPerUnit ?? 0);
 
 // 获取记录实际使用的每件片数（优先使用批次规格参数）
 const getActualPiecesPerUnit = (record: InboundRecordWithProduct) =>
-  record.batchSpecification?.piecesPerUnit ??
-  record.product?.piecesPerUnit ??
-  1;
+  record.batchSpecification?.piecesPerUnit ?? record.product?.piecesPerUnit ?? 0;
 
 // 获取记录的重量（优先使用批次规格参数）
 const getActualWeight = (record: InboundRecordWithProduct) => {
-  const weight =
-    record.batchSpecification?.weight ?? record.product?.weight ?? null;
+  const weight = record.batchSpecification?.weight ?? null;
   return weight ? `${weight.toFixed(2)} kg` : '-';
 };
 
@@ -187,7 +168,7 @@ export function InboundRecordsTable({
         {records.length === 0 ? (
           <EmptyState
             title="暂无入库记录"
-            description="还没有任何入库流水，您可以先创建一条入库记录。"
+            description="还没有入库单，先新增一笔入库。"
             icon={<Package className="text-muted-foreground h-6 w-6" />}
             action={
               <Button size="sm" asChild>
@@ -238,11 +219,12 @@ export function InboundRecordsTable({
                         </Badge>
                       </span>
                       <span className="flex items-center gap-1">
-                        包装：
+                        每件片数：
                         <span className="font-bold text-slate-600">
-                          {piecesPerUnit}
-                        </span>{' '}
-                        片/件
+                          {piecesPerUnit > 0
+                            ? `${piecesPerUnit} 片/件`
+                            : '未填写'}
+                        </span>
                       </span>
                       <span>重量：{getActualWeight(record)}</span>
                     </div>
@@ -507,14 +489,18 @@ function InboundRecordRow({
         </div>
       </TableCell>
       <TableCell className="text-xs font-bold whitespace-nowrap text-slate-500">
-        <div className="flex items-center gap-1.5">
-          <span className="text-sm font-black text-slate-700">
-            {piecesPerUnit}
-          </span>
-          <span className="rounded-md border border-blue-50 bg-blue-50/30 px-1.5 py-0.5 text-[10px] font-black text-blue-500">
-            片/件
-          </span>
-        </div>
+        {piecesPerUnit > 0 ? (
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm font-black text-slate-700">
+              {piecesPerUnit}
+            </span>
+            <span className="rounded-md border border-blue-50 bg-blue-50/30 px-1.5 py-0.5 text-[10px] font-black text-blue-500">
+              片/件
+            </span>
+          </div>
+        ) : (
+          <span className="text-xs text-slate-400">未记录</span>
+        )}
       </TableCell>
       <TableCell className="text-right whitespace-nowrap">
         <div className="flex flex-col items-end gap-1">
@@ -568,7 +554,7 @@ function InboundRecordRow({
           {record.reason === 'opening_balance' ? (
             <div className="space-y-2">
               <div className="text-[11px] font-bold text-amber-700">
-                导入错误可直接在这里处理
+                这批期初数据可在这里直接修改
               </div>
               <OpeningBalanceRecordActions record={record} compact />
             </div>

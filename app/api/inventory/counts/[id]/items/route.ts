@@ -20,8 +20,8 @@ const addCountItemsSchema = z.object({
   items: z
     .array(
       z.object({
-        productId: z.string().uuid('产品ID格式错误'),
-        variantId: z.string().uuid('变体ID格式错误').optional(),
+        productId: z.string().uuid('产品信息格式有误'),
+        variantId: z.string().uuid('规格信息格式有误').optional(),
         batchNumber: z.string().optional(),
         location: z.string().optional(),
         remarks: z.string().optional(),
@@ -46,7 +46,7 @@ export const POST = withAuth(
 
     if (!idValidationResult.success) {
       return errorResponse(
-        `参数验证失败: ${idValidationResult.error.issues[0]?.message}`,
+        `提交内容有误： ${idValidationResult.error.issues[0]?.message}`,
         400
       );
     }
@@ -71,3 +71,4 @@ export const POST = withAuth(
   }),
   { permissions: ['inventory:manage'] }
 );
+

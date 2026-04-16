@@ -35,21 +35,15 @@ export function ProductOptionItem({
       return `${totalPieces}片 (多批次)`;
     }
 
-    // 如果只有一个批次或没有批次，使用该批次的每件片数或产品默认值
     const effectivePiecesPerUnit =
-      batchSpecs.length > 0
-        ? batchSpecs[0].piecesPerUnit || 1
-        : product.piecesPerUnit || 1;
+      batchSpecs.length > 0 ? batchSpecs[0].piecesPerUnit : undefined;
 
-    return formatPieceSummary(totalPieces, effectivePiecesPerUnit, {
-      fallbackUnit: '片',
-    });
-  }, [
-    product.currentStock,
-    product.piecesPerUnit,
-    batchSpecs,
-    isMultipleBatches,
-  ]);
+    return effectivePiecesPerUnit && effectivePiecesPerUnit > 0
+      ? formatPieceSummary(totalPieces, effectivePiecesPerUnit, {
+          fallbackUnit: '片',
+        })
+      : `${totalPieces}片`;
+  }, [product.currentStock, batchSpecs, isMultipleBatches]);
 
   return (
     <div className="flex w-full items-center justify-between gap-3">

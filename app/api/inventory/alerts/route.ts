@@ -43,7 +43,7 @@ const getInventoryAlertsHandler = withAuth(async (request: NextRequest) => {
     if (!validationResult.success) {
       logger.warn(
         'inventory-alerts',
-        '查询参数验证失败',
+        '查询条件有误，请检查后重试',
         {
           severity: queryParams.severity ?? 'all',
           limit: queryParams.limit ?? undefined,
@@ -56,7 +56,7 @@ const getInventoryAlertsHandler = withAuth(async (request: NextRequest) => {
       return NextResponse.json(
         {
           success: false,
-          error: '查询参数验证失败',
+          error: '查询条件有误，请检查后重试',
           details: validationResult.error.issues,
         },
         { status: 400 }
@@ -436,3 +436,4 @@ const getInventoryAlertsHandler = withAuth(async (request: NextRequest) => {
 });
 
 export const GET = withRateLimit(RateLimitType.READ)(getInventoryAlertsHandler);
+

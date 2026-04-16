@@ -19,6 +19,7 @@ import {
   type InventoryAdjustment,
 } from '@/lib/types/inventory';
 import { formatDateTimeCN } from '@/lib/utils/datetime';
+import { formatDetailedPieceSummary } from '@/lib/utils/piece-calculation';
 
 interface AdjustmentDetailDialogProps {
   adjustment: InventoryAdjustment | null;
@@ -34,6 +35,9 @@ export function AdjustmentDetailDialog({
   if (!adjustment) {
     return null;
   }
+
+  const piecesPerUnit =
+    adjustment.batchPiecesPerUnit ?? adjustment.product?.piecesPerUnit ?? 0;
 
   // 格式化调整数量显示
   const formatAdjustQuantity = (quantity: number) => {
@@ -169,6 +173,14 @@ export function AdjustmentDetailDialog({
                   </p>
                 </div>
               )}
+              <div>
+                <Label className="text-muted-foreground text-sm font-medium">
+                  装箱数
+                </Label>
+                <p className="mt-1 text-sm">
+                  {piecesPerUnit > 0 ? `${piecesPerUnit}片/件` : '—'}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -183,7 +195,10 @@ export function AdjustmentDetailDialog({
                   调整前数量
                 </Label>
                 <p className="mt-1 text-lg font-medium">
-                  {adjustment.beforeQuantity}
+                  {formatDetailedPieceSummary(
+                    adjustment.beforeQuantity,
+                    piecesPerUnit
+                  )}
                 </p>
               </div>
               <div>
@@ -199,7 +214,10 @@ export function AdjustmentDetailDialog({
                   调整后数量
                 </Label>
                 <p className="mt-1 text-lg font-medium">
-                  {adjustment.afterQuantity}
+                  {formatDetailedPieceSummary(
+                    adjustment.afterQuantity,
+                    piecesPerUnit
+                  )}
                 </p>
               </div>
             </div>

@@ -1,4 +1,5 @@
 import {
+  AlertTriangle,
   ArrowUpRight,
   BarChart3,
   Briefcase,
@@ -106,6 +107,18 @@ export const navigationItems: NavigationItem[] = [
         title: '入库记录',
         href: '/inventory/inbound',
         icon: TrendingUp,
+      },
+      {
+        id: 'inventory-purchase-damage',
+        title: '到货破损台账',
+        href: '/inventory/purchase-damage',
+        icon: AlertTriangle,
+      },
+      {
+        id: 'inventory-manual-damage',
+        title: '手工报损台账',
+        href: '/inventory/manual-damage',
+        icon: AlertTriangle,
       },
       {
         id: 'inventory-outbound',
@@ -223,13 +236,13 @@ export const navigationItems: NavigationItem[] = [
       },
       {
         id: 'finance-payments',
-        title: '已收款记录',
+        title: '收款管理',
         href: '/finance/payments',
         icon: CreditCard,
       },
       {
         id: 'finance-payments-out',
-        title: '付款记录',
+        title: '付款管理',
         href: '/finance/payments-out',
         icon: ArrowUpRight,
       },
@@ -247,7 +260,7 @@ export const navigationItems: NavigationItem[] = [
       },
       {
         id: 'finance-expenses',
-        title: '费用记录',
+        title: '费用管理',
         href: '/finance/expenses',
         icon: Receipt,
       },

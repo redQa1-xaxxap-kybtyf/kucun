@@ -3,7 +3,6 @@ import { randomBytes } from 'node:crypto';
 import { generateBatchNumberOutsideTransaction } from '@/lib/api/batch-number-generator';
 import { executeMinimalInboundTransaction } from '@/lib/api/minimal-inbound-transaction';
 import { prisma } from '@/lib/db';
-import { toNumberOrNull } from '@/lib/utils/number';
 import {
   initialStockImportSchema,
   initialStockRowSchema,
@@ -38,9 +37,9 @@ export interface InitialStockImportPreviewRow {
   quantityUnit: InitialStockQuantityUnit;
   quantityUnitSource: 'row' | 'default';
   piecesPerUnit?: number;
-  piecesPerUnitSource?: 'row' | 'product';
+  piecesPerUnitSource?: 'row';
   weight?: number;
-  weightSource?: 'row' | 'product';
+  weightSource?: 'row';
   quantity: number;
   unitCost: number;
   supplierName?: string;
@@ -72,8 +71,6 @@ type ProductLookup = {
   code: string;
   name: string;
   specification: string | null;
-  piecesPerUnit: number;
-  weight: unknown;
   variants: Array<{
     id: string;
     colorCode: string;
@@ -102,10 +99,10 @@ type PreparedInitialStockRow = {
   quantityUnit: InitialStockQuantityUnit;
   quantityUnitSource: 'row' | 'default';
   piecesPerUnit?: number;
-  piecesPerUnitSource?: 'row' | 'product';
+  piecesPerUnitSource?: 'row';
   batchPiecesPerUnit?: number;
   weight?: number;
-  weightSource?: 'row' | 'product';
+  weightSource?: 'row';
   quantity: number;
   unitCost: number;
   supplierId?: string;
@@ -126,6 +123,34 @@ function normalizeInitialStockRowAliases(
   row: InitialStockRowInput
 ): InitialStockRowInput {
   const normalizedRow = { ...(row as Record<string, unknown>) };
+
+  if (
+    normalizedRow['本批次实际每件重量(kg)'] === undefined &&
+    normalizedRow['每件重量(kg)'] !== undefined
+  ) {
+    normalizedRow['本批次实际每件重量(kg)'] = normalizedRow['每件重量(kg)'];
+  }
+
+  if (
+    normalizedRow['本批次实际每件重量(kg)'] === undefined &&
+    normalizedRow['每件重量'] !== undefined
+  ) {
+    normalizedRow['本批次实际每件重量(kg)'] = normalizedRow['每件重量'];
+  }
+
+  if (
+    normalizedRow['本批次实际每件重量(kg)'] === undefined &&
+    normalizedRow['重量(kg)'] !== undefined
+  ) {
+    normalizedRow['本批次实际每件重量(kg)'] = normalizedRow['重量(kg)'];
+  }
+
+  if (
+    normalizedRow['本批次实际每件重量(kg)'] === undefined &&
+    normalizedRow['重量'] !== undefined
+  ) {
+    normalizedRow['本批次实际每件重量(kg)'] = normalizedRow['重量'];
+  }
 
   if (
     normalizedRow.单位成本 === undefined &&
@@ -545,28 +570,15 @@ function resolveVariant(
 
 function resolvePiecesPerUnit(
   parsedRow: ParsedInitialStockRow,
-  product: ProductLookup
+  _product: ProductLookup
 ) {
-  const productPiecesPerUnit =
-    typeof product.piecesPerUnit === 'number' && product.piecesPerUnit > 0
-      ? product.piecesPerUnit
-      : undefined;
   const rowPiecesPerUnit = parsedRow.row.装箱数;
 
   if (typeof rowPiecesPerUnit === 'number' && rowPiecesPerUnit > 0) {
     return {
       piecesPerUnit: rowPiecesPerUnit,
       piecesPerUnitSource: 'row' as const,
-      batchPiecesPerUnit:
-        rowPiecesPerUnit !== productPiecesPerUnit ? rowPiecesPerUnit : undefined,
-    };
-  }
-
-  if (typeof productPiecesPerUnit === 'number' && productPiecesPerUnit > 0) {
-    return {
-      piecesPerUnit: productPiecesPerUnit,
-      piecesPerUnitSource: 'product' as const,
-      batchPiecesPerUnit: undefined,
+      batchPiecesPerUnit: rowPiecesPerUnit,
     };
   }
 
@@ -609,14 +621,15 @@ function resolveQuantity(
     return {
       error: createImportError(
         parsedRow.rowNumber,
-        '数量单位填写“件”时，必须填写装箱数，或先在产品管理里维护该产品的装箱数',
+        '数量单位填写“件”时，当前行必须填写装箱数',
         '装箱数',
         productCode
       ),
     };
   }
 
-  const convertedQuantity = inputQuantity * piecesPerUnitResolution.piecesPerUnit;
+  const convertedQuantity =
+    inputQuantity * piecesPerUnitResolution.piecesPerUnit;
 
   if (!Number.isSafeInteger(convertedQuantity) || convertedQuantity <= 0) {
     return {
@@ -639,25 +652,17 @@ function resolveQuantity(
 
 function resolveWeight(
   parsedRow: ParsedInitialStockRow,
-  product: ProductLookup
+  _product: ProductLookup
 ): {
   weight?: number;
-  weightSource?: 'row' | 'product';
+  weightSource?: 'row';
 } {
-  const rowWeight = parsedRow.row['每件重量(kg)'];
+  const rowWeight = parsedRow.row['本批次实际每件重量(kg)'];
 
   if (typeof rowWeight === 'number' && rowWeight > 0) {
     return {
       weight: rowWeight,
       weightSource: 'row',
-    };
-  }
-
-  const productWeight = toNumberOrNull(product.weight);
-  if (productWeight && productWeight > 0) {
-    return {
-      weight: productWeight,
-      weightSource: 'product',
     };
   }
 
@@ -1011,7 +1016,10 @@ async function prepareInitialStockImportRows(rows: InitialStockRowInput[]) {
       productResolution.product.code,
       piecesPerUnitResolution
     );
-    const weightResolution = resolveWeight(parsedRow, productResolution.product);
+    const weightResolution = resolveWeight(
+      parsedRow,
+      productResolution.product
+    );
     const supplierResolution = resolveSupplier(
       parsedRow,
       context,

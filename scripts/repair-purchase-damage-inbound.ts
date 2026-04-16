@@ -19,6 +19,8 @@
  *   npx tsx scripts/repair-purchase-damage-inbound.ts --recordId=<uuid> --arrival=7377 --damaged=12
  */
 
+import type { Prisma } from '@prisma/client';
+
 import { refreshPurchaseOrderFulfillment } from '@/lib/api/purchase-orders/fulfillment';
 import { prisma } from '@/lib/db';
 import { calculateTotalCost } from '@/lib/utils/cost-calculation';
@@ -123,7 +125,7 @@ function sumQueueRemaining(entries: QueueEntry[]): number {
 }
 
 async function reduceQueueRemaining(
-  tx: typeof prisma,
+  tx: Prisma.TransactionClient,
   entries: QueueEntry[],
   delta: number
 ): Promise<void> {

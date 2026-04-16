@@ -20,7 +20,7 @@ export interface FormattedInventory {
   unitCost?: number;
   updatedAt: string;
   batchPiecesPerUnit?: number;
-  weight?: number; // 产品重量(kg) - 优先使用批次级重量，回退到产品默认重量
+  weight?: number; // 重量(kg) - 优先使用批次实际重量，回退到产品默认重量
   product: {
     id: string;
     code: string;

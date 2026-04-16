@@ -55,6 +55,25 @@ export function findProductInventoryBatch(
   );
 }
 
+export function getProductSelectableInventoryBatches(
+  product?: Pick<Product, 'inventory'> | null
+) {
+  return (product?.inventory?.batches ?? []).filter(
+    batch => getInventoryBatchAvailableQuantity(batch) > 0
+  );
+}
+
+export function requiresProductBatchSelection(
+  product?: Pick<Product, 'inventory'> | null,
+  batchNumber?: string | null
+) {
+  if (normalizeBatchNumber(batchNumber)) {
+    return false;
+  }
+
+  return getProductSelectableInventoryBatches(product).length > 1;
+}
+
 export function getProductAvailableQuantity(
   product?: Pick<Product, 'inventory'> | null,
   batchNumber?: string | null
@@ -67,6 +86,19 @@ export function getProductAvailableQuantity(
   }
 
   const available = toSafeNumber(product?.inventory?.availableQuantity);
+  const batchAvailableQuantity = (product?.inventory?.batches ?? []).reduce(
+    (sum, batch) => sum + getInventoryBatchAvailableQuantity(batch),
+    0
+  );
+
+  if ((product?.inventory?.batches?.length ?? 0) > 0) {
+    if (available === undefined) {
+      return batchAvailableQuantity;
+    }
+
+    return Math.max(Math.max(available, 0), batchAvailableQuantity);
+  }
+
   if (available === undefined) {
     return undefined;
   }

@@ -37,7 +37,7 @@ export const GET = withAuth(
 
     if (!validationResult.success) {
       return errorResponse(
-        `参数验证失败: ${validationResult.error.issues[0]?.message}`,
+        `提交内容有误： ${validationResult.error.issues[0]?.message}`,
         400
       );
     }
@@ -70,7 +70,7 @@ export const PUT = withAuth(
 
     if (!idValidationResult.success) {
       return errorResponse(
-        `参数验证失败: ${idValidationResult.error.issues[0]?.message}`,
+        `提交内容有误： ${idValidationResult.error.issues[0]?.message}`,
         400
       );
     }
@@ -119,7 +119,7 @@ export const DELETE = withAuth(
 
     if (!validationResult.success) {
       return errorResponse(
-        `参数验证失败: ${validationResult.error.issues[0]?.message}`,
+        `提交内容有误： ${validationResult.error.issues[0]?.message}`,
         400
       );
     }
@@ -138,3 +138,4 @@ export const DELETE = withAuth(
   },
   { permissions: ['inventory:manage'] }
 );
+

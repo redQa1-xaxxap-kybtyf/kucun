@@ -221,7 +221,7 @@ function ProductInfoCard({
       <CardHeader className="border-b border-slate-100 bg-slate-50/50 px-6 py-4">
         <CardTitle className="flex items-center text-sm font-black tracking-wider text-slate-500 uppercase">
           <Tag className="mr-2 h-4 w-4 text-violet-500" />
-          核心产品参数
+          核心产品信息
         </CardTitle>
       </CardHeader>
       <CardContent className="p-6">

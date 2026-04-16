@@ -63,9 +63,10 @@ export default function AdjustmentRecordsError({
         </div>
 
         {process.env.NODE_ENV === 'development' && error.digest && (
-          <p className="mt-4 text-xs text-gray-500">错误 ID: {error.digest}</p>
+          <p className="mt-4 text-xs text-gray-500">参考编号：{error.digest}</p>
         )}
       </div>
     </div>
   );
 }
+

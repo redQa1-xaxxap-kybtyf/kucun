@@ -10,6 +10,7 @@ export type InMemoryPrismaStore = {
   fifoById: Map<string, Record<string, unknown>>;
   outboundById: Map<string, Record<string, unknown>>;
   adjustmentsById: Map<string, Record<string, unknown>>;
+  manualDamageLedgersById: Map<string, Record<string, unknown>>;
   orderSequencesByKey: Map<string, Record<string, unknown>>;
 };
 
@@ -188,6 +189,7 @@ export function createInMemoryPrisma(seed?: SeedData): {
     fifoById: new Map(),
     outboundById: new Map(),
     adjustmentsById: new Map(),
+    manualDamageLedgersById: new Map(),
     orderSequencesByKey: new Map(),
   };
 
@@ -485,6 +487,9 @@ export function createInMemoryPrisma(seed?: SeedData): {
             where.productId !== undefined &&
             r.productId !== where.productId
           ) {
+            return false;
+          }
+          if (where.supplierId?.not === null && r.supplierId === null) {
             return false;
           }
           if (!matchNullable(r.variantId ?? null, where.variantId))
@@ -821,6 +826,113 @@ export function createInMemoryPrisma(seed?: SeedData): {
       },
     },
 
+    manualDamageLedger: {
+      findUnique: async (args: any) => {
+        const id = args?.where?.id as string | undefined;
+        const adjustmentId = args?.where?.adjustmentId as string | undefined;
+        const record = id
+          ? store.manualDamageLedgersById.get(id)
+          : Array.from(store.manualDamageLedgersById.values()).find(
+              (entry: any) => entry.adjustmentId === adjustmentId
+            );
+        if (!record) return null;
+
+        if (args?.include) {
+          return hydrateManualDamageLedger(record);
+        }
+
+        return clone(record);
+      },
+
+      create: async (args: any) => {
+        const data = args?.data ?? {};
+        const createdAt = now();
+        const rec: any = {
+          id: String(data.id ?? genId('mdl')),
+          ledgerNumber: String(data.ledgerNumber),
+          adjustmentId: String(data.adjustmentId),
+          productId: String(data.productId),
+          variantId: data.variantId ?? null,
+          supplierId: data.supplierId ?? null,
+          batchNumber: data.batchNumber ?? null,
+          damagedQuantity: Number(data.damagedQuantity ?? 0),
+          damageCategory: String(data.damageCategory ?? 'damage'),
+          damageHandling: String(data.damageHandling ?? 'pending_confirm'),
+          referenceAmount:
+            data.referenceAmount === undefined || data.referenceAmount === null
+              ? null
+              : Number(data.referenceAmount),
+          status: String(data.status ?? 'pending_review'),
+          remarks: data.remarks ?? null,
+          createdById: String(data.createdById),
+          lastHandledById: data.lastHandledById ?? null,
+          claimedAt: data.claimedAt ?? null,
+          resolvedAt: data.resolvedAt ?? null,
+          createdAt,
+          updatedAt: createdAt,
+        };
+        store.manualDamageLedgersById.set(rec.id, clone(rec));
+
+        if (args?.include) {
+          return hydrateManualDamageLedger(rec);
+        }
+
+        return clone(rec);
+      },
+
+      update: async (args: any) => {
+        const id = args?.where?.id as string | undefined;
+        const adjustmentId = args?.where?.adjustmentId as string | undefined;
+        const existingEntry = id
+          ? store.manualDamageLedgersById.get(id)
+          : Array.from(store.manualDamageLedgersById.values()).find(
+              (entry: any) => entry.adjustmentId === adjustmentId
+            );
+
+        if (!existingEntry) {
+          throw new Error('NotFound');
+        }
+
+        const updated: any = clone(existingEntry);
+        const data = args?.data ?? {};
+
+        for (const field of [
+          'productId',
+          'variantId',
+          'supplierId',
+          'batchNumber',
+          'damageCategory',
+          'damageHandling',
+          'status',
+          'remarks',
+          'lastHandledById',
+          'claimedAt',
+          'resolvedAt',
+        ]) {
+          if (data[field] !== undefined) {
+            updated[field] = data[field];
+          }
+        }
+
+        if (data.damagedQuantity !== undefined) {
+          updated.damagedQuantity = Number(data.damagedQuantity);
+        }
+        if (data.referenceAmount !== undefined) {
+          updated.referenceAmount =
+            data.referenceAmount === null ? null : Number(data.referenceAmount);
+        }
+
+        updated.updatedAt = now();
+        store.manualDamageLedgersById.set(updated.id, clone(updated));
+
+        if (args?.include) {
+          return hydrateManualDamageLedger(updated);
+        }
+
+        return clone(updated);
+      },
+    },
+
     orderSequence: {
       upsert: async (args: any) => {
         const where = args?.where?.sequenceType_dateKey;
@@ -876,6 +988,25 @@ export function createInMemoryPrisma(seed?: SeedData): {
     },
   };
 
+  function hydrateManualDamageLedger(record: any) {
+    const adjustment = store.adjustmentsById.get(String(record.adjustmentId));
+    const product = store.productsById.get(String(record.productId));
+    const createdBy = store.usersById.get(String(record.createdById));
+    const lastHandledBy =
+      record.lastHandledById === null || record.lastHandledById === undefined
+        ? null
+        : store.usersById.get(String(record.lastHandledById)) ?? null;
+
+    return {
+      ...clone(record),
+      adjustment: adjustment ? clone(adjustment) : null,
+      product: product ? clone(product) : null,
+      supplier: null,
+      createdBy: createdBy ? clone(createdBy) : null,
+      lastHandledBy: lastHandledBy ? clone(lastHandledBy) : null,
+    };
+  }
+
   const snapshotStore = () => ({
     productsById: new Map(
       Array.from(store.productsById.entries()).map(([k, v]) => [k, clone(v)])
@@ -899,6 +1030,12 @@ export function createInMemoryPrisma(seed?: SeedData): {
     ),
     adjustmentsById: new Map(
       Array.from(store.adjustmentsById.entries()).map(([k, v]) => [k, clone(v)])
+    ),
+    manualDamageLedgersById: new Map(
+      Array.from(store.manualDamageLedgersById.entries()).map(([k, v]) => [
+        k,
+        clone(v),
+      ])
     ),
     orderSequencesByKey: new Map(
       Array.from(store.orderSequencesByKey.entries()).map(([k, v]) => [
@@ -935,6 +1072,7 @@ export function createInMemoryPrisma(seed?: SeedData): {
     restoreMap(store.fifoById, snapshot.fifoById);
     restoreMap(store.outboundById, snapshot.outboundById);
     restoreMap(store.adjustmentsById, snapshot.adjustmentsById);
+    restoreMap(store.manualDamageLedgersById, snapshot.manualDamageLedgersById);
     restoreMap(store.orderSequencesByKey, snapshot.orderSequencesByKey);
   };
 

@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 
 interface InventoryAdjustFormProps {
   inventory: {
@@ -50,12 +51,17 @@ export function InventoryAdjustFormWithActions({
 }: InventoryAdjustFormProps) {
   const [isPending, startTransition] = useTransition();
   const [result, setResult] = useState<ActionResult<unknown> | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // ✅ React 19 useOptimistic - 乐观更新库存数量
   const [optimisticQuantity, setOptimisticQuantity] = useOptimistic(
     inventory.currentQuantity,
     (currentQty: number, adjustment: number) => currentQty + adjustment
   );
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges && !isPending,
+    message: '当前库存调整内容尚未保存，确定要离开吗？',
+  });
 
   /**
    * 表单提交处理
@@ -74,6 +80,7 @@ export function InventoryAdjustFormWithActions({
       setResult(actionResult);
 
       if (actionResult.success) {
+        setHasUnsavedChanges(false);
         // 成功后的处理
         setTimeout(() => {
           onSuccess?.();
@@ -84,7 +91,11 @@ export function InventoryAdjustFormWithActions({
   }
 
   return (
-    <form action={handleSubmit} className="space-y-4">
+    <form
+      action={handleSubmit}
+      className="space-y-4"
+      onChange={() => setHasUnsavedChanges(true)}
+    >
       {/* 隐藏字段 */}
       <input type="hidden" name="productId" value={inventory.productId} />
 
@@ -196,7 +207,13 @@ export function InventoryAdjustFormWithActions({
         <Button
           type="button"
           variant="outline"
-          onClick={onCancel}
+          onClick={() => {
+            if (!confirmLeavePage()) {
+              return;
+            }
+
+            onCancel?.();
+          }}
           disabled={isPending}
         >
           取消

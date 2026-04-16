@@ -1,6 +1,6 @@
 import type { Prisma } from '@prisma/client';
 import { type NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
+import type { z } from 'zod';
 
 import { ApiError, handleZodError } from '@/lib/api/errors';
 import {
@@ -230,37 +230,13 @@ async function postInboundRecordHandler(request: NextRequest) {
     // 步骤1：解析并验证请求体
     const rawBody = (await request.json()) as unknown;
 
-    // 为兼容旧客户端和单测，如果缺少 unitCost，提供一个安全的最小默认值
-    const normalizedBody =
-      rawBody && typeof rawBody === 'object'
-        ? {
-            ...(Array.isArray((rawBody as Record<string, unknown>).records)
-              ? {
-                  ...(rawBody as Record<string, unknown>),
-                  records: ((rawBody as Record<string, unknown>).records as unknown[]).map(
-                    record =>
-                      record && typeof record === 'object'
-                        ? {
-                            unitCost: 0.01,
-                            ...(record as Record<string, unknown>),
-                          }
-                        : record
-                  ),
-                }
-              : {
-                  unitCost: 0.01,
-                  ...(rawBody as Record<string, unknown>),
-                }),
-          }
-        : rawBody;
-
     const isBatchRequest =
-      normalizedBody &&
-      typeof normalizedBody === 'object' &&
-      Array.isArray((normalizedBody as Record<string, unknown>).records);
+      rawBody &&
+      typeof rawBody === 'object' &&
+      Array.isArray((rawBody as Record<string, unknown>).records);
 
     if (isBatchRequest) {
-      const parseResult = batchInboundSchema.safeParse(normalizedBody);
+      const parseResult = batchInboundSchema.safeParse(rawBody);
       if (!parseResult.success) {
         const apiError = handleZodError(parseResult.error);
         return NextResponse.json(
@@ -284,7 +260,7 @@ async function postInboundRecordHandler(request: NextRequest) {
       });
     }
 
-    const parseResult = createInboundSchema.safeParse(normalizedBody);
+    const parseResult = createInboundSchema.safeParse(rawBody);
     if (!parseResult.success) {
       const apiError = handleZodError(parseResult.error);
       return NextResponse.json(

@@ -13,6 +13,8 @@ import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
 import { logger } from '@/lib/logger';
 import { type InitialStockRowInput } from '@/lib/validations/initial-stock';
 
+const ACTUAL_BATCH_WEIGHT_HEADER = '本批次实际每件重量(kg)';
+
 function readImportMode(formData: FormData) {
   const mode = String(formData.get('mode') ?? 'dry-run')
     .trim()
@@ -45,24 +47,39 @@ function normalizeInitialStockImportRow(
   const normalizedRow = { ...row } as Record<string, unknown>;
 
   if (
-    normalizedRow['每件重量(kg)'] === undefined &&
+    normalizedRow[ACTUAL_BATCH_WEIGHT_HEADER] === undefined &&
+    normalizedRow['每件重量(kg)'] !== undefined
+  ) {
+    normalizedRow[ACTUAL_BATCH_WEIGHT_HEADER] = normalizedRow['每件重量(kg)'];
+  }
+
+  if (
+    normalizedRow[ACTUAL_BATCH_WEIGHT_HEADER] === undefined &&
     normalizedRow['每件重量'] !== undefined
   ) {
-    normalizedRow['每件重量(kg)'] = normalizedRow['每件重量'];
+    normalizedRow[ACTUAL_BATCH_WEIGHT_HEADER] = normalizedRow['每件重量'];
   }
 
   if (
-    normalizedRow['每件重量(kg)'] === undefined &&
+    normalizedRow[ACTUAL_BATCH_WEIGHT_HEADER] === undefined &&
+    normalizedRow['本批次实际每件重量'] !== undefined
+  ) {
+    normalizedRow[ACTUAL_BATCH_WEIGHT_HEADER] =
+      normalizedRow['本批次实际每件重量'];
+  }
+
+  if (
+    normalizedRow[ACTUAL_BATCH_WEIGHT_HEADER] === undefined &&
     normalizedRow['重量(kg)'] !== undefined
   ) {
-    normalizedRow['每件重量(kg)'] = normalizedRow['重量(kg)'];
+    normalizedRow[ACTUAL_BATCH_WEIGHT_HEADER] = normalizedRow['重量(kg)'];
   }
 
   if (
-    normalizedRow['每件重量(kg)'] === undefined &&
+    normalizedRow[ACTUAL_BATCH_WEIGHT_HEADER] === undefined &&
     normalizedRow['重量'] !== undefined
   ) {
-    normalizedRow['每件重量(kg)'] = normalizedRow['重量'];
+    normalizedRow[ACTUAL_BATCH_WEIGHT_HEADER] = normalizedRow['重量'];
   }
 
   if (
@@ -72,7 +89,10 @@ function normalizeInitialStockImportRow(
     normalizedRow.数量单位 = normalizedRow.入库单位;
   }
 
-  if (normalizedRow.数量单位 === undefined && normalizedRow.单位 !== undefined) {
+  if (
+    normalizedRow.数量单位 === undefined &&
+    normalizedRow.单位 !== undefined
+  ) {
     normalizedRow.数量单位 = normalizedRow.单位;
   }
 
@@ -130,10 +150,10 @@ function buildResponseMessage(
     }
 
     if (result.duplicateCount > 0 || result.errorCount > 0) {
-      return `预校验完成，可导入 ${result.validCount} 条，跳过 ${result.duplicateCount} 条，错误 ${result.errorCount} 条`;
+      return `导入检查完成，可导入 ${result.validCount} 条，跳过 ${result.duplicateCount} 条，错误 ${result.errorCount} 条`;
     }
 
-    return `预校验通过，共 ${result.validCount} 条数据可导入`;
+    return `导入检查通过，共 ${result.validCount} 条数据可导入`;
   }
 
   if (!isExecutionResult(result)) {

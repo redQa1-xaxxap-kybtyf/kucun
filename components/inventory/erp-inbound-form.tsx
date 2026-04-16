@@ -8,7 +8,7 @@ import {
   FileText,
   Package,
 } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import {
@@ -49,6 +49,7 @@ import {
   useProductSelection,
 } from '@/hooks/use-inbound-form';
 import { useInboundFormSubmit } from '@/hooks/use-inbound-form-submit';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import { useCreateBatchInboundRecords } from '@/lib/api/inbound';
 import {
   INBOUND_REASON_LABELS,
@@ -72,6 +73,7 @@ interface ERPInboundFormProps {
  * 5. 现代化设计：增强边框和标题，提升视觉对比度
  */
 export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
+  const router = useRouter();
   const [showProductPrompt, setShowProductPrompt] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showReasonSwitcher, setShowReasonSwitcher] = useState(false);
@@ -132,12 +134,12 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
       ? '手工采购入库'
       : INBOUND_REASON_LABELS[watchedReason];
   const currentPageDescription = isOpeningBalance
-    ? '录入期初库存数量与成本，提交后直接写入库存。'
+    ? '把期初数量和成本录进去，提交后库存就会生效。'
     : watchedReason === 'purchase'
       ? isBatchPurchaseMode
-        ? '同一供应商到货时，可一次登记多条产品明细。'
-        : '先填写供应商、产品、批次、数量和成本。'
-      : '请按本次业务类型填写入库信息，提交后会生成对应的入库记录。';
+        ? '同一供应商这次到货的多种产品，可以一次录完。'
+        : '按供应商、产品、批次、数量、成本顺着填就行。'
+      : '按实际业务填写即可，提交后会生成入库单。';
   const submitLabel = isOpeningBalance ? '确认录入期初库存' : '确认提交入库';
 
   // 产品选择逻辑
@@ -164,6 +166,12 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
       createMutation: batchCreateMutation,
       onSuccess,
     });
+  const hasUnsavedChanges =
+    form.formState.isDirty && !(isSubmitting || isBatchSubmitting);
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前入库单内容尚未保存，确定要离开吗？',
+  });
 
   const generateIdempotencyKey = () =>
     typeof crypto !== 'undefined' && crypto.randomUUID
@@ -242,7 +250,8 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
           ? {
               ...row,
               productId,
-              piecesPerUnit: product?.piecesPerUnit ?? row.piecesPerUnit,
+              piecesPerUnit: undefined,
+              weight: undefined,
             }
           : row
       )
@@ -445,6 +454,14 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
     setPendingFormData(null);
   };
 
+  const handleBack = () => {
+    if (!confirmLeavePage()) {
+      return;
+    }
+
+    router.back();
+  };
+
   // 实时计算并更新到货破损与合格入库片数
   useEffect(() => {
     const { quantity, damagedQuantity } = calculateAcceptedInboundQuantity({
@@ -507,6 +524,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
           isSubmitting={isSubmitting || isBatchSubmitting}
           onReset={handleFormReset}
           onSubmit={handleToolbarSubmit}
+          onBack={handleBack}
           title={currentPageTitle}
           description={currentPageDescription}
           submitLabel={submitLabel}
@@ -516,9 +534,9 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
         {isOpeningBalance && (
           <Alert className="border-amber-200 bg-amber-50">
             <AlertCircle className="h-4 w-4 text-amber-600" />
-            <AlertTitle className="text-amber-900">期初入库操作</AlertTitle>
+            <AlertTitle className="text-amber-900">正在录入期初库存</AlertTitle>
             <AlertDescription className="text-amber-800">
-              您正在创建期初入库记录。提交成功后会直接写入库存，无需额外审核；如果库存页暂时没看到，请先清空筛选或搜索条件再核对。
+              提交后库存会立即生效。如果库存页一时没看到，请先清空筛选或搜索条件再核对。
             </AlertDescription>
           </Alert>
         )}
@@ -551,7 +569,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                         1. 入库类型
                       </h3>
                       <p className="text-xs text-slate-500">
-                        默认按采购入库开始录单，需要时再切换其他入库类型。
+                        默认就是采购入库，不是采购时再切换。
                       </p>
                     </div>
                   </div>
@@ -634,7 +652,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                               当前类型：{INBOUND_REASON_LABELS[watchedReason]}
                             </div>
                             <p className="text-sm text-slate-500">
-                              当前已切换为非采购入库，页面会保留统一校验和库存入账逻辑。
+                              现在按这个入库类型填写，提交后会正常入库。
                             </p>
                           </div>
                           <Button
@@ -719,7 +737,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                           3. 批次与数量
                         </h3>
                         <p className="text-xs text-slate-500">
-                          这一屏只处理批次、数量和必要换算，减少无关设置干扰。
+                        先把批次和数量填对，其他内容按需要补充。
                         </p>
                       </div>
                     </div>
@@ -758,7 +776,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                               更多设置
                             </p>
                             <p className="mt-1 text-xs text-slate-500">
-                              装箱数、重量这类信息只在需要时填写；按件录入时会自动展开。
+                              每件片数、重量这些内容按需要再填；如果按件录入，会自动展开。
                             </p>
                           </div>
                           {watchedInputUnit !== 'units' && (
@@ -810,7 +828,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                               : '本次到货没有破损，可直接继续'}
                           </p>
                           <p className="mt-1 text-xs text-amber-800">
-                            只有收货当场确认的破损才需要登记，系统会自动从到货数量中扣减。
+                            只有收货当场已经确认的破损才需要登记，提交后会从到货数量里扣掉这部分。
                           </p>
                         </div>
                         <Button
@@ -883,8 +901,8 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                       </h3>
                       <p className="text-xs text-slate-500">
                         {isBatchPurchaseMode
-                          ? '这里填写本次批量入库的公共说明，提交时会同步到每一条记录。'
-                          : '补充记录到货说明、临时沟通结果等，没有备注也可以直接提交。'}
+                          ? '这里写本次整单都适用的说明，提交后会带到每一条明细里。'
+                          : '这里可以补充到货说明、沟通情况等，没有备注也可以直接提交。'}
                       </p>
                     </div>
                   </div>

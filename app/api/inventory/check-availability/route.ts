@@ -5,6 +5,11 @@ import { buildCacheKey, getOrSetJSON } from '@/lib/cache/cache';
 import { prisma } from '@/lib/db';
 import { cacheConfig } from '@/lib/env';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
+import {
+  getBatchPiecesPerUnitFromMap,
+  getUniformPiecesPerUnit,
+  loadBatchPiecesPerUnitMap,
+} from '@/lib/utils/batch-pieces-per-unit';
 import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 import {
   inventoryAvailabilityCheckSchema,
@@ -15,11 +20,20 @@ type AvailabilityParams = InventoryAvailabilityCheckInput;
 
 type InventoryRecord = {
   id: string;
+  productId: string;
   quantity: number;
   reservedQuantity: number;
   batchNumber: string | null;
   variantId: string | null;
   location: string | null;
+  product: {
+    id: string;
+    name: string;
+    code: string;
+    status: string;
+    unit: string;
+    piecesPerUnit: number | null;
+  };
 };
 
 type AllocationItem = {
@@ -186,10 +200,28 @@ async function checkInventoryAvailability(
         : typeof product?.unit === 'string' && product.unit.trim()
           ? product.unit.trim()
           : '片';
+  const batchPiecesPerUnitMap = await loadBatchPiecesPerUnitMap(
+    inventoryRecords.map(record => ({
+      productId: record.productId,
+      variantId: record.variantId,
+      batchNumber: record.batchNumber,
+    }))
+  );
   const piecesPerUnit =
-    typeof product?.piecesPerUnit === 'number' && product.piecesPerUnit > 0
-      ? product.piecesPerUnit
-      : 0;
+    getUniformPiecesPerUnit(
+      inventoryRecords.map(record => {
+        const batchPiecesPerUnit = getBatchPiecesPerUnitFromMap(
+          batchPiecesPerUnitMap,
+          {
+            productId: record.productId,
+            variantId: record.variantId,
+            batchNumber: record.batchNumber,
+          }
+        );
+
+        return batchPiecesPerUnit ?? record.product?.piecesPerUnit;
+      })
+    ) ?? 0;
 
   const formatForMessage = (value: number) =>
     piecesPerUnit > 0

@@ -85,6 +85,7 @@ export function BatchSpecificationForm({
         piecesPerUnit:
           defaultValues.piecesPerUnit ??
           batchSpecificationDefaults.piecesPerUnit,
+        weight: defaultValues.weight,
       });
     }
   }, [mode, defaultValues]);
@@ -206,13 +207,13 @@ export function BatchSpecificationForm({
             name="weight"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>重量 (kg)</FormLabel>
+                <FormLabel>本批次实际每件重量 (kg)</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
                     min={0}
                     step="0.01"
-                    placeholder="可选"
+                    placeholder="不填则本次不记录重量"
                     value={
                       field.value === undefined || field.value === null
                         ? ''
@@ -261,10 +262,7 @@ export function BatchSpecificationForm({
         {mode === 'create' && selectedProduct ? (
           <div className="border-muted-foreground/40 bg-muted/30 text-muted-foreground rounded-md border border-dashed px-3 py-2 text-xs">
             当前选择产品：{selectedProduct.label}（编码：{selectedProduct.code}
-            ）
-            {selectedProduct.piecesPerUnit
-              ? `，默认装箱数 ${selectedProduct.piecesPerUnit}`
-              : ''}
+            ）。请填写本批次自己的装箱数和实际重量。
           </div>
         ) : null}
 

@@ -4,6 +4,7 @@ import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { CalendarIcon, Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
 
@@ -34,6 +35,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import { queryKeys } from '@/lib/queryKeys';
 import { COUNT_TYPE_OPTIONS } from '@/lib/types/inventory-count';
 import { cn } from '@/lib/utils';
@@ -61,6 +63,7 @@ export function CountForm({
   onCancel,
 }: CountFormProps) {
   const { toast } = useToast();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -202,6 +205,24 @@ export function CountForm({
     } finally {
       setIsSubmitting(false);
     }
+  };
+  const hasUnsavedChanges = form.formState.isDirty && !isSubmitting;
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前盘点计划尚未保存，确定要离开吗？',
+  });
+
+  const handleCancel = () => {
+    if (!confirmLeavePage()) {
+      return;
+    }
+
+    if (onCancel) {
+      onCancel();
+      return;
+    }
+
+    router.back();
   };
 
   return (
@@ -391,7 +412,7 @@ export function CountForm({
               <Button
                 type="button"
                 variant="outline"
-                onClick={onCancel}
+                onClick={handleCancel}
                 disabled={isSubmitting}
               >
                 取消

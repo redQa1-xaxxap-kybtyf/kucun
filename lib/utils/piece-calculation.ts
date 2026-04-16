@@ -130,7 +130,13 @@ export function formatInventoryQuantity(
   product: Pick<Product, 'piecesPerUnit'>,
   showDetail: boolean = false
 ): string {
-  const result = calculatePieceDisplay(totalPieces, product.piecesPerUnit);
+  const piecesPerUnit = product.piecesPerUnit ?? 0;
+
+  if (!Number.isInteger(piecesPerUnit) || piecesPerUnit <= 1) {
+    return `${totalPieces}片`;
+  }
+
+  const result = calculatePieceDisplay(totalPieces, piecesPerUnit);
   return showDetail ? result.detailText : result.displayText;
 }
 
@@ -188,14 +194,55 @@ export function formatPieceSummary(
     return `${prefix}${totalPieces}${unitPart}`.trim();
   }
 
-  const result = calculatePieceDisplay(totalPieces, piecesPerUnit);
   const baseText = `${prefix}${totalPieces}片`;
+
+  if (piecesPerUnit <= 1) {
+    return baseText;
+  }
+
+  const result = calculatePieceDisplay(totalPieces, piecesPerUnit);
 
   if (!includeApprox || result.displayText === `${totalPieces}片`) {
     return baseText;
   }
 
   return `${baseText} (约${result.displayText})`;
+}
+
+export interface DetailedPieceSummaryOptions {
+  fallbackUnit?: string;
+  zeroDisplay?: string;
+}
+
+export function formatDetailedPieceSummary(
+  totalPieces: number,
+  piecesPerUnit: number,
+  options: DetailedPieceSummaryOptions = {}
+): string {
+  const { fallbackUnit = '片', zeroDisplay } = options;
+  const normalizedPieces = Number.isFinite(totalPieces)
+    ? Math.max(0, Math.floor(totalPieces))
+    : 0;
+
+  if (normalizedPieces <= 0) {
+    return zeroDisplay ?? `0${fallbackUnit}`;
+  }
+
+  if (!Number.isInteger(piecesPerUnit) || piecesPerUnit <= 1) {
+    return `${normalizedPieces}${fallbackUnit}`;
+  }
+
+  const result = calculatePieceDisplay(normalizedPieces, piecesPerUnit);
+
+  if (result.fullUnits === 0) {
+    return `${result.totalPieces}片`;
+  }
+
+  if (result.remainingPieces === 0) {
+    return `${result.fullUnits}件（共${result.totalPieces}片）`;
+  }
+
+  return `${result.fullUnits}件${result.remainingPieces}片（共${result.totalPieces}片）`;
 }
 
 /**

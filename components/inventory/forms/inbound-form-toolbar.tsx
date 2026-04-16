@@ -16,6 +16,7 @@ interface InboundFormToolbarProps {
   isSubmitting: boolean;
   onReset: () => void;
   onSubmit: () => void;
+  onBack?: () => void;
   title?: string;
   description?: string;
   submitLabel?: string;
@@ -30,6 +31,7 @@ export function InboundFormToolbar({
   isSubmitting,
   onReset,
   onSubmit,
+  onBack,
   title = '手工采购入库',
   description = '先填写供应商、产品、批次、数量和成本。',
   submitLabel = '确认提交入库',
@@ -63,7 +65,14 @@ export function InboundFormToolbar({
               variant="outline"
               size="lg"
               className="h-11 border-slate-200 bg-white px-5 text-slate-600 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-900"
-              onClick={() => router.back()}
+              onClick={() => {
+                if (onBack) {
+                  onBack();
+                  return;
+                }
+
+                router.back();
+              }}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               返回上一页

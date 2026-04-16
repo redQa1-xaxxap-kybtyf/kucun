@@ -65,7 +65,7 @@ type MovementProductSource = {
   name: string;
   unit: string;
   specification: string | null;
-  piecesPerUnit: number;
+  piecesPerUnit: number | null;
 };
 
 type MovementVariantSource = {

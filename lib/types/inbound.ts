@@ -145,7 +145,7 @@ export interface CreateInboundRequest {
 
   // 批次规格参数（入库时确定，可选）
   piecesPerUnit?: number; // 每单位片数
-  weight?: number; // 产品重量(kg)
+  weight?: number; // 本批次实际每件重量(kg)
   thickness?: number; // 产品厚度(mm)
 }
 
@@ -211,7 +211,8 @@ export interface ProductOption {
   code: string;
   specification?: string;
   unit: string;
-  piecesPerUnit: number;
+  piecesPerUnit?: number;
+  weight?: number; // 产品档案中的历史重量，仅作参考
   currentStock?: number;
   batchSpecs?: BatchSpecInfo[]; // 批次规格列表（批次号+每件片数组合）
 }

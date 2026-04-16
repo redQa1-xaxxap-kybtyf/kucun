@@ -126,7 +126,7 @@ export async function getInboundRecordByNumber(recordNumber: string): Promise<
             InboundRecord['product']
           >['unit'],
           specification: record.product.specification ?? undefined,
-          piecesPerUnit: record.product.piecesPerUnit ?? 0,
+          piecesPerUnit: record.product.piecesPerUnit ?? undefined,
           weight: toNumberOrNull(record.product.weight) ?? undefined,
         }
       : undefined,

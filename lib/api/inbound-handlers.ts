@@ -19,6 +19,7 @@ import { authOptions } from '@/lib/auth';
 import type { ProductUnit } from '@/lib/config/product';
 import { prisma } from '@/lib/db';
 import { env } from '@/lib/env';
+import { upsertPurchaseDamageLedgerFromInbound } from '@/lib/services/purchase-damage-ledger-service';
 import type { InboundListResponse } from '@/lib/types/inbound';
 import { calculateTotalCost } from '@/lib/utils/cost-calculation';
 import { toISOString } from '@/lib/utils/datetime';
@@ -238,15 +239,9 @@ function formatInboundRecords(records: InboundRecordWithRelations[]) {
       code: record.product.code,
       specification: record.product.specification || undefined,
       unit: record.product.unit as ProductUnit,
-      // 优先使用批次级规格参数，回退到产品默认参数
-      piecesPerUnit:
-        record.batchSpecification?.piecesPerUnit ??
-        record.product.piecesPerUnit ??
-        1,
-      weight:
-        toNumberOrNull(
-          record.batchSpecification?.weight ?? record.product.weight
-        ) ?? undefined,
+      // 产品主档仅作参考；业务口径以 batchSpecification 为准
+      piecesPerUnit: record.product.piecesPerUnit ?? undefined,
+      weight: toNumberOrNull(record.product.weight) ?? undefined,
     },
 
     // 批次规格参数信息（如果存在）
@@ -255,10 +250,7 @@ function formatInboundRecords(records: InboundRecordWithRelations[]) {
         ? {
             id: record.batchSpecification.id,
             batchNumber: record.batchSpecification.batchNumber,
-            piecesPerUnit:
-              record.batchSpecification.piecesPerUnit ??
-              record.product.piecesPerUnit ??
-              1,
+            piecesPerUnit: record.batchSpecification.piecesPerUnit,
             weight:
               toNumberOrNull(record.batchSpecification.weight) ?? undefined,
             thickness:
@@ -424,17 +416,15 @@ export async function createInboundRecord(
   let batchSpecificationId: string | null = null;
   if (
     data.batchNumber &&
-    (typeof data.piecesPerUnit === 'number' || typeof data.weight === 'number')
+    typeof data.piecesPerUnit === 'number' &&
+    data.piecesPerUnit > 0
   ) {
     const batchSpec = await upsertBatchSpecification(
       {
         productId: data.productId,
         variantId: data.variantId,
         batchNumber: data.batchNumber,
-        piecesPerUnit:
-          typeof data.piecesPerUnit === 'number' && data.piecesPerUnit > 0
-            ? data.piecesPerUnit
-            : 1,
+        piecesPerUnit: data.piecesPerUnit,
         weight: data.weight,
       },
       // 在有事务上下文时复用事务，确保原子性
@@ -446,6 +436,18 @@ export async function createInboundRecord(
 
   // 生成记录编号
   const recordNumber = generateInboundRecordNumber();
+  const damagedQuantity =
+    typeof data.damagedQuantity === 'number' && data.damagedQuantity > 0
+      ? data.damagedQuantity
+      : 0;
+  const damageHandling =
+    damagedQuantity > 0 ? (data.damageHandling ?? null) : null;
+  const damageTotalCost =
+    damagedQuantity > 0 && typeof data.unitCost === 'number'
+      ? calculateTotalCost(damagedQuantity, data.unitCost)
+      : null;
+  const damageRemarks =
+    damagedQuantity > 0 ? cleanRemarks(data.damageRemarks) : null;
 
   // 创建入库记录
   const inboundRecord = await prismaClient.inboundRecord.create({
@@ -456,24 +458,10 @@ export async function createInboundRecord(
       batchNumber: data.batchNumber || null,
       batchSpecificationId, // 关联批次规格参数（如果有）
       quantity: data.quantity,
-      damagedQuantity:
-        typeof data.damagedQuantity === 'number' && data.damagedQuantity > 0
-          ? data.damagedQuantity
-          : 0,
-      damageHandling:
-        typeof data.damagedQuantity === 'number' && data.damagedQuantity > 0
-          ? (data.damageHandling ?? null)
-          : null,
-      damageTotalCost:
-        typeof data.damagedQuantity === 'number' &&
-        data.damagedQuantity > 0 &&
-        typeof data.unitCost === 'number'
-          ? calculateTotalCost(data.damagedQuantity, data.unitCost)
-          : null,
-      damageRemarks:
-        typeof data.damagedQuantity === 'number' && data.damagedQuantity > 0
-          ? cleanRemarks(data.damageRemarks)
-          : null,
+      damagedQuantity,
+      damageHandling,
+      damageTotalCost,
+      damageRemarks,
       reason: data.reason,
       remarks: cleanRemarks(data.remarks),
       unitCost: typeof data.unitCost === 'number' ? data.unitCost : null,
@@ -486,6 +474,25 @@ export async function createInboundRecord(
     select: INBOUND_RECORD_SELECT,
   });
 
+  if (data.reason === 'purchase' && damagedQuantity > 0 && data.damageHandling) {
+    await upsertPurchaseDamageLedgerFromInbound(
+      prismaClient as unknown as Prisma.TransactionClient,
+      {
+        inboundRecordId: inboundRecord.id,
+        purchaseOrderId: data.purchaseOrderId,
+        purchaseOrderItemId: data.purchaseOrderItemId,
+        productId: data.productId,
+        supplierId: data.supplierId,
+        batchNumber: data.batchNumber,
+        damagedQuantity,
+        damageHandling: data.damageHandling as import('@/lib/types/inbound').InboundDamageHandling,
+        referenceAmount: damageTotalCost,
+        remarks: damageRemarks,
+        createdById: userId,
+      }
+    );
+  }
+
   return {
     id: inboundRecord.id,
     recordNumber: inboundRecord.recordNumber,
@@ -494,9 +501,10 @@ export async function createInboundRecord(
     supplierId: inboundRecord.supplierId || undefined,
     quantity: inboundRecord.quantity,
     damagedQuantity: inboundRecord.damagedQuantity || undefined,
-    damageHandling: (inboundRecord.damageHandling as
-      | import('@/lib/types/inbound').InboundDamageHandling
-      | null) ?? undefined,
+    damageHandling:
+      (inboundRecord.damageHandling as
+        | import('@/lib/types/inbound').InboundDamageHandling
+        | null) ?? undefined,
     damageTotalCost: toNumberOrNull(inboundRecord.damageTotalCost) ?? undefined,
     damageRemarks: inboundRecord.damageRemarks || undefined,
     reason: inboundRecord.reason,
@@ -544,53 +552,11 @@ export async function createInboundRecord(
  * 目的：将批次规格参数同步到产品主表，减少事务持有时间
  */
 export async function syncProductSpecificationAsync(
-  productId: string,
-  piecesPerUnit?: number,
-  weight?: number
+  _productId: string,
+  _piecesPerUnit?: number,
+  _weight?: number
 ): Promise<void> {
-  try {
-    const updates: { piecesPerUnit?: number; weight?: number } = {};
-
-    // 检查weight是否需要更新
-    if (weight !== undefined) {
-      const product = await prisma.product.findUnique({
-        where: { id: productId },
-        select: { weight: true },
-      });
-
-      const currentWeight = toNumberOrNull(product?.weight);
-      const hasDifferentWeight =
-        currentWeight === null || Math.abs(currentWeight - weight) > 0.0001;
-
-      if (hasDifferentWeight) {
-        updates.weight = weight;
-      }
-    }
-
-    // 检查piecesPerUnit是否需要更新
-    if (piecesPerUnit && piecesPerUnit > 1) {
-      const product = await prisma.product.findUnique({
-        where: { id: productId },
-        select: { piecesPerUnit: true },
-      });
-
-      if (product?.piecesPerUnit === 1) {
-        updates.piecesPerUnit = piecesPerUnit;
-      }
-    }
-
-    // 如果有需要更新的字段，执行更新
-    if (Object.keys(updates).length > 0) {
-      await prisma.product.update({
-        where: { id: productId },
-        data: updates,
-      });
-    }
-  } catch (error) {
-    // 异步操作失败不应影响主流程，记录错误即可
-    // eslint-disable-next-line no-console
-    console.error('Product specification sync failed:', error);
-  }
+  // 产品主档不再回填批次规格，保留空实现兼容旧调用方。
 }
 
 /**

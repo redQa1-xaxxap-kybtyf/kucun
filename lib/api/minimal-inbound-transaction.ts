@@ -18,6 +18,8 @@ import type { ProductUnit } from '@/lib/config/product';
 import { prisma } from '@/lib/db';
 import { getStandardTransactionOptions } from '@/lib/db/transaction-options';
 import { addToFIFOQueue } from '@/lib/services/fifo-cost-service';
+import { upsertPurchaseDamageLedgerFromInbound } from '@/lib/services/purchase-damage-ledger-service';
+import type { InboundDamageHandling } from '@/lib/types/inbound';
 import { INBOUND_REASON_LABELS } from '@/lib/types/inbound';
 import { calculateTotalCost } from '@/lib/utils/cost-calculation';
 import { toISOString } from '@/lib/utils/datetime';
@@ -52,6 +54,9 @@ export interface MinimalInboundTransactionData {
   purchaseOrderId?: string;
   purchaseOrderItemId?: string;
   supplierId?: string;
+  damagedQuantity?: number;
+  damageHandling?: InboundDamageHandling;
+  damageRemarks?: string;
 }
 
 /**
@@ -97,7 +102,7 @@ export interface MinimalInboundTransactionResult {
  *
  * ⚠️ 非核心操作已移除(移到异步队列):
  * - 批次规格更新 (upsertBatchSpecification)
- * - 产品规格同步 (syncProductSpecificationAsync)
+ * - 产品规格回填已停用，避免把批次规格误写回产品主档
  * - 缓存失效 (invalidateInventoryCache, revalidateProducts)
  *
  * @param data 入库数据(包含预生成的批次号)
@@ -111,17 +116,15 @@ export async function executeMinimalInboundTransaction(
     let batchSpecificationId: string | null = null;
     if (
       data.batchNumber &&
-      (typeof data.piecesPerUnit === 'number' || typeof data.weight === 'number')
+      typeof data.piecesPerUnit === 'number' &&
+      data.piecesPerUnit > 0
     ) {
       const batchSpec = await upsertBatchSpecification(
         {
           productId: data.productId,
           variantId: data.variantId,
           batchNumber: data.batchNumber,
-          piecesPerUnit:
-            typeof data.piecesPerUnit === 'number' && data.piecesPerUnit > 0
-              ? data.piecesPerUnit
-              : 1,
+          piecesPerUnit: data.piecesPerUnit,
           weight: data.weight,
         },
         tx
@@ -137,6 +140,16 @@ export async function executeMinimalInboundTransaction(
     // 处理备注:如果用户没有填写,则自动生成默认备注
     const finalRemarks =
       cleanRemarks(data.remarks) || generateDefaultRemarks(data.reason);
+    const damagedQuantity =
+      typeof data.damagedQuantity === 'number' && data.damagedQuantity > 0
+        ? data.damagedQuantity
+        : 0;
+    const damageHandling =
+      damagedQuantity > 0 ? (data.damageHandling ?? null) : null;
+    const damageRemarks =
+      damagedQuantity > 0 ? cleanRemarks(data.damageRemarks) : null;
+    const damageTotalCost =
+      damagedQuantity > 0 ? calculateTotalCost(damagedQuantity, data.unitCost) : null;
 
     // 计算入库总成本
     const totalCost = calculateTotalCost(data.quantity, data.unitCost);
@@ -150,6 +163,10 @@ export async function executeMinimalInboundTransaction(
         openingImportBatchId: data.openingImportBatchId || null,
         batchSpecificationId,
         quantity: data.quantity,
+        damagedQuantity,
+        damageHandling,
+        damageTotalCost,
+        damageRemarks,
         unitCost: data.unitCost, // 记录入库单位成本
         totalCost, // 记录入库总成本
         location: data.location || null,
@@ -177,6 +194,22 @@ export async function executeMinimalInboundTransaction(
         },
       },
     });
+
+    if (data.reason === 'purchase' && damagedQuantity > 0 && data.damageHandling) {
+      await upsertPurchaseDamageLedgerFromInbound(tx, {
+        inboundRecordId: inboundRecord.id,
+        purchaseOrderId: data.purchaseOrderId,
+        purchaseOrderItemId: data.purchaseOrderItemId,
+        productId: data.productId,
+        supplierId: data.supplierId,
+        batchNumber: data.batchNumber,
+        damagedQuantity,
+        damageHandling: data.damageHandling,
+        referenceAmount: damageTotalCost,
+        remarks: damageRemarks,
+        createdById: data.userId,
+      });
+    }
 
     // 🎯 核心操作 2: 添加到FIFO成本队列
     // 记录本批次入库的成本信息,用于后续FIFO出库成本计算

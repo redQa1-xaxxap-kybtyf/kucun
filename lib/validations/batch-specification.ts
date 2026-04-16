@@ -39,8 +39,8 @@ export const thicknessSchema = z
 export const createBatchSpecificationSchema = z.object({
   productId: z
     .string({ message: '产品ID必须是字符串' })
-    .uuid({ error: '产品ID格式不正确' }),
-  variantId: z.string().uuid('产品变体ID格式不正确').optional(),
+    .uuid({ error: '产品信息格式不正确' }),
+  variantId: z.string().uuid('产品规格信息格式不正确').optional(),
 
   batchNumber: batchNumberSchema,
   piecesPerUnit: piecesPerUnitSchema,
@@ -74,8 +74,8 @@ export const batchSpecificationQuerySchema = z.object({
 
   search: z.string().max(100, '搜索关键词不能超过100个字符').optional(),
 
-  productId: z.string().uuid('产品ID格式不正确').optional(),
-  variantId: z.string().uuid('产品变体ID格式不正确').optional(),
+  productId: z.string().uuid('产品信息格式不正确').optional(),
+  variantId: z.string().uuid('产品规格信息格式不正确').optional(),
 
   batchNumber: z.string().max(50, '批次号不能超过50个字符').optional(),
 
@@ -105,7 +105,7 @@ export const batchSpecificationQuerySchema = z.object({
 // 批次规格参数ID验证规则
 export const batchSpecificationIdSchema = z
   .string({ message: '批次规格参数ID必须是字符串' })
-  .uuid({ error: '批次规格参数ID格式不正确' });
+  .uuid({ error: '批次资料编号格式不正确' });
 
 // 批次规格参数对比验证规则
 export const batchSpecificationComparisonSchema = z.object({
@@ -117,7 +117,7 @@ export const batchSpecificationComparisonSchema = z.object({
 
 // 批次规格参数统计查询验证规则
 export const batchSpecificationStatisticsSchema = z.object({
-  productId: z.string().uuid('产品ID格式不正确').optional(),
+  productId: z.string().uuid('产品信息格式不正确').optional(),
 
   startDate: z
     .string()

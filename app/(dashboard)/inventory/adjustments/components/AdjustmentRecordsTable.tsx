@@ -24,6 +24,7 @@ import {
   type InventoryAdjustment,
 } from '@/lib/types/inventory';
 import { formatDateTimeCN } from '@/lib/utils/datetime';
+import { formatDetailedPieceSummary } from '@/lib/utils/piece-calculation';
 
 interface AdjustmentRecordsTableProps {
   adjustments: InventoryAdjustment[];
@@ -110,26 +111,8 @@ export function AdjustmentRecordsTable({
       : specification;
   };
 
-  // 格式化数量显示（X件Y片（共XX片））
-  const formatQuantity = (quantity: number, piecesPerUnit?: number) => {
-    // 数据验证
-    if (!quantity || !piecesPerUnit || piecesPerUnit <= 0) {
-      return `${quantity || 0}片`;
-    }
-
-    const units = Math.floor(quantity / piecesPerUnit);
-    const pieces = quantity % piecesPerUnit;
-
-    if (units === 0) {
-      return `${pieces}片`;
-    }
-
-    if (pieces === 0) {
-      return `${units}件（共${quantity}片）`;
-    }
-
-    return `${units}件${pieces}片（共${quantity}片）`;
-  };
+  const getPiecesPerUnit = (adjustment: InventoryAdjustment) =>
+    adjustment.batchPiecesPerUnit ?? adjustment.product?.piecesPerUnit ?? 0;
 
   if (isLoading) {
     return <ContentLoading text="加载调整记录..." />;
@@ -183,22 +166,22 @@ export function AdjustmentRecordsTable({
                     {adjustment.batchNumber || '-'}
                   </TableCell>
                   <TableCell className="text-center text-xs whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
-                    {adjustment.product?.piecesPerUnit
-                      ? `${adjustment.product.piecesPerUnit}片/件`
+                    {getPiecesPerUnit(adjustment) > 0
+                      ? `${getPiecesPerUnit(adjustment)}片/件`
                       : '-'}
                   </TableCell>
                   <TableCell className="text-xs whitespace-nowrap text-[hsl(var(--color-text-primary))]">
                     <div className="flex flex-col gap-0.5">
                       {formatAdjustQuantity(adjustment.adjustQuantity)}
                       <span className="text-xs text-[hsl(var(--color-text-secondary))]">
-                        {formatQuantity(
+                        {formatDetailedPieceSummary(
                           adjustment.beforeQuantity,
-                          adjustment.product?.piecesPerUnit
+                          getPiecesPerUnit(adjustment)
                         )}{' '}
                         →{' '}
-                        {formatQuantity(
+                        {formatDetailedPieceSummary(
                           adjustment.afterQuantity,
-                          adjustment.product?.piecesPerUnit
+                          getPiecesPerUnit(adjustment)
                         )}
                       </span>
                     </div>
@@ -242,14 +225,14 @@ export function AdjustmentRecordsTable({
           </div>
         ) : (
           adjustments.map(adjustment => {
-            const ppu = adjustment.product?.piecesPerUnit ?? 0;
-            const beforeText = formatQuantity(
+            const ppu = getPiecesPerUnit(adjustment);
+            const beforeText = formatDetailedPieceSummary(
               adjustment.beforeQuantity,
-              adjustment.product?.piecesPerUnit
+              ppu
             );
-            const afterText = formatQuantity(
+            const afterText = formatDetailedPieceSummary(
               adjustment.afterQuantity,
-              adjustment.product?.piecesPerUnit
+              ppu
             );
 
             return (

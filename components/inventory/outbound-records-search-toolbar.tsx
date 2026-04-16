@@ -10,7 +10,12 @@
  * - 一致性: 与项目整体风格保持统一
  */
 
-import { FlaskConical, PackageX, RefreshCw } from 'lucide-react';
+import {
+  Building2,
+  FlaskConical,
+  PackageX,
+  RefreshCw,
+} from 'lucide-react';
 import * as React from 'react';
 
 import { SearchFilterCard } from '@/components/common/search-filter-card';
@@ -176,6 +181,13 @@ function OutboundToolbarView({
           icon: <FlaskConical className="h-3.5 w-3.5" />,
           active: typeFilter === 'sample_outbound',
           onClick: toggleType('sample_outbound'),
+        },
+        {
+          key: 'internal_use_outbound',
+          label: '内部领用',
+          icon: <Building2 className="h-3.5 w-3.5" />,
+          active: typeFilter === 'internal_use_outbound',
+          onClick: toggleType('internal_use_outbound'),
         },
         {
           key: 'adjust_outbound',

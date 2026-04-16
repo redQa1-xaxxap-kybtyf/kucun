@@ -8,6 +8,10 @@ import {
   type InventoryAdjustmentWithRelations,
 } from '@/lib/api/selectors/inventory-selectors';
 import { prisma } from '@/lib/db';
+import {
+  getBatchPiecesPerUnitFromMap,
+  loadBatchPiecesPerUnitMap,
+} from '@/lib/utils/batch-pieces-per-unit';
 import { inventoryAdjustmentsQuerySchema } from '@/lib/validations/inventory-queries';
 
 /**
@@ -107,13 +111,17 @@ function buildAdjustmentOrderBy(
 /**
  * 格式化调整记录数据
  */
-function formatAdjustmentData(adjustment: InventoryAdjustmentWithRelations) {
+function formatAdjustmentData(
+  adjustment: InventoryAdjustmentWithRelations,
+  batchPiecesPerUnit?: number
+) {
   return {
     id: adjustment.id,
     adjustmentNumber: adjustment.adjustmentNumber,
     productId: adjustment.productId,
     variantId: adjustment.variantId,
     batchNumber: adjustment.batchNumber,
+    batchPiecesPerUnit,
     beforeQuantity: adjustment.beforeQuantity,
     adjustQuantity: adjustment.adjustQuantity,
     afterQuantity: adjustment.afterQuantity,
@@ -193,9 +201,20 @@ export async function getAdjustmentsServer(searchParams: URLSearchParams) {
     prisma.inventoryAdjustment.count({ where }),
   ]);
 
+  const batchPiecesMap = await loadBatchPiecesPerUnitMap(
+    adjustments.map(adjustment => ({
+      productId: adjustment.productId,
+      variantId: adjustment.variantId,
+      batchNumber: adjustment.batchNumber,
+    }))
+  );
+
   // 格式化数据
   const formattedAdjustments = adjustments.map(adj =>
-    formatAdjustmentData(adj as InventoryAdjustmentWithRelations)
+    formatAdjustmentData(
+      adj as InventoryAdjustmentWithRelations,
+      getBatchPiecesPerUnitFromMap(batchPiecesMap, adj)
+    )
   );
 
   return {
@@ -226,6 +245,18 @@ export async function getAdjustmentByNumber(adjustmentNumber: string) {
     return null;
   }
 
+  const batchPiecesMap = await loadBatchPiecesPerUnitMap([
+    {
+      productId: adjustment.productId,
+      variantId: adjustment.variantId,
+      batchNumber: adjustment.batchNumber,
+    },
+  ]);
+  const batchPiecesPerUnit = getBatchPiecesPerUnitFromMap(
+    batchPiecesMap,
+    adjustment
+  );
+
   const inventoryRecord = await prisma.inventory.findFirst({
     where: {
       productId: adjustment.productId,
@@ -243,6 +274,7 @@ export async function getAdjustmentByNumber(adjustmentNumber: string) {
     productId: adjustment.productId,
     variantId: adjustment.variantId ?? undefined,
     batchNumber: adjustment.batchNumber ?? undefined,
+    batchPiecesPerUnit,
     beforeQuantity: adjustment.beforeQuantity,
     adjustQuantity: adjustment.adjustQuantity,
     afterQuantity: adjustment.afterQuantity,
@@ -261,6 +293,7 @@ export async function getAdjustmentByNumber(adjustmentNumber: string) {
           name: adjustment.product.name,
           specification: adjustment.product.specification ?? undefined,
           unit: adjustment.product.unit,
+          piecesPerUnit: adjustment.product.piecesPerUnit ?? undefined,
         }
       : undefined,
     variant: adjustment.variant

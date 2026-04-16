@@ -3,6 +3,10 @@
  * 包含入库、出库、调整等操作的类型定义
  */
 
+import type {
+  ManualDamageCategory,
+  ManualDamageHandling,
+} from './manual-damage-ledger';
 import type { Product } from './product';
 import type { User } from './user';
 
@@ -17,6 +21,7 @@ export type OutboundType =
   | 'normal_outbound'
   | 'sales_outbound'
   | 'sample_outbound'
+  | 'internal_use_outbound'
   | 'adjust_outbound';
 
 // 入库记录类型
@@ -140,6 +145,8 @@ export interface InventoryAdjustInput {
   adjustQuantity: number; // 正数为增加，负数为减少
   reason: string;
   notes?: string;
+  damageCategory?: ManualDamageCategory;
+  damageHandling?: ManualDamageHandling;
   currentQuantity?: number;
   maxQuantity?: number;
   minQuantity?: number;
@@ -169,6 +176,7 @@ export const OUTBOUND_TYPE_LABELS: Record<OutboundType, string> = {
   normal_outbound: '正常出库',
   sales_outbound: '销售出库',
   sample_outbound: '样品出库',
+  internal_use_outbound: '内部领用',
   adjust_outbound: '调整出库',
 };
 
@@ -177,6 +185,7 @@ export const OUTBOUND_REASON_LABELS: Record<string, string> = {
   manual_outbound: '手动出库',
   sales_outbound: '销售出库',
   sample_outbound: '样品出库',
+  internal_use_outbound: '内部领用',
   adjust_outbound: '调整出库',
   transfer: '调拨出库',
   damage: '报损出库',
@@ -205,6 +214,7 @@ export const OUTBOUND_TYPE_VARIANTS: Record<
   normal_outbound: 'info',
   sales_outbound: 'success',
   sample_outbound: 'secondary',
+  internal_use_outbound: 'outline',
   adjust_outbound: 'warning',
 };
 
@@ -257,6 +267,7 @@ export interface InventoryAdjustment {
   productId: string;
   variantId?: string;
   batchNumber?: string;
+  batchPiecesPerUnit?: number;
   beforeQuantity: number;
   adjustQuantity: number;
   afterQuantity: number;

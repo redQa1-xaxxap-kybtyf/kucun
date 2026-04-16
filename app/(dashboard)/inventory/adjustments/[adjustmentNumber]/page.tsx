@@ -21,7 +21,7 @@ import {
   type InventoryAdjustment,
 } from '@/lib/types/inventory';
 import { formatDateTimeCN } from '@/lib/utils/datetime';
-import { formatNumber } from '@/lib/utils/format';
+import { formatDetailedPieceSummary } from '@/lib/utils/piece-calculation';
 
 // Route Segment Config
 export const dynamic = 'force-dynamic';
@@ -65,9 +65,8 @@ function DetailRow({
   );
 }
 
-function formatQuantity(value: number) {
-  const sign = value > 0 ? '+' : '';
-  return `${sign}${formatNumber(value)}`;
+function getAdjustmentPiecesPerUnit(adjustment: InventoryAdjustmentWithBalance) {
+  return adjustment.batchPiecesPerUnit ?? adjustment.product?.piecesPerUnit ?? 0;
 }
 
 function StatCard({
@@ -140,21 +139,30 @@ function SummaryCard({
   const stats = [
     {
       label: '调整前数量',
-      value: `${formatNumber(adjustment.beforeQuantity)} 片`,
+      value: formatDetailedPieceSummary(
+        adjustment.beforeQuantity,
+        getAdjustmentPiecesPerUnit(adjustment)
+      ),
       icon: <Layers className="h-5 w-5" />,
       iconWrapperClass:
         'bg-[hsl(var(--color-primary-light))] text-[hsl(var(--color-primary))]',
     },
     {
       label: '调整数量',
-      value: `${formatQuantity(adjustment.adjustQuantity)} 片`,
+      value: `${adjustment.adjustQuantity > 0 ? '+' : ''}${formatDetailedPieceSummary(
+        Math.abs(adjustment.adjustQuantity),
+        getAdjustmentPiecesPerUnit(adjustment)
+      )}`,
       icon: <Gauge className="h-5 w-5" />,
       iconWrapperClass:
         'bg-[hsl(var(--color-success-light))] text-[hsl(var(--color-success))]',
     },
     {
       label: '调整后数量',
-      value: `${formatNumber(adjustment.afterQuantity)} 片`,
+      value: formatDetailedPieceSummary(
+        adjustment.afterQuantity,
+        getAdjustmentPiecesPerUnit(adjustment)
+      ),
       icon: <Layers className="h-5 w-5" />,
       iconWrapperClass:
         'bg-[hsl(var(--color-info-light))] text-[hsl(var(--color-info))]',
@@ -163,7 +171,10 @@ function SummaryCard({
       label: '当前批次库存',
       value:
         adjustment.inventoryBalance !== undefined
-          ? `${formatNumber(adjustment.inventoryBalance)} 片`
+          ? formatDetailedPieceSummary(
+              adjustment.inventoryBalance,
+              getAdjustmentPiecesPerUnit(adjustment)
+            )
           : '—',
       icon: <ClipboardList className="h-5 w-5" />,
       iconWrapperClass:
@@ -237,6 +248,14 @@ function ProductInfoCard({
           }
         />
         <DetailRow label="批次号" value={adjustment.batchNumber || '—'} />
+        <DetailRow
+          label="装箱数"
+          value={
+            getAdjustmentPiecesPerUnit(adjustment) > 0
+              ? `${getAdjustmentPiecesPerUnit(adjustment)}片/件`
+              : '—'
+          }
+        />
       </CardContent>
     </Card>
   );
@@ -292,7 +311,7 @@ function BatchTraceCard({ batchNumber }: { batchNumber: string }) {
         </Button>
       </CardHeader>
       <CardContent className="pt-6 text-sm text-[hsl(var(--color-text-secondary))]">
-        批次流水整合入库、出库、调整数据，便于审计和库存复盘。
+        批次流水汇总了入库、出库和调整记录，方便核对库存变化。
       </CardContent>
     </Card>
   );

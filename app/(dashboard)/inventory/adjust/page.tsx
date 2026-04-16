@@ -2,10 +2,13 @@
 
 import { ArrowLeft, PackagePlus, Plus } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useMemo, useRef } from 'react';
 
 import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
+import type { InventoryAdjustFormData } from '@/lib/validations/inventory-operations';
 
 import { InventoryAdjustTable } from './components/InventoryAdjustTable';
 import { useInventoryAdjustPage } from './hooks/useInventoryAdjustPage';
@@ -24,6 +27,7 @@ const InventoryAdjustDialog = dynamic(
  */
 export default function InventoryAdjustPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const {
     showAdjustDialog,
     inventoryRecords,
@@ -32,6 +36,30 @@ export default function InventoryAdjustPage() {
     openAdjustDialog,
     closeAdjustDialog,
   } = useInventoryAdjustPage();
+  const hasOpenedFromQueryRef = useRef(false);
+  const presetReason = searchParams.get('reason');
+  const shouldAutoOpen = searchParams.get('open') === '1';
+  const initialValues = useMemo(() => {
+    if (
+      !presetReason ||
+      !ADJUST_REASON_SET.has(presetReason as InventoryAdjustFormData['reason'])
+    ) {
+      return undefined;
+    }
+
+    return {
+      reason: presetReason as InventoryAdjustFormData['reason'],
+    };
+  }, [presetReason]);
+
+  useEffect(() => {
+    if (!shouldAutoOpen || hasOpenedFromQueryRef.current) {
+      return;
+    }
+
+    hasOpenedFromQueryRef.current = true;
+    openAdjustDialog();
+  }, [openAdjustDialog, shouldAutoOpen]);
 
   // 处理返回操作
   const handleBack = () => {
@@ -44,7 +72,11 @@ export default function InventoryAdjustPage() {
         {/* 页面标题 */}
         <PageHeader
           title="库存调整"
-          description="查看当前库存状态并进行调整操作"
+          description={
+            initialValues?.reason === 'damage_loss'
+              ? '处理仓内破损、报废和损耗，扣减库存后会自动登记到手工报损台账'
+              : '查看当前库存状态并进行调整操作'
+          }
           icon={<PackagePlus className="h-6 w-6 text-white" />}
           iconBgColor="hsl(var(--color-success))"
           actions={
@@ -57,6 +89,11 @@ export default function InventoryAdjustPage() {
               >
                 <ArrowLeft className="h-4 w-4" />
                 返回
+              </Button>
+              <Button variant="outline" size="lg" className="h-11 gap-2" asChild>
+                <Link href="/inventory/manual-damage">
+                  查看手工报损台账
+                </Link>
               </Button>
               <Button
                 size="lg"
@@ -75,6 +112,7 @@ export default function InventoryAdjustPage() {
           <InventoryAdjustDialog
             onClose={closeAdjustDialog}
             onSuccess={handleAdjustSuccess}
+            initialValues={initialValues}
           />
         ) : null}
 
@@ -94,3 +132,12 @@ export default function InventoryAdjustPage() {
     </div>
   );
 }
+
+const ADJUST_REASON_SET = new Set<InventoryAdjustFormData['reason']>([
+  'inventory_gain',
+  'inventory_loss',
+  'damage_loss',
+  'surplus_gain',
+  'transfer',
+  'other',
+]);

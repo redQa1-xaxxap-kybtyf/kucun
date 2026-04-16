@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import {
   useDeleteInboundRecord,
   useUpdateInboundRecord,
@@ -110,8 +111,8 @@ function getUnitCostInputPlaceholder(mode: OpeningBalanceUnitCostEntryMode) {
 
 function getUnitCostInputHelperText(mode: OpeningBalanceUnitCostEntryMode) {
   return mode === 'unit'
-    ? '当前按件录入：直接填 96 会按件价换算成单片成本；若这一条本身就是片价，可明确写 24片价。'
-    : '当前按片录入：直接填 24 会按单片成本保存；若拿到的是件价，也支持写 96元/件 自动换算。';
+    ? '现在按件价填写。直接填 96 会自动换算成单片成本；如果这一条本来就是片价，也可以写成 24片价。'
+    : '现在按片价填写。直接填 24 会按单片成本保存；如果你手里拿到的是件价，也可以写成 96元/件 自动换算。';
 }
 
 function parseCorrectedQuantity(input: string, piecesPerUnit: number) {
@@ -156,6 +157,11 @@ export function OpeningBalanceRecordActions({
     React.useState<OpeningBalanceUnitCostEntryMode>('piece');
 
   const piecesPerUnit = getPiecesPerUnit(record);
+  const initialQuantityInput = formatEditableQuantityInput(
+    record.quantity,
+    piecesPerUnit
+  );
+  const initialUnitCostInput = formatUnitCostInput(record.unitCost);
   const currentQuantityDisplay = formatQuantityDisplay(
     record.quantity,
     piecesPerUnit
@@ -166,13 +172,38 @@ export function OpeningBalanceRecordActions({
 
   React.useEffect(() => {
     if (editOpen) {
-      setQuantityInput(
-        formatEditableQuantityInput(record.quantity, piecesPerUnit)
-      );
-      setUnitCostInput(formatUnitCostInput(record.unitCost));
+      setQuantityInput(initialQuantityInput);
+      setUnitCostInput(initialUnitCostInput);
       setUnitCostEntryMode('piece');
     }
-  }, [editOpen, piecesPerUnit, record.quantity, record.unitCost]);
+  }, [editOpen, initialQuantityInput, initialUnitCostInput]);
+
+  const hasUnsavedChanges =
+    editOpen &&
+    !updateMutation.isPending &&
+    (quantityInput !== initialQuantityInput ||
+      unitCostInput !== initialUnitCostInput ||
+      unitCostEntryMode !== 'piece');
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前期初库存更正内容尚未保存，确定要关闭吗？',
+  });
+
+  const handleEditOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen && !confirmLeavePage()) {
+      return;
+    }
+
+    setEditOpen(nextOpen);
+  };
+
+  const handleEditCancel = () => {
+    if (!confirmLeavePage()) {
+      return;
+    }
+
+    setEditOpen(false);
+  };
 
   const correctionPreview = React.useMemo(() => {
     try {
@@ -326,12 +357,12 @@ export function OpeningBalanceRecordActions({
         </Button>
       </div>
 
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+      <Dialog open={editOpen} onOpenChange={handleEditOpenChange}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>更正期初库存</DialogTitle>
             <DialogDescription>
-              这里修改的是原始期初入库记录，不会新增库存调整单。适合处理还没被后续业务污染的导入错误；数量和单位成本都可以单独改。
+              这里直接修改这条期初记录，适合处理刚导入就发现录错、还没被后续单据用到的情况。数量和成本都可以单独改。
             </DialogDescription>
           </DialogHeader>
 
@@ -339,8 +370,7 @@ export function OpeningBalanceRecordActions({
             <Alert className="border-blue-200 bg-blue-50/80 text-blue-900">
               <RotateCcw className="h-4 w-4" />
               <AlertDescription className="leading-6">
-                如果这条期初记录已经被出库、销售或 FIFO
-                消耗，系统会自动拦截，避免把历史账弄乱。
+                如果这条期初记录已经被出库、销售或其他后续单据用到，系统会自动拦住，避免把后面的账带乱。
               </AlertDescription>
             </Alert>
 
@@ -372,7 +402,7 @@ export function OpeningBalanceRecordActions({
               <div>
                 <div className="text-xs text-slate-500">包装规格</div>
                 <div className="mt-1 font-semibold text-slate-900">
-                  {piecesPerUnit > 0 ? `${piecesPerUnit}片/件` : '未维护装箱数'}
+                  {piecesPerUnit > 0 ? `${piecesPerUnit}片/件` : '未填写'}
                 </div>
               </div>
               <div>
@@ -400,7 +430,7 @@ export function OpeningBalanceRecordActions({
               />
               <div className="text-xs text-slate-500">
                 {piecesPerUnit > 0
-                  ? `系统会自动按 ${piecesPerUnit} 片/件换算。例如 115件 会换算成 ${115 * piecesPerUnit}片。`
+                  ? `系统会按 ${piecesPerUnit} 片/件帮你换算。例如 115件 会换算成 ${115 * piecesPerUnit}片。`
                   : '该记录没有装箱数，只能按片数更正。'}
               </div>
             </div>
@@ -409,7 +439,7 @@ export function OpeningBalanceRecordActions({
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="text-xs font-medium text-slate-600">
-                    单价输入口径
+                    单价填写方式
                   </div>
                   <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1">
                     <Button
@@ -470,14 +500,14 @@ export function OpeningBalanceRecordActions({
               ) : (
                 <div className="space-y-1">
                   <div>
-                    解析后数量：
+                    保存后数量：
                     {formatQuantityDisplay(
                       correctionPreview.parsedQuantity ?? 0,
                       piecesPerUnit
                     )}
                   </div>
                   <div>
-                    解析后单位成本：
+                    保存后单片成本：
                     {correctionPreview.parsedUnitCost !== undefined
                       ? formatCostPrice(correctionPreview.parsedUnitCost, {
                           fallback: '—',
@@ -485,7 +515,7 @@ export function OpeningBalanceRecordActions({
                       : formatCostPrice(record.unitCost, { fallback: '—' })}
                   </div>
                   <div>
-                    预计总成本：
+                    保存后总成本：
                     {formatAmount(
                       typeof (
                         correctionPreview.parsedUnitCost ?? record.unitCost
@@ -512,7 +542,7 @@ export function OpeningBalanceRecordActions({
             <Button
               type="button"
               variant="outline"
-              onClick={() => setEditOpen(false)}
+              onClick={handleEditCancel}
               disabled={updateMutation.isPending}
             >
               取消
@@ -543,7 +573,7 @@ export function OpeningBalanceRecordActions({
             <AlertDialogDescription className="leading-6">
               这会删除原始期初入库记录 <strong>{record.recordNumber}</strong>。
               <br />
-              仅当这条记录还没有被后续业务消耗时，系统才会允许删除。
+              只有当这条记录还没有被后续业务使用时，系统才会允许删除。
               删除后建议立即按正确数量重新导入。
             </AlertDialogDescription>
           </AlertDialogHeader>

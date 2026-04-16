@@ -187,6 +187,7 @@ export const INVENTORY_ADJUSTMENT_SELECT = {
       name: true,
       specification: true,
       unit: true,
+      piecesPerUnit: true,
     },
   },
   variant: {

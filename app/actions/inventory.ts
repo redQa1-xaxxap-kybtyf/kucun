@@ -36,7 +36,7 @@ const ADJUST_REASON_MAP: Record<string, AdjustReason> = {
 };
 
 const inventoryAdjustFormSchema = z.object({
-  productId: z.string().min(1, '产品 ID 不能为空'),
+  productId: z.string().min(1, '产品不能为空'),
   variantId: z
     .string()
     .optional()
@@ -208,3 +208,4 @@ export async function batchAdjustInventory(
     };
   }
 }
+

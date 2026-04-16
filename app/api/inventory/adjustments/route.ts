@@ -8,6 +8,10 @@ import {
 } from '@/lib/api/pagination';
 import { prisma } from '@/lib/db';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
+import {
+  getBatchPiecesPerUnitFromMap,
+  loadBatchPiecesPerUnitMap,
+} from '@/lib/utils/batch-pieces-per-unit';
 import { inventoryAdjustmentsQuerySchema } from '@/lib/validations/inventory-queries';
 
 /**
@@ -128,7 +132,7 @@ type AdjustmentWithRelations = {
     id: string;
     code: string;
     name: string;
-    piecesPerUnit: number;
+    piecesPerUnit: number | null;
   };
   variant: {
     id: string;
@@ -146,13 +150,17 @@ type AdjustmentWithRelations = {
   } | null;
 };
 
-function formatAdjustmentData(adjustment: AdjustmentWithRelations) {
+function formatAdjustmentData(
+  adjustment: AdjustmentWithRelations,
+  batchPiecesPerUnit?: number
+) {
   return {
     id: adjustment.id,
     adjustmentNumber: adjustment.adjustmentNumber,
     productId: adjustment.productId,
     variantId: adjustment.variantId,
     batchNumber: adjustment.batchNumber,
+    batchPiecesPerUnit,
     beforeQuantity: adjustment.beforeQuantity,
     adjustQuantity: adjustment.adjustQuantity,
     afterQuantity: adjustment.afterQuantity,
@@ -271,8 +279,21 @@ const getInventoryAdjustmentsHandler = withErrorHandling(
       prisma.inventoryAdjustment.count({ where }),
     ]);
 
+    const batchPiecesMap = await loadBatchPiecesPerUnitMap(
+      adjustments.map(adjustment => ({
+        productId: adjustment.productId,
+        variantId: adjustment.variantId,
+        batchNumber: adjustment.batchNumber,
+      }))
+    );
+
     // 格式化数据
-    const formattedAdjustments = adjustments.map(formatAdjustmentData);
+    const formattedAdjustments = adjustments.map(adjustment =>
+      formatAdjustmentData(
+        adjustment as AdjustmentWithRelations,
+        getBatchPiecesPerUnitFromMap(batchPiecesMap, adjustment)
+      )
+    );
     const pagination = buildOffsetPaginationMeta({ page, limit, total });
 
     return NextResponse.json({

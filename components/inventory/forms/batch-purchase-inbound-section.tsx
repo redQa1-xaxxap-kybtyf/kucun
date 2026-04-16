@@ -153,7 +153,7 @@ export function BatchPurchaseInboundSection({
       <Alert className="border-blue-200 bg-blue-50">
         <AlertCircle className="h-4 w-4 text-blue-600" />
         <AlertDescription className="text-sm text-blue-800">
-          批量采购入库时，先填写产品、批次、数量和成本；装箱数、重量、破损等信息可按需要补充。
+          同一供应商一次到多种货时，可以在这里一起录入；每件片数、重量、破损这些内容按需要再补。
         </AlertDescription>
       </Alert>
 
@@ -341,9 +341,13 @@ export function BatchPurchaseInboundSection({
                       </p>
                     </div>
                     <div>
-                      <span className="text-slate-400">默认装箱数</span>
+                      <span className="text-slate-400">现有批次规格</span>
                       <p className="mt-1 font-semibold text-slate-900">
-                        {selectedProduct.piecesPerUnit || 1} 片
+                        {selectedProduct.batchSpecs?.length
+                          ? selectedProduct.batchSpecs.length === 1
+                            ? `${selectedProduct.batchSpecs[0].piecesPerUnit} 片/件`
+                            : `${selectedProduct.batchSpecs.length} 个历史批次`
+                          : '还没有历史批次'}
                       </p>
                     </div>
                     <div>
@@ -366,7 +370,7 @@ export function BatchPurchaseInboundSection({
                   </div>
                   <div>
                     <p className="text-xs font-medium text-slate-500">
-                      当前录入方式
+                      数量填写方式
                     </p>
                     <p className="mt-1 text-sm font-semibold text-slate-900">
                       {row.inputUnit === 'units'
@@ -418,14 +422,14 @@ export function BatchPurchaseInboundSection({
 
                       <div className="space-y-2">
                         <label className="text-sm font-semibold text-slate-700">
-                          每件重量(kg)
+                          本次每件重量(kg)
                         </label>
                         <Input
                           type="number"
                           min="0.01"
                           step="0.01"
                           value={row.weight ?? ''}
-                          placeholder="可选"
+                          placeholder="不填则本次不记录重量"
                           onChange={event =>
                             onFieldChange(
                               row.id,

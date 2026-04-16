@@ -17,7 +17,7 @@ export interface Inventory {
   location?: string; // 存储位置
   updatedAt: string;
   batchPiecesPerUnit?: number; // 批次级每件片数
-  weight?: number; // 产品重量(kg) - 优先使用批次级重量，回退到产品默认重量
+  weight?: number; // 重量(kg) - 优先使用批次实际重量，回退到产品默认重量
 
   // 关联数据（可选，根据查询需要包含）
   product?: Product;

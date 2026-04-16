@@ -33,7 +33,7 @@ export const POST = withAuth(
 
     if (!idValidationResult.success) {
       return errorResponse(
-        `参数验证失败: ${idValidationResult.error.issues[0]?.message}`,
+        `提交内容有误： ${idValidationResult.error.issues[0]?.message}`,
         400
       );
     }
@@ -58,3 +58,4 @@ export const POST = withAuth(
   },
   { permissions: ['inventory:manage'] }
 );
+

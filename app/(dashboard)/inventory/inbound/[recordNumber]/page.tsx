@@ -76,7 +76,7 @@ function ProductInfoCard({ record }: { record: InboundRecordDetail }) {
     <Card className="border-slate-200 bg-white shadow-sm transition-all hover:shadow-md">
       <CardHeader className="border-b border-slate-100 bg-slate-50 px-4 py-4 sm:px-6">
         <CardTitle className="text-sm font-black tracking-widest text-slate-500 uppercase italic">
-          核心产品参数
+          核心产品信息
         </CardTitle>
       </CardHeader>
       <CardContent className="grid gap-4 px-4 pt-4 pb-6 text-sm sm:px-6 sm:pt-6">
@@ -153,7 +153,7 @@ function OperationRecordCard({
     <Card className="border-slate-200 bg-white shadow-sm transition-all hover:shadow-md">
       <CardHeader className="border-b border-slate-100 bg-slate-50 px-4 py-4 sm:px-6">
         <CardTitle className="text-sm font-black tracking-widest text-slate-500 uppercase italic">
-          系统记账存证
+          入库信息
         </CardTitle>
       </CardHeader>
       <CardContent className="grid gap-4 p-4 text-sm sm:p-6">
@@ -167,14 +167,14 @@ function OperationRecordCard({
         </div>
         <div className="grid gap-1 sm:grid-cols-[100px_1fr] sm:items-center sm:gap-2">
           <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
-            初始记账
+            录入时间
           </span>
           <span className="font-mono text-xs text-slate-500">{createdAt}</span>
         </div>
         {updatedAt && (
           <div className="grid gap-1 sm:grid-cols-[100px_1fr] sm:items-center sm:gap-2">
             <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
-              最后变更
+              最近修改
             </span>
             <span className="font-mono text-xs text-slate-500">
               {updatedAt}
@@ -183,7 +183,7 @@ function OperationRecordCard({
         )}
         <div className="grid gap-1 sm:grid-cols-[100px_1fr] sm:items-center sm:gap-2">
           <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
-            库位指引
+            库位
           </span>
           <span className="font-bold text-slate-700">
             {record.location || '—'}
@@ -199,7 +199,7 @@ function OperationRecordCard({
         </div>
         <div className="grid gap-1 sm:grid-cols-[100px_1fr] sm:items-center sm:gap-2">
           <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
-            系统入库
+            实际入库
           </span>
           <span className="font-bold text-slate-900">{acceptedQuantity}</span>
         </div>
@@ -238,8 +238,7 @@ function OperationRecordCard({
               </span>
             </div>
             <div className="rounded-xl border border-amber-100 bg-amber-50/70 px-3 py-2 text-xs leading-5 text-amber-800">
-              记账口径说明：库存与 FIFO
-              仅按“系统入库”入账，到货破损单独登记用于赔付追踪或内部损耗统计。
+              库存只按“实际入库”数量增加，破损数量单独登记，方便后续追赔或内部核对。
             </div>
           </>
         ) : null}
@@ -262,10 +261,10 @@ function BatchTraceCard({ batchNumber }: { batchNumber: string }) {
       <CardHeader className="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/50 px-4 py-4 sm:px-6 sm:py-5 xl:flex-row xl:items-center xl:justify-between">
         <div>
           <CardTitle className="text-sm font-black tracking-widest text-slate-500 uppercase italic">
-            批次效期追溯
+            批次去向
           </CardTitle>
           <p className="mt-1 text-xs font-bold text-slate-400">
-            追踪批次 {batchNumber} 的完整库存生命周期流水
+            看这个批次从入库到出库的来龙去脉
           </p>
         </div>
         <Button
@@ -277,12 +276,12 @@ function BatchTraceCard({ batchNumber }: { batchNumber: string }) {
           <Link
             href={`/inventory/batch/${encodeURIComponent(batchNumber)}/history`}
           >
-            查看全链路流水
+            查看批次明细
           </Link>
         </Button>
       </CardHeader>
       <CardContent className="p-4 text-xs text-slate-400 italic sm:p-6">
-        通过点击右上角链接，您可以多维度追溯该批次产品的入库、出库、调拨及库存调整轨迹。
+        点右上角可以查看这个批次的入库、出库、调拨和调整记录。
       </CardContent>
     </Card>
   );

@@ -16,7 +16,7 @@ export const openingBalanceImportBatchCorrectionSchema = z.object({
   corrections: z
     .array(
       z.object({
-        id: z.string().uuid('记录ID格式不正确'),
+        id: z.string().uuid('记录编号格式不正确'),
         quantity: z
           .number()
           .int('数量必须是整数')

@@ -7,7 +7,7 @@ import {
   useQueryClient,
   type UseMutationResult,
 } from '@tanstack/react-query';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   useForm,
   useWatch,
@@ -91,6 +91,7 @@ const OUTBOUND_TYPE_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'normal_outbound', label: '正常出库' },
   { value: 'sales_outbound', label: '销售出库' },
   { value: 'sample_outbound', label: '样品出库' },
+  { value: 'internal_use_outbound', label: '内部领用' },
   { value: 'adjust_outbound', label: '调整出库' },
 ];
 
@@ -110,8 +111,8 @@ const FORM_CONFIG: {
         reason: 'purchase',
         remarks: '',
         batchNumber: '',
-        piecesPerUnit: 1,
-        weight: 0.01,
+        piecesPerUnit: undefined,
+        weight: undefined,
       }) satisfies DefaultValues<CreateInboundData>,
     title: '产品入库',
     description: '录入新的入库记录',
@@ -155,6 +156,8 @@ const FORM_CONFIG: {
         currentQuantity: undefined,
         maxQuantity: undefined,
         minQuantity: undefined,
+        damageCategory: 'damage',
+        damageHandling: 'internal_loss',
       }) satisfies DefaultValues<InventoryAdjustFormData>,
     title: '库存调整',
     description: '调整库存数量',
@@ -166,6 +169,7 @@ export interface UseInventoryOperationFormProps<
 > {
   mode: M;
   onSuccess?: (result: OperationResultByMode[M]) => void;
+  initialValues?: Partial<FormValuesByMode[M]>;
 }
 
 interface UseInventoryOperationFormReturn<
@@ -185,11 +189,16 @@ export function useInventoryOperationForm<
 >({
   mode,
   onSuccess,
+  initialValues,
 }: UseInventoryOperationFormProps<M>): UseInventoryOperationFormReturn<M> {
   const config = useMemo(() => FORM_CONFIG[mode], [mode]);
   const buildDefaultValues = useCallback(
-    () => config.getDefaultValues(),
-    [config]
+    () =>
+      ({
+        ...config.getDefaultValues(),
+        ...(initialValues ?? {}),
+      }) as DefaultValues<FormValuesByMode[M]>,
+    [config, initialValues]
   );
   const defaultValues = useMemo(
     () => buildDefaultValues(),
@@ -227,6 +236,33 @@ export function useInventoryOperationForm<
     mode === 'outbound' && typeof watchedQuantity === 'number'
       ? watchedQuantity
       : undefined;
+  const watchedOutboundType = useWatch({
+    control: form.control,
+    name: 'type' as any,
+  });
+  const outboundType =
+    mode === 'outbound' && typeof watchedOutboundType === 'string'
+      ? watchedOutboundType
+      : undefined;
+
+  useEffect(() => {
+    if (
+      mode !== 'outbound' ||
+      outboundType === 'sales_outbound' ||
+      outboundType === 'sample_outbound'
+    ) {
+      return;
+    }
+
+    const customerId = form.getValues('customerId' as any);
+    if (typeof customerId === 'string' && customerId.trim().length > 0) {
+      form.setValue('customerId' as any, '' as any, {
+        shouldDirty: true,
+        shouldTouch: true,
+        shouldValidate: true,
+      });
+    }
+  }, [form, mode, outboundType]);
 
   const availabilityQuery = useAvailabilityData({
     productId,
@@ -474,6 +510,8 @@ function normalizeAdjustValues(
     currentQuantity: values.currentQuantity,
     maxQuantity: values.maxQuantity,
     minQuantity: values.minQuantity,
+    damageCategory: values.damageCategory,
+    damageHandling: values.damageHandling,
   };
 }
 

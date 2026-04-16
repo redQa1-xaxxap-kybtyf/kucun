@@ -27,6 +27,7 @@ type OutboundWhereClause = {
 const OUTBOUND_REASON_TYPE_MAP: Record<string, OutboundRecord['type']> = {
   sales_outbound: 'sales_outbound',
   sample_outbound: 'sample_outbound',
+  internal_use_outbound: 'internal_use_outbound',
   adjust_outbound: 'adjust_outbound',
   transfer: 'adjust_outbound',
   damage: 'adjust_outbound',
@@ -343,6 +344,13 @@ export async function getOutboundRecordByNumber(recordNumber: string): Promise<
     where: { id: record.inventoryId },
     select: { quantity: true },
   });
+  const batchSpecMap = await fetchBatchSpecifications([
+    record as OutboundRecordWithRelations,
+  ]);
+  const formattedRecord = formatRecordWithBatchInfo(
+    record as OutboundRecordWithRelations,
+    batchSpecMap
+  );
 
   const detail: OutboundRecord & {
     inventoryBalance?: number;
@@ -351,9 +359,14 @@ export async function getOutboundRecordByNumber(recordNumber: string): Promise<
   } = {
     id: record.id,
     recordNumber: record.recordNumber,
-    type: mapOutboundReasonToType(record.reason),
+    type: formattedRecord.type,
     productId: record.productId,
+    productCode: formattedRecord.productCode,
+    productName: formattedRecord.productName,
+    productSpecification: formattedRecord.productSpecification ?? undefined,
     batchNumber: record.batchNumber ?? undefined,
+    piecesPerUnit: formattedRecord.piecesPerUnit,
+    variantId: record.variantId ?? undefined,
     quantity: Number(record.quantity),
     unitCost:
       record.unitCost === null || record.unitCost === undefined
@@ -368,6 +381,8 @@ export async function getOutboundRecordByNumber(recordNumber: string): Promise<
     userId: record.operatorId,
     remarks: record.notes ?? undefined,
     createdAt: record.createdAt.toISOString(),
+    weightPerUnit: formattedRecord.weightPerUnit,
+    totalWeight: formattedRecord.totalWeight,
     product: record.product
       ? ({
           id: record.product.id,
@@ -377,10 +392,13 @@ export async function getOutboundRecordByNumber(recordNumber: string): Promise<
           unit: record.product.unit as NonNullable<
             OutboundRecord['product']
           >['unit'],
-          piecesPerUnit: record.product.piecesPerUnit ?? 0,
+          piecesPerUnit:
+            formattedRecord.piecesPerUnit ?? record.product.piecesPerUnit ?? 0,
           weight:
-            record.product.weight === null ||
-            record.product.weight === undefined
+            formattedRecord.weightPerUnit !== undefined
+              ? formattedRecord.weightPerUnit
+              : record.product.weight === null ||
+                  record.product.weight === undefined
               ? undefined
               : toNumber(record.product.weight),
         } satisfies NonNullable<OutboundRecord['product']>)
@@ -412,7 +430,7 @@ export async function getOutboundRecordByNumber(recordNumber: string): Promise<
           orderNumber: record.salesOrder.orderNumber,
         }
       : undefined,
-    reason: record.reason,
+    reason: formattedRecord.reason,
     updatedAt: record.updatedAt.toISOString(),
     inventoryBalance: inventoryRecord?.quantity ?? undefined,
   };

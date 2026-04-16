@@ -211,7 +211,7 @@ function BatchSummaryCards({
 
 export function OpeningBalanceImportBatchActions({
   batchId,
-  triggerLabel = '按导入批次处理',
+  triggerLabel = '处理这次导入',
   triggerClassName,
   triggerVariant = 'outline',
   triggerSize = 'sm',
@@ -339,7 +339,7 @@ export function OpeningBalanceImportBatchActions({
     const targetRecords = detail.records.filter(record => record.canCorrect);
     if (targetRecords.length === 0) {
       showWarning('当前没有可填入的记录', {
-        description: '这批记录都已进入后续业务流程，不能再批量改价。',
+        description: '这批记录都已经被后续单据用到了，暂时不能批量改价。',
       });
       return;
     }
@@ -356,7 +356,7 @@ export function OpeningBalanceImportBatchActions({
 
     if (normalizedLines.every(line => line.trim() === '')) {
       showWarning('请先粘贴单价列', {
-        description: '支持直接粘贴 Excel 单列价格，一行对应一条可更正记录。',
+        description: '可以直接粘贴 Excel 里的单价列，一行对应一条可修改的记录。',
       });
       return;
     }
@@ -445,9 +445,9 @@ export function OpeningBalanceImportBatchActions({
     ) => {
       if (savedQuantityMode !== 'unit') {
         if (!options.silent) {
-          showWarning('当前保存值已按片数处理', {
+          showWarning('当前数量本来就是按片数保存的', {
             description:
-              '只有在这条记录当前保存的其实是“件数”时，才需要切到“当前保存值其实是件数”后再执行换算。',
+              '只有当这条记录原来把“件数”直接存进系统时，才需要切到“其实是件数”后再做换算。',
           });
         }
         return false;
@@ -459,7 +459,7 @@ export function OpeningBalanceImportBatchActions({
       );
       if (!preview) {
         if (!options.silent) {
-          showWarning('当前记录不能自动换算', {
+          showWarning('这条记录暂时不能自动换算', {
             description: '请先确认数量、单位成本和每件片数是否完整。',
           });
         }
@@ -490,9 +490,9 @@ export function OpeningBalanceImportBatchActions({
     }
 
     if (savedQuantityMode !== 'unit') {
-      showWarning('当前保存值已按片数处理', {
+      showWarning('当前数量本来就是按片数保存的', {
         description:
-          '像 4277片(约329件) 这种正常记录不需要再乘装箱数。只有当当前保存值其实是“件数”时，才切到“当前保存值其实是件数”后再批量换算。',
+          '像 4277片（约329件）这种正常数据，不需要再乘装箱数。只有原来把件数直接存进系统时，才需要切到“其实是件数”后再批量换算。',
       });
       return;
     }
@@ -509,15 +509,15 @@ export function OpeningBalanceImportBatchActions({
     });
 
     if (appliedCount === 0) {
-      showWarning('没有可自动换算的记录', {
-        description: '这批数据里没有满足“件转片”自动换算条件的行。',
+      showWarning('没有可换算的记录', {
+        description: '这批数据里没有符合按件数换成片数条件的记录。',
       });
       return;
     }
 
     showSuccess('已批量填充换算结果', {
       description:
-        '系统已按当前保存值的“件数/件价”预填为“片数/单片成本”，请复核后再提交。',
+        '系统已经把当前的件数、件价预先换成片数和单片成本，请复核后再提交。',
     });
   }, [applyCurrentUnitConversion, detailQuery.data, savedQuantityMode]);
 
@@ -616,9 +616,9 @@ export function OpeningBalanceImportBatchActions({
       >
         <DialogContent className="max-h-[92vh] max-w-6xl overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>按导入批次处理期初库存</DialogTitle>
+            <DialogTitle>处理这次导入的期初库存</DialogTitle>
             <DialogDescription>
-              适合处理同一次期初批量导入录错数量的场景。系统会先核对这批数据是否已经进入后续业务流程，再决定哪些行可以更正或整批删除。
+              适合处理同一次导入里数量或价格录错的情况。系统会先判断这批数据有没有被后续单据用到，再决定哪些行还能修改或整批删除。
             </DialogDescription>
           </DialogHeader>
 
@@ -643,8 +643,7 @@ export function OpeningBalanceImportBatchActions({
               <Alert className="border-blue-200 bg-blue-50/80 text-blue-900">
                 <ClipboardList className="h-4 w-4" />
                 <AlertDescription className="leading-6">
-                  处理策略：可以直接改这次导入的原始期初数量；如果整批都还没被后续业务使用，也可以整批删除后重新导入。已经被销售、出库或
-                  FIFO 占用的记录会被系统自动拦住。
+                  这次导入的原始数量可以直接改；如果整批都还没被后续单据用到，也可以整批删掉后重新导入。已经被销售、出库或其他单据用到的记录，系统会自动拦住。
                 </AlertDescription>
               </Alert>
 
@@ -652,7 +651,7 @@ export function OpeningBalanceImportBatchActions({
                 <Alert className="border-amber-200 bg-amber-50/80 text-amber-900">
                   <AlertTriangle className="h-4 w-4" />
                   <AlertDescription className="leading-6">
-                    当前批次里存在已经进入后续业务流程的记录，不能整批删除。请只更正可处理的行，或者改用库存调整处理后续业务数据。
+                    当前这批数据里已经有部分被后续单据用到了，不能整批删除。请只修改还能处理的行，后续已经用到的部分建议走库存调整。
                   </AlertDescription>
                 </Alert>
               ) : null}
@@ -660,7 +659,7 @@ export function OpeningBalanceImportBatchActions({
               <div className="flex flex-wrap items-center gap-2 rounded-xl border border-dashed border-blue-200 bg-blue-50/40 p-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="text-xs font-medium text-slate-600">
-                    当前保存值口径
+                    当前数量是按什么存的
                   </div>
                   <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1">
                     <Button
@@ -705,7 +704,7 @@ export function OpeningBalanceImportBatchActions({
                     savedQuantityMode !== 'unit'
                   }
                 >
-                  按当前件数/件价批量换算
+                  把当前件数批量换成片数
                 </Button>
                 <Button
                   type="button"
@@ -721,8 +720,8 @@ export function OpeningBalanceImportBatchActions({
                 </Button>
                 <div className="text-xs text-slate-500">
                   {savedQuantityMode === 'unit'
-                    ? '当前处于“其实是件数”模式。系统会把当前保存值当成件数/件价，再换算成片数/单片成本预填到输入框。'
-                    : '默认安全模式：当前保存值按片数看待。像 4277片(约329件) 这种正常记录，不需要再做件转片。只有当系统里错把 329件 保存成 329片 时，才切到“其实是件数”。'}
+                    ? '现在按“原来存进去的其实是件数”来处理。系统会把当前数量和单价先换算成片数、单片成本，再填到输入框里。'
+                    : '默认按“原来存进去的就是片数”来处理。像 4277片（约329件）这种正常数据，不需要再换算；只有当时把 329件 直接存成 329片，才切到“其实是件数”。'}
                 </div>
               </div>
 
@@ -731,7 +730,7 @@ export function OpeningBalanceImportBatchActions({
                   <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
                       <div className="text-xs font-medium text-slate-600">
-                        单价输入口径
+                        单价填写方式
                       </div>
                       <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1">
                         <Button
@@ -785,7 +784,7 @@ export function OpeningBalanceImportBatchActions({
                       correctMutation.isPending || deleteMutation.isPending
                     }
                   >
-                    {bulkPasteOpen ? '收起单价粘贴区' : '批量粘贴单价列'}
+                    {bulkPasteOpen ? '收起批量填价' : '批量填单价'}
                   </Button>
                 </div>
 
@@ -793,10 +792,10 @@ export function OpeningBalanceImportBatchActions({
                   <div className="mt-3 rounded-lg border border-dashed border-slate-200 bg-white p-3">
                     <div className="space-y-2">
                       <div className="text-xs font-medium text-slate-700">
-                        直接粘贴 Excel 单列价格
+                        直接粘贴 Excel 里的单价列
                       </div>
                       <div className="text-xs leading-5 text-slate-500">
-                        一行对应当前表格里一条“可批量更正”的记录，按上到下顺序填入。空行会保留原值。
+                        一行对应表格里一条可修改的记录，按从上到下的顺序填入。空行会保留原来的价格。
                       </div>
                       <Textarea
                         aria-label="批量粘贴单价列"
@@ -944,10 +943,10 @@ export function OpeningBalanceImportBatchActions({
                                   }
                                   disabled={correctMutation.isPending}
                                 >
-                                  按当前件口径换算
+                                  按件数重新换算
                                 </Button>
                                 <span className="text-[11px] text-slate-400">
-                                  将当前保存值换算为{' '}
+                                  换算后会变成{' '}
                                   {formatQuantityDisplay(
                                     conversionPreview.quantity,
                                     record.piecesPerUnit
@@ -956,7 +955,7 @@ export function OpeningBalanceImportBatchActions({
                               </div>
                             ) : record.canCorrect ? (
                               <div className="mt-2 text-[11px] text-slate-400">
-                                当前保存值按片数看待。若这条记录当时把“件数”直接存进了系统，再切到“其实是件数”执行换算。
+                                现在按“原来就是片数”来看待。如果这条记录当时把件数直接存进了系统，再切到“其实是件数”去换算。
                               </div>
                             ) : null}
                             {record.warningMessage ? (
@@ -1001,7 +1000,7 @@ export function OpeningBalanceImportBatchActions({
                             {record.canCorrect ? (
                               <div className="space-y-1 text-xs">
                                 <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
-                                  可批量更正数量/成本
+                                  可批量修改数量和成本
                                 </Badge>
                                 {record.canDelete ? (
                                   <div className="text-emerald-600">
@@ -1089,7 +1088,7 @@ export function OpeningBalanceImportBatchActions({
               这会删除导入批次 <strong>{batchId}</strong>{' '}
               下的全部期初记录，并同步扣回库存。
               <br />
-              只有当这批记录都还没有进入后续业务流程时，系统才允许执行整批删除。
+              只有当这批记录都还没有被后续单据用到时，系统才允许整批删除。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

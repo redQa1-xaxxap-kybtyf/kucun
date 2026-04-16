@@ -193,7 +193,10 @@ export function useCreateBatchInboundRecords() {
       if (!response.ok) {
         const error = await response.json();
         const errorMessage =
-          error.error || error.message || error.details || '批量创建入库记录失败';
+          error.error ||
+          error.message ||
+          error.details ||
+          '批量创建入库记录失败';
         throw new Error(
           typeof errorMessage === 'string'
             ? errorMessage
@@ -406,7 +409,9 @@ export function useProductSearch(query: string) {
           label: product.name,
           code: product.code,
           unit: product.unit || 'piece',
-          piecesPerUnit: product.piecesPerUnit || 1,
+          // 手工入库不再使用产品主档默认装箱数/重量，避免误带入本次批次数据
+          piecesPerUnit: undefined,
+          weight: undefined,
           specification: product.specification,
           currentStock: product.inventory?.totalQuantity || 0,
           batchSpecs: product.batchSpecs || [],

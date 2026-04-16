@@ -169,7 +169,7 @@ describe('initial-stock import handler', () => {
     expect(result.errors[0].message).toContain('存在多个色号');
   });
 
-  test('未填写装箱数时，预览默认使用产品档案中的装箱数', async () => {
+  test('未填写装箱数时，预览不再默认继承产品档案中的装箱数和重量', async () => {
     prisma.product.findMany.mockResolvedValue([
       {
         id: 'product-ppu',
@@ -203,15 +203,15 @@ describe('initial-stock import handler', () => {
       inputQuantity: 60,
       quantityUnit: '片',
       quantityUnitSource: 'default',
-      piecesPerUnit: 6,
-      piecesPerUnitSource: 'product',
-      weight: 28.5,
-      weightSource: 'product',
+      piecesPerUnit: undefined,
+      piecesPerUnitSource: undefined,
+      weight: undefined,
+      weightSource: undefined,
       quantity: 60,
     });
   });
 
-  test('数量单位为件时，会按装箱数自动换算成片', async () => {
+  test('数量单位为件时，只按当前行填写的装箱数换算成片', async () => {
     prisma.product.findMany.mockResolvedValue([
       {
         id: 'product-box-convert',
@@ -233,6 +233,7 @@ describe('initial-stock import handler', () => {
         批次号: 'BOX-115',
         数量: 115,
         数量单位: '件',
+        装箱数: 4,
         单位成本: 18.5,
         库位: 'A-01',
         备注: '115件应换算为460片',
@@ -259,6 +260,7 @@ describe('initial-stock import handler', () => {
           批次号: 'BOX-115',
           数量: 115,
           数量单位: '件',
+          装箱数: 4,
           单位成本: 18.5,
           库位: 'A-01',
           备注: '115件应换算为460片',
@@ -271,6 +273,7 @@ describe('initial-stock import handler', () => {
       expect.objectContaining({
         productId: 'product-box-convert',
         batchNumber: 'BOX-115',
+        piecesPerUnit: 4,
         quantity: 460,
         unitCost: 18.5,
         openingImportBatchId: expect.stringMatching(/^OBI-\d{8}-\d{6}-[A-F0-9]{4}$/),
@@ -301,6 +304,7 @@ describe('initial-stock import handler', () => {
           批次号: 'BATCH-A',
           数量: 10,
           数量单位: '件',
+          装箱数: 4,
           单位成本: 18,
           库位: 'A-01',
           备注: '',
@@ -313,6 +317,7 @@ describe('initial-stock import handler', () => {
           批次号: 'BATCH-B',
           数量: 20,
           数量单位: '件',
+          装箱数: 4,
           单位成本: 19,
           库位: 'A-02',
           备注: '',
@@ -338,7 +343,7 @@ describe('initial-stock import handler', () => {
     );
   });
 
-  test('数量单位留空时，会兼容旧模板并按片处理', async () => {
+  test('数量单位留空时，会兼容旧模板并按片处理，且不再回填产品档案装箱数', async () => {
     prisma.product.findMany.mockResolvedValue([
       {
         id: 'product-legacy-unit',
@@ -370,7 +375,7 @@ describe('initial-stock import handler', () => {
       inputQuantity: 115,
       quantityUnit: '片',
       quantityUnitSource: 'default',
-      piecesPerUnit: 8,
+      piecesPerUnit: undefined,
       quantity: 115,
     });
   });
@@ -397,6 +402,7 @@ describe('initial-stock import handler', () => {
         批次号: 'PIECE-COST-01',
         数量: 10,
         数量单位: '件',
+        装箱数: 4,
         单片成本: 18.5,
         库位: 'A-09',
         备注: '新模板列名兼容',
@@ -417,6 +423,7 @@ describe('initial-stock import handler', () => {
     expect(executeMinimalInboundTransaction).toHaveBeenCalledWith(
       expect.objectContaining({
         productId: 'product-piece-cost',
+        piecesPerUnit: 4,
         quantity: 40,
         unitCost: 18.5,
       })
@@ -987,7 +994,7 @@ describe('initial-stock import handler', () => {
     );
   });
 
-  test('只填写每件重量时，会同时带上产品档案装箱数写入批次规格', async () => {
+  test('只填写每件重量时，只写入当前批次重量，不再回填产品档案装箱数', async () => {
     prisma.product.findMany.mockResolvedValue([
       {
         id: 'product-weight-only',
@@ -1025,7 +1032,7 @@ describe('initial-stock import handler', () => {
       expect.objectContaining({
         productId: 'product-weight-only',
         batchNumber: 'WEIGHT-ONLY',
-        piecesPerUnit: 6,
+        piecesPerUnit: undefined,
         weight: 30.25,
       })
     );

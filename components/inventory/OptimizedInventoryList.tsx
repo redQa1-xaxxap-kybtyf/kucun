@@ -103,7 +103,7 @@ export const OptimizedInventoryList = React.memo<OptimizedInventoryListProps>(
 
           {/* 缓存状态指示器（开发环境） */}
           {process.env.NODE_ENV === 'development' && cache && (
-            <div className="text-muted-foreground text-xs">缓存可用</div>
+            <div className="text-muted-foreground text-xs">数据已准备好</div>
           )}
         </div>
 

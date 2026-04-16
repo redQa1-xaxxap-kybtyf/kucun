@@ -150,7 +150,7 @@ const postInventoryHandler = withAuth(
     // 验证产品是否存在（productId 已通过 Zod 验证，确保为 string）
     if (typeof productId !== 'string') {
       return NextResponse.json(
-        { success: false, error: '产品ID格式不正确' },
+        { success: false, error: '产品信息格式不正确' },
         { status: 400 }
       );
     }

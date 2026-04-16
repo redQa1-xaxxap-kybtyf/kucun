@@ -12,17 +12,17 @@ const INITIAL_STOCK_QUANTITY_UNIT_ALIASES: Record<
   string,
   InitialStockQuantityUnit
 > = {
-  '片': '片',
-  '砖片': '片',
+  片: '片',
+  砖片: '片',
   piece: '片',
   pieces: '片',
   pc: '片',
   pcs: '片',
   sheet: '片',
   sheets: '片',
-  '件': '件',
-  '箱': '件',
-  '整件': '件',
+  件: '件',
+  箱: '件',
+  整件: '件',
   unit: '件',
   units: '件',
   box: '件',
@@ -102,7 +102,12 @@ function optionalQuantityUnit(label: string) {
 
 function requiredExcelNumber(
   label: string,
-  options: { integer?: boolean; min?: number; max?: number; maxDecimals?: number } = {}
+  options: {
+    integer?: boolean;
+    min?: number;
+    max?: number;
+    maxDecimals?: number;
+  } = {}
 ) {
   const { integer = false, min, max, maxDecimals } = options;
 
@@ -160,7 +165,12 @@ function requiredExcelNumber(
 
 function optionalExcelNumber(
   label: string,
-  options: { integer?: boolean; min?: number; max?: number; maxDecimals?: number } = {}
+  options: {
+    integer?: boolean;
+    min?: number;
+    max?: number;
+    maxDecimals?: number;
+  } = {}
 ) {
   const { integer = false, min, max, maxDecimals } = options;
 
@@ -206,9 +216,12 @@ function optionalExcelNumber(
               : `${label}不能超过${max === COST_PRICE_MAX ? COST_PRICE_MAX_LABEL : max}`,
         }
       )
-      .refine(val => val === undefined || (integer ? Number.isInteger(val) : true), {
-        message: `${label}必须是整数`,
-      })
+      .refine(
+        val => val === undefined || (integer ? Number.isInteger(val) : true),
+        {
+          message: `${label}必须是整数`,
+        }
+      )
       .refine(
         val =>
           val === undefined
@@ -235,7 +248,7 @@ function optionalExcelNumber(
  * - 色号
  * - 批次号
  * - 装箱数（可选，不填时默认使用产品档案）
- * - 每件重量(kg)（可选，不填时默认使用产品档案）
+ * - 本批次实际每件重量(kg)（可选，不填时默认使用产品档案）
  * - 数量
  * - 数量单位（可选，支持“件/片”；不填时兼容旧模板按“片”处理）
  * - 单位成本
@@ -256,7 +269,7 @@ export const initialStockRowSchema = z
       min: 1,
       max: 10000,
     }),
-    '每件重量(kg)': optionalExcelNumber('每件重量(kg)', {
+    '本批次实际每件重量(kg)': optionalExcelNumber('本批次实际每件重量(kg)', {
       min: 0.01,
       max: 10000,
       maxDecimals: 3,
