@@ -104,7 +104,7 @@ export function TableColumnManager({
     );
     if (otherMatchedColumn) {
       setMessage(
-        `字段“${field.label}”已在其他列使用。当前列仍可继续保存，若只是想复用展示，建议直接复制已有列。`
+        `数据项“${field.label}”已在其他列使用。当前列仍可继续保存，若只是想复用展示，建议直接复制已有列。`
       );
     } else {
       setMessage('');
@@ -118,7 +118,7 @@ export function TableColumnManager({
       key: `col_${Date.now()}`,
       label: '新列',
     });
-    setMessage('已添加空列，可手动输入字段或从字段库选择。');
+    setMessage('已添加空列，可手动输入内容，或从数据项中选择。');
     setHighlightedColumnKey(newColumn.id ?? null);
     updateColumns([...columns, newColumn]);
   };
@@ -134,7 +134,7 @@ export function TableColumnManager({
         getTableColumnReactKey(existingColumn, existingIndex)
       );
       setMessage(
-        `字段“${field.label}”已存在，已为你定位到对应列。若需同字段显示两次，请使用该列右侧的“复制列”。`
+        `数据项“${field.label}”已存在，已为你定位到对应列。若需同一内容显示两次，请使用该列右侧的“复制列”。`
       );
       return;
     }
@@ -148,7 +148,7 @@ export function TableColumnManager({
         : 'text',
     });
 
-    setMessage(`已添加字段“${field.label}”。`);
+    setMessage(`已添加数据项“${field.label}”。`);
     setHighlightedColumnKey(newColumn.id ?? null);
     updateColumns([...columns, newColumn]);
   };
@@ -179,7 +179,7 @@ export function TableColumnManager({
     const nextColumns = [...columns];
     nextColumns.splice(index + 1, 0, duplicate);
     setMessage(
-      `已复制列“${current.label}”。现在可以保留同一字段的两个展示版本。`
+      `已复制列“${current.label}”。现在可以保留同一数据项的两个展示版本。`
     );
     setHighlightedColumnKey(duplicate.id ?? null);
     updateColumns(nextColumns);
@@ -227,7 +227,7 @@ export function TableColumnManager({
       <div className="rounded-xl border border-stone-200 bg-stone-50 p-3">
         <p className="text-xs font-medium text-stone-800">列设置建议</p>
         <p className="mt-1 text-[11px] leading-5 text-stone-600">
-          从字段添加会自动跳过已存在字段，避免误添加重复列。若要同一字段显示两次，请先添加一次，再使用“复制列”。
+          从数据项添加会自动跳过已存在内容，避免误添加重复列。若要同一数据项显示两次，请先添加一次，再使用“复制列”。
         </p>
       </div>
 
@@ -241,7 +241,7 @@ export function TableColumnManager({
           >
             <Button variant="ghost" size="sm" type="button">
               <Plus className="mr-1 h-3 w-3" />
-              从字段添加
+              从数据项添加
             </Button>
           </FieldPicker>
 
@@ -299,7 +299,7 @@ export function TableColumnManager({
                   </div>
                   <div className="space-y-1">
                     <Label className="text-muted-foreground text-[10px]">
-                      绑定字段
+                      对应数据项
                     </Label>
                     <div className="relative">
                       <Input
@@ -307,7 +307,7 @@ export function TableColumnManager({
                         onChange={e =>
                           handleUpdateColumn(index, { key: e.target.value })
                         }
-                        placeholder="选择字段或手动输入"
+                        placeholder="选择数据项或手动输入"
                         className="h-8 pr-8 font-mono text-xs"
                       />
                       <div className="absolute top-0 right-0">
@@ -322,7 +322,7 @@ export function TableColumnManager({
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            title="选择字段"
+                            title="选择数据项"
                           >
                             <ChevronDown className="text-muted-foreground h-3.5 w-3.5" />
                           </Button>

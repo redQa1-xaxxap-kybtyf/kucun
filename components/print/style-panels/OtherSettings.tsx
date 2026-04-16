@@ -393,14 +393,14 @@ export function OtherSettings({
             {/* 签名字段列表 */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>签名字段</Label>
+                <Label>签名项</Label>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={handleAddSignatureField}
                 >
-                  添加字段
+                  添加签名项
                 </Button>
               </div>
 
@@ -417,7 +417,7 @@ export function OtherSettings({
                           label: e.target.value,
                         })
                       }
-                      placeholder="签名字段名称"
+                      placeholder="签名名称"
                       className="flex-1"
                     />
                     <NumberInput

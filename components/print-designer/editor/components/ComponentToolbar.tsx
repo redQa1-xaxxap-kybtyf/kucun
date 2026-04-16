@@ -158,7 +158,7 @@ export function ComponentToolbar() {
     <aside className="flex w-64 flex-col border-r bg-stone-50">
       <div className="border-b bg-gradient-to-b from-stone-100 to-stone-50 p-3">
         <div className="mb-2">
-          <h3 className="text-sm font-semibold text-stone-900">组件与字段</h3>
+          <h3 className="text-sm font-semibold text-stone-900">组件与数据项</h3>
           <p className="mt-1 text-xs leading-5 text-stone-600">
             当前模板：{templateMeta?.label ?? '打印模板'}
             <br />
@@ -166,7 +166,7 @@ export function ComponentToolbar() {
           </p>
         </div>
         <div className="rounded-xl border border-amber-200 bg-white/80 px-3 py-2 text-[11px] leading-5 text-stone-600">
-          先拖基础组件，再拖字段替换静态文字，更符合中国企业常见的单据制作习惯。
+          先拖基础组件，再拖数据项替换固定文字，更符合中国企业常见的单据制作习惯。
         </div>
       </div>
 
@@ -191,10 +191,10 @@ export function ComponentToolbar() {
       <div className="flex-1 overflow-auto p-3">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="text-xs font-medium tracking-[0.12em] text-stone-500 uppercase">
-            字段库
+            可选数据项
           </h3>
           <span className="rounded-full bg-stone-200 px-2 py-0.5 text-[10px] text-stone-700">
-            {Object.values(groupedFields).flat().length} 个字段
+            {Object.values(groupedFields).flat().length} 项
           </span>
         </div>
 
@@ -203,7 +203,9 @@ export function ComponentToolbar() {
             <section key={group}>
               <div className="mb-2 flex items-center justify-between">
                 <h4 className="text-xs font-medium text-stone-700">{group}</h4>
-                <span className="text-[10px] text-stone-400">{fields.length}</span>
+                <span className="text-[10px] text-stone-400">
+                  {fields.length}
+                </span>
               </div>
               <div className="flex flex-wrap gap-2">
                 {fields.map(field => (

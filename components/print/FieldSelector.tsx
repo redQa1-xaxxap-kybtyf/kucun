@@ -217,7 +217,7 @@ export function FieldSelector({
         <TabsContent value="header" className="p-4">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">选择表头字段</Label>
+              <Label className="text-sm font-medium">选择表头内容</Label>
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -249,7 +249,7 @@ export function FieldSelector({
         <TabsContent value="item" className="p-4">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">选择明细字段</Label>
+              <Label className="text-sm font-medium">选择明细内容</Label>
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -283,7 +283,7 @@ export function FieldSelector({
         <TabsContent value="summary" className="p-4">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">选择汇总字段</Label>
+              <Label className="text-sm font-medium">选择汇总内容</Label>
               <div className="flex gap-2">
                 <button
                   type="button"

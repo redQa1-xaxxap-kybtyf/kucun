@@ -316,7 +316,7 @@ export function PropertiesPanel() {
       <div className="border-b p-3">
         <h3 className="text-sm font-medium">
           {selectedElement.type === 'text' && '文本属性'}
-          {selectedElement.type === 'placeholder' && '数据字段属性'}
+          {selectedElement.type === 'placeholder' && '数据项属性'}
           {selectedElement.type === 'table' && '表格属性'}
           {selectedElement.type === 'image' && '图片属性'}
           {selectedElement.type === 'barcode' && '条码属性'}
@@ -463,7 +463,7 @@ export function PropertiesPanel() {
                 }
               >
                 <SelectTrigger className="h-8">
-                  <SelectValue placeholder="选择数组字段" />
+                  <SelectValue placeholder="选择列表数据" />
                 </SelectTrigger>
                 <SelectContent>
                   {tableDataSourceOptions.map(field => (
@@ -474,9 +474,7 @@ export function PropertiesPanel() {
                 </SelectContent>
               </Select>
               <p className="text-muted-foreground text-[11px] leading-5">
-                决定当前表格读取哪组数组数据。业务单据通常选择
-                <span className="font-mono"> items </span>
-                ，报表模板可以切换到趋势、季度或提醒数据。
+                决定当前表格读取哪组列表内容。业务单据通常选择明细数据，报表模板可以切换到趋势、季度或提醒数据。
               </p>
             </div>
 
@@ -508,15 +506,15 @@ export function PropertiesPanel() {
         {/* 字体样式 (文本、占位符) */}
         {(selectedElement.type === 'text' ||
           selectedElement.type === 'placeholder') && (
-            <TypographySection
-              style={selectedElement.style}
-              onChange={styleUpdates =>
-                updateElement(selectedElement.id, {
-                  style: { ...selectedElement.style, ...styleUpdates },
-                })
-              }
-            />
-          )}
+          <TypographySection
+            style={selectedElement.style}
+            onChange={styleUpdates =>
+              updateElement(selectedElement.id, {
+                style: { ...selectedElement.style, ...styleUpdates },
+              })
+            }
+          />
+        )}
 
         <Separator className="my-4" />
 

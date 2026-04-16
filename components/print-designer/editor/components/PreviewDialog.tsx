@@ -32,7 +32,10 @@ import {
 } from '@/lib/print-designer/preview-data-client';
 import { getMockPrintData } from '@/lib/print-designer/preview-mock-data';
 import type { PrintTemplate } from '@/lib/print-designer/schemas';
-import { getTemplateTypeMeta, getTemplateTypeLabel } from '@/lib/print-designer/template-meta';
+import {
+  getTemplateTypeMeta,
+  getTemplateTypeLabel,
+} from '@/lib/print-designer/template-meta';
 
 import { PrintCanvas } from '../../renderer';
 
@@ -99,12 +102,17 @@ export function PreviewDialog({
       return;
     }
 
-    setLoadingText(`正在加载${templateMeta?.recentDocumentLabel ?? '最近单据'}...`);
+    setLoadingText(
+      `正在加载${templateMeta?.recentDocumentLabel ?? '最近单据'}...`
+    );
     setError('');
 
     startTransition(async () => {
       try {
-        const documents = await fetchRecentDocumentsForTemplate(template.type, 20);
+        const documents = await fetchRecentDocumentsForTemplate(
+          template.type,
+          20
+        );
         setRecentDocuments(documents);
         setLoadingText('');
 
@@ -123,7 +131,14 @@ export function PreviewDialog({
         );
       }
     });
-  }, [dataSource, open, supportsRealPreview, template.type, templateMeta?.realDataLabel, templateMeta?.recentDocumentLabel]);
+  }, [
+    dataSource,
+    open,
+    supportsRealPreview,
+    template.type,
+    templateMeta?.realDataLabel,
+    templateMeta?.recentDocumentLabel,
+  ]);
 
   useEffect(() => {
     if (!open) return;
@@ -149,13 +164,18 @@ export function PreviewDialog({
         setPreviewData(data);
         setLoadingText('');
       } catch (error) {
-        setError(
-          error instanceof Error ? error.message : '加载真实单据失败'
-        );
+        setError(error instanceof Error ? error.message : '加载真实单据失败');
         setLoadingText('');
       }
     });
-  }, [dataSource, open, selectedDocumentId, supportsRealPreview, template.type, templateMeta?.realDataLabel]);
+  }, [
+    dataSource,
+    open,
+    selectedDocumentId,
+    supportsRealPreview,
+    template.type,
+    templateMeta?.realDataLabel,
+  ]);
 
   const handlePrint = () => {
     if (!printRef.current) return;
@@ -219,7 +239,9 @@ export function PreviewDialog({
         setError('');
         setLoadingText('');
       } catch (error) {
-        setError(error instanceof Error ? error.message : '刷新失败，请稍后再试。');
+        setError(
+          error instanceof Error ? error.message : '刷新失败，请稍后再试。'
+        );
         setLoadingText('');
       }
     });
@@ -236,11 +258,16 @@ export function PreviewDialog({
                 预览：{template.name}
               </DialogTitle>
               <DialogDescription className="sr-only">
-                检查模板版式、字段数据和打印尺寸，打印时始终按 100% 实际尺寸输出。
+                检查模板版式、内容显示和打印尺寸，打印时始终按 100%
+                实际尺寸输出。
               </DialogDescription>
               <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                <Badge variant="secondary">{getTemplateTypeLabel(template.type)}</Badge>
-                <span>{templateMeta?.description ?? '校对版式、字段和分页效果'}</span>
+                <Badge variant="secondary">
+                  {getTemplateTypeLabel(template.type)}
+                </Badge>
+                <span>
+                  {templateMeta?.description ?? '检查版式、数据项和分页效果'}
+                </span>
               </div>
             </div>
 
@@ -319,7 +346,10 @@ export function PreviewDialog({
                 </SelectContent>
               </Select>
 
-              <Button onClick={handlePrint} disabled={Boolean(loadingText) || Boolean(error)}>
+              <Button
+                onClick={handlePrint}
+                disabled={Boolean(loadingText) || Boolean(error)}
+              >
                 {isPending ? (
                   <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
                 ) : (
@@ -342,11 +372,15 @@ export function PreviewDialog({
                 <span>{selectedDocument.description}</span>
               </div>
             ) : (
-              <span>{loadingText || `请选择${templateMeta?.realDataLabel ?? '真实单据'}`}</span>
+              <span>
+                {loadingText ||
+                  `请选择${templateMeta?.realDataLabel ?? '真实单据'}`}
+              </span>
             )
           ) : (
             <span>
-              使用模拟数据预览版式。打印时仍按 100% 实际尺寸输出，不受当前缩放影响。
+              使用模拟数据预览版式。打印时仍按 100%
+              实际尺寸输出，不受当前缩放影响。
             </span>
           )}
         </div>

@@ -59,7 +59,10 @@ export function DataBindingSection({
   }, [availableFields, search]);
 
   // 按组分类
-  const groupedFields = useMemo(() => groupFields(filteredFields), [filteredFields]);
+  const groupedFields = useMemo(
+    () => groupFields(filteredFields),
+    [filteredFields]
+  );
 
   const currentField = availableFields.find(f => f.path === field);
 
@@ -68,13 +71,13 @@ export function DataBindingSection({
       <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-3">
         <Label className="text-xs font-semibold text-sky-900">数据绑定</Label>
         <p className="mt-1 text-[11px] leading-5 text-sky-800/80">
-          先选字段，再决定格式和空值文案，适合中文单据里常见的日期、金额、数量展示。
+          先选数据项，再决定格式和空值显示，适合中文单据里常见的日期、金额、数量展示。
         </p>
       </div>
 
       {/* 当前绑定字段 */}
       <div className="rounded-xl border border-sky-200 bg-white p-3 shadow-sm">
-        <div className="text-xs text-sky-600">当前字段</div>
+        <div className="text-xs text-sky-600">当前数据项</div>
         <div className="mt-1 text-sm font-semibold text-slate-900">
           {currentField?.label ?? field}
         </div>
@@ -88,7 +91,7 @@ export function DataBindingSection({
           <Input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="搜索字段..."
+            placeholder="搜索数据项..."
             className="h-8 pl-8"
           />
         </div>
@@ -109,7 +112,9 @@ export function DataBindingSection({
                   onClick={() => onFieldChange(f.path, f.label)}
                 >
                   <div className="text-sm font-medium">{f.label}</div>
-                  <div className="font-mono text-[11px] text-slate-500">{f.path}</div>
+                  <div className="font-mono text-[11px] text-slate-500">
+                    {f.path}
+                  </div>
                 </button>
               ))}
             </div>
@@ -117,7 +122,7 @@ export function DataBindingSection({
 
           {Object.keys(groupedFields).length === 0 && (
             <div className="p-4 text-center text-sm text-slate-500">
-              没找到匹配字段，换个中文关键词试试。
+              没找到匹配的数据项，换个中文关键词试试。
             </div>
           )}
         </div>

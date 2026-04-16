@@ -79,7 +79,7 @@ export function FieldPicker({
             <Input
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="搜索字段..."
+              placeholder="搜索数据项..."
               className="h-8 pl-8"
             />
           </div>
@@ -111,7 +111,7 @@ export function FieldPicker({
 
           {Object.keys(groupedFields).length === 0 && (
             <div className="text-muted-foreground p-4 text-center text-sm">
-              未找到匹配的字段
+              未找到匹配的数据项
             </div>
           )}
         </div>

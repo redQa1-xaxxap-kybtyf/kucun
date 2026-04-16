@@ -318,6 +318,22 @@ const monthlyReportMock = {
     sampleQuantity: 186,
     sampleRevenue: 12680,
     sampleCost: 8420,
+    sources: {
+      sampleOrder: {
+        recordCount: 4,
+        customerCount: 3,
+        sampleQuantity: 132,
+        sampleRevenue: 12680,
+        sampleCost: 6240,
+      },
+      manualOutbound: {
+        recordCount: 2,
+        customerCount: 2,
+        sampleQuantity: 54,
+        sampleRevenue: 0,
+        sampleCost: 2180,
+      },
+    },
   },
   expenses: {
     totalExpenses: 34500,
@@ -342,13 +358,53 @@ const monthlyReportMock = {
   purchaseDamage: {
     totalQuantity: 42,
     totalAmount: 4200,
-    supplierClaim: {
+    purchaseInbound: {
       quantity: 30,
       amount: 3000,
+    },
+    manualDamage: {
+      quantity: 12,
+      amount: 1200,
+    },
+    supplierClaim: {
+      quantity: 18,
+      amount: 1800,
     },
     internalLoss: {
       quantity: 12,
       amount: 1200,
+    },
+    manualDamageByCategory: {
+      damage: {
+        quantity: 6,
+        amount: 600,
+      },
+      scrap: {
+        quantity: 3,
+        amount: 300,
+      },
+      loss: {
+        quantity: 2,
+        amount: 200,
+      },
+      other: {
+        quantity: 1,
+        amount: 100,
+      },
+    },
+    manualDamageByHandling: {
+      pendingConfirm: {
+        quantity: 2,
+        amount: 200,
+      },
+      supplierClaim: {
+        quantity: 4,
+        amount: 400,
+      },
+      internalLoss: {
+        quantity: 6,
+        amount: 600,
+      },
     },
   },
   receivables: {
@@ -444,6 +500,22 @@ const annualReportMock = {
     sampleQuantity: 1680,
     sampleRevenue: 96800,
     sampleCost: 70240,
+    sources: {
+      sampleOrder: {
+        recordCount: 30,
+        customerCount: 15,
+        sampleQuantity: 1320,
+        sampleRevenue: 96800,
+        sampleCost: 54840,
+      },
+      manualOutbound: {
+        recordCount: 12,
+        customerCount: 7,
+        sampleQuantity: 360,
+        sampleRevenue: 0,
+        sampleCost: 15400,
+      },
+    },
     topCustomers: [
       {
         customerId: 'customer-001',
@@ -453,6 +525,22 @@ const annualReportMock = {
         sampleQuantity: 260,
         sampleRevenue: 16800,
         sampleCost: 12600,
+        sources: {
+          sampleOrder: {
+            recordCount: 6,
+            customerCount: 1,
+            sampleQuantity: 220,
+            sampleRevenue: 16800,
+            sampleCost: 10800,
+          },
+          manualOutbound: {
+            recordCount: 2,
+            customerCount: 1,
+            sampleQuantity: 40,
+            sampleRevenue: 0,
+            sampleCost: 1800,
+          },
+        },
       },
       {
         customerId: 'customer-002',
@@ -462,19 +550,75 @@ const annualReportMock = {
         sampleQuantity: 210,
         sampleRevenue: 12200,
         sampleCost: 9100,
+        sources: {
+          sampleOrder: {
+            recordCount: 4,
+            customerCount: 1,
+            sampleQuantity: 168,
+            sampleRevenue: 12200,
+            sampleCost: 7600,
+          },
+          manualOutbound: {
+            recordCount: 2,
+            customerCount: 1,
+            sampleQuantity: 42,
+            sampleRevenue: 0,
+            sampleCost: 1500,
+          },
+        },
       },
     ],
   },
   purchaseDamage: {
     totalQuantity: 368,
     totalAmount: 36800,
-    supplierClaim: {
+    purchaseInbound: {
       quantity: 250,
       amount: 25000,
     },
-    internalLoss: {
+    manualDamage: {
       quantity: 118,
       amount: 11800,
+    },
+    supplierClaim: {
+      quantity: 160,
+      amount: 16000,
+    },
+    internalLoss: {
+      quantity: 90,
+      amount: 9000,
+    },
+    manualDamageByCategory: {
+      damage: {
+        quantity: 56,
+        amount: 5600,
+      },
+      scrap: {
+        quantity: 28,
+        amount: 2800,
+      },
+      loss: {
+        quantity: 22,
+        amount: 2200,
+      },
+      other: {
+        quantity: 12,
+        amount: 1200,
+      },
+    },
+    manualDamageByHandling: {
+      pendingConfirm: {
+        quantity: 18,
+        amount: 1800,
+      },
+      supplierClaim: {
+        quantity: 34,
+        amount: 3400,
+      },
+      internalLoss: {
+        quantity: 66,
+        amount: 6600,
+      },
     },
   },
   monthlyTrend: [
@@ -671,6 +815,22 @@ const profitLossReportMock = {
     sampleQuantity: 248,
     sampleRevenue: 18360,
     sampleCost: 12980,
+    sources: {
+      sampleOrder: {
+        recordCount: 6,
+        customerCount: 4,
+        sampleQuantity: 196,
+        sampleRevenue: 18360,
+        sampleCost: 10180,
+      },
+      manualOutbound: {
+        recordCount: 3,
+        customerCount: 2,
+        sampleQuantity: 52,
+        sampleRevenue: 0,
+        sampleCost: 2800,
+      },
+    },
   },
   costs: {
     salesCost: 171000,

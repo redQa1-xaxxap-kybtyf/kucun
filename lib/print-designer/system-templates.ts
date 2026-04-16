@@ -11,7 +11,7 @@ import {
   type TextStyle,
 } from './schemas';
 
-export const SYSTEM_TEMPLATE_RELEASED_AT = '2026-03-15T00:00:00.000Z';
+export const SYSTEM_TEMPLATE_RELEASED_AT = '2026-04-11T00:00:00.000Z';
 
 type SystemTemplateType = Exclude<TemplateType, 'custom'>;
 
@@ -921,50 +921,91 @@ function buildMonthlyReportTemplate() {
         x: 14,
         y: 76,
         items: [
-          { label: '运费', field: 'expenses.byType.shipping' },
           {
             label: '月破损片数',
             field: 'purchaseDamage.totalQuantity',
             format: 'number',
+            width: 44,
           },
           {
             label: '月破损金额',
             field: 'purchaseDamage.totalAmount',
+            width: 44,
           },
-          { label: '工资', field: 'expenses.byType.labor' },
-          { label: '营业费', field: 'expenses.byType.operating' },
-          { label: '管理费', field: 'expenses.byType.management' },
+          { label: '样品费', field: 'sample.sampleRevenue', width: 44 },
+          {
+            label: '样品数量',
+            field: 'sample.sampleQuantity',
+            format: 'number',
+            width: 44,
+          },
+          { label: '样品成本', field: 'sample.sampleCost', width: 44 },
+          { label: '运费', field: 'expenses.byType.shipping', width: 44 },
         ],
       },
       {
         x: 14,
         y: 94,
         items: [
-          { label: '装卸费', field: 'expenses.byType.loading_unloading' },
+          {
+            label: '到货破损',
+            field: 'purchaseDamage.purchaseInbound.amount',
+            width: 44,
+          },
+          {
+            label: '手工报损',
+            field: 'purchaseDamage.manualDamage.amount',
+            width: 44,
+          },
+          {
+            label: '样品单数',
+            field: 'sample.sources.sampleOrder.recordCount',
+            format: 'number',
+            width: 44,
+          },
+          {
+            label: '手工出库',
+            field: 'sample.sources.manualOutbound.recordCount',
+            format: 'number',
+            width: 44,
+          },
+          {
+            label: '收入环比',
+            field: 'comparison.revenue.changeRate',
+            format: 'number',
+            width: 44,
+          },
+          {
+            label: '利润环比',
+            field: 'comparison.profit.changeRate',
+            format: 'number',
+            width: 44,
+          },
+        ],
+      },
+      {
+        x: 14,
+        y: 112,
+        items: [
+          { label: '工资', field: 'expenses.byType.labor', width: 44 },
+          { label: '营业费', field: 'expenses.byType.operating', width: 44 },
+          { label: '管理费', field: 'expenses.byType.management', width: 44 },
+          {
+            label: '装卸费',
+            field: 'expenses.byType.loading_unloading',
+            width: 44,
+          },
+          {
+            label: '费用环比',
+            field: 'comparison.expenses.changeRate',
+            format: 'number',
+            width: 44,
+          },
           {
             label: '库存周转天数',
             field: 'inventoryTurnover.turnoverDays',
             format: 'number',
-          },
-          {
-            label: '收入环比(%)',
-            field: 'comparison.revenue.changeRate',
-            format: 'number',
-          },
-          {
-            label: '利润环比(%)',
-            field: 'comparison.profit.changeRate',
-            format: 'number',
-          },
-          {
-            label: '费用环比(%)',
-            field: 'comparison.expenses.changeRate',
-            format: 'number',
-          },
-          {
-            label: '订单数',
-            field: 'revenue.orderCount',
-            format: 'number',
+            width: 44,
           },
         ],
       },
@@ -1016,32 +1057,92 @@ function buildAnnualReportTemplate() {
         y: 58,
         items: [
           {
-            label: '利润率(%)',
+            label: '利润率',
             field: 'summary.profitMargin',
             format: 'number',
+            width: 44,
           },
           {
             label: '订单总数',
             field: 'summary.orderCount',
             format: 'number',
+            width: 44,
           },
           {
             label: '月均收入',
             field: 'summary.averageMonthlyRevenue',
+            width: 44,
           },
           {
             label: '库存周转率',
             field: 'inventoryTurnover.turnoverRate',
             format: 'number',
+            width: 44,
           },
           {
             label: '年破损片数',
             field: 'purchaseDamage.totalQuantity',
             format: 'number',
+            width: 44,
           },
           {
             label: '年破损金额',
             field: 'purchaseDamage.totalAmount',
+            width: 44,
+          },
+        ],
+      },
+      {
+        x: 14,
+        y: 76,
+        items: [
+          { label: '样品费', field: 'sample.sampleRevenue', width: 44 },
+          {
+            label: '样品数量',
+            field: 'sample.sampleQuantity',
+            format: 'number',
+            width: 44,
+          },
+          { label: '样品成本', field: 'sample.sampleCost', width: 44 },
+          {
+            label: '样品记录数',
+            field: 'sample.orderCount',
+            format: 'number',
+            width: 44,
+          },
+          {
+            label: '样品单数',
+            field: 'sample.sources.sampleOrder.recordCount',
+            format: 'number',
+            width: 44,
+          },
+          {
+            label: '手工出库',
+            field: 'sample.sources.manualOutbound.recordCount',
+            format: 'number',
+            width: 44,
+          },
+        ],
+      },
+      {
+        x: 14,
+        y: 94,
+        items: [
+          {
+            label: '到货破损',
+            field: 'purchaseDamage.purchaseInbound.amount',
+          },
+          {
+            label: '手工报损',
+            field: 'purchaseDamage.manualDamage.amount',
+          },
+          {
+            label: '报工厂',
+            field: 'purchaseDamage.supplierClaim.amount',
+          },
+          {
+            label: '内部承担',
+            field: 'purchaseDamage.internalLoss.amount',
           },
         ],
       },
@@ -1051,10 +1152,10 @@ function buildAnnualReportTemplate() {
         title: '月度趋势',
         dataSource: 'monthlyTrend',
         x: 14,
-        y: 90,
-        width: 269,
-        height: 46,
-        minRows: 4,
+        y: 118,
+        width: 136,
+        height: 36,
+        minRows: 3,
         columns: [
           createColumn('ar-month', 'monthLabel', '月份', 14),
           createColumn(
@@ -1088,11 +1189,11 @@ function buildAnnualReportTemplate() {
       {
         title: '季度表现',
         dataSource: 'quarterlyData',
-        x: 14,
-        y: 146,
-        width: 269,
-        height: 28,
-        minRows: 2,
+        x: 158,
+        y: 118,
+        width: 125,
+        height: 20,
+        minRows: 1,
         columns: [
           createColumn('ar-quarter', 'quarterLabel', '季度', 16),
           createColumn(
@@ -1127,6 +1228,72 @@ function buildAnnualReportTemplate() {
             'right',
             'currency'
           ),
+        ],
+      },
+      {
+        title: '样品客户排行',
+        dataSource: 'sample.topCustomers',
+        x: 158,
+        y: 150,
+        width: 125,
+        height: 28,
+        minRows: 2,
+        columns: [
+          createColumn('ar-sample-customer', 'customerName', '客户', 32),
+          createColumn(
+            'ar-sample-records',
+            'orderCount',
+            '记录',
+            12,
+            'right',
+            'number'
+          ),
+          createColumn(
+            'ar-sample-order-records',
+            'sources.sampleOrder.recordCount',
+            '样品单',
+            12,
+            'right',
+            'number'
+          ),
+          createColumn(
+            'ar-sample-manual-records',
+            'sources.manualOutbound.recordCount',
+            '手工',
+            10,
+            'right',
+            'number'
+          ),
+          createColumn(
+            'ar-sample-quantity',
+            'sampleQuantity',
+            '数量',
+            12,
+            'right',
+            'number'
+          ),
+          createColumn(
+            'ar-sample-revenue',
+            'sampleRevenue',
+            '样品费',
+            22,
+            'right',
+            'currency'
+          ),
+        ],
+      },
+      {
+        title: '经营提醒',
+        dataSource: 'alerts',
+        x: 14,
+        y: 162,
+        width: 136,
+        height: 18,
+        minRows: 1,
+        columns: [
+          createColumn('ar-alert-type', 'type', '级别', 12),
+          createColumn('ar-alert-title', 'title', '标题', 24),
+          createColumn('ar-alert-message', 'message', '内容', 64),
         ],
       },
     ],
@@ -1204,6 +1371,31 @@ function buildProfitLossTemplate() {
         y: 94,
         items: [
           {
+            label: '样品费',
+            field: 'sample.sampleRevenue',
+          },
+          {
+            label: '样品数量',
+            field: 'sample.sampleQuantity',
+            format: 'number',
+          },
+          {
+            label: '样品单数',
+            field: 'sample.sources.sampleOrder.recordCount',
+            format: 'number',
+          },
+          {
+            label: '手工出库',
+            field: 'sample.sources.manualOutbound.recordCount',
+            format: 'number',
+          },
+        ],
+      },
+      {
+        x: 14,
+        y: 112,
+        items: [
+          {
             label: '收入变化(%)',
             field: 'comparison.revenue.changeRate',
             format: 'number',
@@ -1221,10 +1413,10 @@ function buildProfitLossTemplate() {
         title: '趋势明细',
         dataSource: 'trend',
         x: 14,
-        y: 130,
+        y: 148,
         width: 269,
-        height: 32,
-        minRows: 3,
+        height: 24,
+        minRows: 2,
         columns: [
           createColumn('pl-date', 'dateLabel', '时间', 14),
           createColumn(
@@ -1251,10 +1443,10 @@ function buildProfitLossTemplate() {
         title: '经营提醒',
         dataSource: 'alerts',
         x: 14,
-        y: 172,
+        y: 174,
         width: 269,
-        height: 22,
-        minRows: 2,
+        height: 16,
+        minRows: 1,
         columns: [
           createColumn('pl-alert-type', 'type', '级别', 12),
           createColumn('pl-alert-title', 'title', '标题', 24),

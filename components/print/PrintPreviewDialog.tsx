@@ -198,7 +198,7 @@ export function PrintPreviewDialog({
     setFieldSelection(defaultSelection);
     toast({
       title: '已重置',
-      description: '字段选择已恢复为默认值',
+      description: '打印内容已恢复默认设置',
       variant: 'success',
     });
   }, [printConfig, toast]);
@@ -210,7 +210,7 @@ export function PrintPreviewDialog({
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>
-              调整打印样式和字段，预览后打印或导出PDF
+              调整打印样式和内容，预览后可直接打印或导出 PDF
             </DialogDescription>
           </DialogHeader>
 
@@ -244,7 +244,7 @@ export function PrintPreviewDialog({
                     预览
                   </TabsTrigger>
                   <TabsTrigger value="fields" className="flex-1">
-                    字段选择
+                    打印内容
                   </TabsTrigger>
                 </TabsList>
 
@@ -254,7 +254,7 @@ export function PrintPreviewDialog({
                     <ul className="text-muted-foreground space-y-2 text-sm">
                       <li>• 右侧显示实时预览效果</li>
                       <li>• 点击&ldquo;样式设置&rdquo;自定义样式</li>
-                      <li>• 切换到&ldquo;字段选择&rdquo;选择打印字段</li>
+                      <li>• 切换到&ldquo;打印内容&rdquo;选择要显示的信息</li>
                       <li>• 点击&ldquo;打印&rdquo;直接打印</li>
                       <li>• 点击&ldquo;导出PDF&rdquo;保存为PDF文件</li>
                     </ul>
@@ -278,7 +278,7 @@ export function PrintPreviewDialog({
                   <div className="space-y-4">
                     <div className="flex items-center justify-between border-b p-4">
                       <span className="text-sm font-medium">
-                        字段选择会自动保存
+                        打印内容设置会自动保存
                       </span>
                       <Button
                         variant="outline"

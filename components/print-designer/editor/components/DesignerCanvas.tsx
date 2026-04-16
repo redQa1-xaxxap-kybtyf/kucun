@@ -121,7 +121,14 @@ export function DesignerCanvas() {
       width: Math.max(10, pageDimensions.width - paddingLeft - paddingRight),
       height: Math.max(10, pageDimensions.height - paddingTop - paddingBottom),
     }),
-    [pageDimensions.height, pageDimensions.width, paddingBottom, paddingLeft, paddingRight, paddingTop]
+    [
+      pageDimensions.height,
+      pageDimensions.width,
+      paddingBottom,
+      paddingLeft,
+      paddingRight,
+      paddingTop,
+    ]
   );
 
   // 计算对齐辅助线
@@ -180,7 +187,7 @@ export function DesignerCanvas() {
           break;
         case 'placeholder': {
           const field = e.dataTransfer.getData('fieldPath') || 'field';
-          const label = e.dataTransfer.getData('fieldLabel') || '字段';
+          const label = e.dataTransfer.getData('fieldLabel') || '数据项';
           newElement = createDefaultPlaceholderElement(id, field, label, {
             x: posX,
             y: posY,
@@ -254,7 +261,8 @@ export function DesignerCanvas() {
         <div
           className={cn(
             'relative rounded-sm bg-white shadow-[0_24px_60px_rgba(73,55,28,0.18)] transition-all',
-            isDragging && 'ring-2 ring-amber-500 ring-offset-4 ring-offset-[#ece4d8]'
+            isDragging &&
+              'ring-2 ring-amber-500 ring-offset-4 ring-offset-[#ece4d8]'
           )}
           style={{
             width: pageWidth,
@@ -286,10 +294,10 @@ export function DesignerCanvas() {
               <div className="pointer-events-none flex h-full items-center justify-center px-6">
                 <div className="max-w-sm rounded-2xl border border-stone-200 bg-white/92 px-5 py-4 text-center shadow-sm">
                   <p className="text-sm font-medium text-slate-900">
-                    从左侧拖入组件或字段开始设计
+                    从左侧拖入组件或数据项开始设计
                   </p>
                   <p className="mt-2 text-xs leading-5 text-slate-500">
-                    常见做法是先放标题、公司信息，再放客户字段和明细表格。
+                    常见做法是先放标题、公司信息，再放客户信息和明细表格。
                   </p>
                 </div>
               </div>
@@ -616,7 +624,7 @@ function CanvasElement({
     <ElementContextMenu elementId={element.id}>
       <div
         className={cn(
-          'absolute cursor-move select-none rounded-[2px]',
+          'absolute cursor-move rounded-[2px] select-none',
           isSelected && 'ring-2 ring-amber-500 ring-offset-1 ring-offset-white',
           element.locked && 'cursor-not-allowed',
           !element.visible && 'opacity-40'
