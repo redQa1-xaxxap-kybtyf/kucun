@@ -84,7 +84,7 @@ const mapZodIssues = (issues: z.ZodIssue[]): ValidationIssue[] =>
 const validationErrorResult = (issues: z.ZodIssue[]): ActionResult<never> =>
   ({
     success: false,
-    error: '参数验证失败，请检查表单输入',
+    error: '填写内容有误，请检查后重试',
     validationErrors: mapZodIssues(issues),
   }) as ActionResult<never>;
 
@@ -195,7 +195,7 @@ export async function confirmPurchaseOrder(
     }
 
     if (!orderId) {
-      return buildErrorResult('采购订单ID不能为空');
+      return buildErrorResult('采购订单编号不能为空');
     }
 
     const result = await prisma.$transaction<ActionResult<{ id: string }>>(
@@ -687,3 +687,4 @@ export async function getPurchaseOrderList(params?: {
     };
   }
 }
+

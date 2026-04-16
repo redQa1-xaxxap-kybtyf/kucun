@@ -21,7 +21,7 @@ export const purchaseOrderStatusEnum = z.enum(
 export const purchaseOrderItemSchema = z
   .object({
     productId: z.string().optional(),
-    supplierId: z.string().min(1, '供应商 ID 不能为空'),
+    supplierId: z.string().min(1, '供应商不能为空'),
     productCode: z.string().min(1, '产品编码不能为空'),
     batchNumber: z
       .string()
@@ -100,7 +100,7 @@ export const purchaseOrderFeeItemSchema = z.object({
   feeName: z.string().min(1, '费用名称不能为空'),
   feeAmount: z.number().nonnegative('费用金额不能为负'),
   // 费用对应的结算供应商（如物流公司），可选；不填时后端可回落到订单主供应商
-  supplierId: z.string().uuid('费用供应商ID格式不正确').optional(),
+  supplierId: z.string().uuid('费用供应商信息格式不正确').optional(),
   remarks: z.string().optional(),
 });
 
@@ -141,7 +141,7 @@ const baseStatusFormSchema = baseUpdatePurchaseOrderStatusSchema.omit({
 });
 
 export const updatePurchaseOrderStatusSchema = baseStatusFormSchema.extend({
-  orderId: z.string().min(1, '订单 ID 不能为空'),
+  orderId: z.string().min(1, '订单编号不能为空'),
 });
 
 export type PurchaseOrderItemInput = z.infer<typeof purchaseOrderItemSchema> & {

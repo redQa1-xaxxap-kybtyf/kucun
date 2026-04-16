@@ -14,7 +14,7 @@ async function resolveOrderParams(
 ): Promise<PurchaseOrderParams> {
   const resolved = await resolveParams<Record<string, string>>(params);
   if (!resolved.id) {
-    throw new Error('缺少订单ID参数');
+    throw new Error('缺少订单编号');
   }
   return { id: resolved.id };
 }
@@ -86,3 +86,4 @@ export const PATCH = withAuth(async (request: NextRequest, context) => {
     );
   }
 });
+
