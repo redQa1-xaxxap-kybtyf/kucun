@@ -34,9 +34,9 @@ export function stageLabel(stage: TaskStage | null) {
     case 'S4':
       return '重建台账汇总';
     case 'S5':
-      return '清理缓存与核验';
+      return '刷新页面数据并核对';
     case 'S6':
-      return '解锁与落日志';
+      return '解除锁定并记录';
     default:
       return '等待中';
   }

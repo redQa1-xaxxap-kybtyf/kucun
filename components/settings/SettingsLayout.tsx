@@ -30,7 +30,7 @@ interface SettingsLayoutProps {
 export function SettingsLayout({
   children,
   title = '系统设置中心',
-  description = '管理全站核心参数、用户权限与审计日志',
+  description = '管理系统设置、用户权限与操作记录',
   className,
 }: SettingsLayoutProps) {
   return (

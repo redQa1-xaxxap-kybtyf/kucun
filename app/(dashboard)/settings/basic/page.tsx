@@ -44,7 +44,7 @@ const BasicSettingsPage = () => {
         <div className="space-y-2">
           <h2 className="text-xl font-black text-slate-900">权限受限</h2>
           <p className="text-sm font-medium text-slate-500">
-            此区域仅限系统管理员访问与配置。
+            只有管理员可以查看和修改这里的设置。
           </p>
         </div>
         <Button
@@ -60,8 +60,8 @@ const BasicSettingsPage = () => {
 
   return (
     <SettingsLayout
-      title="核心基本设置"
-      description="配置系统全局参数、业务规则及供应链预警阈值，这些变更将实时同步至全站节点。"
+      title="基本设置"
+      description="统一设置系统名称、业务规则和提醒阈值，保存后会同步到相关页面。"
     >
       <div className="w-full pb-20">
         <BasicSettingsForm />

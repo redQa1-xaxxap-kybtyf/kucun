@@ -207,8 +207,7 @@ export function DataManagementSwitchModeDialog({
             placeholder={`请输入：${switchConfirmWord}`}
           />
           <div className="text-muted-foreground text-xs">
-            提示：切换后页面会刷新；模式写入数据库后可能有短暂缓存延迟（约 5
-            秒）。
+            提示：切换后页面会自动更新，账套状态通常会在约 5 秒内生效。
           </div>
         </div>
 

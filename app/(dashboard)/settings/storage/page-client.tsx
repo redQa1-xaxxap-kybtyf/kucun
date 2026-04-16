@@ -296,7 +296,7 @@ export default function StorageSettingsPageClient({
                   服务接入配置
                 </h3>
                 <p className="text-[11px] font-medium text-slate-400">
-                  设置云存储密钥与基础访问参数
+                  设置云存储密钥与基础访问信息
                 </p>
               </div>
 

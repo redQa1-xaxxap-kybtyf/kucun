@@ -46,7 +46,7 @@ export const StorageTestConnection = ({
           </div>
           <div className="text-center">
             <h4 className="text-sm font-black text-slate-900">
-              正在执行连接诊断
+              正在检查连接状态
             </h4>
             <p className="mt-1 text-xs font-medium text-slate-500">
               正在验证访问密钥与存储空间可访问性，请稍候...
@@ -73,14 +73,14 @@ export const StorageTestConnection = ({
                 配置验证未通过
               </h4>
               <p className="text-xs font-bold tracking-widest text-rose-500 uppercase">
-                Diagnostic Failed
+                检测未通过
               </p>
             </div>
           </div>
 
           <div className="rounded-2xl border border-rose-100/50 bg-white/80 p-5">
             <span className="mb-2 block text-xs font-black text-rose-500 uppercase">
-              错误详情报告
+              问题说明
             </span>
             <p className="text-sm leading-relaxed font-bold text-slate-700">
               {errorMessage}
@@ -90,7 +90,7 @@ export const StorageTestConnection = ({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <h5 className="text-xs font-black tracking-wider text-slate-900 uppercase">
-                排难建议（检查点）
+                处理建议
               </h5>
               <ul className="space-y-1.5">
                 {[
@@ -115,7 +115,7 @@ export const StorageTestConnection = ({
                   onClick={onRetry}
                   className="h-10 rounded-xl border-rose-100 bg-white px-6 text-xs font-black text-rose-600 transition-all hover:bg-rose-50 active:scale-95"
                 >
-                  重新发起诊断
+                  重新检查
                 </Button>
               </div>
             )}
@@ -140,7 +140,7 @@ export const StorageTestConnection = ({
                   存储连接已就绪
                 </h4>
                 <p className="text-[11px] font-bold tracking-widest text-emerald-400 uppercase">
-                  Diagnostic Passed
+                  检查通过
                 </p>
               </div>
             </div>
@@ -150,7 +150,7 @@ export const StorageTestConnection = ({
                 onClick={onRetry}
                 className="h-9 rounded-lg text-[10px] font-black tracking-widest text-slate-400 uppercase hover:bg-emerald-100/50"
               >
-                重新诊断
+                重新检查
               </Button>
             )}
           </div>

@@ -11,7 +11,7 @@ import { DataManagementPageClient } from './page-client';
 
 export const metadata: Metadata = {
   title: '数据管理 - 系统设置',
-  description: '试用重置 / 正式清理测试数据',
+  description: '试用账套重置与正式账套测试数据清理',
 };
 
 export default async function DataManagementPage() {

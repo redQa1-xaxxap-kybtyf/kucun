@@ -435,7 +435,7 @@ export const QiniuStorageForm = ({
         {/* 操作按钮区 */}
         <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/10 pt-8">
           <p className="text-[11px] font-medium text-slate-400">
-            修改配置后建议先进行连接诊断，确保服务可用性。
+            修改配置后建议先检查连接状态，确认上传服务可正常使用。
           </p>
           <div className="flex items-center gap-4">
             <Button
@@ -450,7 +450,7 @@ export const QiniuStorageForm = ({
               ) : (
                 <TestTube className="mr-2 h-4 w-4" />
               )}
-              连接性诊断
+              检查连接状态
             </Button>
             <Button
               type="submit"

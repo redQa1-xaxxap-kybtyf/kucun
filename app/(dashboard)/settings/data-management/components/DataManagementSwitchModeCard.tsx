@@ -29,7 +29,7 @@ export function DataManagementSwitchModeCard({
           账套模式切换（管理员）
         </CardTitle>
         <div className="text-muted-foreground text-sm">
-          切换将影响“默认数据标签（test/prod）”与“数据管理”入口，并会写入系统日志。
+          切换后会同步更新当前账套状态和数据管理入口，并记录本次操作。
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

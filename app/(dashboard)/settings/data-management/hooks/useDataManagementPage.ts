@@ -112,7 +112,7 @@ export function useSystemModeSwitch(params: {
       params.onSuccess(data.mode);
       toast({
         title: '账套模式已切换',
-        description: `当前：${data.mode === 'trial' ? '试用' : '正式'}（页面将刷新）`,
+        description: `当前账套：${data.mode === 'trial' ? '试用' : '正式'}，页面将自动更新`,
       });
       router.refresh();
     },
