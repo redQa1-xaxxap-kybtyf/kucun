@@ -47,7 +47,7 @@ export const customerStatementQuerySchema = z.object({
     .or(z.string().transform(val => parseInt(val, 10))),
 
   // 筛选条件
-  customerId: z.string().min(1, '客户ID不能为空').optional().or(z.literal('')),
+  customerId: z.string().min(1, '客户不能为空').optional().or(z.literal('')),
 
   customerName: z
     .string()
@@ -116,7 +116,7 @@ export const customerStatementQuerySchema = z.object({
  */
 export const customerStatementDetailQuerySchema = z
   .object({
-    customerId: z.string().min(1, '客户ID不能为空'),
+    customerId: z.string().min(1, '客户不能为空'),
 
     startDate: z
       .string()
@@ -157,7 +157,7 @@ export const customerStatementDetailQuerySchema = z
  */
 export const customerStatementExportSchema = z
   .object({
-    customerId: z.string().min(1, '客户ID不能为空'),
+    customerId: z.string().min(1, '客户不能为空'),
 
     startDate: z
       .string()

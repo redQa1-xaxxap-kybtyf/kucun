@@ -68,7 +68,7 @@ export const factoryShipmentFeeItemSchema = z.object({
     .multipleOf(0.01, '费用金额最多保留2位小数'),
   paidBy: z.enum(['customer', 'company']).default('customer'),
   // 费用对应的结算供应商（如物流公司），可选
-  supplierId: z.string().uuid('费用供应商ID格式不正确').optional().nullable(),
+  supplierId: z.string().uuid('费用供应商信息格式不正确').optional().nullable(),
   remarks: z
     .string()
     .max(500, '备注不能超过500个字符')
@@ -81,7 +81,7 @@ export const factoryShipmentFeeItemSchema = z.object({
  * 只包含字段类型和长度限制，不包含复杂的业务逻辑
  */
 export const factoryShipmentOrderItemSchema = z.object({
-  productId: z.string().uuid('产品ID格式不正确').optional().nullable(),
+  productId: z.string().uuid('产品信息格式不正确').optional().nullable(),
   supplierId: z.string().min(1, '请选择供应商').optional().or(z.literal('')),
   productCode: z
     .string()
@@ -187,7 +187,7 @@ export const factoryShipmentOrderListParamsSchema = z
       .optional(),
     mode: z.enum(['customer_direct', 'factory']).optional(),
     status: factoryShipmentStatusSchema.optional(),
-    customerId: z.string().uuid('客户ID格式不正确').optional(),
+    customerId: z.string().uuid('客户信息格式不正确').optional(),
     search: z.string().max(50, '搜索关键字不能超过50个字符').optional(), // ✅ 新增：通用搜索字段
     containerNumber: z
       .string()

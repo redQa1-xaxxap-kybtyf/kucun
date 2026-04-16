@@ -17,9 +17,9 @@ export const customerPriceHistoryQuerySchema = z.object({
   customerId: z
     .string({
       error: issue =>
-        issue.input === undefined ? '客户ID不能为空' : '客户ID必须是字符串',
+        issue.input === undefined ? '客户不能为空' : '客户信息格式不正确',
     })
-    .min(1, { error: '客户ID不能为空' })
+    .min(1, { error: '客户不能为空' })
     .trim(),
 
   productId: z.string().min(1).trim().optional().or(z.literal('')),
@@ -32,9 +32,9 @@ export const supplierPriceHistoryQuerySchema = z.object({
   supplierId: z
     .string({
       error: issue =>
-        issue.input === undefined ? '供应商ID不能为空' : '供应商ID必须是字符串',
+        issue.input === undefined ? '供应商不能为空' : '供应商信息格式不正确',
     })
-    .min(1, { error: '供应商ID不能为空' })
+    .min(1, { error: '供应商不能为空' })
     .trim(),
 
   productId: z.string().min(1).trim().optional().or(z.literal('')),
@@ -45,9 +45,9 @@ export const createPriceHistorySchema = z.object({
   productId: z
     .string({
       error: issue =>
-        issue.input === undefined ? '产品ID不能为空' : '产品ID必须是字符串',
+        issue.input === undefined ? '请选择产品' : '产品信息格式不正确',
     })
-    .min(1, { error: '产品ID不能为空' }),
+    .min(1, { error: '请选择产品' }),
 
   unitPrice: z
     .number({

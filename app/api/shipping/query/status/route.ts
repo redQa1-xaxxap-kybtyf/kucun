@@ -33,11 +33,11 @@ const orderTypeEnum = z.enum([
 const statusQuerySchema = z
   .object({
     jobId: z.string().optional(),
-    orderId: z.string().uuid('订单 ID 格式无效').optional(),
+    orderId: z.string().uuid('订单编号格式不正确').optional(),
     orderType: orderTypeEnum.optional(),
   })
   .refine(data => data.jobId || data.orderId, {
-    message: '必须提供 jobId 或 orderId 参数',
+    message: '请提供任务编号或单号',
   });
 
 type _StatusQueryInput = z.infer<typeof statusQuerySchema>;
@@ -364,12 +364,12 @@ export const GET = withErrorHandling(
       }
 
       // 理论上不会到达这里，因为 Zod 验证会确保至少有一个参数
-      return errorResponse('必须提供 jobId 或 orderId 参数', 400);
+      return errorResponse('请提供任务编号或单号', 400);
     } catch (error) {
       // Zod 验证错误
       if (error instanceof z.ZodError) {
         return errorResponse(
-          `请求参数验证失败: ${error.issues.map((e: ZodIssue) => e.message).join(', ')}`,
+          `请求提交内容有误： ${error.issues.map((e: ZodIssue) => e.message).join(', ')}`,
           400
         );
       }

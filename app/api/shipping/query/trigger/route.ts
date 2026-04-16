@@ -25,7 +25,7 @@ import {
  * 请求体验证 Schema
  */
 const triggerQuerySchema = z.object({
-  orderId: z.string().min(1, '订单 ID 不能为空').uuid('订单 ID 格式无效'),
+  orderId: z.string().min(1, '订单编号不能为空').uuid('订单编号格式不正确'),
   orderType: z
     .enum([
       SHIPPING_QUERY_TARGETS.FACTORY_SHIPMENT,
@@ -141,7 +141,7 @@ export const POST = withErrorHandling(
       // Zod 验证错误
       if (error instanceof z.ZodError) {
         return errorResponse(
-          `请求参数验证失败: ${error.issues.map((e: ZodIssue) => e.message).join(', ')}`,
+          `请求提交内容有误： ${error.issues.map((e: ZodIssue) => e.message).join(', ')}`,
           400
         );
       }

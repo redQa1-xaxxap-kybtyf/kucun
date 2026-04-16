@@ -24,7 +24,7 @@ export const POST = withAuth(async (request: NextRequest) => {
   const parsed = bodySchema.safeParse(json ?? {});
   if (!parsed.success) {
     return NextResponse.json(
-      { success: false, error: '参数不正确', details: parsed.error.issues },
+      { success: false, error: '提交内容不正确', details: parsed.error.issues },
       { status: 400 }
     );
   }
@@ -43,7 +43,7 @@ export const POST = withAuth(async (request: NextRequest) => {
 
   if (!params.success) {
     return NextResponse.json(
-      { success: false, error: params.error || '生成七牛上传参数失败' },
+      { success: false, error: params.error || '生成七牛上传信息失败' },
       { status: 500 }
     );
   }
@@ -60,3 +60,4 @@ export const POST = withAuth(async (request: NextRequest) => {
     },
   });
 });
+

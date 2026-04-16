@@ -32,8 +32,8 @@ const orderTypeEnum = z.enum([
 
 const batchQuerySchema = z.object({
   orderIds: z
-    .array(z.string().uuid('订单 ID 格式无效'))
-    .min(1, '至少需要提供一个订单 ID')
+    .array(z.string().uuid('订单编号格式不正确'))
+    .min(1, '至少需要提供一个订单编号')
     .max(50, '最多支持 50 个订单批量查询'),
   orderType: orderTypeEnum.default(SHIPPING_QUERY_TARGETS.FACTORY_SHIPMENT),
   force: z.boolean().optional().default(false),
@@ -259,7 +259,7 @@ export const POST = withErrorHandling(
       // Zod 验证错误
       if (error instanceof z.ZodError) {
         return errorResponse(
-          `请求参数验证失败: ${error.issues.map((e: ZodIssue) => e.message).join(', ')}`,
+          `请求提交内容有误： ${error.issues.map((e: ZodIssue) => e.message).join(', ')}`,
           400
         );
       }

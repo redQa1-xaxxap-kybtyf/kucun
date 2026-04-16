@@ -58,7 +58,7 @@ export const customerQuerySchema = z.object({
 
   parentCustomerId: z
     .string()
-    .uuid('上级客户ID格式不正确')
+    .uuid('上级客户信息格式不正确')
     .optional()
     .or(z.literal('')),
 
@@ -167,7 +167,7 @@ export const customerCreateSchema = z.object({
   address: baseValidations.address,
   parentCustomerId: z
     .string()
-    .uuid('上级客户ID格式不正确')
+    .uuid('上级客户信息格式不正确')
     .optional()
     .or(z.literal('')),
   extendedInfo: z.object(extendedInfoValidations).optional(),
@@ -180,7 +180,7 @@ export const customerQuickAddSchema = z.object({
   address: baseValidations.address,
   parentCustomerId: z
     .string()
-    .uuid('上级客户ID格式不正确')
+    .uuid('上级客户信息格式不正确')
     .optional()
     .or(z.literal('')),
   extendedInfo: z.object(extendedInfoValidations).optional(),
@@ -189,13 +189,13 @@ export const customerQuickAddSchema = z.object({
 
 // ✅ 客户更新表单验证 - parentCustomerId可选
 export const customerUpdateSchema = z.object({
-  id: z.string().min(1, '客户ID不能为空'),
+  id: z.string().min(1, '客户不能为空'),
   name: baseValidations.name.optional(),
   phone: baseValidations.phone,
   address: baseValidations.address,
   parentCustomerId: z
     .string()
-    .uuid('上级客户ID格式不正确')
+    .uuid('上级客户信息格式不正确')
     .optional()
     .or(z.literal('')),
   extendedInfo: z.object(extendedInfoValidations).optional(),
@@ -206,7 +206,7 @@ export const customerSearchSchema = z.object({
   search: z.string().max(100, '搜索关键词不能超过100个字符').optional(),
   parentCustomerId: z
     .string()
-    .uuid('上级客户ID格式不正确')
+    .uuid('上级客户信息格式不正确')
     .optional()
     .or(z.literal('')),
   customerType: z.enum(CUSTOMER_TYPE_VALUES).optional(),

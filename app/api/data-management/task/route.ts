@@ -8,7 +8,7 @@ export const GET = withAuth(
     const id = request.nextUrl.searchParams.get('id');
     if (!id) {
       return NextResponse.json(
-        { success: false, error: '缺少 id 参数' },
+        { success: false, error: '缺少任务编号' },
         { status: 400 }
       );
     }
@@ -25,3 +25,4 @@ export const GET = withAuth(
   },
   { permissions: ['finance:manage'] }
 );
+

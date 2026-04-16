@@ -27,7 +27,7 @@ export const DELETE = withAuth(
       const materialId = resolvedParams.id;
       if (!materialId) {
         return NextResponse.json(
-          { success: false, error: '缺少收藏记录ID参数' },
+          { success: false, error: '缺少收藏记录编号' },
           { status: 400 }
         );
       }
@@ -57,3 +57,4 @@ export const DELETE = withAuth(
   },
   { permissions: [] }
 );
+

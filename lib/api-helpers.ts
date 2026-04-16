@@ -76,7 +76,7 @@ export function validateQueryParams<T>(
       const firstError = result.error.issues[0];
       return {
         success: false,
-        error: firstError?.message || '参数验证失败',
+        error: firstError?.message || '查询条件有误，请检查后重试',
       };
     }
 
@@ -87,7 +87,8 @@ export function validateQueryParams<T>(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : '参数验证失败',
+      error:
+        error instanceof Error ? error.message : '查询条件有误，请检查后重试',
     };
   }
 }
