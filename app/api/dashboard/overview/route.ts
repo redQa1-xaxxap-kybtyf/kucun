@@ -5,6 +5,8 @@ import { buildCacheKey, CACHE_STRATEGY, getOrSetWithLock } from '@/lib/cache';
 import { prisma } from '@/lib/db';
 import { inventoryConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
+import { applyReportVisibility, buildSalesOrderWhere } from '@/lib/services/report-helpers';
+import { getSystemMode } from '@/lib/services/system-mode-service';
 import { dashboardOverviewQuerySchema } from '@/lib/validations/dashboard';
 
 // 获取业务概览数据
@@ -20,7 +22,7 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
       return NextResponse.json(
         {
           success: false,
-          error: '请求参数格式不正确',
+          error: '请求内容有误，请稍后重试',
           details: validationResult.error.issues,
         },
         { status: 400 }
@@ -64,6 +66,18 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
             break;
         }
 
+        const systemMode = await getSystemMode();
+        const visibility = { systemMode };
+        const previousPeriodEnd = new Date(startDate.getTime() - 1);
+        const currentSalesWhere = applyReportVisibility(
+          buildSalesOrderWhere(startDate, now),
+          visibility
+        );
+        const previousSalesWhere = applyReportVisibility(
+          buildSalesOrderWhere(previousStartDate, previousPeriodEnd),
+          visibility
+        );
+
         // ✅ 优化：使用聚合查询替代全表扫描
         // 修复前：2 次 findMany 加载所有订单和行项目
         // 修复后：2 次 aggregate 查询，只返回标量结果
@@ -88,12 +102,7 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
         ] = await Promise.all([
           // 当前期间销售数据 - 使用聚合查询
           prisma.salesOrder.aggregate({
-            where: {
-              createdAt: {
-                gte: startDate,
-                lte: now,
-              },
-            },
+            where: currentSalesWhere,
             _sum: {
               totalAmount: true,
             },
@@ -101,12 +110,7 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
           }),
           // 上一期间销售数据 - 使用聚合查询
           prisma.salesOrder.aggregate({
-            where: {
-              createdAt: {
-                gte: previousStartDate,
-                lt: startDate,
-              },
-            },
+            where: previousSalesWhere,
             _sum: {
               totalAmount: true,
             },
@@ -139,11 +143,7 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
           prisma.customer.count({
             where: {
               salesOrders: {
-                some: {
-                  createdAt: {
-                    gte: startDate,
-                  },
-                },
+                some: currentSalesWhere,
               },
             },
           }),
@@ -307,3 +307,4 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
     );
   }
 });
+

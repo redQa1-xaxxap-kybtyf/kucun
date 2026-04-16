@@ -4,6 +4,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { applyReportVisibility, buildSalesOrderWhere } from '@/lib/services/report-helpers';
+import { getSystemMode } from '@/lib/services/system-mode-service';
 import { dashboardQuerySchema } from '@/lib/validations/dashboard';
 
 // 获取仪表盘主数据
@@ -18,7 +20,7 @@ export const GET = withAuth(async (request: NextRequest) => {
       return NextResponse.json(
         {
           success: false,
-          error: '请求参数格式不正确',
+          error: '请求内容有误，请稍后重试',
           details: validationResult.error.issues,
         },
         { status: 400 }
@@ -49,13 +51,11 @@ export const GET = withAuth(async (request: NextRequest) => {
         break;
     }
 
-    // 构建过滤条件
-    const whereConditions: Prisma.SalesOrderWhereInput = {
-      createdAt: {
-        gte: startDate,
-        lte: now,
-      },
-    };
+    const systemMode = await getSystemMode();
+    const whereConditions = applyReportVisibility(
+      buildSalesOrderWhere(startDate, now) as Prisma.SalesOrderWhereInput,
+      { systemMode }
+    );
 
     const [salesOrderStats, inventoryStats, productStats, customerStats] =
       await Promise.all([
@@ -125,3 +125,4 @@ export const GET = withAuth(async (request: NextRequest) => {
     );
   }
 });
+

@@ -1,8 +1,10 @@
+import { Prisma } from '@prisma/client';
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { getSystemMode } from '@/lib/services/system-mode-service';
 import type {
   ChartDataPoint,
   SalesTrendData,
@@ -57,18 +59,28 @@ export const GET = withAuth(async (request: NextRequest) => {
     const rawTimeRange = searchParams.get('timeRange') as TimeRange | null;
 
     const { startDate, endDate } = resolveTimeRange(rawTimeRange);
+    const systemMode = await getSystemMode();
+    const dataTagCondition =
+      systemMode === 'production'
+        ? Prisma.sql`AND data_tag = 'prod'`
+        : Prisma.empty;
 
-    // ✅ 按“天”在数据库侧聚合，避免把整段时间范围内的订单拉回应用层
+    // ✅ 按“销售日期”聚合，只统计正式销售口径，避免历史导入草稿污染趋势图。
     const rows = await prisma.$queryRaw<
       Array<{ date: Date | string; totalAmount: unknown }>
-    >`
-      SELECT DATE(created_at) as date, COALESCE(SUM(total_amount), 0) as totalAmount
+    >(
+      Prisma.sql`
+      SELECT DATE(order_date) as date, COALESCE(SUM(total_amount), 0) as totalAmount
       FROM sales_orders
-      WHERE created_at >= ${startDate}
-        AND created_at <= ${endDate}
-      GROUP BY DATE(created_at)
+      WHERE order_date >= ${startDate}
+        AND order_date <= ${endDate}
+        AND status IN ('confirmed', 'shipped', 'completed')
+        AND voided_at IS NULL
+        ${dataTagCondition}
+      GROUP BY DATE(order_date)
       ORDER BY date ASC
-    `;
+    `
+    );
 
     const daily: ChartDataPoint[] = rows.map(row => {
       const date =
