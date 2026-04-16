@@ -158,7 +158,10 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
   });
 
   // 表单提交逻辑（跳过确认，用于用户已确认后的实际提交）
-  const { handleSubmit: submitInboundWithoutConfirm } = useInboundFormSubmit({
+  const {
+    handleSubmit: submitInboundWithoutConfirm,
+    isSubmitting: isConfirmSubmitting,
+  } = useInboundFormSubmit({
     createMutation,
     onSuccess,
     skipConfirm: true,
@@ -169,7 +172,8 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
       onSuccess,
     });
   const hasUnsavedChanges =
-    form.formState.isDirty && !(isSubmitting || isBatchSubmitting);
+    form.formState.isDirty &&
+    !(isSubmitting || isConfirmSubmitting || isBatchSubmitting);
   const { confirmLeavePage } = useUnsavedChangesGuard({
     enabled: hasUnsavedChanges,
     message: '当前入库单内容尚未保存，确定要离开吗？',
@@ -299,10 +303,48 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
     const supplierId = form.getValues('supplierId')?.trim();
     const commonRemarks = form.getValues('remarks')?.trim();
 
+    const buildBatchErrorDescription = (
+      errors: Record<string, BatchPurchaseInboundRowErrors>
+    ) => {
+      const fieldPriority: (keyof BatchPurchaseInboundRowErrors)[] = [
+        'productId',
+        'batchNumber',
+        'inputQuantity',
+        'piecesPerUnit',
+        'damagedInputQuantity',
+        'damageHandling',
+        'unitCost',
+      ];
+
+      for (const [index, row] of batchRows.entries()) {
+        const rowError = errors[row.id];
+        if (!rowError) {
+          continue;
+        }
+
+        const firstMessage =
+          fieldPriority
+            .map(field => rowError[field])
+            .find(value => typeof value === 'string' && value.trim().length > 0) ??
+          Object.values(rowError).find(
+            value => typeof value === 'string' && value.trim().length > 0
+          );
+
+        if (firstMessage) {
+          return `第 ${index + 1} 条明细：${firstMessage}`;
+        }
+      }
+
+      return '请先把每条明细的必填项补完整后再提交。';
+    };
+
     if (!supplierId) {
       form.setError('supplierId', {
         type: 'manual',
         message: '请选择供应商',
+      });
+      showError('提交前还有内容没填完整', {
+        description: '请先选择供应商后再提交。',
       });
       return;
     }
@@ -350,6 +392,22 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
           }
         });
 
+        if (
+          row.inputUnit === 'units' &&
+          (!row.piecesPerUnit || row.piecesPerUnit <= 0) &&
+          !rowFieldErrors.piecesPerUnit
+        ) {
+          rowFieldErrors.piecesPerUnit = '按件入库时必须填写装箱数';
+        }
+
+        if (
+          (row.damagedInputQuantity ?? 0) > 0 &&
+          !row.damageHandling &&
+          !rowFieldErrors.damageHandling
+        ) {
+          rowFieldErrors.damageHandling = '有到货破损时必须选择处理方式';
+        }
+
         nextErrors[row.id] = rowFieldErrors;
         return [];
       }
@@ -360,6 +418,9 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
     setBatchRowErrors(nextErrors);
 
     if (Object.keys(nextErrors).length > 0 || records.length === 0) {
+      showError('提交前还有内容没填完整', {
+        description: buildBatchErrorDescription(nextErrors),
+      });
       return;
     }
 
@@ -390,6 +451,34 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
     return undefined;
   };
 
+  const getPreferredSingleErrorMessage = (value: unknown): string | undefined => {
+    if (!value || typeof value !== 'object') {
+      return undefined;
+    }
+
+    const errors = value as Partial<Record<keyof InboundFormData, unknown>>;
+    const fieldPriority: (keyof InboundFormData)[] = [
+      'supplierId',
+      'productId',
+      'batchNumber',
+      'inputQuantity',
+      ...(watchedInputUnit === 'units' ? (['piecesPerUnit'] as const) : []),
+      'damagedInputQuantity',
+      'damageHandling',
+      'unitCost',
+      'quantity',
+    ];
+
+    for (const field of fieldPriority) {
+      const fieldMessage = getFirstErrorMessage(errors[field]);
+      if (fieldMessage) {
+        return fieldMessage;
+      }
+    }
+
+    return getFirstErrorMessage(errors);
+  };
+
   // ✅ 使用 React Hook Form 的 handleSubmit，并在这里处理期初入库二次确认逻辑
   const handleFormSubmit = form.handleSubmit(
     async (data: any) => {
@@ -416,7 +505,8 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
 
       showError('提交前还有内容没填完整', {
         description:
-          getFirstErrorMessage(errors) ?? '请先把必填项补完整后再提交。',
+          getPreferredSingleErrorMessage(errors) ??
+          '请先把必填项补完整后再提交。',
       });
     }
   );
@@ -524,7 +614,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
       <div className="space-y-4">
         {/* 页面标题卡片 */}
         <InboundFormToolbar
-          isSubmitting={isSubmitting || isBatchSubmitting}
+          isSubmitting={isSubmitting || isConfirmSubmitting || isBatchSubmitting}
           onReset={handleFormReset}
           onBack={handleBack}
           title={currentPageTitle}
@@ -944,6 +1034,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
         onOpenChange={setShowConfirmDialog}
         onConfirm={handleConfirmDialogConfirm}
         onCancel={handleConfirmDialogCancel}
+        isSubmitting={isConfirmSubmitting}
       />
     </div>
   );

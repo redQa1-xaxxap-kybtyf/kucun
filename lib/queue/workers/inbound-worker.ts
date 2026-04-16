@@ -6,7 +6,6 @@
 import { type Job, Worker } from 'bullmq';
 
 import { upsertBatchSpecification } from '@/lib/api/batch-specification-handlers';
-import { syncProductSpecificationAsync } from '@/lib/api/inbound-handlers';
 import { defaultWorkerConfig, QUEUE_NAMES } from '@/lib/queue/config';
 import type { InboundPostProcessingJobData } from '@/lib/queue/inbound-queue';
 
@@ -24,13 +23,18 @@ async function processInboundPostProcessing(
   );
 
   // 步骤1: 批次规格更新 (如果提供了规格参数)
-  if (batchNumber && (piecesPerUnit || weight)) {
+  if (
+    batchNumber &&
+    typeof piecesPerUnit === 'number' &&
+    Number.isInteger(piecesPerUnit) &&
+    piecesPerUnit > 0
+  ) {
     try {
       await upsertBatchSpecification({
         productId,
         variantId,
         batchNumber,
-        piecesPerUnit: piecesPerUnit || 1,
+        piecesPerUnit,
         weight: weight || undefined,
       });
 
@@ -42,18 +46,7 @@ async function processInboundPostProcessing(
     }
   }
 
-  // 步骤2: 产品规格同步 (如果提供了规格参数)
-  if (piecesPerUnit || weight) {
-    try {
-      await syncProductSpecificationAsync(productId, piecesPerUnit, weight);
-      await job.updateProgress(66);
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Product specification sync failed:', error);
-    }
-  }
-
-  // 步骤3: 缓存失效
+  // 步骤2: 缓存失效
   try {
     const [{ invalidateInventoryCache }, { revalidateProducts }] =
       await Promise.all([

@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -17,6 +17,7 @@ interface OpeningBalanceConfirmDialogProps {
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
   onCancel: () => void;
+  isSubmitting?: boolean;
 }
 
 /**
@@ -32,10 +33,10 @@ export function OpeningBalanceConfirmDialog({
   onOpenChange,
   onConfirm,
   onCancel,
+  isSubmitting = false,
 }: OpeningBalanceConfirmDialogProps) {
   const handleConfirm = () => {
     onConfirm();
-    onOpenChange(false);
   };
 
   const handleCancel = () => {
@@ -69,6 +70,7 @@ export function OpeningBalanceConfirmDialog({
             variant="outline"
             onClick={handleCancel}
             className="sm:mr-2"
+            disabled={isSubmitting}
           >
             取消
           </Button>
@@ -77,8 +79,16 @@ export function OpeningBalanceConfirmDialog({
             variant="default"
             onClick={handleConfirm}
             className="bg-amber-600 hover:bg-amber-700"
+            disabled={isSubmitting}
           >
-            确认入库
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                正在提交...
+              </>
+            ) : (
+              '确认入库'
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
