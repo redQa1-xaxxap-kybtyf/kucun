@@ -1,3 +1,5 @@
+import type { Prisma } from '@prisma/client';
+
 import { prisma } from '@/lib/db';
 import { factoryShipmentConfig, salesOrderConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
@@ -25,75 +27,90 @@ export const ORDER_NUMBER_CONFIGS = {
   },
 } as const;
 
+type SalesOrderNumberClient = Pick<Prisma.TransactionClient, 'salesOrder'>;
+
+interface GenerateSalesOrderNumberOptions {
+  tx?: SalesOrderNumberClient;
+}
+
+async function generateSalesOrderNumberOnce(
+  client: SalesOrderNumberClient,
+  attempt: number
+) {
+  const config = ORDER_NUMBER_CONFIGS.SALES_ORDER;
+  const today = new Date();
+  const dateKey = today.toISOString().slice(0, 10).replace(/-/g, '');
+  const prefix = `${config.prefix}${dateKey}`;
+
+  // 查找当天最后一个订单号；如果传入的是当前事务客户端，会包含同事务内已创建但未提交的订单。
+  const lastOrder = await client.salesOrder.findFirst({
+    where: {
+      orderNumber: {
+        startsWith: prefix,
+      },
+    },
+    orderBy: {
+      orderNumber: 'desc',
+    },
+    select: {
+      orderNumber: true,
+    },
+  });
+
+  let sequence = 1;
+  if (lastOrder) {
+    const lastSequence = parseInt(
+      lastOrder.orderNumber.slice(-config.numberLength),
+      10
+    );
+    sequence = lastSequence + 1;
+  }
+
+  // 为了处理并发，在基础序号上加上随机偏移和时间戳。
+  const randomOffset = Math.floor(Math.random() * 50);
+  const retryOffset = attempt * 10;
+  const timeOffset = Date.now() % 100;
+  const finalSequence = sequence + randomOffset + retryOffset + timeOffset;
+
+  const orderNumber = `${prefix}${finalSequence
+    .toString()
+    .padStart(config.numberLength, '0')}`;
+
+  const existingOrder = await client.salesOrder.findFirst({
+    where: { orderNumber },
+    select: { id: true },
+  });
+
+  if (existingOrder) {
+    throw new Error(`订单号冲突: ${orderNumber}`);
+  }
+
+  return orderNumber;
+}
+
 /**
  * 生成唯一的销售订单号
  * 使用现有销售订单表进行序列号生成，保证并发安全
  *
  * @returns Promise<string> 生成的订单号
  */
-export async function generateSalesOrderNumber(): Promise<string> {
-  const config = ORDER_NUMBER_CONFIGS.SALES_ORDER;
+export async function generateSalesOrderNumber(
+  options: GenerateSalesOrderNumberOptions = {}
+): Promise<string> {
   const maxRetries = 15; // 增加重试次数以处理高并发
   let attempt = 0;
 
   while (attempt < maxRetries) {
     try {
+      if (options.tx) {
+        return await generateSalesOrderNumberOnce(options.tx, attempt);
+      }
+
       return await prisma.$transaction(
-        async tx => {
-          const today = new Date();
-          const dateKey = today.toISOString().slice(0, 10).replace(/-/g, '');
-          const prefix = `${config.prefix}${dateKey}`;
-
-          // 改进的并发安全策略：生成订单号并依赖数据库唯一约束
-          // 查找今天最后一个订单号
-          const lastOrder = await tx.salesOrder.findFirst({
-            where: {
-              orderNumber: {
-                startsWith: prefix,
-              },
-            },
-            orderBy: {
-              orderNumber: 'desc',
-            },
-            select: {
-              orderNumber: true,
-            },
-          });
-
-          let sequence = 1;
-          if (lastOrder) {
-            const lastSequence = parseInt(
-              lastOrder.orderNumber.slice(-config.numberLength)
-            );
-            sequence = lastSequence + 1;
-          }
-
-          // 为了处理并发，在基础序号上加上随机偏移和时间戳
-          const randomOffset = Math.floor(Math.random() * 50); // 0-49的随机偏移
-          const retryOffset = attempt * 10; // 每次重试增加更大的偏移
-          const timeOffset = Date.now() % 100; // 使用时间戳的最后两位作为额外偏移
-          const finalSequence =
-            sequence + randomOffset + retryOffset + timeOffset;
-
-          const orderNumber = `${prefix}${finalSequence
-            .toString()
-            .padStart(config.numberLength, '0')}`;
-
-          // 简单检查订单号是否已存在
-          const existingOrder = await tx.salesOrder.findFirst({
-            where: { orderNumber },
-            select: { id: true },
-          });
-
-          if (existingOrder) {
-            throw new Error(`订单号冲突: ${orderNumber}`);
-          }
-
-          return orderNumber;
-        },
+        async tx => generateSalesOrderNumberOnce(tx, attempt),
         {
-          // 修复：SQLite不支持Serializable隔离级别，移除该设置
-          timeout: 10000, // 10秒超时
+          // 修复：SQLite不支持 Serializable 隔离级别，移除该设置
+          timeout: 10000,
         }
       );
     } catch (error) {
