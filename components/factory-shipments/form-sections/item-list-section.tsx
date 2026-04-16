@@ -3,7 +3,6 @@
 import type { UseFieldArrayReturn, UseFormReturn } from 'react-hook-form';
 
 import { ItemsTable } from '@/components/factory-shipments/form-sections/items-table';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { BlurHandlerFactory } from '@/lib/hooks/useFormErrorHandling';
 import type { PriceHistoryData } from '@/lib/types/price-history';
 import type { Product } from '@/lib/types/product';
@@ -49,24 +48,29 @@ export function ItemListSection({
   };
 
   return (
-    <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] shadow-md">
-      <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] py-3">
-        <CardTitle className="text-base font-semibold text-[hsl(var(--color-text-primary))]">
-          产品明细
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-5 lg:p-6 xl:p-8">
-        <ItemsTable
-          form={form}
-          products={products}
-          selectedCustomerId={selectedCustomerId}
-          customerPriceHistoryData={customerPriceHistoryData}
-          fields={fields}
-          onAddItem={handleAddItem}
-          onRemoveItem={handleRemoveItem}
-          getBlurHandler={getBlurHandler}
-        />
-      </CardContent>
-    </Card>
+    <section className="px-4 py-3 sm:px-5 lg:px-5">
+      <div className="mb-3 border-b border-[hsl(var(--color-border-secondary))] pb-2">
+        <div className="flex flex-col gap-1 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
+              发货明细
+            </h3>
+            <p className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
+              先录产品，再补批次和价格。
+            </p>
+          </div>
+        </div>
+      </div>
+      <ItemsTable
+        form={form}
+        products={products}
+        selectedCustomerId={selectedCustomerId}
+        customerPriceHistoryData={customerPriceHistoryData}
+        fields={fields}
+        onAddItem={handleAddItem}
+        onRemoveItem={handleRemoveItem}
+        getBlurHandler={getBlurHandler}
+      />
+    </section>
   );
 }

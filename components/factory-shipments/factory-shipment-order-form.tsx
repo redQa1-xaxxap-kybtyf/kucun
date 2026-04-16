@@ -11,10 +11,10 @@ import { AmountInfoSection } from '@/components/factory-shipments/form-sections/
 import { BasicInfoSection } from '@/components/factory-shipments/form-sections/basic-info-section';
 import { ItemListSection } from '@/components/factory-shipments/form-sections/item-list-section';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form } from '@/components/ui/form';
 import { useToast } from '@/components/ui/use-toast';
 import { useCustomerPriceHistory } from '@/hooks/use-price-history';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
 import {
   FactoryShipmentValidationError,
@@ -27,6 +27,7 @@ import { useFormErrorHandling } from '@/lib/hooks/useFormErrorHandling';
 import type { Customer } from '@/lib/types/customer';
 import {
   FACTORY_SHIPMENT_STATUS,
+  FACTORY_SHIPMENT_STATUS_LABELS,
   type FactoryShipmentOrder,
 } from '@/lib/types/factory-shipment';
 import {
@@ -346,7 +347,7 @@ export function FactoryShipmentOrderForm({
   ) => {
     showValidationToast(errors, {
       description:
-        '请检查标红字段后再次提交。所有带 * 的字段均为必填项，手动产品需填写名称。',
+        '请检查未填写完整的内容后再次提交。所有带 * 的项目均为必填项，手动产品需要填写名称。',
     });
   };
 
@@ -368,10 +369,35 @@ export function FactoryShipmentOrderForm({
   };
 
   const isLoading = createMutation.isPending || updateMutation.isPending;
+  const hasUnsavedChanges = form.formState.isDirty && !isLoading;
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前厂家发货单内容尚未保存，确定要离开吗？',
+  });
   const handleSubmitIntent = (intent: 'draft' | 'confirm') => {
     submitIntentRef.current = intent;
     setSubmitIntent(intent);
   };
+  const handleCancel = () => {
+    if (!confirmLeavePage()) {
+      return;
+    }
+
+    onCancel?.();
+  };
+  const customerName =
+    customers.find(customer => customer.id === selectedCustomerId)?.name ||
+    orderDetail?.customer?.name ||
+    '未选择';
+  const statusLabel = isEditing
+    ? FACTORY_SHIPMENT_STATUS_LABELS[
+        (form.watch('status') as keyof typeof FACTORY_SHIPMENT_STATUS_LABELS) ||
+          FACTORY_SHIPMENT_STATUS.DRAFT
+      ]
+    : submitIntent === 'draft'
+      ? '草稿'
+      : '待确认';
+  const itemCount = fieldArray.fields.length;
 
   return (
     <Form {...form}>
@@ -380,54 +406,97 @@ export function FactoryShipmentOrderForm({
           (data: any) => onSubmit(data as FactoryShipmentOrderFormData),
           handleInvalidSubmit
         )}
-        className="space-y-5"
+        className="mx-auto w-full max-w-[1680px]"
       >
-        {/* 基本信息 */}
-        <BasicInfoSection
-          form={form}
-          customers={customers}
-          showStatus={isEditing}
-          isLoadingCustomers={customersLoading}
-          onCustomerCreated={handleCustomerCreated}
-          onRefreshCustomers={handleRefreshCustomers}
-          initialCustomer={orderDetail?.customer}
-          getBlurHandler={notifyBlur}
-        />
+        <div className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
+          <div className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] px-4 py-3 sm:px-5 lg:px-6">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div className="space-y-1">
+                <div className="text-xs font-medium tracking-[0.08em] text-[hsl(var(--color-text-tertiary))]">
+                  厂家发货单
+                </div>
+                <h2 className="text-lg font-semibold text-[hsl(var(--color-text-primary))] sm:text-xl">
+                  {isEditing ? '编辑单据' : '新建单据'}
+                </h2>
+                <p className="text-xs text-[hsl(var(--color-text-secondary))] sm:text-sm">
+                  先录客户和明细，再确认费用与结算
+                </p>
+              </div>
+              <div className="grid gap-x-5 gap-y-2 border-t border-[hsl(var(--color-border-secondary))] pt-3 text-sm sm:grid-cols-3 lg:min-w-[360px] lg:border-t-0 lg:pt-0">
+                <div className="flex items-baseline justify-between gap-3 lg:block">
+                  <div className="text-xs text-[hsl(var(--color-text-tertiary))]">
+                    客户
+                  </div>
+                  <div className="text-sm font-medium text-[hsl(var(--color-text-primary))] lg:mt-1">
+                    {customerName}
+                  </div>
+                </div>
+                <div className="flex items-baseline justify-between gap-3 lg:block">
+                  <div className="text-xs text-[hsl(var(--color-text-tertiary))]">
+                    明细
+                  </div>
+                  <div className="text-sm font-medium text-[hsl(var(--color-text-primary))] lg:mt-1">
+                    {itemCount} 行
+                  </div>
+                </div>
+                <div className="flex items-baseline justify-between gap-3 lg:block">
+                  <div className="text-xs text-[hsl(var(--color-text-tertiary))]">
+                    当前状态
+                  </div>
+                  <div className="text-sm font-medium text-[hsl(var(--color-text-primary))] lg:mt-1">
+                    {statusLabel}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-        {/* 产品明细 */}
-        <ItemListSection
-          form={form}
-          fieldArray={fieldArray}
-          products={products}
-          selectedCustomerId={selectedCustomerId}
-          customerPriceHistoryData={customerPriceHistoryData}
-          getBlurHandler={notifyBlur}
-        />
+          <div className="divide-y divide-[hsl(var(--color-border-secondary))]">
+            <BasicInfoSection
+              form={form}
+              customers={customers}
+              showStatus={isEditing}
+              isLoadingCustomers={customersLoading}
+              onCustomerCreated={handleCustomerCreated}
+              onRefreshCustomers={handleRefreshCustomers}
+              initialCustomer={orderDetail?.customer}
+              getBlurHandler={notifyBlur}
+            />
 
-        {/* 费用项目 */}
-        <Card className="overflow-hidden border-[hsl(var(--color-border-primary))]">
-          <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] py-3">
-            <CardTitle className="text-base font-semibold text-[hsl(var(--color-text-primary))]">
-              费用项目
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-5 lg:p-6 xl:p-8">
-            <FeeItemsFormField control={form.control} disabled={isLoading} />
-          </CardContent>
-        </Card>
+            <ItemListSection
+              form={form}
+              fieldArray={fieldArray}
+              products={products}
+              selectedCustomerId={selectedCustomerId}
+              customerPriceHistoryData={customerPriceHistoryData}
+              getBlurHandler={notifyBlur}
+            />
 
-        {/* 金额信息 */}
-        <AmountInfoSection form={form} />
+            <section className="px-4 py-3 sm:px-5 lg:px-5">
+              <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
+                <div className="space-y-4">
+                  <div className="border-b border-[hsl(var(--color-border-secondary))] pb-2">
+                    <h3 className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
+                      费用项目
+                    </h3>
+                  </div>
+                  <FeeItemsFormField
+                    control={form.control}
+                    disabled={isLoading}
+                  />
+                </div>
+                <AmountInfoSection form={form} />
+              </div>
+            </section>
+          </div>
 
-        {/* 操作按钮 */}
-        <Card className="overflow-hidden border-[hsl(var(--color-border-primary))]">
-          <CardContent className="p-5 lg:p-6 xl:p-8">
-            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div className="border-t border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-card))] px-4 py-3 sm:px-5 lg:px-5">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <Button
                 type="button"
                 variant="outline"
                 size="lg"
-                onClick={onCancel}
+                onClick={handleCancel}
                 disabled={isLoading}
                 className="w-full min-w-[120px] sm:w-auto"
               >
@@ -445,7 +514,7 @@ export function FactoryShipmentOrderForm({
                   {isLoading ? '保存中...' : '保存修改'}
                 </Button>
               ) : (
-                <div className="grid gap-3 sm:grid-cols-2 xl:flex xl:items-center">
+                <div className="grid gap-3 sm:grid-cols-2 lg:flex lg:items-center">
                   <Button
                     type="submit"
                     variant="outline"
@@ -469,18 +538,18 @@ export function FactoryShipmentOrderForm({
                     <Save className="mr-2 h-4 w-4" />
                     {isLoading && submitIntent === 'confirm'
                       ? '保存中...'
-                      : '新建发货单'}
+                      : '提交单据'}
                   </Button>
                 </div>
               )}
             </div>
             {!isEditing && (
-              <p className="text-muted-foreground mt-4 text-xs">
-                草稿用于暂存，确认后进入正式流程。
+              <p className="text-muted-foreground mt-3 text-xs">
+                草稿用于暂存，提交后进入正式发货流程。
               </p>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </form>
     </Form>
   );

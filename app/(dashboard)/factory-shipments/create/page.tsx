@@ -1,12 +1,11 @@
 'use client';
 
-import { ArrowLeft, Truck } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 
 const FactoryShipmentOrderForm = dynamic(
   () =>
@@ -43,40 +42,24 @@ export default function CreateFactoryShipmentPage() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden p-6">
-      <div className="space-y-6">
-        {/* 页面标题卡片 */}
-        <Card className="card-shadow-medium overflow-hidden border border-[hsl(var(--color-border-primary))]">
-          <CardContent className="bg-[hsl(var(--color-bg-secondary))] p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="card-shadow-light flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))]">
-                  <Truck className="h-6 w-6" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
-                    新建厂家发货单
-                  </h1>
-                  <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-                    新建一张厂家发货单，支持多供应商产品和临时产品管理
-                  </p>
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                size="lg"
-                asChild
-                className="h-11 transition-transform duration-150 hover:scale-[1.02]"
-              >
-                <Link href="/factory-shipments">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  返回
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="mx-auto w-full max-w-7xl space-y-5">
+        <div className="flex flex-col gap-3 border-b border-[hsl(var(--color-border-secondary))] pb-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-[hsl(var(--color-text-primary))]">
+              新建厂家发货单
+            </h1>
+            <p className="mt-1 text-sm text-[hsl(var(--color-text-secondary))]">
+              按单据顺序填写客户、明细与结算信息
+            </p>
+          </div>
+          <Button variant="outline" asChild className="w-full sm:w-auto">
+            <Link href="/factory-shipments">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              返回
+            </Link>
+          </Button>
+        </div>
 
-        {/* 表单 */}
         <FactoryShipmentOrderForm
           onSuccess={handleSuccess}
           onCancel={handleCancel}

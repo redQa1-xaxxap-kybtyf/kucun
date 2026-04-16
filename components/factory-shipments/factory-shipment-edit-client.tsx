@@ -1,12 +1,11 @@
 'use client';
 
-import { ArrowLeft, Truck } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import type { FactoryShipmentOrder } from '@/lib/types/factory-shipment';
 
 const FactoryShipmentOrderForm = dynamic(
@@ -47,38 +46,22 @@ export function FactoryShipmentEditClient({
 
   return (
     <>
-      {/* 页面标题卡片 */}
-      <Card className="card-shadow-medium overflow-hidden border border-[hsl(var(--color-border-primary))]">
-        <CardContent className="bg-[hsl(var(--color-bg-secondary))] p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))]">
-                <Truck className="h-6 w-6" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
-                  编辑厂家发货订单
-                </h1>
-                <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-                  修改厂家发货订单信息，支持多供应商产品和临时产品管理
-                </p>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              size="lg"
-              asChild
-              className="h-11 transition-transform duration-150 hover:scale-[1.02]"
-            >
-              <Link href={`/factory-shipments/${orderId}`}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                返回
-              </Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-      {/* 表单 */}
+      <div className="mb-5 flex flex-col gap-3 border-b border-[hsl(var(--color-border-secondary))] pb-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-[hsl(var(--color-text-primary))]">
+            编辑厂家发货单
+          </h1>
+          <p className="mt-1 text-sm text-[hsl(var(--color-text-secondary))]">
+            按单据结构调整客户、明细与结算信息
+          </p>
+        </div>
+        <Button variant="outline" asChild className="w-full sm:w-auto">
+          <Link href={`/factory-shipments/${orderId}`}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            返回
+          </Link>
+        </Button>
+      </div>
       <FactoryShipmentOrderForm
         orderId={orderId}
         onSuccess={handleSuccess}

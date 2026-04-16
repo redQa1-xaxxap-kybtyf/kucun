@@ -6,7 +6,6 @@ import type { UseFormReturn } from 'react-hook-form';
 
 import { CustomerSelector } from '@/components/sales-orders/customer-selector';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   FormControl,
   FormField,
@@ -35,7 +34,7 @@ interface BasicInfoSectionProps {
 }
 
 /**
- * 厂家发货订单基本信息卡片
+ * 厂家发货订单基本信息
  * 包含：客户选择、集装箱号
  * 订单状态仅在编辑场景展示
  *
@@ -60,15 +59,15 @@ export function BasicInfoSection({
   >(initialCustomer);
 
   return (
-    <Card className="overflow-hidden border-[hsl(var(--color-border-primary))]">
-      <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] py-3">
-        <CardTitle className="text-base font-semibold text-[hsl(var(--color-text-primary))]">
-          基本信息
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-5 p-5 lg:p-6">
+    <section className="px-4 py-3 sm:px-5 lg:px-5">
+      <div className="mb-3 border-b border-[hsl(var(--color-border-secondary))] pb-2">
+        <h3 className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
+          客户信息
+        </h3>
+      </div>
+      <div className="space-y-4">
         {/* 第一行：客户选择和集装箱号 */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1.2fr)_minmax(260px,0.8fr)]">
           {/* 客户选择 */}
           <FormField
             control={form.control}
@@ -95,9 +94,9 @@ export function BasicInfoSection({
                 </FormControl>
                 {/* 显示客户地址 */}
                 {selectedCustomer?.address && (
-                  <div className="mt-2 rounded-md border bg-[hsl(var(--color-bg-secondary))] px-3 py-2 text-sm text-[hsl(var(--color-text-secondary))]">
-                    {selectedCustomer.address}
-                  </div>
+                  <p className="mt-2 text-xs leading-5 text-[hsl(var(--color-text-secondary))]">
+                    地址：{selectedCustomer.address}
+                  </p>
                 )}
                 <FormMessage />
               </FormItem>
@@ -132,32 +131,36 @@ export function BasicInfoSection({
 
         {/* 订单状态（仅在编辑模式且showStatus为true时显示） */}
         {showStatus && (
-          <div className="rounded-lg border border-[hsl(var(--color-border-secondary))] p-4">
+          <div className="border-t border-[hsl(var(--color-border-secondary))] pt-4">
             <FormField
               control={form.control}
               name="status"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
-                    订单状态
-                  </FormLabel>
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    {Object.values(FACTORY_SHIPMENT_STATUS).map(status => (
-                      <Button
-                        key={status}
-                        type="button"
-                        variant={field.value === status ? 'default' : 'outline'}
-                        size="sm"
-                        className={`h-8 px-3 text-sm ${
-                          field.value === status
-                            ? ''
-                            : 'text-[hsl(var(--color-text-secondary))]'
-                        }`}
-                        onClick={() => field.onChange(status)}
-                      >
-                        {FACTORY_SHIPMENT_STATUS_LABELS[status]}
-                      </Button>
-                    ))}
+                <FormItem className="space-y-2">
+                  <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                    <FormLabel className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
+                      订单状态
+                    </FormLabel>
+                    <div className="flex flex-wrap gap-2">
+                      {Object.values(FACTORY_SHIPMENT_STATUS).map(status => (
+                        <Button
+                          key={status}
+                          type="button"
+                          variant={
+                            field.value === status ? 'default' : 'outline'
+                          }
+                          size="sm"
+                          className={`h-8 px-3 text-sm ${
+                            field.value === status
+                              ? ''
+                              : 'text-[hsl(var(--color-text-secondary))]'
+                          }`}
+                          onClick={() => field.onChange(status)}
+                        >
+                          {FACTORY_SHIPMENT_STATUS_LABELS[status]}
+                        </Button>
+                      ))}
+                    </div>
                   </div>
                   <FormMessage />
                 </FormItem>
@@ -165,7 +168,7 @@ export function BasicInfoSection({
             />
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }
