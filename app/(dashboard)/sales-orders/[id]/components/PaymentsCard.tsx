@@ -85,32 +85,40 @@ function PaymentItem({ payment }: { payment: PaymentRecord }) {
 
 function ReceivableConfirmationNote({
   payment,
+  isSettled,
 }: {
   payment: PaymentRecord;
+  isSettled: boolean;
 }) {
-  const status =
-    STATUS_MAP[payment.status as keyof typeof STATUS_MAP] ?? STATUS_MAP.pending;
-
   return (
     <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-black tracking-widest text-slate-500 uppercase">
-              系统应收建账
+              应收已登记
             </span>
-            <Badge variant={status.variant} className="rounded-lg px-2 py-0.5 font-bold">
-              {status.label}
+            <Badge
+              variant="outline"
+              className="rounded-lg border-slate-300 bg-white px-2 py-0.5 font-bold text-slate-600"
+            >
+              系统建账记录
             </Badge>
           </div>
           <p className="text-sm font-medium text-slate-700">
             {payment.paymentNumber}
           </p>
-          <p className="text-[11px] text-slate-500">
-            该记录仅用于确认订单应收已建立，不代表客户已付款。
-          </p>
+          {isSettled ? (
+            <p className="text-[11px] font-medium text-emerald-700">
+              订单已收清，这条仅保留作应收建账历史，不代表还有待确认收款。
+            </p>
+          ) : (
+            <p className="text-[11px] text-slate-500">
+              该记录仅用于确认订单应收已建立，不代表客户已付款。
+            </p>
+          )}
           <p className="text-[10px] text-slate-400">
-            建账时间：{payment.paymentDate ? formatDateTime(payment.paymentDate) : '—'}
+            登记时间：{payment.paymentDate ? formatDateTime(payment.paymentDate) : '—'}
           </p>
           {payment.remarks && (
             <p className="text-[10px] text-slate-400 italic">
@@ -241,6 +249,7 @@ export function PaymentsCard({ order }: { order: SalesOrderDetail }) {
         {order.receivableConfirmationRecord && (
           <ReceivableConfirmationNote
             payment={order.receivableConfirmationRecord}
+            isSettled={Number(order.remainingAmount) <= 0}
           />
         )}
 
