@@ -35,6 +35,7 @@ import type {
 } from '@/lib/services/receivables-service';
 import { formatCurrency } from '@/lib/utils';
 import { formatDate } from '@/lib/utils/datetime';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
 import { formatCurrencyWithSign, isMeaningfulAmount } from './utils';
 
@@ -46,6 +47,7 @@ type ReceivablesTableListProps = {
   onPageChange: (page: number) => void;
   onOpenPaymentDialog: (receivable: ReceivableItem) => void;
   onViewOrder: (orderId: string) => void;
+  onRetry: () => void;
 };
 
 /**
@@ -60,6 +62,7 @@ export function ReceivablesTableList({
   onPageChange,
   onOpenPaymentDialog,
   onViewOrder,
+  onRetry,
 }: ReceivablesTableListProps) {
   if (isLoading) {
     return (
@@ -70,7 +73,10 @@ export function ReceivablesTableList({
   }
 
   if (error) {
-    const message = error instanceof Error ? error.message : '未知错误';
+    const message = getFriendlyErrorMessage(
+      error,
+      '客户待收款暂时无法加载，请稍后重试'
+    );
     return (
       <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-[hsl(var(--color-error-light))] bg-[hsl(var(--color-error-lighter))] p-8">
         <div className="text-center">
@@ -84,16 +90,16 @@ export function ReceivablesTableList({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => window.location.reload()}
+          onClick={onRetry}
         >
-          重新加载
+          重试
         </Button>
       </div>
     );
   }
 
   if (!receivables.length) {
-    return <EmptyState className="my-8" title="暂无客户待收款记录" compact />;
+    return <EmptyState className="my-8" title="暂无客户待收款" compact />;
   }
 
   return (
@@ -229,7 +235,7 @@ function ReceivableTableRow({
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>
-                    收款差额:{' '}
+                    抹零金额:{' '}
                     {formatCurrencyWithSign(amounts.paymentRoundingDisplay)}
                   </p>
                 </TooltipContent>
@@ -297,7 +303,7 @@ function ReceivableTableRow({
               disabled
               className="h-6 cursor-not-allowed border-gray-300 bg-gray-50 px-2 text-xs text-gray-500"
             >
-              待确认收款
+              待确认到账
             </Button>
           ) : (
             amounts.actualRemaining > 0 && (
@@ -307,7 +313,7 @@ function ReceivableTableRow({
                 onClick={() => onOpenPaymentDialog(receivable)}
                 className="h-6 bg-green-600 px-2 text-xs text-white hover:bg-green-700"
               >
-                立即收款
+                登记到账
               </Button>
             )
           )}
@@ -330,7 +336,7 @@ function ReceivableTableRow({
                     className="text-green-600"
                   >
                     <DollarSign className="mr-2 h-4 w-4" />
-                    立即收款
+                    登记到账
                   </DropdownMenuItem>
                 )}
             </DropdownMenuContent>
@@ -440,7 +446,7 @@ function ReceivableCard({
               disabled
               className="h-8 cursor-not-allowed border-gray-300 bg-gray-50 px-3 text-xs text-gray-500"
             >
-              待确认收款
+              待确认到账
             </Button>
           ) : (
             amounts.actualRemaining > 0 && (
@@ -450,7 +456,7 @@ function ReceivableCard({
                 onClick={() => onOpenPaymentDialog(receivable)}
                 className="h-8 bg-green-600 px-3 text-xs text-white hover:bg-green-700"
               >
-                立即收款
+                登记到账
               </Button>
             )
           )}
@@ -474,7 +480,7 @@ function ReceivableCard({
                   className="text-green-600"
                 >
                   <DollarSign className="mr-2 h-4 w-4" />
-                  立即收款
+                  登记到账
                 </DropdownMenuItem>
               )}
           </DropdownMenuContent>
@@ -506,11 +512,11 @@ const STATUS_CONFIG: Partial<Record<PaymentStatus | string, StatusConfigItem>> =
       variant: 'default' as BadgeProps['variant'],
     },
     pending: {
-      label: '待确认',
+      label: '待确认到账',
       variant: 'secondary' as BadgeProps['variant'],
     },
     confirmed: {
-      label: '已确认',
+      label: '已到账',
       variant: 'default' as BadgeProps['variant'],
     },
     cancelled: {

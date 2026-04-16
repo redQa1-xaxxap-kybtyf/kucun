@@ -22,17 +22,6 @@ type ReceivablesQueryError = Error & {
   isTimeout?: boolean;
 };
 
-export type PaymentDialogOrder = {
-  id: string;
-  orderNumber: string;
-  customerId: string;
-  customerName: string;
-  totalAmount: number;
-  roundingAdjustment: number;
-  paidAmount: number;
-  remainingAmount: number;
-};
-
 export type ReceivablesControllerResult = {
   queryParams: ReceivablesQueryParams;
   currentData: ReceivablesResult;
@@ -48,7 +37,8 @@ export type ReceivablesControllerResult = {
   handleOpenPaymentDialog: (receivable: ReceivableItem) => void;
   isPaymentDialogOpen: boolean;
   setIsPaymentDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  selectedOrder: PaymentDialogOrder | null;
+  selectedReceivable: ReceivableItem | null;
+  retryQuery: () => void;
 };
 
 /**
@@ -87,7 +77,7 @@ export function useReceivablesController({
     setSearchInput(queryParams.search ?? '');
   }, [queryParams.search]);
 
-  const { data, isLoading, isFetching, error } =
+  const { data, isLoading, isFetching, error, refetch } =
     useReceivablesQuery(queryParams);
   const paymentDialogState = usePaymentDialogState();
   const { handleFilterChange, handleDateRangeChange, handlePageChange } =
@@ -159,7 +149,10 @@ export function useReceivablesController({
     handleOpenPaymentDialog: paymentDialogState.openPaymentDialog,
     isPaymentDialogOpen: paymentDialogState.isPaymentDialogOpen,
     setIsPaymentDialogOpen: paymentDialogState.setIsPaymentDialogOpen,
-    selectedOrder: paymentDialogState.selectedOrder,
+    selectedReceivable: paymentDialogState.selectedReceivable,
+    retryQuery: () => {
+      void refetch();
+    },
   };
 }
 
@@ -206,30 +199,18 @@ function useReceivablesQuery(queryParams: ReceivablesQueryParams) {
 
 function usePaymentDialogState() {
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = React.useState(false);
-  const [selectedOrder, setSelectedOrder] =
-    React.useState<PaymentDialogOrder | null>(null);
+  const [selectedReceivable, setSelectedReceivable] =
+    React.useState<ReceivableItem | null>(null);
 
   const openPaymentDialog = React.useCallback((receivable: ReceivableItem) => {
-    setSelectedOrder({
-      id: receivable.id,
-      orderNumber: receivable.orderNumber,
-      customerId: receivable.customerId,
-      customerName: receivable.customerName,
-      totalAmount: receivable.totalAmount,
-      roundingAdjustment: receivable.roundingAdjustment ?? 0,
-      paidAmount: Math.max(
-        0,
-        (receivable.paidAmount ?? 0) + (receivable.paymentRoundingAmount ?? 0)
-      ),
-      remainingAmount: receivable.remainingAmount,
-    });
+    setSelectedReceivable(receivable);
     setIsPaymentDialogOpen(true);
   }, []);
 
   return {
     isPaymentDialogOpen,
     setIsPaymentDialogOpen,
-    selectedOrder,
+    selectedReceivable,
     openPaymentDialog,
   };
 }

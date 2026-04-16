@@ -74,7 +74,7 @@ export const GET = withAuth(
 
       if (!validationResult.success) {
         return errorResponse(
-          `参数验证失败: ${validationResult.error.issues[0]?.message}`,
+          `提交内容有误： ${validationResult.error.issues[0]?.message}`,
           400
         );
       }
@@ -113,3 +113,4 @@ export const GET = withAuth(
   },
   { permissions: ['finance:view'] }
 );
+

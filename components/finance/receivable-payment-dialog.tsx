@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import { useConfirmPayment, useCreatePaymentRecord } from '@/lib/api/payments';
 import { invalidateFinanceCaches } from '@/lib/cache/invalidation-helpers';
 import type { ReceivableItem } from '@/lib/services/receivables-service';
@@ -40,6 +41,7 @@ import {
   type CreatePaymentRecordData,
 } from '@/lib/types/payment';
 import { formatCurrency } from '@/lib/utils';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 import {
   createPaymentRecordSchema,
   validatePaymentAmount,
@@ -132,11 +134,28 @@ export function ReceivablePaymentDialog({
     }
   }, [paymentAmountValue, actualPaymentAmountValue, form]);
 
-  const handleClose = (nextOpen: boolean) => {
+  const forceClose = (nextOpen: boolean) => {
     if (!nextOpen) {
       form.reset(defaultValues);
     }
     onOpenChange(nextOpen);
+  };
+  const hasUnsavedChanges =
+    open &&
+    form.formState.isDirty &&
+    !createPaymentMutation.isPending &&
+    !confirmPaymentMutation.isPending;
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前收款内容尚未保存，确定要关闭吗？',
+  });
+
+  const handleClose = (nextOpen: boolean) => {
+    if (!nextOpen && !confirmLeavePage()) {
+      return;
+    }
+
+    forceClose(nextOpen);
   };
 
   const handleSubmit = async (values: FormValues) => {
@@ -175,15 +194,18 @@ export function ReceivablePaymentDialog({
       invalidateFinanceCaches(queryClient);
 
       toast({
-        title: '收款记录已创建',
-        description: `成功收款 ${formatCurrency(payload.actualPaymentAmount)}`,
+        title: '收款已确认',
+        description: `已确认到账 ${formatCurrency(payload.actualPaymentAmount)}`,
       });
-      handleClose(false);
+      forceClose(false);
       onSuccess?.();
     } catch (error) {
       toast({
         title: '收款失败',
-        description: error instanceof Error ? error.message : '请稍后重试',
+        description: getFriendlyErrorMessage(
+          error,
+          '这笔收款暂时保存不了，请稍后再试'
+        ),
         variant: 'destructive',
       });
     }
@@ -193,7 +215,7 @@ export function ReceivablePaymentDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>登记收款</DialogTitle>
+          <DialogTitle>登记收款并确认到账</DialogTitle>
         </DialogHeader>
         {receivable ? (
           <div className="space-y-4">
@@ -328,7 +350,7 @@ export function ReceivablePaymentDialog({
                         />
                       </FormControl>
                       <FormDescription>
-                        与客户实际到账金额，可低于应收金额用于抹零。
+                        这里填客户这次实际到账的金额；如果有尾差，按实际到账填写即可。
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -360,7 +382,7 @@ export function ReceivablePaymentDialog({
                           />
                         </FormControl>
                         <FormDescription>
-                          系统根据差额自动计算，正值表示抹零减免，负值表示多收。
+                          根据上面两个金额自动算出；正数表示少收结清，负数表示多收。
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -433,7 +455,7 @@ export function ReceivablePaymentDialog({
                       <FormLabel>备注</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="添加收款说明或备注"
+                          placeholder="例如：客户补款、尾款到账、现场现金收款"
                           value={field.value ?? ''}
                           onChange={field.onChange}
                         />
@@ -460,8 +482,8 @@ export function ReceivablePaymentDialog({
                   >
                     {createPaymentMutation.isPending ||
                     confirmPaymentMutation.isPending
-                      ? '提交中...'
-                      : '确认收款'}
+                      ? '保存中...'
+                      : '保存并确认到账'}
                   </Button>
                 </div>
               </form>

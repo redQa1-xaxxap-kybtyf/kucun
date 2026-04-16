@@ -26,6 +26,7 @@ type ReceivablesFilterCardProps = {
   onDateRangeChange: (range: DateRangeValue) => void;
   onPageChange: (page: number) => void;
   onOpenPaymentDialog: (receivable: ReceivableItem) => void;
+  onRetry: () => void;
 };
 
 export function ReceivablesFilterCard({
@@ -41,6 +42,7 @@ export function ReceivablesFilterCard({
   onDateRangeChange,
   onPageChange,
   onOpenPaymentDialog,
+  onRetry,
 }: ReceivablesFilterCardProps) {
   const router = useRouter();
   const handleViewOrder = React.useCallback(
@@ -68,6 +70,7 @@ export function ReceivablesFilterCard({
           onPageChange={onPageChange}
           onOpenPaymentDialog={onOpenPaymentDialog}
           onViewOrder={handleViewOrder}
+          onRetry={onRetry}
         />
       </div>
     </div>
@@ -105,7 +108,7 @@ function ReceivablesFilterBar({
           options: [
             { label: '未收款', value: 'unpaid' },
             { label: '部分收款', value: 'partial' },
-            { label: '待确认', value: 'pending' },
+            { label: '待确认到账', value: 'pending' },
             { label: '已收款', value: 'paid' },
           ],
           width: 'w-[140px]',

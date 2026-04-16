@@ -79,7 +79,7 @@ export function ReceivablesPageClient({
                   className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
                 >
                   <Download className="mr-2 h-4 w-4" />
-                  {isExporting ? '导出中...' : '导出 CSV'}
+                  {isExporting ? '导出中...' : '导出文本表格'}
                 </Button>
               </div>
               <Button

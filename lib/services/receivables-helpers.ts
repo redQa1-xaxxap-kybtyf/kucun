@@ -11,6 +11,7 @@ import type {
   ReceivableItem,
   ReceivableSummary,
 } from '@/lib/services/receivables-types';
+import { getSalesOrderReceivableTotal } from '@/lib/utils/sample-order';
 
 const AUTO_RECEIVABLE_CONFIRMATION_PREFIX = '系统自动生成：销售订单';
 const AUTO_RECEIVABLE_CONFIRMATION_KEYWORD = '确认应收';
@@ -244,6 +245,16 @@ export function buildWhereConditions(params: {
 }): Prisma.SalesOrderWhereInput {
   const where: Prisma.SalesOrderWhereInput = {
     status: { in: ['confirmed', 'shipped', 'completed'] },
+    NOT: {
+      AND: [
+        {
+          isSampleOrder: true,
+        },
+        {
+          sampleSettlementType: 'FREE',
+        },
+      ],
+    },
   };
 
   const rawSearch = params.search?.trim();
@@ -357,6 +368,8 @@ export function transformToReceivable(order: {
   id: string;
   orderNumber: string;
   customerId: string;
+  isSampleOrder?: boolean | null;
+  sampleSettlementType?: string | null;
   totalAmount: number;
   roundingAdjustment: number | null;
   orderDate?: Date | null;
@@ -403,7 +416,12 @@ export function transformToReceivable(order: {
 
   const totalAmountNum = Number(order.totalAmount);
   const orderRounding = Number(order.roundingAdjustment || 0);
-  const orderDue = totalAmountNum + orderRounding;
+  const orderDue = getSalesOrderReceivableTotal({
+    isSampleOrder: order.isSampleOrder,
+    sampleSettlementType: order.sampleSettlementType,
+    totalAmount: totalAmountNum,
+    roundingAdjustment: orderRounding,
+  });
   const paidAgainstOrder = confirmedActual + confirmedRounding;
   const pendingAgainstOrder = pendingActual + pendingRounding;
   const businessOrderDate = order.orderDate ?? order.createdAt;
@@ -451,6 +469,8 @@ export interface BaseReceivableOrder {
   id: string;
   orderNumber: string;
   customerId: string;
+  isSampleOrder: boolean | null;
+  sampleSettlementType: string | null;
   totalAmount: Prisma.Decimal | number | null;
   roundingAdjustment: Prisma.Decimal | number | null;
   orderDate: Date | null;
@@ -483,6 +503,8 @@ export async function fetchReceivableBaseOrders(
     id: true,
     orderNumber: true,
     customerId: true,
+    isSampleOrder: true,
+    sampleSettlementType: true,
     totalAmount: true,
     roundingAdjustment: true,
     orderDate: true,
@@ -621,7 +643,12 @@ export function createSummaryReceivables(
 
     // ✅ P1修复: 剩余金额只扣除已确认的收款和抹零
     // 待确认的抹零不参与剩余金额计算，仅用于状态展示
-    const orderDue = totalAmount + roundingAdjustment;
+    const orderDue = getSalesOrderReceivableTotal({
+      isSampleOrder: order.isSampleOrder,
+      sampleSettlementType: order.sampleSettlementType,
+      totalAmount,
+      roundingAdjustment,
+    });
     const paidAgainstOrder = confirmedActual + confirmedRounding;
     const pendingAgainstOrder = pendingActual;
     const paidTotal = paidAgainstOrder + prepaymentApplied;
@@ -683,6 +710,8 @@ export async function fetchReceivableDetails(orderIds: string[]) {
       id: true,
       orderNumber: true,
       customerId: true,
+      isSampleOrder: true,
+      sampleSettlementType: true,
       totalAmount: true,
       roundingAdjustment: true,
       orderDate: true,

@@ -78,15 +78,15 @@ interface ReceivableDetail {
 const RECEIVABLE_STATUS_LABELS = {
   unpaid: '待收款',
   partial: '部分收款',
-  pending: '待确认收款',
+  pending: '待确认到账',
   paid: '已收款',
   cancelled: '已取消',
 };
 
 const PAYMENT_RECORD_STATUS_LABELS = {
-  pending: '待确认',
-  confirmed: '已确认',
-  applied: '已冲抵',
+  pending: '待确认到账',
+  confirmed: '已到账',
+  applied: '已抵扣',
   cancelled: '已取消',
 };
 
@@ -154,7 +154,7 @@ function ReceivableHeaderActions({
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground">
-            按销售订单维度展示应收、收款抹零与预收冲抵口径。
+            这里按销售订单查看应收、已收、抹零和预收抵扣情况。
           </p>
         </div>
 
@@ -171,7 +171,7 @@ function ReceivableHeaderActions({
                 href={`/finance/payments/create?orderId=${receivable.salesOrder.id}`}
               >
                 <ChineseYuan className="mr-2 h-4 w-4" />
-                记录收款
+                登记待确认收款
               </Link>
             </Button>
           )}
@@ -315,7 +315,7 @@ function ReceivableConfirmationCard({
   return (
     <Card>
       <CardHeader className="bg-slate-50/80">
-        <CardTitle className="text-base">系统应收建账</CardTitle>
+        <CardTitle className="text-base">应收登记记录</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 pt-6">
         <div className="rounded-xl border border-dashed bg-muted/30 p-4">
@@ -324,13 +324,13 @@ function ReceivableConfirmationCard({
           </p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
-          <InfoField label="建账单号">
+          <InfoField label="登记编号">
             <span>{receivableConfirmation.paymentNumber}</span>
           </InfoField>
-          <InfoField label="建账时间">
+          <InfoField label="登记时间">
             <span>{formatDateTime(receivableConfirmation.paymentDate)}</span>
           </InfoField>
-          <InfoField label="记录状态">
+          <InfoField label="当前状态">
             <Badge
               variant={
                 receivableConfirmation.status === 'pending'
@@ -346,7 +346,7 @@ function ReceivableConfirmationCard({
             </Badge>
           </InfoField>
           {receivableConfirmation.remarks && (
-            <InfoField label="系统备注" className="sm:col-span-2">
+            <InfoField label="备注" className="sm:col-span-2">
               <span>{receivableConfirmation.remarks}</span>
             </InfoField>
           )}
@@ -362,7 +362,7 @@ function PaymentRecordsCard({ receivable }: { receivable: ReceivableDetail }) {
       <CardHeader className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
         <CardTitle className="flex items-center gap-2">
           <FileText className="h-5 w-5" />
-          <span>收款与冲抵记录</span>
+          <span>收款和抵扣记录</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-6">
@@ -382,7 +382,7 @@ function PaymentRecordsCard({ receivable }: { receivable: ReceivableDetail }) {
                       {payment.sourceType && (
                         <Badge variant="secondary">
                           {payment.sourceType === 'prepayment'
-                            ? '预收冲抵'
+                            ? '预收抵扣'
                             : '订单收款'}
                         </Badge>
                       )}
@@ -421,7 +421,7 @@ function PaymentRecordsCard({ receivable }: { receivable: ReceivableDetail }) {
 
                   <div className="shrink-0 text-left sm:text-right">
                     <p className="text-xs text-muted-foreground">
-                      {payment.sourceType === 'prepayment' ? '冲抵金额' : '实收金额'}
+                      {payment.sourceType === 'prepayment' ? '抵扣金额' : '实收金额'}
                     </p>
                     <p className="font-medium text-[hsl(var(--color-success))]">
                       {formatCurrency(payment.amount)}
@@ -433,7 +433,7 @@ function PaymentRecordsCard({ receivable }: { receivable: ReceivableDetail }) {
           </div>
         ) : (
           <div className="py-8 text-center text-muted-foreground">
-            暂无真实收款或预收冲抵记录
+            还没有实际收款或预收抵扣记录
           </div>
         )}
       </CardContent>
@@ -486,7 +486,7 @@ function AmountSummaryCard({
 
         {hasMeaningfulAmount(receivable.prepaymentApplied) && (
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">预收冲抵</span>
+            <span className="text-muted-foreground">预收抵扣</span>
             <span className="font-medium text-[hsl(var(--color-success))]">
               {formatCurrency(receivable.prepaymentApplied ?? 0)}
             </span>
@@ -504,7 +504,7 @@ function AmountSummaryCard({
 
         {hasMeaningfulAmount(receivable.pendingAmount) && (
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">待确认收款</span>
+            <span className="text-muted-foreground">待确认到账</span>
             <span className="font-medium text-amber-600">
               {formatCurrency(receivable.pendingAmount ?? 0)}
             </span>
@@ -537,7 +537,7 @@ function AmountSummaryCard({
 
         <div className="space-y-1 text-sm text-muted-foreground">
           <div className="flex justify-between">
-            <span>已结清口径</span>
+            <span>已收合计</span>
             <span>
               {formatCurrency(
                 receivable.receivableAmount - receivable.remainingAmount
@@ -568,7 +568,7 @@ function QuickActionsCard({ receivable }: { receivable: ReceivableDetail }) {
             href={`/finance/payments/create?orderId=${receivable.salesOrder.id}`}
           >
             <ChineseYuan className="mr-2 h-4 w-4" />
-            记录收款
+            登记待确认收款
           </Link>
         </Button>
         <Button variant="outline" className="w-full" size="sm" asChild>
@@ -653,8 +653,8 @@ export default function ReceivableDetailPage() {
   if (!receivable) {
     return (
       <ErrorMessage
-        title="待收款记录不存在"
-        message="未找到指定的待收款记录"
+        title="待收款不存在"
+        message="未找到这笔待收款"
         onRetry={() => router.push('/finance/receivables')}
       />
     );

@@ -1,4 +1,5 @@
 import {
+  buildWhereConditions,
   calculatePaymentStatus,
   createSummaryReceivables,
   transformToReceivable,
@@ -98,5 +99,59 @@ describe('receivables SSoT regression', () => {
     expect(detail.remainingAmount).toBe(58);
     expect(detail.paymentStatus).toBe('pending');
     expect(detail.lastPaymentDate).toBe('2025-01-14T00:00:00.000Z');
+  });
+
+  it('免费样品单不应进入应收口径', () => {
+    const where = buildWhereConditions({});
+
+    expect(where).toMatchObject({
+      status: { in: ['confirmed', 'shipped', 'completed'] },
+      NOT: {
+        AND: [
+          { isSampleOrder: true },
+          {
+            sampleSettlementType: 'FREE',
+          },
+        ],
+      },
+    });
+
+    const summary = createSummaryReceivables(
+      [
+        {
+          id: 'o-sample-1',
+          orderNumber: 'SO-SAMPLE-1',
+          customerId: 'c-1',
+          isSampleOrder: true,
+          sampleSettlementType: 'FREE',
+          totalAmount: 100,
+          roundingAdjustment: 0,
+          orderDate: new Date('2025-01-09T00:00:00Z'),
+          createdAt: new Date('2025-01-10T00:00:00Z'),
+        },
+      ] as any,
+      {}
+    );
+
+    expect(summary[0].remainingAmount).toBe(0);
+    expect(summary[0].paymentStatus).toBe('paid');
+
+    const detail = transformToReceivable({
+      id: 'o-sample-2',
+      orderNumber: 'SO-SAMPLE-2',
+      customerId: 'c-1',
+      isSampleOrder: true,
+      sampleSettlementType: 'FREE',
+      totalAmount: 100,
+      roundingAdjustment: 0,
+      orderDate: new Date('2025-01-08T00:00:00Z'),
+      createdAt: new Date('2025-01-11T00:00:00Z'),
+      customer: { id: 'c-1', name: '客户A', phone: null },
+      payments: [],
+      prepaymentUsages: [],
+    } as any);
+
+    expect(detail.remainingAmount).toBe(0);
+    expect(detail.paymentStatus).toBe('paid');
   });
 });

@@ -64,6 +64,137 @@ type SalesOrderDetailResult = Prisma.SalesOrderGetPayload<{
   include: typeof detailInclude;
 }>;
 
+type SalesOrderProductSnapshot = {
+  id: string;
+  name: string;
+  code: string;
+  unit: string;
+  specification: string | null;
+  piecesPerUnit: number | null;
+  weight: number | null;
+};
+
+type SalesOrderBatchSpecificationSnapshot = {
+  piecesPerUnit: number | null;
+  weight: number | null;
+};
+
+function buildBatchSpecificationKey(
+  productId: string,
+  batchNumber: string,
+  variantKey: string
+) {
+  return `${productId}|||${variantKey}|||${batchNumber}`;
+}
+
+function normalizeVariantKey(variantId?: string | null) {
+  return typeof variantId === 'string' ? variantId : '';
+}
+
+function normalizeBatchNumber(batchNumber?: string | null) {
+  return typeof batchNumber === 'string' ? batchNumber.trim() : '';
+}
+
+async function loadBatchSpecificationMap(
+  items: SalesOrderDetailResult['items']
+): Promise<Map<string, SalesOrderBatchSpecificationSnapshot>> {
+  const seenConditions = new Set<string>();
+  const conditions = items.flatMap(item => {
+    const productId = item.productId?.trim();
+    const batchNumber = normalizeBatchNumber(item.batchNumber);
+
+    if (!productId || !batchNumber) {
+      return [];
+    }
+
+    const requestedVariantKey = normalizeVariantKey(item.variantId);
+    const entries = [
+      {
+        productId,
+        batchNumber,
+        variantKey: requestedVariantKey,
+      },
+    ];
+
+    if (requestedVariantKey) {
+      entries.push({
+        productId,
+        batchNumber,
+        variantKey: '',
+      });
+    }
+
+    return entries.filter(condition => {
+      const key = buildBatchSpecificationKey(
+        condition.productId,
+        condition.batchNumber,
+        condition.variantKey
+      );
+
+      if (seenConditions.has(key)) {
+        return false;
+      }
+
+      seenConditions.add(key);
+      return true;
+    });
+  });
+
+  if (conditions.length === 0) {
+    return new Map();
+  }
+
+  const batchSpecifications = await prisma.batchSpecification.findMany({
+    where: {
+      OR: conditions,
+    },
+    select: {
+      productId: true,
+      batchNumber: true,
+      variantKey: true,
+      piecesPerUnit: true,
+      weight: true,
+    },
+  });
+
+  return new Map(
+    batchSpecifications.map(spec => [
+      buildBatchSpecificationKey(
+        spec.productId,
+        spec.batchNumber,
+        spec.variantKey ?? ''
+      ),
+      {
+        piecesPerUnit: spec.piecesPerUnit,
+        weight: spec.weight === null ? null : Number(spec.weight),
+      },
+    ])
+  );
+}
+
+function resolveBatchSpecificationForItem(
+  item: SalesOrderDetailResult['items'][number],
+  batchSpecificationMap: Map<string, SalesOrderBatchSpecificationSnapshot>
+) {
+  const productId = item.productId?.trim();
+  const batchNumber = normalizeBatchNumber(item.batchNumber);
+
+  if (!productId || !batchNumber) {
+    return undefined;
+  }
+
+  const requestedVariantKey = normalizeVariantKey(item.variantId);
+
+  return (
+    batchSpecificationMap.get(
+      buildBatchSpecificationKey(productId, batchNumber, requestedVariantKey)
+    ) ??
+    batchSpecificationMap.get(
+      buildBatchSpecificationKey(productId, batchNumber, '')
+    )
+  );
+}
+
 const mapReturnOrder = (
   order: SalesOrderDetailResult['returnOrders'][number]
 ) => ({
@@ -76,18 +207,8 @@ const mapReturnOrder = (
 
 const mapDetail = (
   order: SalesOrderDetailResult,
-  productsMap: Map<
-    string,
-    {
-      id: string;
-      name: string;
-      code: string;
-      unit: string;
-      specification: string | null;
-      piecesPerUnit: number;
-      weight: number | null;
-    }
-  >
+  productsMap: Map<string, SalesOrderProductSnapshot>,
+  batchSpecificationMap: Map<string, SalesOrderBatchSpecificationSnapshot>
 ) => {
   const { items, returnOrders, _count, ...base } = order;
   const orderBase = mapOrderBaseFields(base);
@@ -97,7 +218,8 @@ const mapDetail = (
     items: items.map(item =>
       mapSalesOrderItem(
         item,
-        item.productId ? productsMap.get(item.productId) : undefined
+        item.productId ? productsMap.get(item.productId) : undefined,
+        resolveBatchSpecificationForItem(item, batchSpecificationMap)
       )
     ),
     feeItems: order.feeItems.map(fee => ({
@@ -143,18 +265,7 @@ export async function getSalesOrderById(id: string) {
     take: productIds.length,
   });
 
-  const productsMap = new Map<
-    string,
-    {
-      id: string;
-      name: string;
-      code: string;
-      unit: string;
-      specification: string | null;
-      piecesPerUnit: number;
-      weight: number | null;
-    }
-  >(
+  const productsMap = new Map<string, SalesOrderProductSnapshot>(
     products.map(p => [
       p.id,
       {
@@ -164,7 +275,9 @@ export async function getSalesOrderById(id: string) {
     ])
   );
 
-  return mapDetail(order, productsMap);
+  const batchSpecificationMap = await loadBatchSpecificationMap(order.items);
+
+  return mapDetail(order, productsMap, batchSpecificationMap);
 }
 
 /**
@@ -241,18 +354,7 @@ export async function getSalesOrderDetailWithPayments(id: string) {
     take: productIds.length,
   });
 
-  const productsMap = new Map<
-    string,
-    {
-      id: string;
-      name: string;
-      code: string;
-      unit: string;
-      specification: string | null;
-      piecesPerUnit: number;
-      weight: number | null;
-    }
-  >(
+  const productsMap = new Map<string, SalesOrderProductSnapshot>(
     products.map(p => [
       p.id,
       {
@@ -261,6 +363,8 @@ export async function getSalesOrderDetailWithPayments(id: string) {
       },
     ])
   );
+
+  const batchSpecificationMap = await loadBatchSpecificationMap(order.items);
 
   const refundTotals = order.refundRecords.reduce(
     (acc, refund) => {
@@ -274,7 +378,9 @@ export async function getSalesOrderDetailWithPayments(id: string) {
 
   const receivableConfirmationRecord = order.payments
     .filter(payment => isAutoReceivableConfirmationPayment(payment))
-    .sort((left, right) => right.paymentDate.getTime() - left.paymentDate.getTime())[0];
+    .sort(
+      (left, right) => right.paymentDate.getTime() - left.paymentDate.getTime()
+    )[0];
   const actualPayments = order.payments.filter(
     payment => !isAutoReceivableConfirmationPayment(payment)
   );
@@ -307,7 +413,8 @@ export async function getSalesOrderDetailWithPayments(id: string) {
 
   const mapped = mapDetail(
     order as unknown as SalesOrderDetailResult,
-    productsMap
+    productsMap,
+    batchSpecificationMap
   );
 
   const prepaymentUsages =
@@ -342,11 +449,15 @@ export async function getSalesOrderDetailWithPayments(id: string) {
           receivableConfirmationRecord: {
             id: receivableConfirmationRecord.id,
             paymentNumber: receivableConfirmationRecord.paymentNumber,
-            paymentAmount: Number(receivableConfirmationRecord.paymentAmount ?? 0),
+            paymentAmount: Number(
+              receivableConfirmationRecord.paymentAmount ?? 0
+            ),
             actualPaymentAmount: Number(
               receivableConfirmationRecord.actualPaymentAmount ?? 0
             ),
-            roundingAmount: Number(receivableConfirmationRecord.roundingAmount ?? 0),
+            roundingAmount: Number(
+              receivableConfirmationRecord.roundingAmount ?? 0
+            ),
             paymentMethod: receivableConfirmationRecord.paymentMethod,
             paymentDate: receivableConfirmationRecord.paymentDate.toISOString(),
             status: receivableConfirmationRecord.status,

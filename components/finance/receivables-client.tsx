@@ -1,6 +1,6 @@
 'use client';
 
-import { PaymentCreationDialog } from '@/components/finance/payment-creation-dialog';
+import { ReceivablePaymentDialog } from '@/components/finance/receivable-payment-dialog';
 import { ReceivablesFilterCard } from '@/components/finance/receivables-client/ReceivablesFilterCard';
 import { ReceivablesSummaryCards } from '@/components/finance/receivables-client/ReceivablesSummaryCards';
 import type { ReceivablesQueryParams } from '@/components/finance/receivables-client/types';
@@ -35,7 +35,8 @@ export function ReceivablesClient({
     handleOpenPaymentDialog,
     isPaymentDialogOpen,
     setIsPaymentDialogOpen,
-    selectedOrder,
+    selectedReceivable,
+    retryQuery,
   } = useReceivablesController({ initialData, initialParams });
 
   return (
@@ -55,12 +56,13 @@ export function ReceivablesClient({
         onDateRangeChange={handleDateRangeChange}
         onPageChange={handlePageChange}
         onOpenPaymentDialog={handleOpenPaymentDialog}
+        onRetry={retryQuery}
       />
 
-      <PaymentCreationDialog
+      <ReceivablePaymentDialog
         open={isPaymentDialogOpen}
         onOpenChange={setIsPaymentDialogOpen}
-        orderInfo={selectedOrder}
+        receivable={selectedReceivable}
       />
     </div>
   );

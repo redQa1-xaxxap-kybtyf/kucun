@@ -65,7 +65,7 @@ export const POST = withAuth(
       });
 
       if (!validationResult.success) {
-        const message = `参数验证失败: ${validationResult.error.issues[0]?.message}`;
+        const message = `提交内容有误： ${validationResult.error.issues[0]?.message}`;
         await ExportAuditService.logExport({
           module: 'receivables',
           format: requestedFormat,
@@ -316,3 +316,4 @@ export const POST = withAuth(
   },
   { permissions: ['finance:export'] }
 );
+
