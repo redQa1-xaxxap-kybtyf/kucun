@@ -233,6 +233,9 @@ export const GET = withAuth(async (request: Request) => {
       relatedType: 'purchase_order',
       // 仅统计已经挂到应付款上的费用，避免「有费用没应付」导致统计数据虚高
       payableId: { not: null },
+      // 仅统计有效费用，避免已作废费用继续污染采购运费/总成本
+      status: 'approved',
+      voidedAt: null,
       // 仅针对本次应付筛选范围内的供应商
       ...(queryParams.supplierId ? { supplierId: queryParams.supplierId } : {}),
     };

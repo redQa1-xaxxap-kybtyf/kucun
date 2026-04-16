@@ -62,7 +62,7 @@ export default function PayableDetailPage() {
     return (
       <ErrorMessage
         title="应付款不存在"
-        message="未找到指定的应付款记录"
+        message="未找到这笔应付款"
         onRetry={() => router.push('/finance/payables')}
       />
     );

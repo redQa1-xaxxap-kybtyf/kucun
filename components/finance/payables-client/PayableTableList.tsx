@@ -44,6 +44,7 @@ import {
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { formatDateTime } from '@/lib/utils/datetime';
 import { formatCurrency } from '@/lib/utils/format';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
 interface Props {
   items: PayableRecordDetail[];
@@ -64,7 +65,7 @@ const TABLE_HEADERS: Array<{
   { key: 'sourceType', label: '来源类型' },
   { key: 'status', label: '状态' },
   { key: 'payableAmount', label: '应付金额', align: 'right' },
-  { key: 'paidAmount', label: '已核销金额', align: 'right' },
+  { key: 'paidAmount', label: '已付款金额', align: 'right' },
   { key: 'remainingAmount', label: '待付金额', align: 'right' },
   { key: 'paymentStatus', label: '结清进度' },
   { key: 'dueDate', label: '到期日' },
@@ -138,7 +139,7 @@ const PayableLoadingState = () => (
 const PayableEmptyState = () => (
   <EmptyState
     icon={<ChineseYuan className="text-muted-foreground h-8 w-8" />}
-    title="暂无应付款记录"
+    title="暂无应付款"
     compact
   />
 );
@@ -282,7 +283,7 @@ const PayableActionsCell: React.FC<PayableActionsCellProps> = ({
           }}
           className="h-6 bg-orange-600 px-2 text-xs text-white hover:bg-orange-700"
         >
-          立即付款
+          登记付款
         </Button>
       )}
 
@@ -426,7 +427,7 @@ function PayableCard({ payable, onView, onPayNow, onDelete }: PayableRowProps) {
           </div>
         </div>
         <div className="space-y-1">
-          <div className="text-muted-foreground">已核销金额</div>
+          <div className="text-muted-foreground">已付款金额</div>
           <div className="font-medium text-green-600">
             {formatCurrency(payable.paidAmount ?? 0)}
           </div>
@@ -485,7 +486,7 @@ function PayableCard({ payable, onView, onPayNow, onDelete }: PayableRowProps) {
                 onPayNow(payable.id);
               }}
             >
-              立即付款
+              登记付款
             </Button>
           )}
         </div>
@@ -542,15 +543,14 @@ const PayableDeleteDialog: React.FC<PayableDeleteDialogProps> = ({
   payable,
 }) => (
   <AlertDialog open={open} onOpenChange={onOpenChange}>
-    <AlertDialogContent>
-      <AlertDialogHeader>
-        <AlertDialogTitle>确认删除应付款记录</AlertDialogTitle>
-        <AlertDialogDescription>
-          确定要删除应付款记录
-          <span className="font-semibold">{payable?.payableNumber}</span>
-          吗？此操作不可撤销。
-        </AlertDialogDescription>
-      </AlertDialogHeader>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>确认删除这笔应付款？</AlertDialogTitle>
+          <AlertDialogDescription>
+            将删除应付单 <span className="font-semibold">{payable?.payableNumber}</span>
+            ，删除后无法恢复。
+          </AlertDialogDescription>
+        </AlertDialogHeader>
       <AlertDialogFooter>
         <AlertDialogCancel>取消</AlertDialogCancel>
         <AlertDialogAction
@@ -600,7 +600,7 @@ export function PayableTableList({
 
       toast({
         title: '删除成功',
-        description: `应付款记录 ${payablePendingDelete?.payableNumber} 已删除`,
+        description: `这笔应付款已删除：${payablePendingDelete?.payableNumber}`,
         variant: 'success',
       });
 
@@ -610,7 +610,10 @@ export function PayableTableList({
     onError: (error: Error) => {
       toast({
         title: '删除失败',
-        description: error.message,
+        description: getFriendlyErrorMessage(
+          error,
+          '这笔应付款暂时无法删除，请稍后重试'
+        ),
         variant: 'destructive',
       });
     },

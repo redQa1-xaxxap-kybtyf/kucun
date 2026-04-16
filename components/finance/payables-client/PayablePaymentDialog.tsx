@@ -39,41 +39,47 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import { payablesApi } from '@/lib/api/payables';
 import { queryKeys } from '@/lib/queryKeys';
 import type { PayableRecordDetail } from '@/lib/types/payable';
 import { formatDate as formatDateUtil } from '@/lib/utils/datetime';
 import { computePaymentOutRounding } from '@/lib/utils/payment-out-amounts';
+import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 import {
   PAYMENT_OUT_METHODS,
   paymentOutMethodSchema,
 } from '@/lib/validations/payable';
 
-const paymentFormSchema = z.object({
-  idempotencyKey: z.string().uuid('幂等性键格式不正确'),
-  payableRecordId: z.string().min(1, '应付款ID不能为空'),
-  supplierId: z.string().min(1, '供应商ID不能为空'),
-  paymentAmount: z.number().min(0.01, '付款金额必须大于0'),
-  actualPaymentAmount: z.number().min(0, '实际付款金额不能为负'),
-  roundingAmount: z.number(),
-  paymentMethod: paymentOutMethodSchema,
-  paymentDate: z.string().min(1, '请选择付款日期'),
-  bankInfo: z.string().optional(),
-  remarks: z.string().max(200, '备注不能超过200个字符').optional(),
-}).refine(
-  value =>
-    Math.abs(
-      Number(
-        (
-          value.actualPaymentAmount + value.roundingAmount - value.paymentAmount
-        ).toFixed(2)
-      )
-    ) < 0.01,
-  {
-    message: '付款金额应等于实际付款金额与抹零金额之和',
-    path: ['actualPaymentAmount'],
-  }
-);
+const paymentFormSchema = z
+  .object({
+    idempotencyKey: z.string().uuid('页面已过期，请关闭后重新打开'),
+    payableRecordId: z.string().min(1, '没有找到对应应付款'),
+    supplierId: z.string().min(1, '请选择供应商'),
+    paymentAmount: z.number().min(0.01, '付款金额必须大于 0'),
+    actualPaymentAmount: z.number().min(0, '实际付款金额不能小于 0'),
+    roundingAmount: z.number(),
+    paymentMethod: paymentOutMethodSchema,
+    paymentDate: z.string().min(1, '请选择付款日期'),
+    bankInfo: z.string().optional(),
+    remarks: z.string().max(200, '备注不能超过200个字符').optional(),
+  })
+  .refine(
+    value =>
+      Math.abs(
+        Number(
+          (
+            value.actualPaymentAmount +
+            value.roundingAmount -
+            value.paymentAmount
+          ).toFixed(2)
+        )
+      ) < 0.01,
+    {
+      message: '请检查金额，记账金额应等于实际付款和抹零金额之和',
+      path: ['actualPaymentAmount'],
+    }
+  );
 
 type PaymentFormData = z.infer<typeof paymentFormSchema>;
 
@@ -198,8 +204,8 @@ function usePaymentMutation(onSuccess: () => void) {
     mutationFn: payablesApi.createPaymentOutRecord,
     onSuccess: () => {
       toast({
-        title: '付款成功',
-        description: '付款记录已创建成功',
+        title: '付款已登记',
+        description: '这笔付款已经保存，并记为已付款',
         variant: 'success',
       });
 
@@ -211,8 +217,10 @@ function usePaymentMutation(onSuccess: () => void) {
     onError: error => {
       toast({
         title: '付款失败',
-        description:
-          error instanceof Error ? error.message : '创建付款记录时发生错误',
+        description: getFriendlyErrorMessage(
+          error,
+          '这笔付款暂时保存不了，请稍后再试'
+        ),
         variant: 'destructive',
       });
     },
@@ -243,7 +251,7 @@ function PayableInfoCard({ payableInfo }: { payableInfo: PayableInfo }) {
           </p>
         </div>
         <div>
-          <p className="text-muted-foreground mb-1">已核销金额</p>
+          <p className="text-muted-foreground mb-1">已付款金额</p>
           <p className="font-semibold text-green-600">
             {formatCurrency(payableInfo.paidAmount)}
           </p>
@@ -363,7 +371,7 @@ const ActualPaymentAmountField = ({
           />
         </FormControl>
         <p className="text-muted-foreground text-xs">
-          供应商实际收到的金额，可低于记账金额用于抹零
+          这里填供应商实际收到的金额；如果有尾差，按实际付款填写即可
         </p>
         <FormMessage />
       </FormItem>
@@ -381,7 +389,7 @@ const RoundingAmountField = ({
     name="roundingAmount"
     render={({ field }) => (
       <FormItem>
-        <FormLabel>抹零差额</FormLabel>
+        <FormLabel>抹零金额</FormLabel>
         <FormControl>
           <Input
             readOnly
@@ -392,7 +400,7 @@ const RoundingAmountField = ({
           />
         </FormControl>
         <p className="text-muted-foreground text-xs">
-          自动计算：记账金额 - 实际付款，正值表示少付抹零，负值表示多付
+          根据记账金额和实际付款自动计算；正数表示少付结清，负数表示多付
         </p>
         <FormMessage />
       </FormItem>
@@ -519,6 +527,23 @@ export function PayablePaymentDialog({
   const paymentMutation = usePaymentMutation(() => {
     handleDialogOpenChange(false);
   });
+  const hasUnsavedChanges =
+    open && form.formState.isDirty && !paymentMutation.isPending;
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前付款内容尚未保存，确定要关闭吗？',
+  });
+
+  const handleCloseAttempt = useCallback(
+    (nextOpen: boolean) => {
+      if (!nextOpen && !confirmLeavePage()) {
+        return;
+      }
+
+      handleDialogOpenChange(nextOpen);
+    },
+    [confirmLeavePage, handleDialogOpenChange]
+  );
 
   const handleSubmit: SubmitHandler<PaymentFormData> = useCallback(
     data => {
@@ -557,15 +582,16 @@ export function PayablePaymentDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleDialogOpenChange}>
+    <Dialog open={open} onOpenChange={handleCloseAttempt}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CreditCard className="h-5 w-5" />
-            付款记录创建
+            登记付款并确认完成
           </DialogTitle>
           <DialogDescription>
-            为应付款记录 {payableInfo.payableNumber} 创建付款记录
+            为应付款单 {payableInfo.payableNumber}{' '}
+            登记这次付款，保存后会直接记为已付款
           </DialogDescription>
         </DialogHeader>
 
@@ -581,7 +607,7 @@ export function PayablePaymentDialog({
           <button
             type="button"
             className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
-            onClick={() => handleDialogOpenChange(false)}
+            onClick={() => handleCloseAttempt(false)}
             disabled={paymentMutation.isPending}
           >
             取消
@@ -592,7 +618,7 @@ export function PayablePaymentDialog({
             className="rounded-md border border-transparent bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700 focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
             disabled={paymentMutation.isPending}
           >
-            {paymentMutation.isPending ? '处理中...' : '确认付款'}
+            {paymentMutation.isPending ? '保存中...' : '保存并确认付款'}
           </button>
         </DialogFooter>
       </DialogContent>
@@ -607,4 +633,3 @@ function formatCurrency(amount: number): string {
     currency: 'CNY',
   }).format(amount);
 }
-

@@ -98,7 +98,7 @@ export function PayablesSummary({ filters, initialStatistics }: Props) {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">已核销金额</CardTitle>
+          <CardTitle className="text-sm font-medium">已付款金额</CardTitle>
           <CheckCircle className="h-4 w-4 text-[hsl(var(--color-success))]" />
         </CardHeader>
         <CardContent>

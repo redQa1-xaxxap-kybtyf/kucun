@@ -68,7 +68,7 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
             <Button variant="outline" size="sm" asChild className="gap-1.5">
               <Link href="/finance/payables">
                 <ArrowLeft className="h-3.5 w-3.5" />
-                返回列表
+                返回应付款
               </Link>
             </Button>
             <div className="h-5 w-px bg-gray-300"></div>
@@ -86,7 +86,7 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
                 className="w-full gap-1.5 bg-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-dark))] sm:w-auto"
               >
                 <ChineseYuan className="h-3.5 w-3.5" />
-                记录付款
+                登记付款
               </Button>
             )}
           </div>
@@ -152,7 +152,7 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
         </Card>
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-          {/* 左侧：基本信息和付款记录 */}
+          {/* 左侧：基本信息和付款明细 */}
           <div className="space-y-6 xl:col-span-2">
             {/* 基本信息 */}
             <Card className="overflow-hidden shadow-sm">
@@ -247,12 +247,12 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
               </CardContent>
             </Card>
 
-            {/* 付款记录 */}
+            {/* 付款明细 */}
             <Card className="overflow-hidden shadow-sm">
               <CardHeader className="border-b bg-[hsl(var(--color-bg-secondary))]/50 pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <ChineseYuan className="h-4 w-4 text-[hsl(var(--color-success))]" />
-                  付款记录
+                  付款明细
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
@@ -377,8 +377,8 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
                       icon={
                         <CreditCard className="h-8 w-8 text-[hsl(var(--color-border-secondary))]" />
                       }
-                      title="暂无付款记录"
-                      description="该应付账款尚未进行任何付款"
+                      title="暂无付款"
+                      description="这笔应付款暂时还没有登记付款"
                       compact
                     />
                   </div>
@@ -409,7 +409,7 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-[hsl(var(--color-text-secondary))]">
-                      已核销金额
+                      已付款金额
                     </span>
                     <span className="font-semibold text-[hsl(var(--color-success))]">
                       {formatCurrency(payable.paidAmount)}
