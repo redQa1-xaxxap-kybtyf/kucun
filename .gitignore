@@ -131,6 +131,8 @@ patch.diff
 .playwright-mcp/*.xlsx
 .playwright-mcp/*.csv
 .playwright-mcp/.playwright-mcp/
+/.playwright-*/
+/.logs/
 
 # Playwright HTML 报告及部署包产物（仅本地使用，不提交到仓库）
 playwright-report/data/

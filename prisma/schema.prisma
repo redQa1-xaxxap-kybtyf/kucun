@@ -19,33 +19,37 @@ model User {
   updatedAt    DateTime  @updatedAt @map("updated_at")
   lastLoginAt  DateTime? @map("last_login_at")
 
-  salesOrders              SalesOrder[]
-  returnOrders             ReturnOrder[]
-  factoryShipmentOrders    FactoryShipmentOrder[]
-  paymentRecords           PaymentRecord[]
-  refundRecords            RefundRecord[]
-  inboundRecords           InboundRecord[]
-  operatedAdjustments      InventoryAdjustment[]  @relation("InventoryAdjustmentOperator")
-  approvedAdjustments      InventoryAdjustment[]  @relation("InventoryAdjustmentApprover")
-  purchaseOrders           PurchaseOrder[]
-  payableRecords           PayableRecord[]
-  paymentOutRecords        PaymentOutRecord[]
-  systemLogs               SystemLog[]
-  expenseRecords           ExpenseRecord[]
-  approvedExpenses         ExpenseRecord[]        @relation("ExpenseApprovedBy")
-  createdTemporaryProducts TemporaryProduct[]
-  createdInventoryCounts   InventoryCount[]       @relation("InventoryCountCreator")
-  operatedInventoryCounts  InventoryCount[]       @relation("InventoryCountOperator")
-  approvedInventoryCounts  InventoryCount[]       @relation("InventoryCountApprover")
-  countedInventoryItems    InventoryCountItem[]   @relation("InventoryCountItemCounter")
-  operatedOutboundRecords  OutboundRecord[]       @relation("OutboundRecordOperator")
-  inventoryOperations      InventoryOperation[]   @relation("InventoryOperationOperator")
-  loginLogs                LoginLog[]
-  sessions                 Session[]
-  productFavorites         ProductFavorite[]
-  productViewHistory       ProductViewHistory[]
-  createdPrintTemplates    PrintTemplate[]        @relation("PrintTemplateCreator")
-  updatedPrintTemplates    PrintTemplate[]        @relation("PrintTemplateUpdater")
+  salesOrders                  SalesOrder[]
+  returnOrders                 ReturnOrder[]
+  factoryShipmentOrders        FactoryShipmentOrder[]
+  paymentRecords               PaymentRecord[]
+  refundRecords                RefundRecord[]
+  inboundRecords               InboundRecord[]
+  operatedAdjustments          InventoryAdjustment[]         @relation("InventoryAdjustmentOperator")
+  approvedAdjustments          InventoryAdjustment[]         @relation("InventoryAdjustmentApprover")
+  purchaseOrders               PurchaseOrder[]
+  payableRecords               PayableRecord[]
+  paymentOutRecords            PaymentOutRecord[]
+  systemLogs                   SystemLog[]
+  expenseRecords               ExpenseRecord[]
+  approvedExpenses             ExpenseRecord[]               @relation("ExpenseApprovedBy")
+  createdTemporaryProducts     TemporaryProduct[]
+  createdInventoryCounts       InventoryCount[]              @relation("InventoryCountCreator")
+  operatedInventoryCounts      InventoryCount[]              @relation("InventoryCountOperator")
+  approvedInventoryCounts      InventoryCount[]              @relation("InventoryCountApprover")
+  countedInventoryItems        InventoryCountItem[]          @relation("InventoryCountItemCounter")
+  operatedOutboundRecords      OutboundRecord[]              @relation("OutboundRecordOperator")
+  inventoryOperations          InventoryOperation[]          @relation("InventoryOperationOperator")
+  loginLogs                    LoginLog[]
+  sessions                     Session[]
+  productFavorites             ProductFavorite[]
+  productViewHistory           ProductViewHistory[]
+  createdPrintTemplates        PrintTemplate[]               @relation("PrintTemplateCreator")
+  updatedPrintTemplates        PrintTemplate[]               @relation("PrintTemplateUpdater")
+  createdPurchaseDamageLedgers PurchaseInboundDamageLedger[] @relation("PurchaseDamageLedgerCreatedBy")
+  handledPurchaseDamageLedgers PurchaseInboundDamageLedger[] @relation("PurchaseDamageLedgerHandledBy")
+  createdManualDamageLedgers   ManualDamageLedger[]          @relation("ManualDamageLedgerCreatedBy")
+  handledManualDamageLedgers   ManualDamageLedger[]          @relation("ManualDamageLedgerHandledBy")
 
   @@index([email])
   @@index([username])
@@ -116,6 +120,8 @@ model Supplier {
   payableRecords            PayableRecord[]
   paymentOutRecords         PaymentOutRecord[]
   expenseRecords            ExpenseRecord[]
+  manualDamageLedgers       ManualDamageLedger[]
+  purchaseDamageLedgers     PurchaseInboundDamageLedger[]
 
   @@index([name])
   @@index([phone])
@@ -184,7 +190,7 @@ model Product {
   name          String   @db.VarChar(150)
   specification String?  @db.Text
   unit          String   @default("sheet") @db.VarChar(32)
-  piecesPerUnit Int      @default(1) @map("pieces_per_unit")
+  piecesPerUnit Int?     @map("pieces_per_unit")
   weight        Decimal? @db.Decimal(18, 6)
   thickness     Decimal? @db.Decimal(18, 6)
   minStock      Int?     @map("min_stock")
@@ -199,7 +205,7 @@ model Product {
 
   // 关系定义
   variants                  ProductVariant[]
-  category                  Category?                  @relation(fields: [categoryId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  category                  Category?                     @relation(fields: [categoryId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   salesOrderItems           SalesOrderItem[]
   factoryShipmentOrderItems FactoryShipmentOrderItem[]
   returnOrderItems          ReturnOrderItem[]
@@ -216,6 +222,8 @@ model Product {
   favorites                 ProductFavorite[]
   viewHistory               ProductViewHistory[]
   fifoConsumptionLedgers    FifoConsumptionLedger[]
+  purchaseDamageLedgers     PurchaseInboundDamageLedger[]
+  manualDamageLedgers       ManualDamageLedger[]
 
   @@index([code])
   @@index([name])
@@ -250,6 +258,7 @@ model ProductVariant {
   InventoryCostQueue     InventoryCostQueue[]
   fifoConsumptionLedgers FifoConsumptionLedger[]
   batchSpecifications    BatchSpecification[]
+  manualDamageLedgers    ManualDamageLedger[]
 
   @@unique([productId, colorCode], map: "uk_product_color")
   @@index([productId])
@@ -280,6 +289,7 @@ model SalesOrder {
   usePrepayment        Boolean   @default(false) @map("use_prepayment")
   prepaymentAmount     Decimal?  @default(0) @map("prepayment_amount") @db.Decimal(18, 2)
   remarks              String?
+  importKey            String?   @unique(map: "uk_sales_orders_import_key") @map("import_key") @db.VarChar(191)
   dataTag              String    @default("prod") @map("data_tag") @db.VarChar(16)
   voidedAt             DateTime? @map("voided_at")
   voidedBy             String?   @map("voided_by") @db.Char(36)
@@ -370,6 +380,7 @@ model SalesOrderItem {
   displayUnit         String?  @map("display_unit")
   displayQuantity     Decimal? @map("display_quantity") @db.Decimal(18, 6)
   piecesPerUnit       Int?     @map("pieces_per_unit")
+  weightSnapshot      Decimal? @map("weight_snapshot") @db.Decimal(18, 6)
   specification       String?  @map("specification") @db.Text
   remarks             String?  @map("remarks")
   temporaryProductId  String?  @map("temporary_product_id") @db.Char(36)
@@ -507,14 +518,15 @@ model InboundRecord {
   supplierId           String?  @map("supplier_id") @db.Char(36)
 
   // 关系定义
-  product            Product              @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  user               User                 @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  variant            ProductVariant?      @relation(fields: [variantId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  batchSpecification BatchSpecification?  @relation(fields: [batchSpecificationId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  purchaseOrder      PurchaseOrder?       @relation(fields: [purchaseOrderId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  purchaseOrderItem  PurchaseOrderItem?   @relation(fields: [purchaseOrderItemId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  supplier           Supplier?            @relation(fields: [supplierId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  costQueueEntries   InventoryCostQueue[] // FIFO成本队列条目
+  product              Product                      @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  user                 User                         @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  variant              ProductVariant?              @relation(fields: [variantId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  batchSpecification   BatchSpecification?          @relation(fields: [batchSpecificationId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  purchaseOrder        PurchaseOrder?               @relation(fields: [purchaseOrderId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  purchaseOrderItem    PurchaseOrderItem?           @relation(fields: [purchaseOrderItemId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  supplier             Supplier?                    @relation(fields: [supplierId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  costQueueEntries     InventoryCostQueue[] // FIFO成本队列条目
+  purchaseDamageLedger PurchaseInboundDamageLedger?
 
   @@index([productId], map: "idx_inbound_records_product")
   @@index([variantId], map: "idx_inbound_records_variant")
@@ -653,6 +665,7 @@ model InventoryAdjustment {
   variant  ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   operator User            @relation("InventoryAdjustmentOperator", fields: [operatorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   approver User?           @relation("InventoryAdjustmentApprover", fields: [approverId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  manualDamageLedger ManualDamageLedger?
 
   @@index([productId], map: "idx_inventory_adjustments_product")
   @@index([variantId], map: "idx_inventory_adjustments_variant")
@@ -664,6 +677,47 @@ model InventoryAdjustment {
   @@index([operatorId, status], map: "idx_inventory_adjustments_operator_status")
   @@index([productId, status], map: "idx_inventory_adjustments_product_status")
   @@map("inventory_adjustments")
+}
+
+model ManualDamageLedger {
+  id               String    @id @default(uuid()) @db.Char(36)
+  ledgerNumber     String    @unique @map("ledger_number") @db.VarChar(40)
+  adjustmentId     String    @unique @map("adjustment_id") @db.Char(36)
+  productId        String    @map("product_id") @db.Char(36)
+  variantId        String?   @map("variant_id") @db.Char(36)
+  supplierId       String?   @map("supplier_id") @db.Char(36)
+  batchNumber      String?   @map("batch_number") @db.VarChar(100)
+  damagedQuantity  Int       @map("damaged_quantity")
+  damageCategory   String    @default("damage") @map("damage_category") @db.VarChar(32)
+  damageHandling   String    @default("pending_confirm") @map("damage_handling") @db.VarChar(32)
+  referenceAmount  Decimal?  @map("reference_amount") @db.Decimal(18, 2)
+  status           String    @default("pending_review") @db.VarChar(32)
+  remarks          String?   @db.Text
+  createdById      String    @map("created_by_id") @db.Char(36)
+  lastHandledById  String?   @map("last_handled_by_id") @db.Char(36)
+  claimedAt        DateTime? @map("claimed_at")
+  resolvedAt       DateTime? @map("resolved_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  adjustment    InventoryAdjustment @relation(fields: [adjustmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  product       Product             @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  variant       ProductVariant?     @relation(fields: [variantId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  supplier      Supplier?           @relation(fields: [supplierId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  createdBy     User                @relation("ManualDamageLedgerCreatedBy", fields: [createdById], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  lastHandledBy User?               @relation("ManualDamageLedgerHandledBy", fields: [lastHandledById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([status], map: "idx_manual_damage_ledgers_status")
+  @@index([damageHandling], map: "idx_manual_damage_ledgers_handling")
+  @@index([damageCategory], map: "idx_manual_damage_ledgers_category")
+  @@index([supplierId], map: "idx_manual_damage_ledgers_supplier")
+  @@index([productId], map: "idx_manual_damage_ledgers_product")
+  @@index([variantId], map: "idx_manual_damage_ledgers_variant")
+  @@index([batchNumber], map: "idx_manual_damage_ledgers_batch")
+  @@index([createdAt], map: "idx_manual_damage_ledgers_created_at")
+  @@index([createdById], map: "idx_manual_damage_ledgers_created_by")
+  @@index([lastHandledById], map: "idx_manual_damage_ledgers_handled_by")
+  @@map("manual_damage_ledgers")
 }
 
 model PaymentRecord {
@@ -1128,26 +1182,26 @@ model PayableRecord {
 }
 
 model PaymentOutRecord {
-  id              String    @id @default(uuid()) @db.Char(36)
-  paymentNumber   String    @unique @map("payment_number") @db.VarChar(100)
-  payableRecordId String?   @map("payable_record_id") @db.Char(36)
-  supplierId      String    @map("supplier_id") @db.Char(36)
-  userId          String    @map("user_id") @db.Char(36)
-  paymentMethod   String    @default("bank_transfer") @db.VarChar(64)
-  paymentAmount   Decimal   @map("payment_amount") @db.Decimal(18, 2)
-  actualPaymentAmount Decimal @default(0) @map("actual_payment_amount") @db.Decimal(18, 2)
-  roundingAmount      Decimal @default(0) @map("rounding_amount") @db.Decimal(18, 2)
-  paymentDate     DateTime  @map("payment_date")
-  status          String    @default("pending") @db.VarChar(32)
-  remarks         String?
-  voucherNumber   String?   @map("voucher_number")
-  bankInfo        String?   @map("bank_info")
-  dataTag         String    @default("prod") @map("data_tag") @db.VarChar(16)
-  voidedAt        DateTime? @map("voided_at")
-  voidedBy        String?   @map("voided_by") @db.Char(36)
-  voidReason      String?   @map("void_reason") @db.VarChar(64)
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  id                  String    @id @default(uuid()) @db.Char(36)
+  paymentNumber       String    @unique @map("payment_number") @db.VarChar(100)
+  payableRecordId     String?   @map("payable_record_id") @db.Char(36)
+  supplierId          String    @map("supplier_id") @db.Char(36)
+  userId              String    @map("user_id") @db.Char(36)
+  paymentMethod       String    @default("bank_transfer") @db.VarChar(64)
+  paymentAmount       Decimal   @map("payment_amount") @db.Decimal(18, 2)
+  actualPaymentAmount Decimal   @default(0) @map("actual_payment_amount") @db.Decimal(18, 2)
+  roundingAmount      Decimal   @default(0) @map("rounding_amount") @db.Decimal(18, 2)
+  paymentDate         DateTime  @map("payment_date")
+  status              String    @default("pending") @db.VarChar(32)
+  remarks             String?
+  voucherNumber       String?   @map("voucher_number")
+  bankInfo            String?   @map("bank_info")
+  dataTag             String    @default("prod") @map("data_tag") @db.VarChar(16)
+  voidedAt            DateTime? @map("voided_at")
+  voidedBy            String?   @map("voided_by") @db.Char(36)
+  voidReason          String?   @map("void_reason") @db.VarChar(64)
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
 
   // 关系定义
   payableRecord PayableRecord? @relation(fields: [payableRecordId], references: [id], onDelete: SetNull, onUpdate: Cascade)
@@ -1418,11 +1472,12 @@ model PurchaseOrder {
   salesOrderId        String?   @map("sales_order_id") @db.Char(36)
 
   // 关系定义
-  user           User                @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  supplier       Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  salesOrder     SalesOrder?         @relation(fields: [salesOrderId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  items          PurchaseOrderItem[]
-  inboundRecords InboundRecord[]
+  user                  User                          @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  supplier              Supplier                      @relation(fields: [supplierId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  salesOrder            SalesOrder?                   @relation(fields: [salesOrderId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  items                 PurchaseOrderItem[]
+  inboundRecords        InboundRecord[]
+  purchaseDamageLedgers PurchaseInboundDamageLedger[]
 
   @@index([orderNumber], map: "idx_purchase_orders_order_number")
   @@index([supplierId], map: "idx_purchase_orders_supplier")
@@ -1466,10 +1521,11 @@ model PurchaseOrderItem {
   unitCostWithExpense Decimal?  @map("unit_cost_with_expense") @db.Decimal(18, 3)
 
   // 关系定义
-  purchaseOrder  PurchaseOrder   @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  product        Product?        @relation(fields: [productId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  supplier       Supplier        @relation(fields: [supplierId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  inboundRecords InboundRecord[]
+  purchaseOrder         PurchaseOrder                 @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  product               Product?                      @relation(fields: [productId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  supplier              Supplier                      @relation(fields: [supplierId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  inboundRecords        InboundRecord[]
+  purchaseDamageLedgers PurchaseInboundDamageLedger[]
 
   @@index([purchaseOrderId], map: "idx_purchase_order_items_order")
   @@index([productId], map: "idx_purchase_order_items_product")
@@ -1477,6 +1533,48 @@ model PurchaseOrderItem {
   @@index([productCode], map: "idx_purchase_order_items_product_code")
   @@index([batchNumber], map: "idx_purchase_order_items_batch")
   @@map("purchase_order_items")
+}
+
+model PurchaseInboundDamageLedger {
+  id                  String    @id @default(uuid()) @db.Char(36)
+  ledgerNumber        String    @unique @map("ledger_number") @db.VarChar(40)
+  inboundRecordId     String    @unique @map("inbound_record_id") @db.Char(36)
+  purchaseOrderId     String?   @map("purchase_order_id") @db.Char(36)
+  purchaseOrderItemId String?   @map("purchase_order_item_id") @db.Char(36)
+  productId           String    @map("product_id") @db.Char(36)
+  supplierId          String?   @map("supplier_id") @db.Char(36)
+  batchNumber         String?   @map("batch_number") @db.VarChar(100)
+  damagedQuantity     Int       @map("damaged_quantity")
+  damageHandling      String    @map("damage_handling") @db.VarChar(32)
+  referenceAmount     Decimal?  @map("reference_amount") @db.Decimal(18, 2)
+  status              String    @default("pending_claim") @db.VarChar(32)
+  remarks             String?   @db.Text
+  createdById         String    @map("created_by_id") @db.Char(36)
+  lastHandledById     String?   @map("last_handled_by_id") @db.Char(36)
+  claimedAt           DateTime? @map("claimed_at")
+  resolvedAt          DateTime? @map("resolved_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  inboundRecord     InboundRecord      @relation(fields: [inboundRecordId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  purchaseOrder     PurchaseOrder?     @relation(fields: [purchaseOrderId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  purchaseOrderItem PurchaseOrderItem? @relation(fields: [purchaseOrderItemId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  product           Product            @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  supplier          Supplier?          @relation(fields: [supplierId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  createdBy         User               @relation("PurchaseDamageLedgerCreatedBy", fields: [createdById], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  lastHandledBy     User?              @relation("PurchaseDamageLedgerHandledBy", fields: [lastHandledById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([status], map: "idx_purchase_damage_ledgers_status")
+  @@index([damageHandling], map: "idx_purchase_damage_ledgers_handling")
+  @@index([supplierId], map: "idx_purchase_damage_ledgers_supplier")
+  @@index([productId], map: "idx_purchase_damage_ledgers_product")
+  @@index([batchNumber], map: "idx_purchase_damage_ledgers_batch")
+  @@index([purchaseOrderId], map: "idx_purchase_damage_ledgers_purchase_order")
+  @@index([purchaseOrderItemId], map: "idx_purchase_damage_ledgers_purchase_order_item")
+  @@index([createdAt], map: "idx_purchase_damage_ledgers_created_at")
+  @@index([createdById], map: "idx_purchase_damage_ledgers_created_by")
+  @@index([lastHandledById], map: "idx_purchase_damage_ledgers_handled_by")
+  @@map("purchase_inbound_damage_ledgers")
 }
 
 model FactoryShipmentOrderFeeItem {

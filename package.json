@@ -1,10 +1,11 @@
 {
   "name": "kucun",
-  "version": "1.0.93",
+  "version": "1.0.98",
   "description": "瓷砖行业库存管理工具",
   "private": true,
   "scripts": {
     "dev": "cross-env NODE_OPTIONS=\"--max-old-space-size=2048\" next dev",
+    "prebuild": "prisma generate",
     "build": "cross-env NODE_OPTIONS=\"--max-old-space-size=8192\" next build",
     "start": "cross-env NODE_OPTIONS=\"--max-old-space-size=4096\" next start",
     "dev:with-scheduler": "tsx scripts/start-with-scheduler.ts dev",
@@ -54,6 +55,7 @@
     "download-geoip": "node scripts/download-geoip.js",
     "test:ip-location": "tsx scripts/test-ip-location.ts",
     "test:queue": "dotenv -e .env -- tsx scripts/test-queue-integration.ts",
+    "audit:sales-import-keys": "tsx scripts/audit-sales-import-keys.ts",
     "repair:purchase-damage-inbound": "tsx scripts/repair-purchase-damage-inbound.ts",
     "worker:start": "tsx scripts/start-queue-workers.ts",
     "pm2:start": "pm2 start ecosystem.config.js --env production",
@@ -64,7 +66,7 @@
     "pm2:logs": "pm2 logs",
     "pm2:monit": "pm2 monit",
     "pm2:status": "pm2 status",
-    "deploy:prod": "npm ci && npm run type-check && npm run lint && npm run build && npm prune --omit=dev && npx prisma migrate deploy && npm run pm2:reload"
+    "deploy:prod": "npm ci && npm run db:generate && npm run type-check && npm run lint && npm run build && npm prune --omit=dev && npx prisma migrate deploy && npm run pm2:reload"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
