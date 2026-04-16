@@ -70,7 +70,7 @@ const createProductSchema = z.object({
 const updateProductSchema = createProductSchema.partial();
 
 const updateProductStatusSchema = z.object({
-  productId: z.string().min(1, '产品 ID 不能为空'),
+  productId: z.string().min(1, '产品不能为空'),
   status: z.enum(['active', 'inactive']),
 });
 
@@ -115,7 +115,7 @@ export async function createProduct(
           categoryId: data.categoryId ?? null,
           specification: data.specification ?? null,
           description: data.description ?? null,
-          piecesPerUnit: data.piecesPerUnit ?? 1,
+          piecesPerUnit: data.piecesPerUnit ?? null,
           weight: data.weight ?? null,
           thickness: data.thickness ?? null,
           thumbnailUrl: data.thumbnailUrl ?? null,

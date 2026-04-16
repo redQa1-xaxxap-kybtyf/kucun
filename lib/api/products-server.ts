@@ -108,25 +108,9 @@ export const getProductsForServer = cache(
           includeInventory
         );
 
-        const productDefaults = new Map(
-          products.map(product => [
-            product.id,
-            {
-              piecesPerUnit: product.piecesPerUnit,
-              weight:
-                product.weight === null || product.weight === undefined
-                  ? null
-                  : Number(product.weight),
-            },
-          ])
-        );
-
         // 如果需要批次数据，批量获取
         const batchSpecsMap = includeBatchSpecs
-          ? await getProductsBatchSpecifications(
-              products.map(p => p.id),
-              productDefaults
-            )
+          ? await getProductsBatchSpecifications(products.map(p => p.id))
           : undefined;
 
         const formattedProducts = formatProductList({

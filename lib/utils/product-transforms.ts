@@ -98,7 +98,7 @@ export function toProductResponse(dbProduct: {
   specification: string | null;
   description: string | null;
   unit: string;
-  piecesPerUnit: number;
+  piecesPerUnit: number | null;
   weight: unknown | null;
   thickness: unknown | null;
   status: string;
@@ -116,7 +116,7 @@ export function toProductResponse(dbProduct: {
     specification: dbProduct.specification ?? undefined,
     description: dbProduct.description ?? undefined,
     unit: dbProduct.unit as Product['unit'],
-    piecesPerUnit: dbProduct.piecesPerUnit,
+    piecesPerUnit: dbProduct.piecesPerUnit ?? undefined,
     weight: toNumberOrNull(dbProduct.weight) ?? undefined,
     thickness: toNumberOrNull(dbProduct.thickness) ?? undefined,
     status: dbProduct.status as Product['status'],

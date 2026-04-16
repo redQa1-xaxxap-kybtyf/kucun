@@ -60,7 +60,7 @@ export interface ProductInventoryBatch {
   availableQuantity?: number;
   /** 批次对应的每件片数（若存在批次规格） */
   piecesPerUnit?: number;
-  /** 批次对应的每件重量(kg) */
+  /** 批次对应的实际每件重量(kg) */
   weight?: number | null;
 }
 
@@ -96,7 +96,7 @@ export interface ProductBatchSpec {
   piecesPerUnit: number;
   /** 当前批次的库存数量（片） */
   quantity: number;
-  /** 每件重量(kg) */
+  /** 当前批次的实际每件重量(kg) */
   weight?: number | null;
 }
 
@@ -130,9 +130,9 @@ export interface Product {
   description?: string;
   /** 产品计量单位 */
   unit: ProductUnit;
-  /** 每件包含的片数，用于单位换算 */
-  piecesPerUnit: number;
-  /** 每件重量，单位：千克(kg) - 可选，优先使用批次规格中的重量 */
+  /** 产品档案中保留的历史装箱数；新数据不再强制维护，优先使用批次规格 */
+  piecesPerUnit?: number;
+  /** 产品档案中保留的历史重量；新数据不再强制维护，优先使用批次规格 */
   weight?: number | null;
   /** 产品厚度，单位：毫米(mm) */
   thickness?: number;
