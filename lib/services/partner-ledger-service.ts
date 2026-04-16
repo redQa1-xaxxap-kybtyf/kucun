@@ -379,8 +379,16 @@ function toStatementType(role: PartnerRole): StatementType {
   return 'customer';
 }
 
-async function resolvePartnerEntity(partnerId: string): Promise<PartnerEntity> {
-  const customer = await prisma.customer.findUnique({
+type PartnerLookupClient = Pick<
+  Prisma.TransactionClient,
+  'customer' | 'supplier'
+>;
+
+async function resolvePartnerEntity(
+  partnerId: string,
+  db: PartnerLookupClient = prisma
+): Promise<PartnerEntity> {
+  const customer = await db.customer.findUnique({
     where: { id: partnerId },
     select: {
       id: true,
@@ -403,7 +411,7 @@ async function resolvePartnerEntity(partnerId: string): Promise<PartnerEntity> {
     };
   }
 
-  const supplier = await prisma.supplier.findUnique({
+  const supplier = await db.supplier.findUnique({
     where: { id: partnerId },
     select: {
       id: true,
@@ -508,7 +516,7 @@ export async function recordPartnerTransaction(
     'completed';
 
   const execute = async (db: Prisma.TransactionClient) => {
-    const partner = await resolvePartnerEntity(input.partnerId);
+    const partner = await resolvePartnerEntity(input.partnerId, db);
     const incomingRole = input.partnerRole ?? partner.role;
     const existingStatement = await db.accountStatement.findUnique({
       where: { entityId: input.partnerId },
