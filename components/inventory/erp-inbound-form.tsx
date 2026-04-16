@@ -56,6 +56,7 @@ import {
   type InboundFormData,
   type ProductOption,
 } from '@/lib/types/inbound';
+import { showError } from '@/lib/utils/toast-helper';
 import { createInboundSchema } from '@/lib/validations/inbound';
 
 interface ERPInboundFormProps {
@@ -74,6 +75,7 @@ interface ERPInboundFormProps {
  */
 export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
   const router = useRouter();
+  const inboundFormId = 'erp-inbound-form';
   const [showProductPrompt, setShowProductPrompt] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showReasonSwitcher, setShowReasonSwitcher] = useState(false);
@@ -367,6 +369,27 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
     });
   };
 
+  const getFirstErrorMessage = (value: unknown): string | undefined => {
+    if (!value || typeof value !== 'object') {
+      return undefined;
+    }
+
+    const record = value as Record<string, unknown>;
+
+    if (typeof record.message === 'string' && record.message.trim()) {
+      return record.message.trim();
+    }
+
+    for (const nestedValue of Object.values(record)) {
+      const nestedMessage = getFirstErrorMessage(nestedValue);
+      if (nestedMessage) {
+        return nestedMessage;
+      }
+    }
+
+    return undefined;
+  };
+
   // ✅ 使用 React Hook Form 的 handleSubmit，并在这里处理期初入库二次确认逻辑
   const handleFormSubmit = form.handleSubmit(
     async (data: any) => {
@@ -390,33 +413,13 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
       } else {
         setShowProductPrompt(false);
       }
+
+      showError('提交前还有内容没填完整', {
+        description:
+          getFirstErrorMessage(errors) ?? '请先把必填项补完整后再提交。',
+      });
     }
   );
-
-  const handleToolbarSubmit = () => {
-    if (isBatchPurchaseMode) {
-      handleBatchSubmit().catch(() => {
-        // submitBatchInbound 已处理错误提示
-      });
-      return;
-    }
-
-    if (!form.getValues('productId')) {
-      setShowProductPrompt(true);
-      form.setFocus('productId');
-    }
-
-    // ✅ 调用 handleFormSubmit 并捕获未处理的 Promise rejection
-    // React Hook Form 的 handleSubmit 行为：
-    // - 验证失败：调用 onInvalid 回调，Promise resolve（不会 reject）
-    // - 验证成功但提交失败：Promise reject（需要捕获）
-    // submitInbound 内部已经处理了所有提交错误（显示 Toast 等）
-    // 这里只需要防止未捕获的 Promise rejection
-    handleFormSubmit().catch(() => {
-      // submitInbound 已经处理了错误，这里不需要额外操作
-      // 只是为了防止 "Uncaught (in promise)" 错误
-    });
-  };
 
   const handleProductSelectWithPrompt = (product: ProductOption) => {
     setShowProductPrompt(false);
@@ -523,11 +526,11 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
         <InboundFormToolbar
           isSubmitting={isSubmitting || isBatchSubmitting}
           onReset={handleFormReset}
-          onSubmit={handleToolbarSubmit}
           onBack={handleBack}
           title={currentPageTitle}
           description={currentPageDescription}
           submitLabel={submitLabel}
+          formId={inboundFormId}
         />
 
         {/* 期初入库提示 Banner */}
@@ -546,6 +549,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
           <div className="p-6">
             <Form {...form}>
               <form
+                id={inboundFormId}
                 onSubmit={
                   isBatchPurchaseMode
                     ? event => {
@@ -737,7 +741,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                           3. 批次与数量
                         </h3>
                         <p className="text-xs text-slate-500">
-                        先把批次和数量填对，其他内容按需要补充。
+                          先把批次和数量填对，其他内容按需要补充。
                         </p>
                       </div>
                     </div>

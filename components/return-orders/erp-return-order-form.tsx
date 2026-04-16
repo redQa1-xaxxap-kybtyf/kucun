@@ -72,6 +72,7 @@ export function ERPReturnOrderForm({
 }: ERPReturnOrderFormProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const returnOrderFormId = 'erp-return-order-form';
   const submitIntentRef = useRef<'save' | 'submit' | null>(null);
   const [selectedSalesOrderId, setSelectedSalesOrderId] = useState<string>('');
   // ✅ 修复：初始化时同步 initialData.customerId，确保编辑模式下客户下拉框显示已选客户
@@ -477,6 +478,29 @@ export function ERPReturnOrderForm({
     }
   };
 
+  const handleFormSubmit = form.handleSubmit(
+    data => {
+      const submitIntent = submitIntentRef.current ?? 'save';
+      if (submitIntent === 'submit') {
+        onSubmitAndSubmit(data);
+        return;
+      }
+
+      onSubmit(data);
+    },
+    () => {
+      submitIntentRef.current = null;
+    }
+  );
+
+  const handleSaveButtonClick = () => {
+    submitIntentRef.current = 'save';
+  };
+
+  const handleSubmitButtonClick = () => {
+    submitIntentRef.current = 'submit';
+  };
+
   // 处理取消
   const handleCancel = () => {
     if (onCancel) {
@@ -526,9 +550,10 @@ export function ERPReturnOrderForm({
             取消
           </Button>
           <Button
-            type="button"
+            type="submit"
+            form={returnOrderFormId}
             variant="outline"
-            onClick={form.handleSubmit(onSubmit)}
+            onClick={handleSaveButtonClick}
             disabled={isLoading}
           >
             {isLoading ? (
@@ -542,8 +567,9 @@ export function ERPReturnOrderForm({
           </Button>
           {(mode === 'create' || initialData?.status === 'draft') && (
             <Button
-              type="button"
-              onClick={form.handleSubmit(onSubmitAndSubmit)}
+              type="submit"
+              form={returnOrderFormId}
+              onClick={handleSubmitButtonClick}
               disabled={isLoading}
             >
               {isLoading ? (
@@ -570,7 +596,11 @@ export function ERPReturnOrderForm({
       )}
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form
+          id={returnOrderFormId}
+          onSubmit={handleFormSubmit}
+          className="space-y-6"
+        >
           {/* 基本信息 */}
           <Card>
             <CardHeader className="pb-3">
@@ -792,3 +822,4 @@ export function ERPReturnOrderForm({
     </div>
   );
 }
+

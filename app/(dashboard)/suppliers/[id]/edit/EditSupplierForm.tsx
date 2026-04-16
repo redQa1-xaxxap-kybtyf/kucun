@@ -15,19 +15,19 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-	import {
-	  Form,
-	  FormControl,
-	  FormDescription,
-	  FormField,
-	  FormItem,
-	  FormLabel,
-	  FormMessage,
-	} from '@/components/ui/form';
-	import { Input } from '@/components/ui/input';
-	import { Textarea } from '@/components/ui/textarea';
-	import { useToast } from '@/components/ui/use-toast';
-	import { updateSupplier } from '@/lib/api/suppliers';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/components/ui/use-toast';
+import { updateSupplier } from '@/lib/api/suppliers';
 import {
   UpdateSupplierSchema,
   supplierUpdateDefaults,
@@ -47,6 +47,7 @@ interface EditSupplierFormProps {
 export function EditSupplierForm({ id, supplier }: EditSupplierFormProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const supplierFormId = 'supplier-edit-form';
 
   const form = useForm<SupplierUpdateFormData>({
     resolver: standardSchemaResolver(UpdateSupplierSchema),
@@ -106,7 +107,11 @@ export function EditSupplierForm({ id, supplier }: EditSupplierFormProps) {
         </CardHeader>
         <CardContent className="p-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form
+              id={supplierFormId}
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="space-y-6"
+            >
               <FormField
                 control={form.control}
                 name="name"
@@ -171,28 +176,28 @@ export function EditSupplierForm({ id, supplier }: EditSupplierFormProps) {
                 )}
               />
 
-	              <FormField
-	                control={form.control}
-	                name="status"
-	                render={({ field }) => (
-	                  <FormItem>
-	                    <FormLabel>状态</FormLabel>
-	                    <FormControl>
-	                      <select
-	                        value={field.value}
-	                        onChange={e => field.onChange(e.target.value)}
-	                        disabled={isLoading}
-	                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
-	                      >
-	                        <option value="active">活跃</option>
-	                        <option value="inactive">停用</option>
-	                      </select>
-	                    </FormControl>
-	                    <FormDescription>供应商的当前状态</FormDescription>
-	                    <FormMessage />
-	                  </FormItem>
-	                )}
-	              />
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>状态</FormLabel>
+                    <FormControl>
+                      <select
+                        value={field.value}
+                        onChange={e => field.onChange(e.target.value)}
+                        disabled={isLoading}
+                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <option value="active">活跃</option>
+                        <option value="inactive">停用</option>
+                      </select>
+                    </FormControl>
+                    <FormDescription>供应商的当前状态</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </form>
           </Form>
         </CardContent>
@@ -214,9 +219,9 @@ export function EditSupplierForm({ id, supplier }: EditSupplierFormProps) {
             </Button>
             <Button
               type="submit"
+              form={supplierFormId}
               size="lg"
               disabled={isLoading}
-              onClick={form.handleSubmit(onSubmit)}
               className="h-11 gap-2 bg-[hsl(var(--color-primary))] text-white shadow-[var(--shadow-medium)] transition-transform hover:-translate-y-0.5 hover:bg-[hsl(var(--color-primary-hover))] hover:shadow-[var(--shadow-heavy)] focus-visible:ring-[hsl(var(--color-primary))]"
             >
               {isLoading ? (

@@ -4,7 +4,7 @@ import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { CreditCard } from 'lucide-react';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, type BaseSyntheticEvent } from 'react';
 import {
   useForm,
   type SubmitHandler,
@@ -475,14 +475,18 @@ function PaymentForm({
   form,
   paymentMethod,
   payableInfo,
+  formId,
+  onSubmit,
 }: {
   form: UseFormReturn<PaymentFormData>;
   paymentMethod: PaymentFormData['paymentMethod'];
   payableInfo: PayableInfo;
+  formId: string;
+  onSubmit: (event?: BaseSyntheticEvent) => Promise<void>;
 }) {
   return (
     <Form {...form}>
-      <div className="space-y-4">
+      <form id={formId} onSubmit={onSubmit} className="space-y-4">
         {/* 应付款信息展示 */}
         <PayableInfoCard payableInfo={payableInfo} />
 
@@ -495,7 +499,7 @@ function PaymentForm({
           <PaymentBankInfoField form={form} />
         )}
         <PaymentRemarksField form={form} />
-      </div>
+      </form>
     </Form>
   );
 }
@@ -505,6 +509,7 @@ export function PayablePaymentDialog({
   onOpenChange,
   payableInfo,
 }: PayablePaymentDialogProps) {
+  const paymentFormId = 'payable-payment-form';
   const { form, paymentMethod, handleDialogOpenChange } = usePaymentDialogState(
     payableInfo,
     open,
@@ -568,6 +573,8 @@ export function PayablePaymentDialog({
           form={form}
           paymentMethod={paymentMethod}
           payableInfo={payableInfo}
+          formId={paymentFormId}
+          onSubmit={onSubmit}
         />
 
         <DialogFooter>
@@ -580,9 +587,9 @@ export function PayablePaymentDialog({
             取消
           </button>
           <button
-            type="button"
+            type="submit"
+            form={paymentFormId}
             className="rounded-md border border-transparent bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700 focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-            onClick={onSubmit}
             disabled={paymentMutation.isPending}
           >
             {paymentMutation.isPending ? '处理中...' : '确认付款'}
@@ -600,3 +607,4 @@ function formatCurrency(amount: number): string {
     currency: 'CNY',
   }).format(amount);
 }
+

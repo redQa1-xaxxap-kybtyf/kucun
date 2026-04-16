@@ -37,6 +37,7 @@ import {
 export default function CreateSupplierPageClient() {
   const router = useRouter();
   const { toast } = useToast();
+  const supplierFormId = 'supplier-create-form';
 
   // 表单配置
   const form = useForm<SupplierCreateFormData>({
@@ -126,6 +127,7 @@ export default function CreateSupplierPageClient() {
           <CardContent className="p-6">
             <Form {...form}>
               <form
+                id={supplierFormId}
                 onSubmit={form.handleSubmit(onSubmit)}
                 className="space-y-6"
               >
@@ -220,9 +222,9 @@ export default function CreateSupplierPageClient() {
               </Button>
               <Button
                 type="submit"
+                form={supplierFormId}
                 size="lg"
                 disabled={isLoading}
-                onClick={form.handleSubmit(onSubmit)}
                 className="h-11 gap-2 bg-[hsl(var(--color-primary))] text-white shadow-[var(--shadow-medium)] transition-transform hover:-translate-y-0.5 hover:bg-[hsl(var(--color-primary-hover))] hover:shadow-[var(--shadow-heavy)] focus-visible:ring-[hsl(var(--color-primary))]"
               >
                 {isLoading ? (
@@ -244,4 +246,3 @@ export default function CreateSupplierPageClient() {
     </div>
   );
 }
-

@@ -15,11 +15,12 @@ import { Card, CardContent } from '@/components/ui/card';
 interface InboundFormToolbarProps {
   isSubmitting: boolean;
   onReset: () => void;
-  onSubmit: () => void;
+  onSubmit?: () => void;
   onBack?: () => void;
   title?: string;
   description?: string;
   submitLabel?: string;
+  formId?: string;
   onSelectProduct?: () => void; // 新增：选择产品入口（F3）
 }
 
@@ -35,6 +36,7 @@ export function InboundFormToolbar({
   title = '手工采购入库',
   description = '先填写供应商、产品、批次、数量和成本。',
   submitLabel = '确认提交入库',
+  formId,
 }: InboundFormToolbarProps) {
   const router = useRouter();
 
@@ -89,10 +91,11 @@ export function InboundFormToolbar({
               重新填写
             </Button>
             <Button
-              type="submit"
+              type={formId ? 'submit' : 'button'}
+              form={formId}
               size="lg"
               disabled={isSubmitting}
-              onClick={onSubmit}
+              onClick={formId ? undefined : onSubmit}
               className="h-11 bg-blue-600 px-6 text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-700"
             >
               {isSubmitting ? (
