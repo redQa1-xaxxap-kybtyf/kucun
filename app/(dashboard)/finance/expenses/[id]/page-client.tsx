@@ -79,8 +79,8 @@ export default function ExpenseDetailPageClient({
   if (!expense) {
     return (
       <ErrorMessage
-        title="费用记录不存在"
-        message="未找到指定的费用记录"
+        title="费用不存在"
+        message="未找到这笔费用"
         onRetry={() => router.push('/finance/expenses')}
       />
     );

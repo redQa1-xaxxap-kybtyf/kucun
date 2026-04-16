@@ -97,6 +97,9 @@ export interface ExpenseRecord {
   approvedById?: string;
   approvedAt?: string;
   cancelReason?: string;
+  voidedAt?: string;
+  voidedById?: string;
+  voidReason?: string;
 
   // 阶段2新增：支付状态（为阶段3对接做准备）
   paymentStatus?: 'unpaid' | 'partial' | 'paid';
@@ -150,6 +153,8 @@ export interface ExpenseQueryParams {
   endDate?: string; // ISO日期字符串
   relatedType?: ExpenseRelatedType;
   status?: ExpenseStatus;
+  paymentStatus?: 'unpaid' | 'partial' | 'paid';
+  supplierId?: string;
   page?: number;
   pageSize?: number;
   sortBy?: 'expenseDate' | 'expenseAmount' | 'createdAt';

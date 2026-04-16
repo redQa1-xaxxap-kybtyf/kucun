@@ -79,6 +79,7 @@ export function ExpensesPageClient({
       | 'inbound'
       | 'outbound'
       | 'sales_order'
+      | 'purchase_order'
       | undefined,
     sortBy: initialParams.sortBy as
       | 'expenseDate'
@@ -230,6 +231,7 @@ export function ExpensesPageClient({
               | 'inbound'
               | 'outbound'
               | 'sales_order'
+              | 'purchase_order'
               | undefined;
           }
 
@@ -268,7 +270,7 @@ export function ExpensesPageClient({
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="space-y-4 sm:space-y-6">
         <PageHeader
-          title="费用记录"
+          title="费用管理"
           description="登记营业费、管理费、工资等费用；审核入账后自动进入报表。"
           icon={<Receipt className="h-6 w-6 text-white" />}
           iconBgColor="hsl(var(--color-primary))"
@@ -277,7 +279,7 @@ export function ExpensesPageClient({
               <Button size="lg" asChild className="h-11 shadow-[var(--shadow-light)]">
                 <Link href="/finance/expenses/create">
                   <Plus className="mr-2 h-4 w-4" />
-                  新增费用
+                  登记费用
                 </Link>
               </Button>
             ) : null

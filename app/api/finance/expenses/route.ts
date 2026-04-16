@@ -63,6 +63,8 @@ export const GET = withAuth(
       supplierId: searchParams.get('supplierId') || undefined,
       sortBy: searchParams.get('sortBy') || undefined,
       sortOrder: searchParams.get('sortOrder') || undefined,
+      includeTest: searchParams.get('includeTest') || undefined,
+      includeVoided: searchParams.get('includeVoided') || undefined,
     };
 
     // 验证查询参数
@@ -70,7 +72,7 @@ export const GET = withAuth(
 
     if (!validationResult.success) {
       return errorResponse(
-        `查询参数验证失败: ${validationResult.error.issues[0]?.message}`,
+        `查询条件有误： ${validationResult.error.issues[0]?.message}`,
         400
       );
     }
@@ -120,3 +122,4 @@ export const POST = withAuth(
   },
   { permissions: ['finance:manage'] }
 );
+

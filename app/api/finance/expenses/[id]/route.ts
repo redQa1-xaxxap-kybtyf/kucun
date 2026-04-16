@@ -14,10 +14,12 @@ import {
   deleteExpenseRecord,
   getExpenseRecordById,
   updateExpenseRecord,
+  voidExpenseRecord,
 } from '@/lib/services/expense-service';
 import {
   expenseIdSchema,
   updateExpenseSchema,
+  voidExpenseSchema,
 } from '@/lib/validations/expense';
 
 type ExpenseParams = { id: string };
@@ -38,7 +40,7 @@ export const GET = withAuth(
 
     if (!validationResult.success) {
       return errorResponse(
-        `参数验证失败: ${validationResult.error.issues[0]?.message}`,
+        `提交内容有误： ${validationResult.error.issues[0]?.message}`,
         400
       );
     }
@@ -71,7 +73,7 @@ export const PUT = withAuth(
 
     if (!idValidationResult.success) {
       return errorResponse(
-        `参数验证失败: ${idValidationResult.error.issues[0]?.message}`,
+        `提交内容有误： ${idValidationResult.error.issues[0]?.message}`,
         400
       );
     }
@@ -111,7 +113,7 @@ export const PUT = withAuth(
  * 权限：需要 finance:manage 权限
  */
 export const DELETE = withAuth(
-  async (_request: NextRequest, context) => {
+  async (request: NextRequest, context) => {
     // 解析路径参数
     const { id } = await resolveParams<ExpenseParams>(
       context.params as Promise<ExpenseParams> | ExpenseParams | undefined
@@ -122,7 +124,7 @@ export const DELETE = withAuth(
 
     if (!validationResult.success) {
       return errorResponse(
-        `参数验证失败: ${validationResult.error.issues[0]?.message}`,
+        `提交内容有误： ${validationResult.error.issues[0]?.message}`,
         400
       );
     }
@@ -134,12 +136,41 @@ export const DELETE = withAuth(
       return errorResponse('费用记录不存在', 404);
     }
 
-    // 删除费用记录
-    await deleteExpenseRecord(id);
+    if (existingExpense.status === 'draft') {
+      await deleteExpenseRecord(id);
+
+      await invalidateReportCache();
+
+      return successResponse({ message: '删除成功' });
+    }
+
+    let voidReason: string | undefined;
+    try {
+      const body = await request.json();
+      const validationResult = voidExpenseSchema.safeParse(body);
+
+      if (!validationResult.success) {
+        return errorResponse(
+          `数据验证失败: ${validationResult.error.issues[0]?.message}`,
+          400
+        );
+      }
+
+      voidReason = validationResult.data.voidReason;
+    } catch (_error) {
+      voidReason = undefined;
+    }
+
+    const expense = await voidExpenseRecord(id, context.user.id, voidReason);
 
     await invalidateReportCache();
 
-    return successResponse({ message: '删除成功' });
+    return successResponse(
+      expense,
+      200,
+      existingExpense.status === 'cancelled' ? '费用已作废' : '费用作废成功'
+    );
   },
   { permissions: ['finance:manage'] }
 );
+

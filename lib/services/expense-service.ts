@@ -72,6 +72,105 @@ async function getPurchaseOrderContainer(
   return order?.containerNumber ?? undefined;
 }
 
+type ExpenseRecordUser = {
+  id: string;
+  name: string;
+  email: string | null;
+};
+
+type ExpenseRecordRow = {
+  id: string;
+  expenseNumber: string;
+  expenseType: string;
+  expenseName: string;
+  expenseAmount: Prisma.Decimal | number;
+  expenseDate: Date;
+  relatedType: string | null;
+  relatedId: string | null;
+  relatedNumber: string | null;
+  remarks: string | null;
+  attachments: string | null;
+  status: string;
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
+  approvedById: string | null;
+  approvedAt: Date | null;
+  cancelReason: string | null;
+  voidedAt: Date | null;
+  voidedBy: string | null;
+  voidReason: string | null;
+  user?: ExpenseRecordUser | null;
+  approvedBy?: ExpenseRecordUser | null;
+  paymentStatus?: string | null;
+  payableId?: string | null;
+  supplierId?: string | null;
+};
+
+function roundCurrency(amount: number): number {
+  return Math.round(amount * 100) / 100;
+}
+
+function normalizeExpenseUser(
+  user?: ExpenseRecordUser | null
+): ExpenseRecord['user'] {
+  if (!user) {
+    return undefined;
+  }
+
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email ?? '',
+  };
+}
+
+function buildExpenseRecord(
+  expense: ExpenseRecordRow,
+  containerNumber?: string
+): ExpenseRecord {
+  const safeExpenseType = validateExpenseType(expense.expenseType)
+    ? expense.expenseType
+    : 'other';
+
+  return {
+    id: expense.id,
+    expenseNumber: expense.expenseNumber,
+    expenseType: safeExpenseType as ExpenseRecord['expenseType'],
+    expenseName: expense.expenseName,
+    expenseAmount: toNumber(expense.expenseAmount),
+    expenseDate: expense.expenseDate.toISOString(),
+    relatedType: expense.relatedType as ExpenseRecord['relatedType'],
+    relatedId: expense.relatedId || undefined,
+    relatedNumber: expense.relatedNumber || undefined,
+    containerNumber,
+    remarks: expense.remarks || undefined,
+    attachments: expense.attachments || undefined,
+    status: expense.status as ExpenseRecord['status'],
+    userId: expense.userId,
+    createdAt: expense.createdAt.toISOString(),
+    updatedAt: expense.updatedAt.toISOString(),
+    user: normalizeExpenseUser(expense.user),
+    userName: expense.user?.name || undefined,
+    approvedById: expense.approvedById || undefined,
+    approvedAt: expense.approvedAt
+      ? expense.approvedAt.toISOString()
+      : undefined,
+    cancelReason: expense.cancelReason || expense.voidReason || undefined,
+    voidedAt: expense.voidedAt ? expense.voidedAt.toISOString() : undefined,
+    voidedById: expense.voidedBy || undefined,
+    voidReason: expense.voidReason || undefined,
+    approvedBy: normalizeExpenseUser(expense.approvedBy),
+    paymentStatus: expense.paymentStatus as
+      | 'unpaid'
+      | 'partial'
+      | 'paid'
+      | undefined,
+    payableId: expense.payableId || undefined,
+    supplierId: expense.supplierId || undefined,
+  };
+}
+
 /**
  * 生成费用编号
  * 格式：EXP-YYYYMMDD-序号
@@ -200,46 +299,7 @@ export async function createExpenseRecord(
       ? await getPurchaseOrderContainer(expense.relatedId)
       : undefined;
 
-  const safeExpenseType = validateExpenseType(expense.expenseType)
-    ? expense.expenseType
-    : 'other';
-
-  // 转换为 ExpenseRecord 类型
-  return {
-    id: expense.id,
-    expenseNumber: expense.expenseNumber,
-    expenseType: safeExpenseType as ExpenseRecord['expenseType'],
-    expenseName: expense.expenseName,
-    expenseAmount: toNumber(expense.expenseAmount),
-    expenseDate: expense.expenseDate.toISOString(),
-    relatedType: expense.relatedType as ExpenseRecord['relatedType'],
-    relatedId: expense.relatedId || undefined,
-    relatedNumber: expense.relatedNumber || undefined,
-    containerNumber,
-    remarks: expense.remarks || undefined,
-    attachments: expense.attachments || undefined,
-    status: expense.status as ExpenseRecord['status'],
-    userId: expense.userId,
-    createdAt: expense.createdAt.toISOString(),
-    updatedAt: expense.updatedAt.toISOString(),
-    user: expense.user,
-    userName: expense.user.name,
-    approvedById: expense.approvedById || undefined,
-    approvedAt: expense.approvedAt
-      ? expense.approvedAt.toISOString()
-      : undefined,
-    cancelReason: expense.cancelReason || undefined,
-    approvedBy: expense.approvedBy || undefined,
-    paymentStatus: (expense as { paymentStatus?: string }).paymentStatus as
-      | 'unpaid'
-      | 'partial'
-      | 'paid'
-      | undefined,
-    payableId:
-      (expense as { payableId?: string | null }).payableId || undefined,
-    supplierId:
-      (expense as { supplierId?: string | null }).supplierId || undefined,
-  };
+  return buildExpenseRecord(expense, containerNumber);
 }
 
 /**
@@ -410,36 +470,7 @@ export async function approveExpenseRecord(
         ? await getPurchaseOrderContainer(approvedExpense.relatedId)
         : undefined;
 
-    const safeExpenseType = validateExpenseType(approvedExpense.expenseType)
-      ? approvedExpense.expenseType
-      : 'other';
-
-    return {
-      id: approvedExpense.id,
-      expenseNumber: approvedExpense.expenseNumber,
-      expenseType: safeExpenseType as ExpenseRecord['expenseType'],
-      expenseName: approvedExpense.expenseName,
-      expenseAmount: toNumber(approvedExpense.expenseAmount),
-      expenseDate: approvedExpense.expenseDate.toISOString(),
-      relatedType: approvedExpense.relatedType as ExpenseRecord['relatedType'],
-      relatedId: approvedExpense.relatedId || undefined,
-      relatedNumber: approvedExpense.relatedNumber || undefined,
-      containerNumber,
-      remarks: approvedExpense.remarks || undefined,
-      attachments: approvedExpense.attachments || undefined,
-      status: approvedExpense.status as ExpenseRecord['status'],
-      userId: approvedExpense.userId,
-      createdAt: approvedExpense.createdAt.toISOString(),
-      updatedAt: approvedExpense.updatedAt.toISOString(),
-      user: approvedExpense.user,
-      userName: approvedExpense.user.name,
-      approvedById: approvedExpense.approvedById || undefined,
-      approvedAt: approvedExpense.approvedAt
-        ? approvedExpense.approvedAt.toISOString()
-        : undefined,
-      cancelReason: approvedExpense.cancelReason || undefined,
-      approvedBy: approvedExpense.approvedBy || undefined,
-    };
+    return buildExpenseRecord(approvedExpense, containerNumber);
   }
 
   if (existing.status === 'cancelled') {
@@ -519,36 +550,7 @@ export async function approveExpenseRecord(
       ? await getPurchaseOrderContainer(expense.relatedId)
       : undefined;
 
-  const safeExpenseType = validateExpenseType(expense.expenseType)
-    ? expense.expenseType
-    : 'other';
-
-  return {
-    id: expense.id,
-    expenseNumber: expense.expenseNumber,
-    expenseType: safeExpenseType as ExpenseRecord['expenseType'],
-    expenseName: expense.expenseName,
-    expenseAmount: toNumber(expense.expenseAmount),
-    expenseDate: expense.expenseDate.toISOString(),
-    relatedType: expense.relatedType as ExpenseRecord['relatedType'],
-    relatedId: expense.relatedId || undefined,
-    relatedNumber: expense.relatedNumber || undefined,
-    containerNumber,
-    remarks: expense.remarks || undefined,
-    attachments: expense.attachments || undefined,
-    status: expense.status as ExpenseRecord['status'],
-    userId: expense.userId,
-    createdAt: expense.createdAt.toISOString(),
-    updatedAt: expense.updatedAt.toISOString(),
-    user: expense.user,
-    userName: expense.user.name,
-    approvedById: expense.approvedById || undefined,
-    approvedAt: expense.approvedAt
-      ? expense.approvedAt.toISOString()
-      : undefined,
-    cancelReason: expense.cancelReason || undefined,
-    approvedBy: expense.approvedBy || undefined,
-  };
+  return buildExpenseRecord(expense, containerNumber);
 }
 
 /**
@@ -573,6 +575,8 @@ export async function getExpenseRecords(
     endDate,
     relatedType,
     status,
+    paymentStatus,
+    supplierId,
     sortBy = 'expenseDate',
     sortOrder = 'desc',
     includeTest,
@@ -619,6 +623,14 @@ export async function getExpenseRecords(
 
   if (status) {
     where.status = status;
+  }
+
+  if (paymentStatus) {
+    where.paymentStatus = paymentStatus;
+  }
+
+  if (supplierId) {
+    where.supplierId = supplierId;
   }
 
   // 查询总数
@@ -668,36 +680,13 @@ export async function getExpenseRecords(
       ? expense.expenseType
       : 'other';
 
-    return {
-      id: expense.id,
-      expenseNumber: expense.expenseNumber,
-      expenseType: safeExpenseType as ExpenseRecord['expenseType'],
-      expenseName: expense.expenseName,
-      expenseAmount: toNumber(expense.expenseAmount),
-      expenseDate: expense.expenseDate.toISOString(),
-      relatedType: expense.relatedType as ExpenseRecord['relatedType'],
-      relatedId: expense.relatedId || undefined,
-      relatedNumber: expense.relatedNumber || undefined,
-      containerNumber:
-        expense.expenseType === 'shipping' &&
+    return buildExpenseRecord(
+      expense,
+      expense.expenseType === 'shipping' &&
         expense.relatedType === 'purchase_order'
-          ? containerMap.get(expense.relatedId || '') || undefined
-          : undefined,
-      remarks: expense.remarks || undefined,
-      attachments: expense.attachments || undefined,
-      status: expense.status as ExpenseRecord['status'],
-      userId: expense.userId,
-      createdAt: expense.createdAt.toISOString(),
-      updatedAt: expense.updatedAt.toISOString(),
-      user: expense.user,
-      userName: expense.user.name,
-      approvedById: expense.approvedById || undefined,
-      approvedAt: expense.approvedAt
-        ? expense.approvedAt.toISOString()
-        : undefined,
-      cancelReason: expense.cancelReason || undefined,
-      approvedBy: expense.approvedBy || undefined,
-    };
+        ? containerMap.get(expense.relatedId || '') || undefined
+        : undefined
+    );
   });
 
   return {
@@ -747,37 +736,7 @@ export async function getExpenseRecordById(
       ? await getPurchaseOrderContainer(expense.relatedId)
       : undefined;
 
-  const safeExpenseType = validateExpenseType(expense.expenseType)
-    ? expense.expenseType
-    : 'other';
-
-  // 转换为 ExpenseRecord 类型
-  return {
-    id: expense.id,
-    expenseNumber: expense.expenseNumber,
-    expenseType: safeExpenseType as ExpenseRecord['expenseType'],
-    expenseName: expense.expenseName,
-    expenseAmount: toNumber(expense.expenseAmount),
-    expenseDate: expense.expenseDate.toISOString(),
-    relatedType: expense.relatedType as ExpenseRecord['relatedType'],
-    relatedId: expense.relatedId || undefined,
-    relatedNumber: expense.relatedNumber || undefined,
-    containerNumber,
-    remarks: expense.remarks || undefined,
-    attachments: expense.attachments || undefined,
-    status: expense.status as ExpenseRecord['status'],
-    userId: expense.userId,
-    createdAt: expense.createdAt.toISOString(),
-    updatedAt: expense.updatedAt.toISOString(),
-    user: expense.user,
-    userName: expense.user.name,
-    approvedById: expense.approvedById || undefined,
-    approvedAt: expense.approvedAt
-      ? expense.approvedAt.toISOString()
-      : undefined,
-    cancelReason: expense.cancelReason || undefined,
-    approvedBy: expense.approvedBy || undefined,
-  };
+  return buildExpenseRecord(expense, containerNumber);
 }
 
 /**
@@ -794,6 +753,10 @@ export async function updateExpenseRecord(
 
   if (!existing) {
     throw ApiError.notFound('费用记录');
+  }
+
+  if (existing.status === 'cancelled') {
+    throw ApiError.badRequest('已作废的费用记录不能修改');
   }
 
   // 已审核费用记录：只允许修改备注和附件
@@ -851,35 +814,228 @@ export async function updateExpenseRecord(
       ? await getPurchaseOrderContainer(expense.relatedId)
       : undefined;
 
-  // 转换为 ExpenseRecord 类型
-  return {
-    id: expense.id,
-    expenseNumber: expense.expenseNumber,
-    expenseType: (validateExpenseType(expense.expenseType)
-      ? expense.expenseType
-      : 'other') as ExpenseRecord['expenseType'],
-    expenseName: expense.expenseName,
-    expenseAmount: toNumber(expense.expenseAmount),
-    expenseDate: expense.expenseDate.toISOString(),
-    relatedType: expense.relatedType as ExpenseRecord['relatedType'],
-    relatedId: expense.relatedId || undefined,
-    relatedNumber: expense.relatedNumber || undefined,
-    containerNumber,
-    remarks: expense.remarks || undefined,
-    attachments: expense.attachments || undefined,
-    status: expense.status as ExpenseRecord['status'],
-    userId: expense.userId,
-    createdAt: expense.createdAt.toISOString(),
-    updatedAt: expense.updatedAt.toISOString(),
-    user: expense.user,
-    userName: expense.user.name,
-    approvedById: expense.approvedById || undefined,
-    approvedAt: expense.approvedAt
-      ? expense.approvedAt.toISOString()
-      : undefined,
-    cancelReason: expense.cancelReason || undefined,
-    approvedBy: expense.approvedBy || undefined,
-  };
+  return buildExpenseRecord(expense, containerNumber);
+}
+
+/**
+ * 作废费用记录
+ */
+export async function voidExpenseRecord(
+  id: string,
+  userId: string,
+  rawVoidReason?: string
+): Promise<ExpenseRecord> {
+  const existing = await prisma.expenseRecord.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      status: true,
+      voidedAt: true,
+      paymentStatus: true,
+    },
+  });
+
+  if (!existing) {
+    throw ApiError.notFound('费用记录');
+  }
+
+  if (existing.voidedAt || existing.status === 'cancelled') {
+    const cancelledExpense = await getExpenseRecordById(id);
+    if (!cancelledExpense) {
+      throw ApiError.notFound('费用记录');
+    }
+    return cancelledExpense;
+  }
+
+  if (existing.status !== 'approved') {
+    throw ApiError.badRequest('草稿费用请直接删除，已审核费用请使用作废');
+  }
+
+  if (existing.paymentStatus && existing.paymentStatus !== 'unpaid') {
+    throw ApiError.badRequest(
+      '这笔费用已经有关联付款，请先处理付款记录后再作废费用'
+    );
+  }
+
+  const voidReason = rawVoidReason?.trim().slice(0, 64) || null;
+
+  const expense = await prisma.$transaction(async tx => {
+    const currentExpense = await tx.expenseRecord.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        approvedBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!currentExpense) {
+      throw ApiError.notFound('费用记录');
+    }
+
+    if (currentExpense.voidedAt || currentExpense.status === 'cancelled') {
+      return currentExpense;
+    }
+
+    if (currentExpense.status !== 'approved') {
+      throw ApiError.badRequest('草稿费用请直接删除，已审核费用请使用作废');
+    }
+
+    if (
+      currentExpense.paymentStatus &&
+      currentExpense.paymentStatus !== 'unpaid'
+    ) {
+      throw ApiError.badRequest(
+        '这笔费用已经有关联付款，请先处理付款记录后再作废费用'
+      );
+    }
+
+    const now = new Date();
+    let nextPayableId = currentExpense.payableId;
+
+    if (currentExpense.payableId) {
+      const payable = await tx.payableRecord.findUnique({
+        where: { id: currentExpense.payableId },
+        select: {
+          id: true,
+          payableNumber: true,
+          payableAmount: true,
+          paidAmount: true,
+          remainingAmount: true,
+          status: true,
+          voidedAt: true,
+          paymentOutRecords: {
+            select: {
+              id: true,
+              status: true,
+              voidedAt: true,
+            },
+          },
+          expenseRecords: {
+            select: {
+              id: true,
+              status: true,
+              voidedAt: true,
+            },
+          },
+        },
+      });
+
+      if (payable) {
+        const hasActivePayments = payable.paymentOutRecords.some(
+          payment => !payment.voidedAt && payment.status !== 'cancelled'
+        );
+
+        if (toNumber(payable.paidAmount) > 0 || hasActivePayments) {
+          throw ApiError.badRequest(
+            '这笔费用已挂到有付款记录的应付款，请先作废对应付款后再作废费用'
+          );
+        }
+
+        const otherActiveExpenses = payable.expenseRecords.filter(
+          expenseRecord =>
+            expenseRecord.id !== currentExpense.id &&
+            !expenseRecord.voidedAt &&
+            expenseRecord.status !== 'cancelled'
+        );
+
+        if (otherActiveExpenses.length === 0) {
+          await tx.payableRecord.update({
+            where: { id: payable.id },
+            data: {
+              status: 'cancelled',
+              voidedAt: now,
+              voidedBy: userId,
+              voidReason:
+                voidReason || `费用 ${currentExpense.expenseNumber} 已作废`,
+            },
+          });
+        } else {
+          const expenseAmount = toNumber(currentExpense.expenseAmount);
+          const newPayableAmount = roundCurrency(
+            Math.max(0, toNumber(payable.payableAmount) - expenseAmount)
+          );
+          const newRemainingAmount = roundCurrency(
+            Math.max(0, toNumber(payable.remainingAmount) - expenseAmount)
+          );
+
+          await tx.payableRecord.update({
+            where: { id: payable.id },
+            data: {
+              payableAmount: newPayableAmount,
+              remainingAmount: newRemainingAmount,
+              status: newPayableAmount > 0 ? 'pending' : 'cancelled',
+              ...(newPayableAmount > 0
+                ? {
+                    voidedAt: null,
+                    voidedBy: null,
+                    voidReason: null,
+                  }
+                : {
+                    voidedAt: now,
+                    voidedBy: userId,
+                    voidReason:
+                      voidReason ||
+                      `费用 ${currentExpense.expenseNumber} 已作废`,
+                  }),
+            },
+          });
+
+          nextPayableId = null;
+        }
+      } else {
+        nextPayableId = null;
+      }
+    }
+
+    return await tx.expenseRecord.update({
+      where: { id },
+      data: {
+        status: 'cancelled',
+        cancelReason: voidReason || '录入有误，已作废',
+        voidedAt: now,
+        voidedBy: userId,
+        voidReason: voidReason || '费用作废',
+        paymentStatus: 'unpaid',
+        payableId: nextPayableId,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        approvedBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+  });
+
+  const containerNumber =
+    expense.expenseType === 'shipping' &&
+    expense.relatedType === 'purchase_order'
+      ? await getPurchaseOrderContainer(expense.relatedId)
+      : undefined;
+
+  return buildExpenseRecord(expense, containerNumber);
 }
 
 /**
@@ -895,8 +1051,8 @@ export async function deleteExpenseRecord(id: string): Promise<void> {
     throw ApiError.notFound('费用记录');
   }
 
-  if (existing.status === 'approved') {
-    throw ApiError.forbidden('已审核的费用记录不允许删除');
+  if (existing.status !== 'draft') {
+    throw ApiError.forbidden('只有草稿费用允许删除，已审核费用请使用作废');
   }
 
   await prisma.expenseRecord.delete({ where: { id } });
@@ -923,11 +1079,18 @@ export async function getExpenseStatistics(
   endDateObj.setHours(23, 59, 59, 999);
 
   const where: Prisma.ExpenseRecordWhereInput = {
+    status: 'approved',
+    voidedAt: null,
     expenseDate: {
       gte: startDateObj,
       lte: endDateObj,
     },
   };
+
+  const systemMode = await getSystemMode();
+  if (systemMode === 'production') {
+    where.dataTag = 'prod';
+  }
 
   if (expenseType) {
     where.expenseType = expenseType;

@@ -15,8 +15,8 @@ type ExpenseEditPageProps = {
 };
 
 export const metadata: Metadata = {
-  title: '编辑费用记录 - 财务管理',
-  description: '编辑现有的费用记录',
+  title: '编辑费用 - 财务管理',
+  description: '修改已有费用信息',
 };
 
 export default async function ExpenseEditPage({
@@ -34,6 +34,10 @@ export default async function ExpenseEditPage({
     redirect('/finance/expenses');
   }
 
+  if (expense.status === 'cancelled') {
+    redirect(`/finance/expenses/${expense.id}`);
+  }
+
   return (
     <div className="flex h-full flex-col overflow-hidden p-6">
       <div className="space-y-6">
@@ -45,7 +49,7 @@ export default async function ExpenseEditPage({
               </div>
               <div>
                 <h1 className="text-2xl font-bold tracking-tight">
-                  编辑费用记录
+                  编辑费用
                 </h1>
                 <p className="text-muted-foreground text-sm">
                   更新费用信息，确保财务数据准确。

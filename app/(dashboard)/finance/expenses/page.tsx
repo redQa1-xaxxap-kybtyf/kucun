@@ -16,8 +16,8 @@ import type { ExpenseQueryParams } from '@/lib/types/expense';
 import { ExpensesPageClient } from './page-client';
 
 export const metadata: Metadata = {
-  title: '费用记录 - 财务管理',
-  description: '管理各类费用记录，跟踪费用支出情况',
+  title: '费用管理 - 财务管理',
+  description: '查看各类费用，跟踪费用支出情况',
 };
 
 // Next.js 15 Route Segment Config

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Calendar, Edit, FileText, Trash2 } from 'lucide-react';
+import { ArrowLeft, Ban, Calendar, Edit, FileText, Trash2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -10,6 +10,7 @@ import * as React from 'react';
 import { CopyableText } from '@/components/common/copyable-text';
 import { RelativeTime } from '@/components/common/relative-time';
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
+import { invalidateFinanceCaches } from '@/lib/cache/invalidation-helpers';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,8 +32,11 @@ interface ExpenseDetailClientProps {
   hasManagePermission?: boolean;
 }
 
-const ExpenseDeleteDialog = dynamic(
-  () => import('./expense-delete-dialog').then(mod => mod.ExpenseDeleteDialog),
+const ExpenseRecordActionDialog = dynamic(
+  () =>
+    import('./expense-record-action-dialog').then(
+      mod => mod.ExpenseRecordActionDialog
+    ),
   {
     ssr: false,
     loading: () => (
@@ -54,55 +58,70 @@ export function ExpenseDetailClient({
   const router = useRouter();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [actionDialogOpen, setActionDialogOpen] = React.useState(false);
+  const [voidReason, setVoidReason] = React.useState('');
+  const isDraftExpense = expense.status === 'draft';
+  const isApprovedExpense = expense.status === 'approved';
+  const isCancelledExpense = expense.status === 'cancelled';
 
-  const deleteMutation = useMutation({
+  const removeMutation = useMutation({
     mutationFn: async () => {
+      const requestInit = isApprovedExpense
+        ? getCsrfTokenHeader({
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ...(voidReason.trim()
+                ? { voidReason: voidReason.trim().slice(0, 64) }
+                : {}),
+            }),
+          })
+        : getCsrfTokenHeader({
+            method: 'DELETE',
+          });
       const response = await fetch(
         `/api/finance/expenses/${expense.id}`,
-        getCsrfTokenHeader({
-          method: 'DELETE',
-        })
+        requestInit
       );
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || '删除失败');
+        throw new Error(error.error || (isApprovedExpense ? '作废失败' : '删除失败'));
       }
 
       return response.json();
     },
     onSuccess: () => {
       toast({
-        title: '删除成功',
-        description: '费用记录已成功删除',
+        title: isApprovedExpense ? '费用已作废' : '删除成功',
+        description: isApprovedExpense
+          ? '这笔费用已作废，不会继续进入正式报表。'
+          : '这笔费用已删除',
       });
 
-      // ✅ 使用 refetchQueries 强制立即刷新，确保用户删除费用后立即看到变化
-      queryClient.refetchQueries({
+      // 刷新费用列表与详情相关查询
+      queryClient.invalidateQueries({
         queryKey: queryKeys.finance.expenses(),
-        type: 'active',
+        exact: false,
       });
-      queryClient.refetchQueries({
-        queryKey: queryKeys.finance.expensesStatistics(),
-        type: 'active',
-      });
+      // 同步刷新财务模块缓存，避免月报/年报/盈亏分析仍显示旧值
+      invalidateFinanceCaches(queryClient);
 
       router.push('/finance/expenses');
     },
     onError: (error: Error) => {
       toast({
-        title: '删除失败',
+        title: isApprovedExpense ? '作废失败' : '删除失败',
         description: error.message,
         variant: 'destructive',
       });
     },
   });
 
-  const handleDelete = () => {
-    deleteMutation.mutate();
-    setDeleteDialogOpen(false);
-  };
+  const handleConfirmAction = React.useCallback(() => {
+    removeMutation.mutate();
+    setActionDialogOpen(false);
+  }, [removeMutation]);
 
   const getExpenseTypeBadgeVariant = (type: string) => {
     const variants: Record<string, 'default' | 'secondary' | 'outline'> = {
@@ -150,35 +169,49 @@ export function ExpenseDetailClient({
             className="gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            返回列表
+            返回费用管理
           </Button>
         </div>
 
         {hasManagePermission && (
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                router.push(`/finance/expenses/${expense.id}/edit`)
-              }
-              className="shadow-[var(--shadow-light)] transition-all hover:shadow-[var(--shadow-medium)]"
-            >
-              <Edit className="mr-2 h-4 w-4" />
-              编辑
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setDeleteDialogOpen(true)}
-              disabled={
-                deleteMutation.isPending || expense.status === 'approved'
-              }
-              className="shadow-[var(--shadow-light)] transition-all hover:shadow-[var(--shadow-medium)]"
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              删除
-            </Button>
+            {!isCancelledExpense ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  router.push(`/finance/expenses/${expense.id}/edit`)
+                }
+                className="shadow-[var(--shadow-light)] transition-all hover:shadow-[var(--shadow-medium)]"
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                编辑
+              </Button>
+            ) : null}
+            {isDraftExpense ? (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setActionDialogOpen(true)}
+                disabled={removeMutation.isPending}
+                className="shadow-[var(--shadow-light)] transition-all hover:shadow-[var(--shadow-medium)]"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                删除
+              </Button>
+            ) : null}
+            {isApprovedExpense ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setActionDialogOpen(true)}
+                disabled={removeMutation.isPending}
+                className="shadow-[var(--shadow-light)] transition-all hover:shadow-[var(--shadow-medium)]"
+              >
+                <Ban className="mr-2 h-4 w-4" />
+                作废
+              </Button>
+            ) : null}
           </div>
         )}
       </div>
@@ -278,6 +311,28 @@ export function ExpenseDetailClient({
                 </div>
               </div>
             )}
+
+            {expense.voidedAt && (
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-[hsl(var(--color-text-secondary))]">
+                  作废时间
+                </div>
+                <div className="text-base font-medium text-[hsl(var(--color-text-primary))]">
+                  <RelativeTime date={expense.voidedAt} />
+                </div>
+              </div>
+            )}
+
+            {expense.cancelReason && (
+              <div className="space-y-2 md:col-span-2">
+                <div className="text-sm font-medium text-[hsl(var(--color-text-secondary))]">
+                  作废说明
+                </div>
+                <div className="text-base font-medium text-[hsl(var(--color-text-primary))]">
+                  {expense.cancelReason}
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -341,15 +396,23 @@ export function ExpenseDetailClient({
         </Card>
       )}
 
-      {deleteDialogOpen && (
-        <ExpenseDeleteDialog
-          open={deleteDialogOpen}
-          onOpenChange={setDeleteDialogOpen}
+      {actionDialogOpen ? (
+        <ExpenseRecordActionDialog
+          open={actionDialogOpen}
+          onOpenChange={open => {
+            setActionDialogOpen(open);
+            if (!open) {
+              setVoidReason('');
+            }
+          }}
+          mode={isApprovedExpense ? 'void' : 'delete'}
           expenseNumber={expense.expenseNumber}
-          isDeleting={deleteMutation.isPending}
-          onConfirm={handleDelete}
+          isSubmitting={removeMutation.isPending}
+          reason={voidReason}
+          onReasonChange={setVoidReason}
+          onConfirm={handleConfirmAction}
         />
-      )}
+      ) : null}
     </div>
   );
 }

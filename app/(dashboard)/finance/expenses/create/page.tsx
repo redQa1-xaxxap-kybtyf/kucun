@@ -10,8 +10,8 @@ import { can } from '@/lib/auth/permissions';
 import { ExpenseCreateClient } from './page-client';
 
 export const metadata: Metadata = {
-  title: '创建费用记录 - 财务管理',
-  description: '创建新的费用记录',
+  title: '登记费用 - 财务管理',
+  description: '登记新的费用支出',
 };
 
 /**
@@ -39,7 +39,7 @@ export default async function CreateExpensePage() {
               </div>
               <div>
                 <h1 className="text-lg font-semibold tracking-tight sm:text-2xl sm:font-bold">
-                  创建费用记录
+                  登记费用
                 </h1>
                 <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
                   记录运费、仓储费、工资、营业费、管理费等各类费用支出

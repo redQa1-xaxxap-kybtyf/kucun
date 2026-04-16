@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  Ban,
   ArrowUpDown,
   Eye,
   FileText,
@@ -31,6 +32,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/components/ui/use-toast';
 import {
   Table,
   TableBody,
@@ -51,6 +53,8 @@ import {
 import { cn } from '@/lib/utils';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { formatCurrency } from '@/lib/utils/format';
+
+import { ExpenseRecordActionDialog } from './expense-record-action-dialog';
 
 const getStatusBadgeVariant = (status: string) => {
   const variants: Record<string, string> = {
@@ -90,11 +94,14 @@ export function ExpenseList({
   hasManagePermission,
 }: ExpenseListProps) {
   const queryClient = useQueryClient();
-  const [deleteTarget, setDeleteTarget] = React.useState<ExpenseRecord | null>(
-    null
-  );
+  const { toast } = useToast();
+  const [actionTarget, setActionTarget] = React.useState<{
+    expense: ExpenseRecord;
+    mode: 'delete' | 'void';
+  } | null>(null);
   const [approveTarget, setApproveTarget] =
     React.useState<ExpenseRecord | null>(null);
+  const [voidReason, setVoidReason] = React.useState('');
 
   // 获取费用记录列表
   const { data, isLoading, error } = useQuery({
@@ -161,22 +168,38 @@ export function ExpenseList({
 
   // 删除费用记录
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({
+      expense,
+      mode,
+    }: {
+      expense: ExpenseRecord;
+      mode: 'delete' | 'void';
+    }) => {
       const response = await fetch(
-        `/api/finance/expenses/${id}`,
-        getCsrfTokenHeader({
-          method: 'DELETE',
-        })
+        `/api/finance/expenses/${expense.id}`,
+        mode === 'void'
+          ? getCsrfTokenHeader({
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                ...(voidReason.trim()
+                  ? { voidReason: voidReason.trim().slice(0, 64) }
+                  : {}),
+              }),
+            })
+          : getCsrfTokenHeader({
+              method: 'DELETE',
+            })
       );
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || '删除失败');
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || (mode === 'void' ? '作废失败' : '删除失败'));
       }
 
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (result, variables) => {
       // ✅ P0修复: 使用 exact: false 失效所有以 ['finance', 'expenses'] 开头的查询
       // 修复前：只匹配 ['finance', 'expenses'] 精确键，无法匹配列表和统计查询
       // 修复后：匹配所有 ['finance', 'expenses', ...] 查询，包括列表和统计
@@ -185,12 +208,41 @@ export function ExpenseList({
         exact: false,
       });
       invalidateFinanceCaches(queryClient);
+      setActionTarget(null);
+      setVoidReason('');
+      toast({
+        title: variables.mode === 'void' ? '费用已作废' : '删除成功',
+        description:
+          result?.message ||
+          (variables.mode === 'void'
+            ? '这笔费用已作废，不会再进入正式报表。'
+            : '这笔草稿费用已删除。'),
+      });
+    },
+    onError: (error: Error, variables) => {
+      toast({
+        title: variables.mode === 'void' ? '作废失败' : '删除失败',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+    onSettled: () => {
+      setActionTarget(null);
+      setVoidReason('');
     },
   });
 
-  // 处理删除
-  const handleDelete = React.useCallback((expense: ExpenseRecord) => {
-    setDeleteTarget(expense);
+  // 处理删除/作废
+  const handleAction = React.useCallback((expense: ExpenseRecord) => {
+    if (expense.status === 'cancelled') {
+      return;
+    }
+
+    setVoidReason('');
+    setActionTarget({
+      expense,
+      mode: expense.status === 'approved' ? 'void' : 'delete',
+    });
   }, []);
 
   // 处理排序
@@ -209,7 +261,7 @@ export function ExpenseList({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>费用记录列表</CardTitle>
+          <CardTitle>费用列表</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
@@ -226,7 +278,7 @@ export function ExpenseList({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>费用记录列表</CardTitle>
+          <CardTitle>费用列表</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-muted-foreground py-8 text-center">
@@ -246,7 +298,7 @@ export function ExpenseList({
           <div className="flex items-center justify-between">
             <div className="space-y-2">
               <CardTitle className="border-l-4 border-slate-900 pl-3 text-lg font-semibold tracking-tight text-slate-900">
-                费用记录
+                费用列表
                 {pagination && (
                   <span className="ml-3 text-xs font-medium text-slate-500">
                     共 {pagination.total} 条
@@ -262,7 +314,7 @@ export function ExpenseList({
         <CardContent className="p-0">
           {records.length === 0 ? (
             <div className="text-muted-foreground py-8 text-center">
-              暂无费用记录
+              暂无费用
             </div>
           ) : (
             <>
@@ -389,6 +441,8 @@ export function ExpenseList({
                                 variant="ghost"
                                 size="icon"
                                 className="h-8 w-8 text-slate-400 hover:text-slate-900"
+                                aria-label={`查看费用 ${expense.expenseNumber}`}
+                                title="查看详情"
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
@@ -402,6 +456,8 @@ export function ExpenseList({
                                     variant="ghost"
                                     size="icon"
                                     className="h-8 w-8 text-slate-400 hover:text-slate-900"
+                                    aria-label={`编辑费用 ${expense.expenseNumber}`}
+                                    title="编辑费用"
                                   >
                                     <Pencil className="h-4 w-4" />
                                   </Button>
@@ -410,25 +466,40 @@ export function ExpenseList({
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                  className="h-8 px-2 text-xs font-black text-blue-600 uppercase hover:text-blue-700"
-                                  onClick={() => setApproveTarget(expense)}
-                                  disabled={approveMutation.isPending}
-                                >
+                                    className="h-8 px-2 text-xs font-black text-blue-600 uppercase hover:text-blue-700"
+                                    onClick={() => setApproveTarget(expense)}
+                                    disabled={approveMutation.isPending}
+                                    aria-label={`审核费用 ${expense.expenseNumber}`}
+                                  >
                                     审核入账
-                                </Button>
-                              )}
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-slate-300 hover:text-rose-600"
-                                  onClick={() => handleDelete(expense)}
-                                  disabled={
-                                    deleteMutation.isPending ||
-                                    expense.status === 'approved'
-                                  }
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                  </Button>
+                                )}
+                                {expense.status === 'draft' ? (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-slate-300 hover:text-rose-600"
+                                    onClick={() => handleAction(expense)}
+                                    disabled={deleteMutation.isPending}
+                                    aria-label={`删除费用 ${expense.expenseNumber}`}
+                                    title="删除草稿费用"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                ) : null}
+                                {expense.status === 'approved' ? (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-slate-300 hover:text-amber-600"
+                                    onClick={() => handleAction(expense)}
+                                    disabled={deleteMutation.isPending}
+                                    aria-label={`作废费用 ${expense.expenseNumber}`}
+                                    title="作废已审核费用"
+                                  >
+                                    <Ban className="h-4 w-4" />
+                                  </Button>
+                                ) : null}
                               </>
                             )}
                           </div>
@@ -446,7 +517,7 @@ export function ExpenseList({
                     key={expense.id}
                     expense={expense}
                     hasManagePermission={hasManagePermission}
-                    onDelete={handleDelete}
+                    onAction={handleAction}
                     onApprove={exp => setApproveTarget(exp)}
                   />
                 ))}
@@ -483,41 +554,25 @@ export function ExpenseList({
         </CardContent>
       </Card>
 
-      <AlertDialog
-        open={!!deleteTarget}
-        onOpenChange={open => {
-          if (!open) {
-            setDeleteTarget(null);
-          }
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>确认删除</AlertDialogTitle>
-            <AlertDialogDescription>
-              {deleteTarget
-                ? `确定要删除费用记录 ${deleteTarget.expenseNumber} 吗？此操作不可恢复。`
-                : ''}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteMutation.isPending}>
-              取消
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (deleteTarget) {
-                  deleteMutation.mutate(deleteTarget.id);
-                }
-                setDeleteTarget(null);
-              }}
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending ? '删除中...' : '确认删除'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {actionTarget ? (
+        <ExpenseRecordActionDialog
+          open={!!actionTarget}
+          onOpenChange={open => {
+            if (!open) {
+              setActionTarget(null);
+              setVoidReason('');
+            }
+          }}
+          mode={actionTarget.mode}
+          expenseNumber={actionTarget.expense.expenseNumber}
+          isSubmitting={deleteMutation.isPending}
+          reason={voidReason}
+          onReasonChange={setVoidReason}
+          onConfirm={() => {
+            deleteMutation.mutate(actionTarget);
+          }}
+        />
+      ) : null}
 
       <AlertDialog
         open={!!approveTarget}
@@ -532,7 +587,7 @@ export function ExpenseList({
             <AlertDialogTitle>确认审核</AlertDialogTitle>
             <AlertDialogDescription>
               {approveTarget
-                ? `确定要审核费用记录 ${approveTarget.expenseNumber} 吗？审核后将不再允许修改类型、金额、日期和关联业务，只能修改备注。`
+                ? `确定要审核费用 ${approveTarget.expenseNumber} 吗？审核后将不再允许修改类型、金额、日期和关联业务，只能修改备注。`
                 : ''}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -560,12 +615,12 @@ export function ExpenseList({
 function ExpenseCard({
   expense,
   hasManagePermission,
-  onDelete: _onDelete,
-  onApprove: _onApprove,
+  onAction,
+  onApprove,
 }: {
   expense: ExpenseRecord;
   hasManagePermission: boolean;
-  onDelete: (expense: ExpenseRecord) => void;
+  onAction: (expense: ExpenseRecord) => void;
   onApprove: (expense: ExpenseRecord) => void;
 }) {
   return (
@@ -664,16 +719,18 @@ function ExpenseCard({
                 variant="ghost"
                 size="icon"
                 className="h-9 w-9 text-slate-400"
+                aria-label={`查看费用 ${expense.expenseNumber}`}
               >
                 <Eye className="h-4 w-4" />
               </Button>
             </Link>
-            {hasManagePermission && (
+            {hasManagePermission && expense.status !== 'cancelled' && (
               <Link href={`/finance/expenses/${expense.id}/edit`}>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-9 w-9 text-slate-400"
+                  aria-label={`编辑费用 ${expense.expenseNumber}`}
                 >
                   <Pencil className="h-4 w-4" />
                 </Button>
@@ -681,6 +738,47 @@ function ExpenseCard({
             )}
           </div>
         </div>
+
+        {hasManagePermission &&
+        (expense.status === 'draft' || expense.status === 'approved') ? (
+          <div className="mt-4 flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 pt-3">
+            {expense.status === 'draft' ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onApprove(expense)}
+                className="h-8 text-xs font-bold"
+                aria-label={`审核费用 ${expense.expenseNumber}`}
+              >
+                审核入账
+              </Button>
+            ) : null}
+            {expense.status === 'draft' ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onAction(expense)}
+                className="h-8 text-xs font-bold text-rose-600"
+                aria-label={`删除费用 ${expense.expenseNumber}`}
+              >
+                <Trash2 className="mr-1 h-3.5 w-3.5" />
+                删除
+              </Button>
+            ) : null}
+            {expense.status === 'approved' ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onAction(expense)}
+                className="h-8 text-xs font-bold text-amber-700"
+                aria-label={`作废费用 ${expense.expenseNumber}`}
+              >
+                <Ban className="mr-1 h-3.5 w-3.5" />
+                作废
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </div>
   );

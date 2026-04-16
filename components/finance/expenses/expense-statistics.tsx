@@ -30,6 +30,9 @@ export function ExpenseStatistics({ params }: ExpenseStatisticsProps) {
       if (params.expenseType) {
         searchParams.set('expenseType', params.expenseType);
       }
+      if (params.relatedType) {
+        searchParams.set('relatedType', params.relatedType);
+      }
 
       const response = await fetch(
         `/api/finance/expenses/statistics?${searchParams.toString()}`

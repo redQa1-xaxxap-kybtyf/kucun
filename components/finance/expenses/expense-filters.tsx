@@ -66,6 +66,18 @@ export function ExpenseFilters({
         },
         placeholder: '选择日期范围',
       }}
+      toggleButtons={[
+        {
+          key: 'includeVoided',
+          label: '显示已作废',
+          active: !!filters.includeVoided,
+          onClick: () => {
+            onFilterChange({
+              includeVoided: filters.includeVoided ? undefined : true,
+            });
+          },
+        },
+      ]}
       variant="bordered"
       compact={true}
     />

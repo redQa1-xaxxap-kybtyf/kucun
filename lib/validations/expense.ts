@@ -62,7 +62,7 @@ export const createExpenseSchema = z.object({
 
   relatedId: z
     .string()
-    .uuid('关联业务ID格式不正确')
+    .uuid('关联业务信息格式不正确')
     .nullable()
     .optional()
     .describe('关联业务ID（可选）'),
@@ -155,7 +155,7 @@ export const expenseFormSchema = z.object({
 
   relatedId: z
     .string()
-    .uuid('关联业务ID格式不正确')
+    .uuid('关联业务信息格式不正确')
     .nullable()
     .optional()
     .describe('关联业务ID（可选）'),
@@ -213,7 +213,7 @@ export const updateExpenseSchema = z.object({
 
   relatedId: z
     .string()
-    .uuid('关联业务ID格式不正确')
+    .uuid('关联业务信息格式不正确')
     .nullable()
     .optional()
     .describe('关联业务ID（可选）'),
@@ -304,7 +304,7 @@ export const expenseFilterSchema = z.object({
 
   supplierId: z
     .string()
-    .uuid('供应商ID格式不正确')
+    .uuid('供应商信息格式不正确')
     .optional()
     .describe('供应商筛选（可选）'),
 
@@ -368,7 +368,25 @@ export const expenseStatisticsFilterSchema = z.object({
 
 // 费用记录ID验证
 export const expenseIdSchema = z.object({
-  id: z.string().min(1, '费用记录ID不能为空').uuid('费用记录ID格式不正确'),
+  id: z.string().min(1, '费用记录编号不能为空').uuid('费用记录编号格式不正确'),
+});
+
+export const voidExpenseSchema = z.object({
+  voidReason: z
+    .string()
+    .max(64, '作废说明不能超过64个字符')
+    .optional()
+    .transform(val => {
+      if (val === null || val === undefined) {
+        return undefined;
+      }
+      const trimmed = val.trim();
+      return trimmed.length > 0 ? trimmed : undefined;
+    })
+    .refine(
+      val => !val || !/<script|<iframe|javascript:|onerror=/i.test(val),
+      '作废说明包含不安全的内容'
+    ),
 });
 
 // 类型导出
@@ -382,6 +400,7 @@ export type ExpenseStatisticsFilterInput = z.infer<
   typeof expenseStatisticsFilterSchema
 >;
 export type ExpenseIdData = z.infer<typeof expenseIdSchema>;
+export type VoidExpenseInput = z.infer<typeof voidExpenseSchema>;
 // ✅ 表单数据类型 - 用于 React Hook Form
 export type ExpenseFormData = z.infer<typeof expenseFormSchema>;
 
