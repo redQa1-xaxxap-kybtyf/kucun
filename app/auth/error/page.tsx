@@ -25,27 +25,27 @@ export default async function AuthErrorPage({
     {
       CredentialsSignin: {
         title: '登录失败',
-        description: '邮箱或密码错误，请检查后重试。',
+        description: '账号或密码不正确，请检查后重试。',
       },
       AccountDisabled: {
-        title: '账户已禁用',
-        description: '您的账户已被管理员禁用，请联系系统管理员。',
+        title: '账号已停用',
+        description: '当前账号暂时无法登录，请联系负责人处理。',
       },
       AccessDenied: {
         title: '访问被拒绝',
-        description: '您没有权限访问此页面，请联系管理员获取相应权限。',
+        description: '当前账号暂时不能访问这个页面，请联系负责人开通权限。',
       },
       AuthenticationError: {
-        title: '认证错误',
-        description: '身份认证过程中发生错误，请重新登录。',
+        title: '登录状态异常',
+        description: '登录过程中遇到一点问题，请重新登录后再试。',
       },
       SessionRequired: {
         title: '需要登录',
-        description: '访问此页面需要登录，请先登录您的账户。',
+        description: '请先登录，再继续查看这个页面。',
       },
       Default: {
-        title: '未知错误',
-        description: '发生了未知错误，请稍后重试或联系技术支持。',
+        title: '暂时无法打开页面',
+        description: '页面暂时无法打开，请稍后重试。',
       },
     };
 
@@ -60,7 +60,7 @@ export default async function AuthErrorPage({
               <AlertTriangle className="h-6 w-6 text-red-600" />
             </div>
             <CardTitle className="text-2xl">{errorInfo.title}</CardTitle>
-            <CardDescription>库存管理系统认证错误</CardDescription>
+            <CardDescription>登录过程中遇到了一点问题</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Alert variant="destructive">
@@ -68,10 +68,9 @@ export default async function AuthErrorPage({
               <AlertDescription>{errorInfo.description}</AlertDescription>
             </Alert>
 
-            {/* 错误代码显示 */}
             {error && (
               <div className="text-center text-sm text-gray-500">
-                错误代码: {error}
+                参考信息：{error}
               </div>
             )}
 
@@ -92,10 +91,8 @@ export default async function AuthErrorPage({
               </Button>
             </div>
 
-            {/* 帮助信息 */}
             <div className="mt-6 text-center text-sm text-gray-600">
-              <p>如果问题持续存在，请联系系统管理员</p>
-              <p className="mt-1">邮箱: admin@inventory.com</p>
+              <p>如果多次重试仍无法进入，请联系负责人协助处理。</p>
             </div>
           </CardContent>
         </Card>

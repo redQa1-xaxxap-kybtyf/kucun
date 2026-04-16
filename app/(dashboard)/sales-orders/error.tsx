@@ -52,14 +52,14 @@ export default function SalesOrdersError({
           {process.env.NODE_ENV === 'development' && (
             <div className="w-full rounded-lg bg-gray-100 p-4 text-left">
               <p className="mb-2 text-xs font-semibold text-gray-700">
-                错误详情 (仅开发模式显示):
+                详细信息：
               </p>
               <pre className="overflow-auto text-xs text-red-600">
                 {error.message}
               </pre>
               {error.digest && (
                 <p className="mt-2 text-xs text-gray-600">
-                  错误 ID: {error.digest}
+                  参考编号：{error.digest}
                 </p>
               )}
             </div>
@@ -78,3 +78,4 @@ export default function SalesOrdersError({
     </div>
   );
 }
+
