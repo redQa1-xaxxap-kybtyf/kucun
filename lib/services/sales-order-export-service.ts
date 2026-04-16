@@ -4,6 +4,17 @@
 
 import type { SalesOrderDetail } from '@/app/(dashboard)/sales-orders/[id]/components/types';
 import { roundCostPrice } from '@/lib/utils/cost-price';
+import {
+  getSalesOrderDisplayUnitPrice,
+  getSalesOrderItemDisplayCode,
+  getSalesOrderItemDisplayName,
+  getSalesOrderItemSpecification,
+  getSalesOrderItemQuantityText,
+  getSalesOrderItemWeightKg,
+  getSalesOrderNormalizedDisplayUnit,
+  getSalesOrderTotalQuantitySummary,
+  getSalesOrderTotalWeightKg,
+} from '@/lib/utils/sales-order-display';
 import { getSalesOrderReceivableTotal } from '@/lib/utils/sample-order';
 
 import {
@@ -50,7 +61,9 @@ export interface SalesOrderExcelData extends Record<string, string | number> {
   /** 单位 */
   单位: string;
   /** 数量 */
-  数量: number;
+  数量: string;
+  /** 重量(kg) */
+  '重量(kg)': string | number;
   /** 单价 */
   单价: number;
   /** 小计 */
@@ -116,6 +129,7 @@ export class SalesOrderExportService {
       10, // 品牌
       8, // 单位
       10, // 数量
+      12, // 重量(kg)
       10, // 单价
       10, // 小计
       10, // 成本价
@@ -149,46 +163,22 @@ export class SalesOrderExportService {
       const grossProfitPiece = unitPricePiece - costPrice;
       const grossProfitRate =
         unitPricePiece > 0 ? (grossProfitPiece / unitPricePiece) * 100 : 0;
-
-      // 导出时的展示单位与数量（优先使用销售员录入的显示单位/数量）
-      const displayUnit = item.displayUnit || item.product?.unit || '';
-      const piecesPerUnit =
-        item.piecesPerUnit ?? item.product?.piecesPerUnit ?? 0;
-      const quantityDisplay =
-        typeof item.displayQuantity === 'number' && item.displayQuantity > 0
-          ? item.displayQuantity
-          : item.quantity || 0;
-
-      // ✅ 单价导出遵循“金额优先、按销售单位展示”的规则
-      // - 若按件销售：单价 = 行小计 ÷ 件数（还原销售员录入的每件单价）
-      // - 其他情况：单价 = 片单价（保持与界面明细一致）
-      let displayUnitPrice = unitPricePiece;
-      if (displayUnit === '件') {
-        const units =
-          typeof item.displayQuantity === 'number' && item.displayQuantity > 0
-            ? item.displayQuantity
-            : piecesPerUnit > 0 && item.quantity
-              ? item.quantity / piecesPerUnit
-              : undefined;
-
-        if (units && item.subtotal) {
-          const perUnit = item.subtotal / units;
-          if (Number.isFinite(perUnit)) {
-            displayUnitPrice = perUnit;
-          }
-        } else if (piecesPerUnit > 0) {
-          // 兼容旧数据：没有小计/件数时，用片价 × 每件片数近似
-          displayUnitPrice = unitPricePiece * piecesPerUnit;
-        }
-      }
+      const displayUnit = getSalesOrderNormalizedDisplayUnit(item);
+      const displayUnitPrice = getSalesOrderDisplayUnitPrice(item);
+      const quantityText = getSalesOrderItemQuantityText(item);
+      const itemWeightKg = getSalesOrderItemWeightKg(item);
 
       return {
-        产品名称: item.product?.name || '',
-        产品编号: item.product?.code || item.productCode || '',
-        规格: item.product?.specification || item.specification || '',
+        产品名称: getSalesOrderItemDisplayName(item),
+        产品编号: getSalesOrderItemDisplayCode(item),
+        规格: getSalesOrderItemSpecification(item),
         品牌: '', // 产品表中没有品牌字段
         单位: displayUnit,
-        数量: quantityDisplay,
+        数量: quantityText,
+        '重量(kg)':
+          typeof itemWeightKg === 'number'
+            ? Number(itemWeightKg.toFixed(3))
+            : '-',
         单价: Number(displayUnitPrice.toFixed(2)),
         小计: Number((item.subtotal || 0).toFixed(2)),
         成本价: roundCostPrice(costPrice),
@@ -211,10 +201,7 @@ export class SalesOrderExportService {
     const orderItems = order.items ?? [];
 
     // 计算汇总数据
-    const totalQuantity = orderItems.reduce(
-      (sum, item) => sum + (item.quantity || 0),
-      0
-    );
+    const totalWeightKg = getSalesOrderTotalWeightKg(orderItems);
     const totalAmount = order.totalAmount || 0;
     const receivableTotal = getSalesOrderReceivableTotal({
       isSampleOrder: order.isSampleOrder,
@@ -247,7 +234,8 @@ export class SalesOrderExportService {
       发货时间: order.shippedAt
         ? new Date(order.shippedAt).toLocaleString('zh-CN')
         : '',
-      产品数量: totalQuantity,
+      产品数量: getSalesOrderTotalQuantitySummary(orderItems),
+      '总重量(kg)': Number(totalWeightKg.toFixed(3)),
       订单总额: Number(totalAmount.toFixed(2)),
       已收金额: Number(paidAmount.toFixed(2)),
       未付金额: Number(unpaidAmount.toFixed(2)),

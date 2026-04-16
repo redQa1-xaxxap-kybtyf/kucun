@@ -71,6 +71,9 @@ export interface SalesOrderDetail {
     displayUnit?: string;
     displayQuantity?: number;
     piecesPerUnit?: number;
+    weightSnapshot?: number;
+    batchPiecesPerUnit?: number;
+    batchWeight?: number;
     specification?: string;
     remarks?: string;
     product?: {

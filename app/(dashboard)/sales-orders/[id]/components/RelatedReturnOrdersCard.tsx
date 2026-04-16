@@ -28,7 +28,11 @@ export function RelatedReturnOrdersCard({
     typeof value === 'string' && value in RETURN_ORDER_STATUS_LABELS;
 
   const getDisplayStatus = (status: ReturnOrderStatus) => {
-    if (status === 'submitted' || status === 'approved' || status === 'processing') {
+    if (
+      status === 'submitted' ||
+      status === 'approved' ||
+      status === 'processing'
+    ) {
       return {
         label: '待处理',
         variant: 'warning' as const,
@@ -46,7 +50,7 @@ export function RelatedReturnOrdersCard({
       <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4">
         <CardTitle className="flex items-center text-sm font-black tracking-widest text-slate-900 uppercase">
           <Receipt className="mr-2.5 h-4 w-4 text-rose-500" />
-          关联退货业务单项
+          关联退货单
         </CardTitle>
       </CardHeader>
       <CardContent className="bg-white p-0">
@@ -54,12 +58,10 @@ export function RelatedReturnOrdersCard({
           <table className="w-full text-sm">
             <thead className="border-b border-slate-100 bg-slate-50/80 text-[10px] font-bold tracking-wider text-slate-500 uppercase backdrop-blur-md">
               <tr>
-                <th className="px-4 py-3 text-left font-medium">
-                  退货业务单号
-                </th>
-                <th className="px-4 py-3 text-left font-medium">执行状态</th>
-                <th className="px-4 py-3 text-left font-medium">档案建立日</th>
-                <th className="px-4 py-3 text-center font-medium">追踪管理</th>
+                <th className="px-4 py-3 text-left font-medium">退货单号</th>
+                <th className="px-4 py-3 text-left font-medium">状态</th>
+                <th className="px-4 py-3 text-left font-medium">创建时间</th>
+                <th className="px-4 py-3 text-center font-medium">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">

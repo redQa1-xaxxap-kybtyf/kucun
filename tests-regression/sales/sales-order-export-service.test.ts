@@ -41,4 +41,45 @@ describe('sales-order-export-service（收款文案回归）', () => {
     );
     expect('已付金额' in summary).toBe(false);
   });
+
+  test('订单明细导出应优先使用销售单行自己的显示字段和重量快照', () => {
+    const detailRows = (SalesOrderExportService as any).prepareOrderExcelData({
+      items: [
+        {
+          isManualProduct: true,
+          manualProductName: '临时大板',
+          manualSpecification: '900x1800',
+          productCode: 'TMP-900',
+          displayUnit: 'piece',
+          quantity: 13,
+          piecesPerUnit: 12,
+          manualWeight: 30,
+          weightSnapshot: 30,
+          unitPrice: 10,
+          subtotal: 130,
+          unitCost: 8,
+          remarks: '测试备注',
+          product: {
+            name: '正式产品',
+            code: 'REAL-001',
+            specification: '800x800',
+            unit: 'sheet',
+            piecesPerUnit: 4,
+            weight: 25,
+          },
+        },
+      ],
+    });
+
+    expect(detailRows).toEqual([
+      expect.objectContaining({
+        产品名称: '临时大板',
+        产品编号: 'TMP-900',
+        规格: '900x1800',
+        单位: '件',
+        数量: '1件1片',
+        '重量(kg)': 32.5,
+      }),
+    ]);
+  });
 });

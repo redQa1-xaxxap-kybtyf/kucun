@@ -7,7 +7,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils';
 import { formatCostPrice } from '@/lib/utils/cost-price';
 import { formatDate } from '@/lib/utils/datetime';
-import { calculatePieceDisplay } from '@/lib/utils/piece-calculation';
+import {
+  getSalesOrderDisplayUnitPrice,
+  getSalesOrderItemQuantityText,
+  getSalesOrderItemWeightKg,
+  getSalesOrderNormalizedDisplayUnit,
+  getSalesOrderTotalQuantitySummary,
+  getSalesOrderTotalWeightKg,
+} from '@/lib/utils/sales-order-display';
 
 import type { SalesOrderDetail } from './types';
 
@@ -22,178 +29,15 @@ function formatDecimal(value: number | undefined | null): string {
 }
 
 function resolveUnitLabel(item: SalesOrderDetail['items'][number]) {
-  if (item.displayUnit) return item.displayUnit;
-  if (item.isManualProduct) return item.manualUnit || '-';
-  return item.product?.unit || '-';
+  return getSalesOrderNormalizedDisplayUnit(item);
 }
 
 function formatQuantityDisplay(item: SalesOrderDetail['items'][number]) {
-  // quantity 始终以“片”存储，displayUnit/displayQuantity 记录销售员使用的录入单位
-  const totalPieces = (item.quantity ?? 0) || 0;
-  const piecesPerUnit = item.piecesPerUnit ?? item.product?.piecesPerUnit;
-  const displayUnit = item.displayUnit || item.product?.unit;
-
-  if (!displayUnit) {
-    // 回退：只知道总片数
-    if (piecesPerUnit && Number.isInteger(piecesPerUnit) && piecesPerUnit > 0) {
-      const result = calculatePieceDisplay(
-        Math.floor(totalPieces),
-        piecesPerUnit
-      );
-      return `${result.totalPieces}片 (约${result.displayText})`;
-    }
-    return `${formatDecimal(totalPieces)}片`;
-  }
-
-  // 销售员按“件”录入：主显示用件数，附带总片数
-  if (displayUnit === '件' && piecesPerUnit && piecesPerUnit > 0) {
-    const unitsRaw =
-      typeof item.displayQuantity === 'number'
-        ? item.displayQuantity
-        : totalPieces / piecesPerUnit;
-    const units = Number.isFinite(unitsRaw)
-      ? unitsRaw
-      : totalPieces / piecesPerUnit;
-    return `${formatDecimal(units)}件（共${totalPieces}片）`;
-  }
-
-  // 销售员按“片”录入：主显示用片数，附带近似件数
-  if (displayUnit === '片') {
-    if (piecesPerUnit && Number.isInteger(piecesPerUnit) && piecesPerUnit > 0) {
-      const result = calculatePieceDisplay(
-        Math.floor(totalPieces),
-        piecesPerUnit
-      );
-      return `${result.totalPieces}片 (约${result.displayText})`;
-    }
-    return `${formatDecimal(totalPieces)}片`;
-  }
-
-  // 其他单位（如箱等）：优先显示录入单位 + 总片数
-  if (piecesPerUnit && piecesPerUnit > 0 && totalPieces > 0) {
-    const unitsRaw =
-      typeof item.displayQuantity === 'number'
-        ? item.displayQuantity
-        : totalPieces / piecesPerUnit;
-    const units = Number.isFinite(unitsRaw)
-      ? unitsRaw
-      : totalPieces / piecesPerUnit;
-    return `${formatDecimal(units)}${displayUnit}（共${totalPieces}片）`;
-  }
-
-  return `${formatDecimal(totalPieces)}${displayUnit}`;
+  return getSalesOrderItemQuantityText(item);
 }
 
 function formatPiecesBreakdown(item: SalesOrderDetail['items'][number]) {
-  const piecesPerUnit = item.piecesPerUnit ?? item.product?.piecesPerUnit;
-  const displayUnit = item.displayUnit || item.product?.unit;
-  const quantity = item.displayQuantity ?? item.quantity;
-
-  if (!displayUnit || !quantity) return '';
-
-  // 如果单位是"件"，直接显示件数
-  if (displayUnit === '件') {
-    return `${formatDecimal(quantity)}件`;
-  }
-
-  // 如果单位是"片"，计算件数和余片
-  if (displayUnit === '片' && piecesPerUnit) {
-    const fullBoxes = Math.floor(quantity / piecesPerUnit);
-    const remainingPieces = quantity % piecesPerUnit;
-
-    if (remainingPieces === 0) {
-      // 能整除，只显示件数
-      return `${formatDecimal(fullBoxes)}件`;
-    } else {
-      // 有余数，显示件数+片数
-      return `${formatDecimal(fullBoxes)}件${formatDecimal(remainingPieces)}片`;
-    }
-  }
-
-  // 其他单位情况，直接显示数量+单位
-  return `${formatDecimal(quantity)}${displayUnit}`;
-}
-
-/**
- * 计算单行明细的总重量（kg）
- *
- * 规则与新建/编辑销售订单表单中的重量计算保持一致：
- * - 手动产品：manualWeight 根据 displayUnit 判断是“每件”还是“每片”
- * - 库存产品：product.weight 存储的是“每件重量(kg)”，不是每片
- */
-function calculateItemWeightKg(
-  item: SalesOrderDetail['items'][number]
-): number | null {
-  const quantityPieces =
-    typeof item.quantity === 'number' && item.quantity > 0 ? item.quantity : 0;
-
-  if (!quantityPieces) return null;
-
-  const displayUnit = item.displayUnit || item.product?.unit || '片';
-  const piecesPerUnit =
-    item.piecesPerUnit ?? item.product?.piecesPerUnit ?? undefined;
-
-  let weightKg: number | undefined;
-
-  if (item.isManualProduct) {
-    const manualWeight =
-      typeof item.manualWeight === 'number' && item.manualWeight > 0
-        ? item.manualWeight
-        : 0;
-
-    if (!manualWeight) return null;
-
-    if (displayUnit === '件') {
-      // 用户输入的是每件重量：总重量 = 每件重量 × 件数
-      const displayQty =
-        typeof item.displayQuantity === 'number' && item.displayQuantity > 0
-          ? item.displayQuantity
-          : 0;
-      if (!displayQty) return null;
-      weightKg = manualWeight * displayQty;
-    } else {
-      // 用户输入的是每片重量：总重量 = 每片重量 × 片数
-      weightKg = manualWeight * quantityPieces;
-    }
-  } else {
-    // 库存产品：weight 字段存储的是每件的重量(kg)，不是每片
-    const weightPerUnit =
-      typeof item.product?.weight === 'number' && item.product.weight > 0
-        ? item.product.weight
-        : undefined;
-
-    if (!weightPerUnit) return null;
-
-    if (displayUnit === '件') {
-      // 销售单位是"件"：总重量 = 每件重量 × 件数
-      const displayQty =
-        typeof item.displayQuantity === 'number' && item.displayQuantity > 0
-          ? item.displayQuantity
-          : 0;
-      if (!displayQty) return null;
-      weightKg = weightPerUnit * displayQty;
-    } else {
-      // 销售单位是"片"：总重量 = (每件重量 / 每件片数) × 片数
-      const effectivePiecesPerUnit =
-        typeof piecesPerUnit === 'number' && piecesPerUnit > 0
-          ? piecesPerUnit
-          : undefined;
-
-      if (effectivePiecesPerUnit) {
-        const weightPerPiece = weightPerUnit / effectivePiecesPerUnit;
-        weightKg = weightPerPiece * quantityPieces;
-      } else {
-        // 兜底：当缺少每件片数时，按“每片重量 = weightPerUnit”近似处理
-        weightKg = weightPerUnit * quantityPieces;
-      }
-    }
-  }
-
-  if (!weightKg || !Number.isFinite(weightKg) || weightKg <= 0) {
-    return null;
-  }
-
-  return weightKg;
+  return getSalesOrderItemQuantityText(item);
 }
 
 function formatItemWeightKg(weightKg: number | null): string {
@@ -207,34 +51,14 @@ function formatItemWeightKg(weightKg: number | null): string {
 }
 
 function resolveDisplayUnitPrice(item: SalesOrderDetail['items'][number]) {
-  const piecesPerUnit = item.piecesPerUnit ?? item.product?.piecesPerUnit;
-  const displayUnit = item.displayUnit || item.product?.unit;
-  const unitPricePiece = item.unitPrice; // 数据库存储的片单价
+  return getSalesOrderDisplayUnitPrice(item);
+}
 
-  // 销售员按“件”录入：优先用小计 ÷ 件数，还原原始“每件单价”
-  if (displayUnit === '件') {
-    const units =
-      typeof item.displayQuantity === 'number' && item.displayQuantity > 0
-        ? item.displayQuantity
-        : piecesPerUnit && piecesPerUnit > 0 && item.quantity
-          ? item.quantity / piecesPerUnit
-          : undefined;
-
-    if (units && item.subtotal) {
-      const perUnit = item.subtotal / units;
-      if (Number.isFinite(perUnit)) {
-        return perUnit;
-      }
-    }
-
-    // 回退：用片价 * 每件片数近似
-    if (piecesPerUnit && piecesPerUnit > 0) {
-      return unitPricePiece * piecesPerUnit;
-    }
-  }
-
-  // 按片或其他单位录入：直接显示片单价
-  return unitPricePiece;
+function formatTotalQuantitySummary(
+  items: SalesOrderDetail['items'],
+  _totalDisplayQuantity: number
+) {
+  return getSalesOrderTotalQuantitySummary(items);
 }
 
 interface Props {
@@ -254,10 +78,7 @@ export function OrderItemsTable({
   productSubtotal,
 }: Props) {
   const orderItems = order.items ?? [];
-  const totalWeightKg = orderItems.reduce((sum, item) => {
-    const weightKg = calculateItemWeightKg(item);
-    return sum + (weightKg ?? 0);
-  }, 0);
+  const totalWeightKg = getSalesOrderTotalWeightKg(orderItems);
 
   return (
     <Card className="overflow-hidden rounded-2xl border-slate-100 shadow-sm ring-1 ring-slate-100/50">
@@ -279,29 +100,19 @@ export function OrderItemsTable({
             </span>
             <span>总数量</span>
             <span className="font-bold text-[hsl(var(--color-text-primary))]">
-              {(() => {
-                const items = order.items ?? [];
-                const totalPieces = Math.floor(totalDisplayQuantity || 0);
-                const uniquePpu = Array.from(
-                  new Set(
-                    items
-                      .map(i => i.piecesPerUnit ?? i.product?.piecesPerUnit)
-                      .filter(
-                        ppu => typeof ppu === 'number' && (ppu as number) > 0
-                      )
-                  )
-                ) as number[];
-                if (uniquePpu.length === 1) {
-                  const ppu = uniquePpu[0];
-                  const units = Math.floor(totalPieces / ppu);
-                  const pieces = totalPieces % ppu;
-                  if (units === 0) return `${pieces}片（共${totalPieces}片）`;
-                  if (pieces === 0) return `${units}件（共${totalPieces}片）`;
-                  return `${units}件${pieces}片（共${totalPieces}片）`;
-                }
-                return `${totalPieces}片`;
-              })()}
+              {formatTotalQuantitySummary(orderItems, totalDisplayQuantity)}
             </span>
+            {totalWeightKg > 0 && (
+              <>
+                <span className="mx-1 text-[hsl(var(--color-text-tertiary))]">
+                  |
+                </span>
+                <span>总重量</span>
+                <span className="font-bold text-[hsl(var(--color-text-primary))]">
+                  {formatDecimal(totalWeightKg)}kg
+                </span>
+              </>
+            )}
           </div>
         </div>
       </CardHeader>
@@ -376,7 +187,9 @@ export function OrderItemsTable({
                 const unitLabel = resolveUnitLabel(item);
                 const quantityDisplay = formatQuantityDisplay(item);
                 const piecesPerUnitDisplay =
-                  item.piecesPerUnit ?? item.product?.piecesPerUnit;
+                  item.piecesPerUnit ??
+                  item.batchPiecesPerUnit ??
+                  item.product?.piecesPerUnit;
                 // 备注只显示：片数转换信息（x件y片）
                 const piecesBreakdown = formatPiecesBreakdown(item);
                 const remarkText = piecesBreakdown || '-';
@@ -397,13 +210,9 @@ export function OrderItemsTable({
                 const displayProductCode = item.isManualProduct
                   ? manualCode || '-'
                   : item.product?.code || '-';
-                const localQuantityDisplay = formatDecimal(
-                  item.localQuantity ?? 0
-                );
-                const transferQuantityDisplay = formatDecimal(
-                  item.transferQuantity ?? 0
-                );
-                const itemWeightKg = calculateItemWeightKg(item);
+                const localQuantityDisplay = formatDecimal(item.localQuantity ?? 0);
+                const transferQuantityDisplay = formatDecimal(item.transferQuantity ?? 0);
+                const itemWeightKg = getSalesOrderItemWeightKg(item);
 
                 return (
                   <tr
@@ -565,7 +374,7 @@ export function OrderItemsTable({
                 </td>
                 <td className="px-3 py-5 text-right whitespace-nowrap">
                   <span className="font-mono text-base font-black text-slate-900">
-                    {formatDecimal(totalDisplayQuantity)}
+                    {formatTotalQuantitySummary(orderItems, totalDisplayQuantity)}
                   </span>
                 </td>
                 <td className="px-3 py-5 text-right whitespace-nowrap">
@@ -634,7 +443,9 @@ export function OrderItemsTable({
             const unitLabel = resolveUnitLabel(item);
             const quantityDisplay = formatQuantityDisplay(item);
             const piecesPerUnitDisplay =
-              item.piecesPerUnit ?? item.product?.piecesPerUnit;
+              item.piecesPerUnit ??
+              item.batchPiecesPerUnit ??
+              item.product?.piecesPerUnit;
             const piecesBreakdown = formatPiecesBreakdown(item);
             const specificationText = item.isManualProduct
               ? item.manualSpecification || item.specification || '-'
@@ -657,7 +468,7 @@ export function OrderItemsTable({
             const transferQuantityDisplay = formatDecimal(
               item.transferQuantity ?? 0
             );
-            const itemWeightKg = calculateItemWeightKg(item);
+            const itemWeightKg = getSalesOrderItemWeightKg(item);
 
             return (
               <div
@@ -698,7 +509,7 @@ export function OrderItemsTable({
                     <div>单价</div>
                     <div className="font-mono text-[13px] font-semibold text-[hsl(var(--color-primary))]">
                       {typeof item.unitPrice === 'number'
-                        ? formatCurrency(item.unitPrice)
+                        ? formatCurrency(resolveDisplayUnitPrice(item))
                         : '-'}
                     </div>
                     <div className="text-[10px] text-gray-500">小计</div>
@@ -783,7 +594,7 @@ export function OrderItemsTable({
                 <span>
                   总数量：
                   <span className="font-semibold">
-                    {formatDecimal(totalDisplayQuantity)}片
+                    {formatTotalQuantitySummary(orderItems, totalDisplayQuantity)}
                   </span>
                 </span>
                 {totalWeightKg > 0 && (

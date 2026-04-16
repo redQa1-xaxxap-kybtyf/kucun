@@ -22,6 +22,17 @@ import { logger } from '@/lib/logger';
 import { SALES_ORDER_TYPE_LABELS } from '@/lib/types/sales-order';
 import { roundCostPrice } from '@/lib/utils/cost-price';
 import {
+  getSalesOrderDisplayUnitPrice,
+  getSalesOrderItemDisplayCode,
+  getSalesOrderItemDisplayName,
+  getSalesOrderItemSpecification,
+  getSalesOrderItemQuantityText,
+  getSalesOrderItemWeightKg,
+  getSalesOrderNormalizedDisplayUnit,
+  getSalesOrderTotalQuantitySummary,
+  getSalesOrderTotalWeightKg,
+} from '@/lib/utils/sales-order-display';
+import {
   SAMPLE_SETTLEMENT_TYPE_LABELS,
   getSalesOrderReceivableTotal,
 } from '@/lib/utils/sample-order';
@@ -41,44 +52,22 @@ function buildDetailExportRows(order: SalesOrderDetail) {
     const grossProfitPiece = unitPricePiece - costPrice;
     const grossProfitRate =
       unitPricePiece > 0 ? (grossProfitPiece / unitPricePiece) * 100 : 0;
-
-    const displayUnit = item.displayUnit || item.product?.unit || '';
-    const piecesPerUnit =
-      item.piecesPerUnit ?? item.product?.piecesPerUnit ?? 0;
-    const quantityDisplay =
-      typeof item.displayQuantity === 'number' && item.displayQuantity > 0
-        ? item.displayQuantity
-        : item.quantity || 0;
-
-    // 与前端导出规则保持一致：
-    // - 若按件销售：单价 = 行小计 ÷ 件数
-    // - 否则：单价 = 片单价
-    let displayUnitPrice = unitPricePiece;
-    if (displayUnit === '件') {
-      const units =
-        typeof item.displayQuantity === 'number' && item.displayQuantity > 0
-          ? item.displayQuantity
-          : piecesPerUnit > 0 && item.quantity
-            ? item.quantity / piecesPerUnit
-            : undefined;
-
-      if (units && item.subtotal) {
-        const perUnit = item.subtotal / units;
-        if (Number.isFinite(perUnit)) {
-          displayUnitPrice = perUnit;
-        }
-      } else if (piecesPerUnit > 0) {
-        displayUnitPrice = unitPricePiece * piecesPerUnit;
-      }
-    }
+    const normalizedDisplayUnit = getSalesOrderNormalizedDisplayUnit(item);
+    const quantityDisplay = getSalesOrderItemQuantityText(item);
+    const displayUnitPrice = getSalesOrderDisplayUnitPrice(item);
+    const itemWeightKg = getSalesOrderItemWeightKg(item);
 
     return {
-      产品名称: item.product?.name || '',
-      产品编号: item.product?.code || item.productCode || '',
-      规格: item.product?.specification || item.specification || '',
+      产品名称: getSalesOrderItemDisplayName(item),
+      产品编号: getSalesOrderItemDisplayCode(item),
+      规格: getSalesOrderItemSpecification(item),
       品牌: '',
-      单位: displayUnit,
+      单位: normalizedDisplayUnit,
       数量: quantityDisplay,
+      '重量(kg)':
+        typeof itemWeightKg === 'number'
+          ? Number(itemWeightKg.toFixed(3))
+          : '-',
       单价: Number(displayUnitPrice.toFixed(2)),
       小计: Number((item.subtotal || 0).toFixed(2)),
       成本价: roundCostPrice(costPrice),
@@ -106,11 +95,7 @@ function getOrderStatusText(status: string): string {
 function buildSummaryExportRow(order: SalesOrderDetail) {
   const customer = order.customer;
   const orderItems = order.items ?? [];
-
-  const totalQuantity = orderItems.reduce(
-    (sum, item) => sum + (item.quantity || 0),
-    0
-  );
+  const totalWeightKg = getSalesOrderTotalWeightKg(orderItems);
   const totalAmount = order.totalAmount || 0;
   const receivableTotal = getSalesOrderReceivableTotal({
     isSampleOrder: order.isSampleOrder,
@@ -148,7 +133,8 @@ function buildSummaryExportRow(order: SalesOrderDetail) {
     发货时间: order.shippedAt
       ? new Date(order.shippedAt).toLocaleString('zh-CN')
       : '',
-    产品数量: totalQuantity,
+    产品数量: getSalesOrderTotalQuantitySummary(orderItems),
+    '总重量(kg)': Number(totalWeightKg.toFixed(3)),
     订单总额: Number(totalAmount.toFixed(2)),
     已收金额: Number(paidAmount.toFixed(2)),
     未付金额: Number(unpaidAmount.toFixed(2)),
@@ -163,7 +149,7 @@ export const POST = withAuth(
       const id = (bag as Record<string, string>).id;
 
       if (!id) {
-        return errorResponse('缺少订单ID', 400);
+        return errorResponse('缺少订单编号', 400);
       }
 
       const body = (await request.json().catch(() => ({}))) as {
@@ -209,6 +195,7 @@ export const POST = withAuth(
         10, // 品牌
         8, // 单位
         10, // 数量
+        12, // 重量(kg)
         10, // 单价
         10, // 小计
         10, // 成本价

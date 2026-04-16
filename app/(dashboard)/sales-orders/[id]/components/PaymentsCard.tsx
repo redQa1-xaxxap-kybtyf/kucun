@@ -199,7 +199,7 @@ function PaymentsSummary({ order }: { order: SalesOrderDetail }) {
             <div className="flex items-start gap-2 text-[11px] font-medium text-blue-600">
               <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-blue-500" />
               <span>
-                整单金额调整 (抹零项目)：
+                整单抹零：
                 {formatCurrency(Number(order.roundingAdjustment))}
               </span>
             </div>
@@ -231,7 +231,7 @@ export function PaymentsCard({ order }: { order: SalesOrderDetail }) {
             </CardTitle>
             <p className="text-[11px] font-medium text-slate-500">
               {receivableEnabled
-                ? '只展示真实收款与预收冲抵，系统应收建账会单独提示。'
+                ? '这里只显示实际收款和预收抵扣，应收登记会单独提示。'
                 : `${SAMPLE_ORDER_LABEL}当前按免费结算，不会进入客户应收。`}
             </p>
           </div>
@@ -258,7 +258,7 @@ export function PaymentsCard({ order }: { order: SalesOrderDetail }) {
             <Wallet className="mb-2 h-10 w-10 text-blue-500" />
             {receivableEnabled
               ? order.receivableConfirmationRecord
-                ? '暂无真实收款记录，当前仅完成系统应收建账。'
+                ? '还没有实际收款，目前只登记了应收。'
                 : '暂无收款记录，可前往财务模块补录。'
               : '免费样品单默认不生成收款记录。'}
           </div>

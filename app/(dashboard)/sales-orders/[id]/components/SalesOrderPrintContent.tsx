@@ -35,10 +35,16 @@ import type { FieldSelection } from '@/lib/types/print-config';
 import type { PrintStyleConfig } from '@/lib/types/print-style';
 import {
   numberToChinese,
-  calculateTotalWeight,
-  calculateTotalQuantity,
   calculateTotalAmount,
 } from '@/lib/utils/print-helpers';
+import {
+  getSalesOrderDisplayUnitPrice,
+  getSalesOrderItemQuantityText,
+  getSalesOrderItemWeightKg,
+  getSalesOrderNormalizedDisplayUnit,
+  getSalesOrderTotalQuantitySummary,
+  getSalesOrderTotalWeightKg,
+} from '@/lib/utils/sales-order-display';
 
 import type { SalesOrderDetail } from './types';
 
@@ -84,9 +90,9 @@ export function SalesOrderPrintContent({
     const items = order.items ?? [];
 
     return {
-      totalQuantity: calculateTotalQuantity(items),
+      totalQuantity: getSalesOrderTotalQuantitySummary(items),
       totalAmount: calculateTotalAmount(items),
-      totalWeight: calculateTotalWeight(items),
+      totalWeight: getSalesOrderTotalWeightKg(items) / 1000,
       totalAmountChinese: numberToChinese(calculateTotalAmount(items)),
     };
   }, [order.items]);
@@ -110,36 +116,12 @@ export function SalesOrderPrintContent({
 
   // 行数据映射函数
   const rowDataMapper = (item: SalesOrderDetail['items'][number]) => {
-    // 显示单位与数量（优先使用销售员录入的显示单位/数量）
-    const displayUnit = item.displayUnit || item.product?.unit || '-';
+    const displayUnit = getSalesOrderNormalizedDisplayUnit(item);
     const piecesPerUnit =
-      item.piecesPerUnit ?? item.product?.piecesPerUnit ?? 0;
-    const quantityDisplay =
-      typeof item.displayQuantity === 'number' && item.displayQuantity > 0
-        ? item.displayQuantity
-        : item.quantity;
-
-    // 打印单价：与详情页/Excel 导出一致
-    // - 按件销售：单价 = 行小计 ÷ 件数（如果可用），否则用 片价 × 每件片数近似
-    // - 其他情况：直接使用片单价
-    let displayUnitPrice = item.unitPrice;
-    if (displayUnit === '件') {
-      const units =
-        typeof item.displayQuantity === 'number' && item.displayQuantity > 0
-          ? item.displayQuantity
-          : piecesPerUnit > 0 && item.quantity
-            ? item.quantity / piecesPerUnit
-            : undefined;
-
-      if (units && item.subtotal) {
-        const perUnit = item.subtotal / units;
-        if (Number.isFinite(perUnit)) {
-          displayUnitPrice = perUnit;
-        }
-      } else if (piecesPerUnit > 0 && item.unitPrice) {
-        displayUnitPrice = item.unitPrice * piecesPerUnit;
-      }
-    }
+      item.piecesPerUnit ?? item.batchPiecesPerUnit ?? item.product?.piecesPerUnit ?? '-';
+    const quantityDisplay = getSalesOrderItemQuantityText(item);
+    const displayUnitPrice = getSalesOrderDisplayUnitPrice(item);
+    const itemWeightKg = getSalesOrderItemWeightKg(item);
 
     return {
       productCode: item.isManualProduct
@@ -151,12 +133,12 @@ export function SalesOrderPrintContent({
       specification: item.specification || item.product?.specification || '-',
       unit: displayUnit,
       quantity: quantityDisplay,
-      piecesPerUnit: item.piecesPerUnit || item.product?.piecesPerUnit || '-',
+      piecesPerUnit,
       unitPrice: displayUnitPrice,
       subtotal: item.subtotal,
       remarks: item.remarks || '',
       batchNumber: item.batchNumber || '-',
-      weight: item.manualWeight ?? item.product?.weight ?? 0,
+      weight: itemWeightKg,
     };
   };
 

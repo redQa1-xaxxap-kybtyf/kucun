@@ -19,7 +19,7 @@ export function OperationHistoryCard({
       <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4">
         <CardTitle className="flex items-center text-sm font-black tracking-widest text-slate-900 uppercase">
           <ShoppingCart className="mr-2.5 h-4 w-4 text-blue-600" />
-          全链路操作日志
+          操作记录
         </CardTitle>
       </CardHeader>
       <CardContent className="bg-white p-6">
@@ -28,10 +28,10 @@ export function OperationHistoryCard({
             <div className="absolute left-0 mt-1.5 h-4 w-4 rounded-full border-2 border-white bg-blue-600 shadow-sm ring-1 ring-blue-600/20"></div>
             <div className="min-w-0 flex-1">
               <div className="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
-                业务初始创建
+                创建订单
               </div>
               <div className="mt-1 text-sm font-semibold text-slate-900">
-                订单创建成功
+                销售单已创建
               </div>
               <div className="mt-1.5 flex items-center gap-3 text-[10px] text-slate-400">
                 <span className="font-medium">操作人：{userName}</span>
@@ -45,13 +45,13 @@ export function OperationHistoryCard({
               <div className="absolute left-0 mt-1.5 h-4 w-4 rounded-full border-2 border-white bg-emerald-500 shadow-sm ring-1 ring-emerald-500/20"></div>
               <div className="min-w-0 flex-1">
                 <div className="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
-                  系统状态变更
+                  最近更新
                 </div>
                 <div className="mt-1 text-sm font-semibold text-slate-900">
-                  关键业务字段更新
+                  订单信息已更新
                 </div>
                 <div className="mt-1.5 flex items-center gap-3 text-[10px] text-slate-400">
-                  <span className="font-medium">自动化审计</span>
+                  <span className="font-medium">订单最后更新</span>
                   <span className="h-2.5 w-px bg-slate-200" />
                   <span>{formatDateTime(order.updatedAt)}</span>
                 </div>

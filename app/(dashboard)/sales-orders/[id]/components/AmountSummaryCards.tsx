@@ -66,7 +66,7 @@ export function AmountSummaryCards({
         <Card className="relative overflow-hidden rounded-xl border-slate-100 bg-white shadow-sm ring-1 ring-slate-100/50">
           <CardContent className="p-4 sm:p-5">
             <div className="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
-              收款差额
+              抹零金额
             </div>
             <div className="mt-2 font-mono text-2xl font-black tracking-tighter text-indigo-600">
               {order.paymentRounding > 0 ? '+' : '-'}

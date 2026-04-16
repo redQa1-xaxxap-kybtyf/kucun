@@ -44,7 +44,7 @@ const STATUS_BADGE: Record<
 > = {
   pending: { label: '待确认', variant: 'secondary' },
   confirmed: { label: '已确认', variant: 'default' },
-  applied: { label: '已冲抵', variant: 'default' },
+  applied: { label: '已抵扣', variant: 'default' },
   cancelled: { label: '已取消', variant: 'outline' },
 };
 
@@ -64,10 +64,10 @@ export function PrepaymentUsageCard({ order }: { order: SalesOrderDetail }) {
           <div className="space-y-1.5">
             <CardTitle className="flex items-center gap-2.5 text-sm font-black tracking-widest text-slate-900 uppercase">
               <PiggyBank className="h-4 w-4 text-amber-600" />
-              预收款冲抵记录
+              预收款抵扣记录
             </CardTitle>
             <p className="text-[11px] font-medium text-slate-500">
-              追溯本笔业务所消耗的客户账户预存资金。
+              查看这张订单用了多少客户预收款。
             </p>
           </div>
           <Badge
@@ -84,8 +84,7 @@ export function PrepaymentUsageCard({ order }: { order: SalesOrderDetail }) {
             i
           </div>
           <span>
-            当前订单已执行 {usages.length}{' '}
-            笔预收款对冲，金额已从往来账户余额中扣除。
+            当前订单已使用 {usages.length} 笔预收款抵扣，对应金额已经从客户预收款余额里扣除。
           </span>
         </div>
 
@@ -117,7 +116,7 @@ export function PrepaymentUsageCard({ order }: { order: SalesOrderDetail }) {
                   </div>
                   <div className="flex flex-col gap-1 text-[10px] font-medium text-slate-400">
                     <p>原始收款时间：{formatDateTime(usage.paymentDate)}</p>
-                    <p>冲抵生效时间：{formatDateTime(usage.createdAt)}</p>
+                    <p>抵扣时间：{formatDateTime(usage.createdAt)}</p>
                   </div>
                 </div>
                 <div className="flex items-center justify-between border-t border-slate-100 pt-3 sm:flex-col sm:items-end sm:gap-2 sm:border-0 sm:pt-0">
