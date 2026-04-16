@@ -18,6 +18,41 @@ function parseCaptchaText(captchaDataUri: string): string {
   return captcha;
 }
 
+async function fetchJsonWithRetry(
+  page: Page,
+  url: string,
+  {
+    attempts = 5,
+    delayMs = 800,
+  }: {
+    attempts?: number;
+    delayMs?: number;
+  } = {}
+) {
+  const request = page.context().request;
+  let lastStatus: number | null = null;
+  let lastBody = '';
+
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const response = await request.get(url);
+
+    if (response.ok()) {
+      return response.json();
+    }
+
+    lastStatus = response.status();
+    lastBody = await response.text().catch(() => '');
+
+    if (attempt < attempts - 1) {
+      await page.waitForTimeout(delayMs);
+    }
+  }
+
+  throw new Error(
+    `请求失败: ${url} -> HTTP ${lastStatus ?? 'UNKNOWN'} ${lastBody}`.trim()
+  );
+}
+
 export async function loginAsAdminViaApi(
   page: Page,
   baseUrl: string,
@@ -25,9 +60,10 @@ export async function loginAsAdminViaApi(
 ) {
   const request = page.context().request;
 
-  const csrfResponse = await request.get(`${baseUrl}/api/auth/csrf`);
-  expect(csrfResponse.ok()).toBeTruthy();
-  const csrfPayload = (await csrfResponse.json()) as {
+  const csrfPayload = (await fetchJsonWithRetry(
+    page,
+    `${baseUrl}/api/auth/csrf`
+  )) as {
     csrfToken?: string;
   };
 
@@ -35,9 +71,10 @@ export async function loginAsAdminViaApi(
     throw new Error('未获取到 NextAuth CSRF Token');
   }
 
-  const captchaResponse = await request.get(`${baseUrl}/api/captcha`);
-  expect(captchaResponse.ok()).toBeTruthy();
-  const captchaPayload = (await captchaResponse.json()) as {
+  const captchaPayload = (await fetchJsonWithRetry(
+    page,
+    `${baseUrl}/api/captcha`
+  )) as {
     captchaImage?: string;
     sessionId?: string;
   };
