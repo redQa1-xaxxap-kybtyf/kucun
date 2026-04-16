@@ -255,7 +255,7 @@ const salesOrderSummaryFields: PrintFieldDefinition[] = [
   },
   {
     key: 'totalWeight',
-    label: '总重量',
+    label: '总重量(吨)',
     type: 'summary',
     width: '150px',
     align: 'right',

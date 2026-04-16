@@ -24,7 +24,7 @@ export const GET = withAuth(async request => {
     return NextResponse.json(
       {
         success: false,
-        error: '缺少单据标识',
+        error: '缺少单据编号',
       },
       { status: 400 }
     );
@@ -50,3 +50,4 @@ export const GET = withAuth(async request => {
     data,
   });
 });
+

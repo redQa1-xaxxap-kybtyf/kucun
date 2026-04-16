@@ -82,11 +82,13 @@ describe('preview-data server actions', () => {
       items: [
         {
           quantity: 12,
+          displayQuantity: 2,
+          piecesPerUnit: 6,
           unitPrice: 73.333,
           subtotal: 880,
           batchNumber: 'LOT-001',
           remarks: '靠窗摆放',
-          manualWeight: 24.5,
+          weightSnapshot: 24.5,
           manualProductName: null,
           manualSpecification: null,
           manualUnit: null,
@@ -116,7 +118,8 @@ describe('preview-data server actions', () => {
       customer: {
         name: '天津客户',
       },
-      totalQuantity: 12,
+      totalQuantity: '2件（共12片）',
+      totalWeight: 49,
     });
     expect(data?.items).toEqual(
       expect.arrayContaining([
@@ -125,6 +128,9 @@ describe('preview-data server actions', () => {
           code: 'P-600',
           spec: '600x1200',
           unit: '件',
+          quantity: '2件',
+          weight: 49,
+          boxes: 2,
           productName: '柔光砖',
           productCode: 'P-600',
           specification: '600x1200',

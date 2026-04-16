@@ -6,6 +6,17 @@
 
 import { PRODUCT_UNIT_LABELS } from '@/lib/config/product';
 import { prisma } from '@/lib/db';
+import {
+  getSalesOrderDisplayQuantityValue,
+  getSalesOrderItemDisplayCode,
+  getSalesOrderItemDisplayName,
+  getSalesOrderItemQuantityText,
+  getSalesOrderItemSpecification,
+  getSalesOrderItemWeightKg,
+  getSalesOrderNormalizedDisplayUnit,
+  getSalesOrderTotalQuantitySummary,
+  getSalesOrderTotalWeightKg,
+} from '@/lib/utils/sales-order-display';
 
 import type { TemplateType } from '../schemas';
 
@@ -55,19 +66,44 @@ export async function getSalesOrderForPrint(orderId: string) {
   if (!order) return null;
 
   const items = order.items;
+  const normalizedItems = items.map(item => ({
+    ...item,
+    quantity: Number(item.quantity),
+    unitPrice: Number(item.unitPrice),
+    subtotal: Number(item.subtotal),
+    displayQuantity:
+      item.displayQuantity === null || item.displayQuantity === undefined
+        ? undefined
+        : Number(item.displayQuantity),
+    weightSnapshot:
+      item.weightSnapshot === null || item.weightSnapshot === undefined
+        ? undefined
+        : Number(item.weightSnapshot),
+    manualWeight:
+      item.manualWeight === null || item.manualWeight === undefined
+        ? undefined
+        : Number(item.manualWeight),
+    product: item.product
+      ? {
+          ...item.product,
+          weight:
+            item.product.weight === null || item.product.weight === undefined
+              ? null
+              : Number(item.product.weight),
+        }
+      : undefined,
+  }));
 
   // 转换为打印模板需要的格式
-  const mappedItems = items.map(item => {
-    const name = item.product?.name ?? item.manualProductName ?? '';
-    const code = item.product?.code ?? item.productCode ?? '';
-    const spec =
-      item.specification ??
-      item.manualSpecification ??
-      item.product?.specification ??
-      '';
-    const unit = resolveUnitLabel(
-      item.displayUnit ?? item.manualUnit ?? item.product?.unit ?? 'sheet'
-    );
+  const mappedItems = normalizedItems.map(displayItem => {
+    const name = getSalesOrderItemDisplayName(displayItem);
+    const code = getSalesOrderItemDisplayCode(displayItem);
+    const spec = getSalesOrderItemSpecification(displayItem);
+    const unit = getSalesOrderNormalizedDisplayUnit(displayItem);
+    const quantityText = getSalesOrderItemQuantityText(displayItem);
+    const itemWeightKg = getSalesOrderItemWeightKg(displayItem);
+    const boxCount =
+      unit === '件' ? getSalesOrderDisplayQuantityValue(displayItem) : 0;
 
     return {
       // 推荐通用字段（新模板优先使用）
@@ -75,11 +111,11 @@ export async function getSalesOrderForPrint(orderId: string) {
       code,
       spec,
       unit,
-      quantity: item.quantity,
-      unitPrice: Number(item.unitPrice),
-      subtotal: Number(item.subtotal),
-      batchNumber: item.batchNumber ?? '',
-      remark: item.remarks ?? '',
+      quantity: quantityText,
+      unitPrice: Number(displayItem.unitPrice),
+      subtotal: Number(displayItem.subtotal),
+      batchNumber: displayItem.batchNumber ?? '',
+      remark: displayItem.remarks ?? '',
 
       // 兼容字段（旧模板仍可用）
       productName: name,
@@ -87,8 +123,8 @@ export async function getSalesOrderForPrint(orderId: string) {
       specification: spec,
 
       // 其他补充信息（可选）
-      weight: Number(item.manualWeight ?? 0),
-      boxes: 0,
+      weight: itemWeightKg ?? 0,
+      boxes: boxCount,
     };
   });
 
@@ -109,9 +145,9 @@ export async function getSalesOrderForPrint(orderId: string) {
     items: mappedItems,
     totalAmount: Number(order.totalAmount),
     totalAmountCap: Number(order.totalAmount),
-    totalQuantity: items.reduce((sum, i) => sum + i.quantity, 0),
-    totalWeight: items.reduce((sum, i) => sum + Number(i.manualWeight ?? 0), 0),
-    totalBoxes: 0,
+    totalQuantity: getSalesOrderTotalQuantitySummary(normalizedItems),
+    totalWeight: getSalesOrderTotalWeightKg(normalizedItems),
+    totalBoxes: mappedItems.reduce((sum, item) => sum + Number(item.boxes || 0), 0),
     operator: {
       name: order.user?.name ?? '',
     },
