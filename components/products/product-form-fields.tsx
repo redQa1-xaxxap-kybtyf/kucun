@@ -139,11 +139,11 @@ export function ProductPiecesPerUnitField<T extends FieldValues>({
       name={name}
       render={({ field }) => (
         <FormItem>
-          <FormLabel>装箱数 *</FormLabel>
+          <FormLabel>装箱数（仅兼容旧数据）</FormLabel>
           <FormControl>
             <NumberInput
               {...field}
-              placeholder="请输入装箱数"
+              placeholder="新数据请在入库或批次规格里维护"
               disabled={disabled}
               min={1}
               max={10000}
@@ -171,11 +171,11 @@ export function ProductWeightField<T extends FieldValues>({
       name={name}
       render={({ field }) => (
         <FormItem>
-          <FormLabel>重量 (kg)</FormLabel>
+          <FormLabel>重量（仅兼容旧数据）</FormLabel>
           <FormControl>
             <NumberInput
               {...field}
-              placeholder="请输入产品重量"
+              placeholder="新数据请在入库或批次规格里维护"
               disabled={disabled}
               min={0}
               max={10000}

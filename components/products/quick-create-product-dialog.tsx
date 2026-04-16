@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import { PRODUCT_UNIT_OPTIONS } from '@/lib/config/product';
 import { queryKeys } from '@/lib/queryKeys';
 import type { Product } from '@/lib/types/product';
@@ -149,7 +150,6 @@ export function QuickCreateProductDialog({
           name: form.getValues('name'),
           specification: form.getValues('specification'),
           unit: form.getValues('unit'),
-          piecesPerUnit: 1, // 默认值
           status: 'active',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -177,9 +177,31 @@ export function QuickCreateProductDialog({
   const handleSubmit = form.handleSubmit(data => {
     createMutation.mutate(data);
   });
+  const hasUnsavedChanges =
+    open && form.formState.isDirty && !createMutation.isPending;
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前产品资料尚未保存，确定要关闭吗？',
+  });
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen && !confirmLeavePage()) {
+      return;
+    }
+
+    onOpenChange(nextOpen);
+  };
+
+  const handleCancel = () => {
+    if (!confirmLeavePage()) {
+      return;
+    }
+
+    onOpenChange(false);
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>快速添加产品</DialogTitle>
@@ -305,7 +327,7 @@ export function QuickCreateProductDialog({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => onOpenChange(false)}
+                onClick={handleCancel}
                 disabled={createMutation.isPending}
               >
                 取消

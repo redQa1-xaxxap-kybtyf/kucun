@@ -222,8 +222,12 @@ function ProductImagesCard({ form, isLoading }: ProductImagesCardProps) {
         <ProductImageUpload
           thumbnailUrl={thumbnailUrl}
           images={images}
-          onThumbnailChange={url => form.setValue('thumbnailUrl', url)}
-          onImagesChange={fileList => form.setValue('images', fileList)}
+          onThumbnailChange={url =>
+            form.setValue('thumbnailUrl', url, { shouldDirty: true })
+          }
+          onImagesChange={fileList =>
+            form.setValue('images', fileList, { shouldDirty: true })
+          }
           disabled={isLoading}
           maxFiles={8}
           maxSize={5}

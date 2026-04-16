@@ -363,7 +363,7 @@ function formatProduct(product: ProductWithRelations) {
     name: product.name,
     specification: product.specification ?? undefined,
     unit: product.unit as ProductUnit,
-    piecesPerUnit: product.piecesPerUnit,
+    piecesPerUnit: product.piecesPerUnit ?? undefined,
     weight: product.weight === null ? undefined : Number(product.weight),
     thickness:
       product.thickness === null ? undefined : Number(product.thickness),

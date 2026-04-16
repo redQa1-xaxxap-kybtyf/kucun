@@ -192,7 +192,7 @@ describe('products-list 批次规格（集成回归）', () => {
     );
   });
 
-  test('getProductsBatchSpecifications：批次规格缺失但产品存在默认装箱数时，应回退生成批次规格', async () => {
+  test('getProductsBatchSpecifications：批次规格缺失时，不再回退产品主档默认值，应直接跳过该批次', async () => {
     (prisma.inventory.groupBy as jest.Mock).mockResolvedValueOnce([
       {
         productId: 'p1',
@@ -208,28 +208,14 @@ describe('products-list 批次规格（集成回归）', () => {
       '@/lib/api/handlers/products-list'
     );
 
-    const result = await getProductsBatchSpecifications(
-      ['p1'],
-      new Map([
-        [
-          'p1',
-          {
-            piecesPerUnit: 8,
-            weight: 12.5,
-          },
-        ],
-      ])
-    );
+    const result = await getProductsBatchSpecifications(['p1']);
 
-    expect(result.get('p1')).toEqual([
-      {
-        batchNumber: 'B1',
-        piecesPerUnit: 8,
-        quantity: 5,
-        weight: 12.5,
-      },
-    ]);
-    expect(logger.warn).not.toHaveBeenCalled();
+    expect(result.get('p1')).toBeUndefined();
+    expect(logger.warn).toHaveBeenCalledWith(
+      'api:products-list',
+      '批次没有批次规格记录',
+      expect.objectContaining({ productId: 'p1', batchNumber: 'B1' })
+    );
   });
 
   test('getProductsBatchSpecifications：同产品同批次不同色号应保留独立规格', async () => {

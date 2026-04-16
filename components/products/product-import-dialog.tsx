@@ -31,6 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import {
   downloadProductImportTemplate,
   importProducts,
@@ -229,24 +230,24 @@ export function ProductImportDialog({
     onSuccess: previewResult => {
       setResult(previewResult);
       if (!previewResult.valid) {
-        showWarning('预校验发现问题', {
+        showWarning('导入检查发现问题', {
           description: `共 ${previewResult.errorCount} 条错误，请修正后重试`,
         });
         return;
       }
 
       if (previewResult.duplicateCount > 0) {
-        showWarning('预校验完成', {
+        showWarning('导入检查完成', {
           description: `可导入 ${previewResult.validCount} 条，重复编码 ${previewResult.duplicateCount} 条将自动跳过`,
         });
       } else {
-        showSuccess('预校验通过', {
+        showSuccess('导入检查通过', {
           description: `共 ${previewResult.validCount} 条数据可导入`,
         });
       }
     },
     onError: error => {
-      showError('预校验失败', {
+      showError('导入检查失败', {
         description: error instanceof Error ? error.message : '请稍后重试',
       });
     },
@@ -259,7 +260,7 @@ export function ProductImportDialog({
 
       if (!importResult.valid) {
         showWarning('导入未执行', {
-          description: '文件存在错误，请修正后重新预校验',
+          description: '文件存在错误，请修正后重新检查',
         });
         return;
       }
@@ -293,6 +294,12 @@ export function ProductImportDialog({
   });
 
   const isBusy = previewMutation.isPending || importMutation.isPending;
+  const hasUnsavedChanges =
+    open && !isBusy && (file !== null || result !== null);
+  const { confirmLeavePage } = useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    message: '当前导入内容尚未完成，确定要关闭吗？',
+  });
 
   function resetDialogState() {
     setFile(null);
@@ -310,6 +317,9 @@ export function ProductImportDialog({
     }
 
     if (!nextOpen) {
+      if (!confirmLeavePage()) {
+        return;
+      }
       resetDialogState();
     }
 
@@ -357,7 +367,8 @@ export function ProductImportDialog({
         <DialogHeader>
           <DialogTitle>批量导入产品基础信息</DialogTitle>
           <DialogDescription>
-            支持 Excel 或 CSV。建议先下载模板填写，再执行预校验和正式导入。
+            支持 Excel
+            或文本表格文件。建议先下载模板填写，再先做导入检查，再执行正式导入。
           </DialogDescription>
         </DialogHeader>
 
@@ -419,7 +430,7 @@ export function ProductImportDialog({
                 {result.valid
                   ? result.duplicateCount > 0
                     ? '存在重复编码，正式导入时会自动跳过这些重复项。'
-                    : '预校验通过，可以执行正式导入。'
+                    : '导入检查通过，可以执行正式导入。'
                   : '存在错误，导入不会执行，请先修正文件。'}
               </AlertDescription>
             </Alert>
@@ -448,7 +459,7 @@ export function ProductImportDialog({
             {previewMutation.isPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : null}
-            预校验
+            导入检查
           </Button>
           <Button
             type="button"

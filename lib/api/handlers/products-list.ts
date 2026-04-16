@@ -29,14 +29,6 @@ type ProductBatchSpecEntry = {
   weight?: number | null;
 };
 
-type ProductBatchSpecDefaults = Map<
-  string,
-  {
-    piecesPerUnit?: number | null;
-    weight?: number | null;
-  }
->;
-
 /**
  * 解析产品列表查询参数
  */
@@ -202,10 +194,7 @@ export async function getProductsInventory(
   return getBatchCachedInventorySummary(productIds);
 }
 
-export async function getProductsBatchSpecifications(
-  productIds: string[],
-  productDefaults?: ProductBatchSpecDefaults
-) {
+export async function getProductsBatchSpecifications(productIds: string[]) {
   if (productIds.length === 0) {
     return new Map<string, ProductBatchSpecEntry[]>();
   }
@@ -335,26 +324,7 @@ export async function getProductsBatchSpecifications(
       ) ??
       batchSpecMap.get(buildBatchSpecKey(inv.productId, inv.batchNumber, null));
 
-    const fallbackDefaults = productDefaults?.get(inv.productId);
-    const fallbackPiecesPerUnit =
-      typeof fallbackDefaults?.piecesPerUnit === 'number' &&
-      fallbackDefaults.piecesPerUnit > 0
-        ? fallbackDefaults.piecesPerUnit
-        : undefined;
-    const resolvedBatchSpec =
-      batchSpec ??
-      (fallbackPiecesPerUnit
-        ? {
-            piecesPerUnit: fallbackPiecesPerUnit,
-            weight:
-              fallbackDefaults?.weight === undefined
-                ? undefined
-                : fallbackDefaults.weight,
-            variantId: inv.variantId ?? undefined,
-          }
-        : undefined);
-
-    if (!resolvedBatchSpec) {
+    if (!batchSpec) {
       logger.warn('api:products-list', '批次没有批次规格记录', {
         batchNumber: inv.batchNumber,
         productId: inv.productId,
@@ -363,7 +333,7 @@ export async function getProductsBatchSpecifications(
       return;
     }
 
-    const key = `${inv.batchNumber}|||${resolvedBatchSpec.variantId ?? ''}|||${resolvedBatchSpec.piecesPerUnit}`;
+    const key = `${inv.batchNumber}|||${batchSpec.variantId ?? ''}|||${batchSpec.piecesPerUnit}`;
 
     // 确保产品批次映射存在
     let batchMap = productBatchMap.get(inv.productId);
@@ -380,12 +350,12 @@ export async function getProductsBatchSpecifications(
     } else {
       batchMap.set(key, {
         batchNumber: inv.batchNumber,
-        variantId: resolvedBatchSpec.variantId,
-        colorCode: resolvedBatchSpec.colorCode,
-        colorName: resolvedBatchSpec.colorName,
-        piecesPerUnit: resolvedBatchSpec.piecesPerUnit,
+        variantId: batchSpec.variantId,
+        colorCode: batchSpec.colorCode,
+        colorName: batchSpec.colorName,
+        piecesPerUnit: batchSpec.piecesPerUnit,
         quantity,
-        weight: resolvedBatchSpec.weight,
+        weight: batchSpec.weight,
       });
     }
   });
@@ -410,7 +380,7 @@ export function formatProductList(params: {
     name: string;
     specification: string | null;
     unit: string;
-    piecesPerUnit: number;
+    piecesPerUnit: number | null;
     weight: number | null;
     thickness: number | null;
     status: string;
@@ -543,7 +513,7 @@ export function formatProductList(params: {
       name: product.name,
       specification: product.specification ?? undefined,
       unit,
-      piecesPerUnit: product.piecesPerUnit,
+      piecesPerUnit: product.piecesPerUnit ?? undefined,
       weight: product.weight === null ? undefined : Number(product.weight),
       thickness:
         product.thickness === null ? undefined : Number(product.thickness),

@@ -253,22 +253,6 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
               </div>
               <div>
                 <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
-                  每单位片数
-                </div>
-                <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
-                  {product.piecesPerUnit || '-'}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
-                  重量 (kg)
-                </div>
-                <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
-                  {product.weight || '-'}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                   厚度 (mm)
                 </div>
                 <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
