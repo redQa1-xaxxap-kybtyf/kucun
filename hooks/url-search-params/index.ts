@@ -190,6 +190,7 @@ export function useUrlSearchParams<T extends object>(
       // 1. ✅ 立即更新本地状态 (UI即时响应,0ms延迟)
       const updates = { [key]: value } as Partial<T>;
       const newParams = mergeParams(latestParamsRef.current, updates);
+      latestParamsRef.current = newParams;
       setLocalParams(newParams);
 
       // 2. ✅ 防抖更新URL (避免频繁路由变更)
@@ -217,6 +218,7 @@ export function useUrlSearchParams<T extends object>(
 
       // 1. ✅ 立即更新本地状态 (UI即时响应,0ms延迟)
       const newParams = mergeParams(latestParamsRef.current, updates);
+      latestParamsRef.current = newParams;
       setLocalParams(newParams);
 
       // 2. ✅ 防抖更新URL (避免频繁路由变更)
@@ -242,6 +244,7 @@ export function useUrlSearchParams<T extends object>(
     }
 
     // ✅ 立即更新本地状态
+    latestParamsRef.current = defaultParams;
     setLocalParams(defaultParams);
 
     // 立即更新URL (重置操作不需要防抖)

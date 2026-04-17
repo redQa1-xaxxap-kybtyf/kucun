@@ -135,6 +135,7 @@ export function PaymentsPageClient({
   const [includeVoided, setIncludeVoided] = React.useState<boolean>(
     !!initialParams.includeVoided
   );
+  const latestSearchRef = React.useRef(initialParams.search || '');
 
   const handleExport = React.useCallback(() => {
     // 导出使用当前筛选条件，但一次性导出最多 50,000 条记录
@@ -215,9 +216,21 @@ export function PaymentsPageClient({
     300
   );
 
+  React.useEffect(() => {
+    latestSearchRef.current = initialParams.search || '';
+  }, [initialParams.search]);
+
+  React.useEffect(
+    () => () => {
+      debouncedUpdateURL.cancel();
+    },
+    [debouncedUpdateURL]
+  );
+
   // 搜索处理 - 立即更新本地状态，防抖更新URL
   const handleSearch = React.useCallback(
     (value: string) => {
+      latestSearchRef.current = value;
       setSearch(value);
       debouncedUpdateURL(value, {
         ...initialParams,
@@ -250,6 +263,8 @@ export function PaymentsPageClient({
   // 筛选处理
   const handleFilter = React.useCallback(
     (key: string, value: string | undefined) => {
+      debouncedUpdateURL.cancel();
+      const currentSearch = latestSearchRef.current;
       let nextStatus = status;
       let nextPaymentMethod = paymentMethod;
       let nextSortBy = sortBy;
@@ -293,8 +308,8 @@ export function PaymentsPageClient({
 
       startTransition(() => {
         const params = new URLSearchParams();
-        if (search) {
-          params.set('search', search);
+        if (currentSearch) {
+          params.set('search', currentSearch);
         }
         if (nextFilters.status) {
           params.set('status', nextFilters.status);
@@ -328,8 +343,8 @@ export function PaymentsPageClient({
       });
     },
     [
+      debouncedUpdateURL,
       router,
-      search,
       initialParams,
       status,
       paymentMethod,
@@ -345,10 +360,12 @@ export function PaymentsPageClient({
   // 分页处理
   const handlePageChange = React.useCallback(
     (page: number) => {
+      debouncedUpdateURL.cancel();
+      const currentSearch = latestSearchRef.current;
       startTransition(() => {
         const params = new URLSearchParams();
-        if (search) {
-          params.set('search', search);
+        if (currentSearch) {
+          params.set('search', currentSearch);
         }
         if (status) {
           params.set('status', status);
@@ -385,8 +402,8 @@ export function PaymentsPageClient({
       });
     },
     [
+      debouncedUpdateURL,
       router,
-      search,
       status,
       paymentMethod,
       sortBy,
@@ -401,6 +418,8 @@ export function PaymentsPageClient({
 
   const handleDateRangeChange = React.useCallback(
     (range: DateRangeValue) => {
+      debouncedUpdateURL.cancel();
+      const currentSearch = latestSearchRef.current;
       const nextStart = range.startDate || undefined;
       const nextEnd = range.endDate || undefined;
 
@@ -409,8 +428,8 @@ export function PaymentsPageClient({
 
       startTransition(() => {
         const params = new URLSearchParams();
-        if (search) {
-          params.set('search', search);
+        if (currentSearch) {
+          params.set('search', currentSearch);
         }
         if (status) {
           params.set('status', status);
@@ -444,8 +463,8 @@ export function PaymentsPageClient({
       });
     },
     [
+      debouncedUpdateURL,
       router,
-      search,
       status,
       paymentMethod,
       sortBy,
@@ -457,10 +476,11 @@ export function PaymentsPageClient({
   );
 
   const handleRefresh = React.useCallback(() => {
+    debouncedUpdateURL.cancel();
     startTransition(() => {
       router.refresh();
     });
-  }, [router]);
+  }, [debouncedUpdateURL, router]);
 
   return (
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">

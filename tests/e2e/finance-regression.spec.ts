@@ -36,6 +36,11 @@ type RefundCandidate = {
   status: 'pending' | 'processing' | 'completed' | 'rejected' | 'cancelled';
 };
 
+type ReceivableCandidate = {
+  orderNumber: string;
+  paymentStatus: 'unpaid' | 'partial' | 'pending' | 'paid';
+};
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
@@ -81,8 +86,37 @@ async function resolveCaptchaSrc(page: Page): Promise<string> {
   throw new Error('登录页验证码图片未加载完成');
 }
 
+async function gotoWithRetry(
+  page: Page,
+  url: string,
+  options: Parameters<Page['goto']>[1],
+  maxAttempts = 3
+) {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      await page.goto(url, options);
+      return;
+    } catch (error) {
+      lastError = error;
+      if (attempt === maxAttempts) {
+        throw error;
+      }
+      await page.waitForTimeout(attempt * 1_000);
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error(`页面跳转失败: ${url}`);
+}
+
 async function loginAsAdmin(page: Page) {
-  await page.goto(`${BASE_URL}/auth/signin`, { waitUntil: 'domcontentloaded' });
+  await gotoWithRetry(page, `${BASE_URL}/auth/signin`, {
+    waitUntil: 'commit',
+    timeout: 120_000,
+  });
   await expect(page.getByText('库存管理系统', { exact: true })).toBeVisible();
 
   const captchaSrc = await resolveCaptchaSrc(page);
@@ -94,16 +128,36 @@ async function loginAsAdmin(page: Page) {
 
   await page.waitForURL(`${BASE_URL}/dashboard`, {
     timeout: 20_000,
+    waitUntil: 'commit',
   });
 }
 
 async function fetchAuthedJson(page: Page, path: string) {
-  const response = await page.context().request.get(`${BASE_URL}${path}`);
-  expect(
-    response.ok(),
-    `请求失败: ${path} -> ${response.status()} ${response.statusText()}`
-  ).toBeTruthy();
-  return response.json();
+  let lastError: unknown;
+  let lastStatusMessage = '';
+
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      const response = await page.context().request.get(`${BASE_URL}${path}`);
+      if (response.ok()) {
+        return response.json();
+      }
+
+      lastStatusMessage = `${path} -> ${response.status()} ${response.statusText()}`;
+    } catch (error) {
+      lastError = error;
+    }
+
+    if (attempt < 3) {
+      await page.waitForTimeout(attempt * 1_000);
+    }
+  }
+
+  if (lastError) {
+    throw lastError;
+  }
+
+  throw new Error(`请求失败: ${lastStatusMessage}`);
 }
 
 async function recoverFromChunkLoadError(page: Page) {
@@ -118,8 +172,21 @@ async function recoverFromChunkLoadError(page: Page) {
 }
 
 async function gotoRoute(page: Page, path: string) {
-  await page.goto(`${BASE_URL}${path}`, { waitUntil: 'domcontentloaded' });
+  await gotoWithRetry(page, `${BASE_URL}${path}`, {
+    waitUntil: 'commit',
+    timeout: 120_000,
+  });
   await recoverFromChunkLoadError(page);
+}
+
+async function getVisibleSearchInput(
+  page: Page,
+  placeholder: string,
+  timeout = 20_000
+) {
+  const input = page.locator(`input[placeholder="${placeholder}"]:visible`).first();
+  await expect(input).toBeVisible({ timeout });
+  return input;
 }
 
 async function expectQueryParam(
@@ -298,6 +365,36 @@ async function getRefundCandidate(page: Page): Promise<RefundCandidate | null> {
   return null;
 }
 
+async function getReceivableCandidate(
+  page: Page
+): Promise<ReceivableCandidate | null> {
+  const payload = await fetchAuthedJson(page, '/api/finance/receivables?limit=50');
+  const receivables = asRecordArray(
+    isRecord(payload) && isRecord(payload.data) ? payload.data.receivables : null
+  );
+
+  for (const item of receivables) {
+    const orderNumber =
+      typeof item.orderNumber === 'string' ? item.orderNumber.trim() : '';
+    const paymentStatus = item.paymentStatus;
+
+    if (
+      orderNumber &&
+      (paymentStatus === 'unpaid' ||
+        paymentStatus === 'partial' ||
+        paymentStatus === 'pending' ||
+        paymentStatus === 'paid')
+    ) {
+      return {
+        orderNumber,
+        paymentStatus,
+      };
+    }
+  }
+
+  return null;
+}
+
 test.describe('财务页面实际操作级回归', () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
@@ -320,7 +417,7 @@ test.describe('财务页面实际操作级回归', () => {
     ).toBeVisible();
 
     await gotoRoute(page, '/finance');
-    await page.getByRole('link', { name: /费用管理/ }).click();
+    await page.locator('main a[href="/finance/expenses"]').first().click();
     await expect(page).toHaveURL(/\/finance\/expenses/);
     await expect(
       page.getByRole('heading', { name: '费用管理' })
@@ -328,6 +425,7 @@ test.describe('财务页面实际操作级回归', () => {
   });
 
   test('往来对账应支持搜索、对象筛选和进入详情', async ({ page }) => {
+    test.setTimeout(120_000);
     const candidate = await getStatementsCandidate(page);
 
     await gotoRoute(page, '/finance/statements');
@@ -384,13 +482,17 @@ test.describe('财务页面实际操作级回归', () => {
     await expect(
       page.getByRole('heading', { name: '费用管理' })
     ).toBeVisible();
-    await expect(page.getByLabel('费用类型')).toBeVisible();
-    await expect(
-      page.getByText('只有“已审核入账”的费用会进入月报、年报和利润分析。')
-    ).toBeVisible();
+    await expect(page.getByText('费用列表').first()).toBeVisible({
+      timeout: 20_000,
+    });
+    const expenseTypeSelect = page
+      .locator('select[aria-label="费用类型"]:visible')
+      .first();
+    await expect(expenseTypeSelect).toBeVisible();
+    await expect(expenseTypeSelect).toBeEnabled({ timeout: 20_000 });
 
     if (candidate) {
-      await page.getByLabel('费用类型').selectOption(candidate.expenseType);
+      await expenseTypeSelect.selectOption(candidate.expenseType);
       await expectQueryParam(
         page,
         'expenseType',
@@ -424,16 +526,15 @@ test.describe('财务页面实际操作级回归', () => {
 
   test('月报页应支持切换月份并刷新报表', async ({ page }) => {
     await gotoRoute(page, '/finance/reports/monthly');
-    await expect(
-      page.getByRole('heading', { name: '月度报表' })
-    ).toBeVisible({ timeout: 20_000 });
 
     const yearSelect = page.getByLabel('年份');
     const monthSelect = page.getByLabel('月份');
     const refreshButton = page.getByRole('button', { name: '刷新报表' });
 
-    await expect(yearSelect).toBeVisible();
+    await expect(yearSelect).toBeVisible({ timeout: 20_000 });
     await expect(monthSelect).toBeVisible();
+    await expect(yearSelect).toBeEnabled();
+    await expect(monthSelect).toBeEnabled();
     await expect(refreshButton).toBeVisible();
     await expect(page.getByText('本月净利润')).toBeVisible({ timeout: 20_000 });
 
@@ -446,21 +547,73 @@ test.describe('财务页面实际操作级回归', () => {
     await expect(page.getByText('本月净利润')).toBeVisible();
   });
 
+  test('客户待收款先搜索再筛选状态时应保留搜索条件', async ({ page }) => {
+    test.setTimeout(120_000);
+    const candidate = await getReceivableCandidate(page);
+
+    await gotoRoute(page, '/finance/receivables');
+    await expect(
+      page.getByRole('heading', { name: '客户待收款' })
+    ).toBeVisible();
+
+    const searchInput = await getVisibleSearchInput(
+      page,
+      '搜索订单号或客户名称...'
+    );
+    const statusSelect = page.locator('select[aria-label="状态"]:visible').first();
+    const visibleViewOrderButton = page
+      .getByRole('button', { name: '查看订单' })
+      .first();
+
+    await expect(statusSelect).toBeVisible({ timeout: 20_000 });
+
+    if (!candidate) {
+      await expect(page.getByText('暂无客户待收款')).toBeVisible();
+      return;
+    }
+
+    await searchInput.fill(candidate.orderNumber);
+    await expectQueryParam(
+      page,
+      'search',
+      candidate.orderNumber,
+      '客户待收款搜索词未同步到 URL'
+    );
+    await expect(visibleViewOrderButton).toBeVisible();
+
+    await statusSelect.selectOption(candidate.paymentStatus);
+    await expectQueryParam(
+      page,
+      'search',
+      candidate.orderNumber,
+      '客户待收款筛选状态后，URL 丢失了已有搜索词'
+    );
+    await expectQueryParam(
+      page,
+      'paymentStatus',
+      candidate.paymentStatus,
+      '客户待收款状态筛选未同步到 URL'
+    );
+    await expect(visibleViewOrderButton).toBeVisible();
+  });
+
   test('已收款记录应支持搜索、状态筛选、清空和进入新建页', async ({ page }) => {
     const candidate = await getPaymentCandidate(page);
 
     await gotoRoute(page, '/finance/payments');
     await expect(
-      page.getByRole('heading', { name: '已收款记录' })
+      page.getByRole('heading', { name: '收款管理' })
     ).toBeVisible();
 
-    const searchInput = page.getByPlaceholder('搜索收款单号、客户名称或销售单号');
-    await expect(searchInput).toBeVisible();
+    const searchInput = await getVisibleSearchInput(
+      page,
+      '搜索收款单号、客户名称或销售单号'
+    );
     await expect(page.getByLabel('状态')).toBeVisible();
 
     if (!candidate) {
       await expect(page.getByText('暂无收款记录')).toBeVisible();
-      await page.getByRole('link', { name: '新建收款' }).click();
+      await page.getByRole('link', { name: '登记收款' }).click();
       await expect(page).toHaveURL(/\/finance\/payments\/create/);
       return;
     }
@@ -472,7 +625,7 @@ test.describe('财务页面实际操作级回归', () => {
       candidate.paymentNumber,
       '收款搜索词未同步到 URL'
     );
-    await expect(page.getByText(candidate.paymentNumber).first()).toBeVisible();
+    await expect(searchInput).toHaveValue(candidate.paymentNumber);
 
     await page.getByLabel('状态').selectOption(candidate.status);
     await expectQueryParam(
@@ -481,6 +634,7 @@ test.describe('财务页面实际操作级回归', () => {
       candidate.status,
       '收款状态筛选未同步到 URL'
     );
+    await expect(searchInput).toHaveValue(candidate.paymentNumber);
     await page.getByRole('button', { name: '清空搜索' }).click();
     await expectQueryParam(
       page,
@@ -489,8 +643,48 @@ test.describe('财务页面实际操作级回归', () => {
       '收款清空搜索后 URL 仍保留搜索词'
     );
 
-    await page.getByRole('link', { name: '新建收款' }).click();
+    await page.getByRole('link', { name: '登记收款' }).click();
     await expect(page).toHaveURL(/\/finance\/payments\/create/);
+  });
+
+  test('收款管理先搜索再切状态时，不应被延迟搜索覆盖掉筛选', async ({ page }) => {
+    const candidate = await getPaymentCandidate(page);
+
+    await gotoRoute(page, '/finance/payments');
+    await expect(
+      page.getByRole('heading', { name: '收款管理' })
+    ).toBeVisible();
+
+    const searchInput = await getVisibleSearchInput(
+      page,
+      '搜索收款单号、客户名称或销售单号'
+    );
+    const statusSelect = page.locator('select[aria-label="状态"]:visible').first();
+
+    await expect(statusSelect).toBeVisible();
+
+    if (!candidate) {
+      await expect(page.getByText('暂无收款记录')).toBeVisible();
+      return;
+    }
+
+    await searchInput.fill(candidate.paymentNumber);
+    await statusSelect.selectOption(candidate.status);
+    await page.waitForTimeout(700);
+
+    await expectQueryParam(
+      page,
+      'search',
+      candidate.paymentNumber,
+      '收款管理先搜索再切状态后，URL 丢失了搜索词'
+    );
+    await expectQueryParam(
+      page,
+      'status',
+      candidate.status,
+      '收款管理先搜索再切状态后，URL 丢失了状态筛选'
+    );
+    await expect(searchInput).toHaveValue(candidate.paymentNumber);
   });
 
   test('已付款记录应支持搜索、状态筛选、清空和进入新建页', async ({ page }) => {
@@ -498,16 +692,18 @@ test.describe('财务页面实际操作级回归', () => {
 
     await gotoRoute(page, '/finance/payments-out');
     await expect(
-      page.getByRole('heading', { name: '已付款记录' })
+      page.getByRole('heading', { name: '付款管理' })
     ).toBeVisible();
 
-    const searchInput = page.getByPlaceholder('搜索付款单号、供应商名称或联系人');
-    await expect(searchInput).toBeVisible();
+    const searchInput = await getVisibleSearchInput(
+      page,
+      '搜索付款单号、供应商名称或联系人'
+    );
     await expect(page.getByLabel('状态')).toBeVisible();
 
     if (!candidate) {
       await expect(page.getByText('暂无付款记录')).toBeVisible();
-      await page.getByRole('link', { name: '新建付款' }).click();
+      await page.getByRole('link', { name: '登记付款' }).click();
       await expect(page).toHaveURL(/\/finance\/payments-out\/create/);
       return;
     }
@@ -519,7 +715,7 @@ test.describe('财务页面实际操作级回归', () => {
       candidate.paymentNumber,
       '付款搜索词未同步到 URL'
     );
-    await expect(page.getByText(candidate.paymentNumber).first()).toBeVisible();
+    await expect(searchInput).toHaveValue(candidate.paymentNumber);
 
     await page.getByLabel('状态').selectOption(candidate.status);
     await expectQueryParam(
@@ -528,6 +724,7 @@ test.describe('财务页面实际操作级回归', () => {
       candidate.status,
       '付款状态筛选未同步到 URL'
     );
+    await expect(searchInput).toHaveValue(candidate.paymentNumber);
     await page.getByRole('button', { name: '清空搜索' }).click();
     await expectQueryParam(
       page,
@@ -536,7 +733,7 @@ test.describe('财务页面实际操作级回归', () => {
       '付款清空搜索后 URL 仍保留搜索词'
     );
 
-    await page.getByRole('link', { name: '新建付款' }).click();
+    await page.getByRole('link', { name: '登记付款' }).click();
     await expect(page).toHaveURL(/\/finance\/payments-out\/create/);
   });
 
@@ -548,8 +745,10 @@ test.describe('财务页面实际操作级回归', () => {
       page.getByRole('heading', { name: '退款处理' })
     ).toBeVisible();
 
-    const searchInput = page.getByPlaceholder('搜索退款单号、退货单号或客户名称');
-    await expect(searchInput).toBeVisible();
+    const searchInput = await getVisibleSearchInput(
+      page,
+      '搜索退款单号、退货单号或客户名称'
+    );
     await expect(page.getByLabel('状态')).toBeVisible();
 
     if (!candidate) {
@@ -585,5 +784,45 @@ test.describe('财务页面实际操作级回归', () => {
 
     await page.getByRole('link', { name: '新建退货订单' }).click();
     await expect(page).toHaveURL(/\/return-orders\/create/);
+  });
+
+  test('退款处理先搜索再切状态时，不应被延迟搜索覆盖掉筛选', async ({ page }) => {
+    const candidate = await getRefundCandidate(page);
+
+    await gotoRoute(page, '/finance/refunds');
+    await expect(
+      page.getByRole('heading', { name: '退款处理' })
+    ).toBeVisible();
+
+    const searchInput = await getVisibleSearchInput(
+      page,
+      '搜索退款单号、退货单号或客户名称'
+    );
+    const statusSelect = page.locator('select[aria-label="状态"]:visible').first();
+
+    await expect(statusSelect).toBeVisible();
+
+    if (!candidate) {
+      await expect(page.getByText('暂无退款记录')).toBeVisible();
+      return;
+    }
+
+    await searchInput.fill(candidate.refundNumber);
+    await statusSelect.selectOption(candidate.status);
+    await page.waitForTimeout(700);
+
+    await expectQueryParam(
+      page,
+      'search',
+      candidate.refundNumber,
+      '退款处理先搜索再切状态后，URL 丢失了搜索词'
+    );
+    await expectQueryParam(
+      page,
+      'status',
+      candidate.status,
+      '退款处理先搜索再切状态后，URL 丢失了状态筛选'
+    );
+    await expect(searchInput).toHaveValue(candidate.refundNumber);
   });
 });

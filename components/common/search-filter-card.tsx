@@ -175,6 +175,11 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
   }) => {
     const isPro = variant === 'pro';
     const [mobileFiltersOpen, setMobileFiltersOpen] = React.useState(false);
+    const [isHydrated, setIsHydrated] = React.useState(false);
+
+    React.useEffect(() => {
+      setIsHydrated(true);
+    }, []);
 
     // 计算是否有活跃的筛选条件
     const hasFilters = React.useMemo(() => {
@@ -305,6 +310,7 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
                   placeholder={searchPlaceholder}
                   value={searchValue}
                   onChange={event => onSearchChange(event.target.value)}
+                  disabled={!isHydrated}
                   className={cn(
                     'h-11 rounded-xl pl-10',
                     searchValue && 'pr-10',
@@ -318,6 +324,7 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
                     variant="ghost"
                     size="sm"
                     onClick={() => onSearchChange('')}
+                    disabled={!isHydrated}
                     className="absolute top-1/2 right-1 h-8 w-8 -translate-y-1/2 p-0"
                     aria-label="清空搜索"
                   >
@@ -337,6 +344,7 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
                       variant={
                         activeFilterItems.length > 0 ? 'default' : 'outline'
                       }
+                      disabled={!isHydrated}
                       className="h-11 shrink-0 rounded-xl px-3"
                     >
                       <SlidersHorizontal className="mr-1.5 h-4 w-4" />
@@ -390,6 +398,7 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
                                   shouldReset ? undefined : nextValue
                                 );
                               }}
+                              disabled={!isHydrated}
                               className="border-input bg-background ring-offset-background focus:ring-ring h-11 w-full rounded-xl border px-3 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden"
                             >
                               {includeAllOption ? (
@@ -424,6 +433,7 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
                               dateRangeFilter.placeholder || '选择日期范围'
                             }
                             showPresets={dateRangeFilter.showPresets ?? true}
+                            disabled={!isHydrated}
                             className={cn('w-full', dateRangeFilter.className)}
                           />
                         </div>
@@ -445,6 +455,7 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
                           type="button"
                           variant="outline"
                           onClick={handleClearFilters}
+                          disabled={!isHydrated}
                           className="flex-1"
                         >
                           <RotateCcw className="mr-2 h-4 w-4" />
@@ -454,6 +465,7 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
                       <Button
                         type="button"
                         onClick={() => setMobileFiltersOpen(false)}
+                        disabled={!isHydrated}
                         className={cn(
                           showClearButton && hasFilters && onClearFilters
                             ? 'flex-1'
@@ -479,6 +491,7 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
                     data-active={toggle.active || undefined}
                     className="h-9 shrink-0 rounded-xl data-[active=true]:border-[hsl(var(--color-primary))] data-[active=true]:bg-[hsl(var(--color-primary-light))] data-[active=true]:text-[hsl(var(--color-primary))]"
                     onClick={toggle.onClick}
+                    disabled={!isHydrated}
                   >
                     {toggle.icon}
                     <span className="text-xs">{toggle.label}</span>
@@ -499,6 +512,7 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
                       action.className
                     )}
                     onClick={action.onClick}
+                    disabled={!isHydrated || action.disabled}
                   >
                     {action.icon}
                     {action.label}
@@ -563,6 +577,7 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
                         dateRangeFilter.placeholder || '选择日期范围'
                       }
                       showPresets={dateRangeFilter.showPresets ?? true}
+                      disabled={!isHydrated}
                       className={cn(
                         'w-full min-w-0 md:w-[280px] xl:w-auto xl:min-w-[220px]',
                         isPro
@@ -582,6 +597,7 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
                       variant={isPro ? 'ghost' : 'outline'}
                       size="sm"
                       onClick={handleClearFilters}
+                      disabled={!isHydrated}
                       className={cn(
                         'h-8 w-full justify-center gap-1.5 self-end transition-all md:w-auto',
                         isPro

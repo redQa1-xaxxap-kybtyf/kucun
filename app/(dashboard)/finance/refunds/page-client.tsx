@@ -65,8 +65,10 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
   const [endDate, setEndDate] = React.useState<string | undefined>(
     initialParams.endDate
   );
+  const latestSearchRef = React.useRef(initialParams.search || '');
 
   React.useEffect(() => {
+    latestSearchRef.current = initialParams.search || '';
     setSearch(initialParams.search || '');
     setStatus(initialParams.status);
     setIncludeTest(!!initialParams.includeTest);
@@ -184,9 +186,17 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
     300
   );
 
+  React.useEffect(
+    () => () => {
+      debouncedUpdateURL.cancel();
+    },
+    [debouncedUpdateURL]
+  );
+
   // 搜索处理 - 立即更新本地状态，防抖更新URL
   const handleSearch = React.useCallback(
     (value: string) => {
+      latestSearchRef.current = value;
       setSearch(value);
       debouncedUpdateURL(value, {
         ...initialParams,
@@ -217,6 +227,8 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
   // 筛选处理
   const handleFilter = React.useCallback(
     (key: string, value: string | undefined) => {
+      debouncedUpdateURL.cancel();
+      const currentSearch = latestSearchRef.current;
       let nextStatus = status;
       let nextSortBy = sortBy;
       let nextSortOrder = sortOrder;
@@ -242,8 +254,8 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
 
       startTransition(() => {
         const params = new URLSearchParams();
-        if (search) {
-          params.set('search', search);
+        if (currentSearch) {
+          params.set('search', currentSearch);
         }
         if (nextStatus) {
           params.set('status', nextStatus);
@@ -274,8 +286,8 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
       });
     },
     [
+      debouncedUpdateURL,
       router,
-      search,
       status,
       includeTest,
       includeVoided,
@@ -290,10 +302,12 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
   // 分页处理
   const handlePageChange = React.useCallback(
     (page: number) => {
+      debouncedUpdateURL.cancel();
+      const currentSearch = latestSearchRef.current;
       startTransition(() => {
         const params = new URLSearchParams();
-        if (search) {
-          params.set('search', search);
+        if (currentSearch) {
+          params.set('search', currentSearch);
         }
         if (status) {
           params.set('status', status);
@@ -327,8 +341,8 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
       });
     },
     [
+      debouncedUpdateURL,
       router,
-      search,
       status,
       includeTest,
       includeVoided,
@@ -342,13 +356,15 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
 
   const handleDateRangeChange = React.useCallback(
     (range: DateRangeValue) => {
+      debouncedUpdateURL.cancel();
+      const currentSearch = latestSearchRef.current;
       setStartDate(range.startDate);
       setEndDate(range.endDate);
 
       startTransition(() => {
         const params = new URLSearchParams();
-        if (search) {
-          params.set('search', search);
+        if (currentSearch) {
+          params.set('search', currentSearch);
         }
         if (status) {
           params.set('status', status);
@@ -379,9 +395,9 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
       });
     },
     [
+      debouncedUpdateURL,
       router,
       pagination.limit,
-      search,
       status,
       includeTest,
       includeVoided,

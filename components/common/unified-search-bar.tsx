@@ -112,12 +112,14 @@ interface ActionButtonsSectionProps {
   actionButtons: ActionButton[];
   buttonSize: string;
   compact: boolean;
+  disabled: boolean;
 }
 
 const ActionButtonsSection: React.FC<ActionButtonsSectionProps> = ({
   actionButtons,
   buttonSize,
   compact,
+  disabled,
 }) => {
   if (actionButtons.length === 0) {
     return null;
@@ -132,7 +134,7 @@ const ActionButtonsSection: React.FC<ActionButtonsSectionProps> = ({
           variant={action.variant || 'default'}
           className={cn('w-full justify-center sm:w-auto', buttonSize, action.className)}
           onClick={action.onClick}
-          disabled={action.disabled}
+          disabled={disabled || action.disabled}
         >
           {action.icon}
           {action.label}
@@ -145,6 +147,7 @@ const ActionButtonsSection: React.FC<ActionButtonsSectionProps> = ({
 
 interface SearchInputBoxProps {
   compact: boolean;
+  disabled: boolean;
   inputSize: string;
   isSearching: boolean;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -156,6 +159,7 @@ interface SearchInputBoxProps {
 
 const SearchInputBox: React.FC<SearchInputBoxProps> = ({
   compact,
+  disabled,
   inputSize,
   isSearching,
   onChange,
@@ -189,6 +193,7 @@ const SearchInputBox: React.FC<SearchInputBoxProps> = ({
       placeholder={searchPlaceholder}
       value={searchValue}
       onChange={onChange}
+      disabled={disabled}
       className={cn(
         'pl-10',
         showClearButton && searchValue && 'pr-10',
@@ -204,6 +209,7 @@ const SearchInputBox: React.FC<SearchInputBoxProps> = ({
         variant="ghost"
         size="sm"
         onClick={onClear}
+        disabled={disabled}
         className="absolute top-1/2 right-1 h-7 w-7 -translate-y-1/2 p-0 hover:bg-transparent"
         aria-label="清空搜索"
       >
@@ -250,12 +256,14 @@ const ResultInfo: React.FC<ResultInfoProps> = ({
 interface ToggleButtonsSectionProps {
   buttonSize: string;
   compact: boolean;
+  disabled: boolean;
   toggleButtons: ToggleButton[];
 }
 
 const ToggleButtonsSection: React.FC<ToggleButtonsSectionProps> = ({
   buttonSize,
   compact,
+  disabled,
   toggleButtons,
 }) => {
   if (toggleButtons.length === 0) {
@@ -277,6 +285,7 @@ const ToggleButtonsSection: React.FC<ToggleButtonsSectionProps> = ({
             'data-[active=true]:border-[hsl(var(--color-primary))] data-[active=true]:bg-[hsl(var(--color-primary-light))] data-[active=true]:text-[hsl(var(--color-primary))]'
           )}
           onClick={toggle.onClick}
+          disabled={disabled}
         >
           {toggle.icon}
           <span className={compact ? 'text-xs' : ''}>{toggle.label}</span>
@@ -289,6 +298,7 @@ const ToggleButtonsSection: React.FC<ToggleButtonsSectionProps> = ({
 interface FiltersSectionProps {
   compact: boolean;
   createHandler: (filter: FilterConfig) => (value: string) => void;
+  disabled: boolean;
   filterValues: Record<string, string | undefined>;
   filters: FilterConfig[];
   inputSize: string;
@@ -297,6 +307,7 @@ interface FiltersSectionProps {
 const FiltersSection: React.FC<FiltersSectionProps> = ({
   compact,
   createHandler,
+  disabled,
   filterValues,
   filters,
   inputSize,
@@ -320,6 +331,7 @@ const FiltersSection: React.FC<FiltersSectionProps> = ({
             aria-label={filter.label}
             value={selectedValue}
             onChange={e => createHandler(filter)(e.target.value)}
+            disabled={disabled}
             className={cn(
               inputSize,
               getResponsiveFilterWidthClass(filter.width),
@@ -370,6 +382,12 @@ export const UnifiedSearchBar = React.memo<UnifiedSearchBarProps>(
     compact = false,
     variant = 'default',
   }) => {
+    const [isHydrated, setIsHydrated] = React.useState(false);
+
+    React.useEffect(() => {
+      setIsHydrated(true);
+    }, []);
+
     // ✅ 修复：使用受控输入，避免内部状态导致的双重渲染
     // 直接使用外部传入的 searchValue，不维护本地状态
     // 这样可以避免状态同步导致的抖动问题
@@ -413,9 +431,11 @@ export const UnifiedSearchBar = React.memo<UnifiedSearchBarProps>(
           actionButtons={actionButtons}
           buttonSize={buttonSize}
           compact={compact}
+          disabled={!isHydrated}
         />
         <SearchInputBox
           compact={compact}
+          disabled={!isHydrated}
           inputSize={inputSize}
           isSearching={isSearching}
           onChange={handleInputChange}
@@ -433,11 +453,13 @@ export const UnifiedSearchBar = React.memo<UnifiedSearchBarProps>(
         <ToggleButtonsSection
           buttonSize={buttonSize}
           compact={compact}
+          disabled={!isHydrated}
           toggleButtons={toggleButtons}
         />
         <FiltersSection
           compact={compact}
           createHandler={handleFilterChange}
+          disabled={!isHydrated}
           filterValues={filterValues ?? {}}
           filters={filters}
           inputSize={inputSize}
