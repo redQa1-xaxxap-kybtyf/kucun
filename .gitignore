@@ -90,6 +90,7 @@ playwright.config.mjs
 !tests/e2e/
 !tests/e2e/finance-regression.spec.ts
 !tests/e2e/inventory-counts/fullchain-ui.test.ts
+!tests/e2e/receivables-payment-real-click.test.ts
 
 !tests-regression/**/*.test.ts
 *.spec.js
