@@ -262,45 +262,62 @@ export function CategoryList({
 
   return (
     <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
-      <div className="flex items-center justify-between border-b bg-gray-50/50 px-4 py-3">
+      <div className="flex flex-col gap-3 border-b bg-gray-50/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-sm font-medium text-gray-700">分类列表</div>
         <Button
           type="button"
           variant="outline"
           size="sm"
           onClick={openCreateRoot}
-          className="h-8"
+          className="h-9 w-full sm:h-8 sm:w-auto"
         >
           <Plus className="h-4 w-4" />
           新增一级分类
         </Button>
       </div>
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-gray-50/50">
-            <TableHead className="w-[360px]">分类信息</TableHead>
-            <TableHead className="w-[80px]">排序</TableHead>
-            <TableHead className="w-[100px]">产品数量</TableHead>
-            <TableHead className="w-[120px]">状态</TableHead>
-            <TableHead className="w-[150px]">创建时间</TableHead>
-            <TableHead className="w-[150px]">更新时间</TableHead>
-            <TableHead className="w-[120px] text-right">操作</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {categoriesWithLevel.map(category => (
-            <CategoryRow
-              key={category.id}
-              category={category}
-              updatingStatusId={updatingStatusId}
-              onToggleStatus={onToggleStatus}
-              onDeleteCategory={onDeleteCategory}
-              onEditCategory={handleEdit}
-              onAddChildCategory={openCreateChild}
-            />
-          ))}
-        </TableBody>
-      </Table>
+
+      <div className="space-y-3 p-4 md:hidden">
+        {categoriesWithLevel.map(category => (
+          <CategoryMobileCard
+            key={category.id}
+            category={category}
+            updatingStatusId={updatingStatusId}
+            onToggleStatus={onToggleStatus}
+            onDeleteCategory={onDeleteCategory}
+            onEditCategory={handleEdit}
+            onAddChildCategory={openCreateChild}
+          />
+        ))}
+      </div>
+
+      <div className="hidden md:block">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-gray-50/50">
+              <TableHead className="w-[360px]">分类信息</TableHead>
+              <TableHead className="w-[80px]">排序</TableHead>
+              <TableHead className="w-[100px] whitespace-nowrap">产品数量</TableHead>
+              <TableHead className="w-[120px]">状态</TableHead>
+              <TableHead className="w-[150px]">创建时间</TableHead>
+              <TableHead className="w-[150px]">更新时间</TableHead>
+              <TableHead className="w-[120px] text-right">操作</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {categoriesWithLevel.map(category => (
+              <CategoryRow
+                key={category.id}
+                category={category}
+                updatingStatusId={updatingStatusId}
+                onToggleStatus={onToggleStatus}
+                onDeleteCategory={onDeleteCategory}
+                onEditCategory={handleEdit}
+                onAddChildCategory={openCreateChild}
+              />
+            ))}
+          </TableBody>
+        </Table>
+      </div>
 
       <CategoryQuickCreateDialog
         open={createDialog.open}
@@ -311,6 +328,174 @@ export function CategoryList({
           )
         }
       />
+    </div>
+  );
+}
+
+function getCategoryStatusMeta(
+  category: CategoryWithLevel,
+  updatingStatusId: string | null
+) {
+  if (updatingStatusId === category.id) {
+    return {
+      label: '更新中...',
+      textClass: 'text-amber-700',
+      badgeClass: 'bg-amber-50 text-amber-700 border-amber-200',
+    };
+  }
+
+  if (category.status === 'active') {
+    return {
+      label: '启用',
+      textClass: 'text-green-700',
+      badgeClass: 'bg-green-50 text-green-700 border-green-200',
+    };
+  }
+
+  return {
+    label: '禁用',
+    textClass: 'text-gray-500',
+    badgeClass: 'bg-gray-50 text-gray-600 border-gray-200',
+  };
+}
+
+interface CategoryMobileCardProps {
+  category: CategoryWithLevel;
+  updatingStatusId: string | null;
+  onToggleStatus: (category: Category) => void;
+  onDeleteCategory: (categoryId: string, categoryName: string) => void;
+  onEditCategory: (categoryId: string) => void;
+  onAddChildCategory: (category: CategoryWithLevel) => void;
+}
+
+function CategoryMobileCard({
+  category,
+  updatingStatusId,
+  onToggleStatus,
+  onDeleteCategory,
+  onEditCategory,
+  onAddChildCategory,
+}: CategoryMobileCardProps) {
+  const style =
+    LEVEL_STYLES[category.level] || LEVEL_STYLES[LEVEL_STYLES.length - 1];
+  const statusMeta = getCategoryStatusMeta(category, updatingStatusId);
+  const canAddChildCategory =
+    category.level < 2 && category.status === 'active';
+  const isAtMaxLevel = category.level >= 2;
+  const addChildTitle = isAtMaxLevel
+    ? '最多支持3级分类'
+    : category.status !== 'active'
+      ? '父级分类未启用，无法添加子分类'
+      : '添加子分类';
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            {category.level > 0 ? (
+              <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-500">
+                {style.badge}
+              </span>
+            ) : null}
+            <span className={`text-base font-semibold ${style.color}`}>
+              {category.name}
+            </span>
+            <span
+              className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium ${statusMeta.badgeClass}`}
+            >
+              {statusMeta.label}
+            </span>
+          </div>
+
+          <div className="mt-2 space-y-1 text-sm text-slate-500">
+            <div className="break-all">路径：{category.fullPath}</div>
+            <div>编码：{category.code}</div>
+            {category.description ? (
+              <div className="line-clamp-2">说明：{category.description}</div>
+            ) : null}
+          </div>
+        </div>
+
+        <div className={`rounded-xl px-2 py-1 text-xs font-semibold ${style.bg} ${style.color}`}>
+          {style.badge}
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-3 gap-3 rounded-xl bg-slate-50 px-3 py-2">
+        <div>
+          <div className="text-xs text-slate-400">排序</div>
+          <div className="mt-1 text-sm font-medium text-slate-700">
+            {category.sortOrder ?? '-'}
+          </div>
+        </div>
+        <div>
+          <div className="text-xs text-slate-400">产品数量</div>
+          <div className="mt-1">
+            <span className="inline-flex items-center rounded-full bg-[hsl(var(--color-primary-light))] px-2 py-0.5 text-xs font-medium text-[hsl(var(--color-primary))]">
+              {category.productCount || 0}
+            </span>
+          </div>
+        </div>
+        <div>
+          <div className="text-xs text-slate-400">更新时间</div>
+          <div className="mt-1 text-sm font-medium text-slate-700">
+            {formatDateTime(category.updatedAt)}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2">
+        <div>
+          <div className="text-xs text-slate-400">当前状态</div>
+          <div className={`mt-1 text-sm font-medium ${statusMeta.textClass}`}>
+            {statusMeta.label}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Switch
+            checked={category.status === 'active'}
+            onCheckedChange={() => onToggleStatus(category)}
+            disabled={updatingStatusId === category.id}
+            className="data-[state=checked]:bg-green-500"
+          />
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-3 gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => onAddChildCategory(category)}
+          disabled={!canAddChildCategory}
+          title={addChildTitle}
+          className="h-10"
+        >
+          <Plus className="mr-1 h-4 w-4" />
+          新增下级
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => onEditCategory(category.id)}
+          className="h-10"
+        >
+          <Edit className="mr-1 h-4 w-4" />
+          编辑
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => onDeleteCategory(category.id, category.name)}
+          className="h-10 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+        >
+          <Trash2 className="mr-1 h-4 w-4" />
+          删除
+        </Button>
+      </div>
     </div>
   );
 }
@@ -455,6 +640,8 @@ function CategoryStatusCell({
   updatingStatusId,
   onToggleStatus,
 }: CategoryStatusCellProps) {
+  const statusMeta = getCategoryStatusMeta(category, updatingStatusId);
+
   return (
     <TableCell>
       <div className="flex items-center gap-2">
@@ -465,15 +652,9 @@ function CategoryStatusCell({
           className="data-[state=checked]:bg-green-500"
         />
         <span
-          className={`text-xs font-medium ${
-            category.status === 'active' ? 'text-green-700' : 'text-gray-500'
-          }`}
+          className={`text-xs font-medium ${statusMeta.textClass}`}
         >
-          {updatingStatusId === category.id
-            ? '更新中...'
-            : category.status === 'active'
-              ? '启用'
-              : '禁用'}
+          {statusMeta.label}
         </span>
       </div>
     </TableCell>

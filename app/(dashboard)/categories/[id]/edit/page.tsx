@@ -96,6 +96,7 @@ function CategoryEditContent({ categoryId }: CategoryEditContentProps) {
     isCategoryLoading,
     categoryError,
     parentCategories,
+    currentParentCategory,
     currentCategoryInfo,
     areParentOptionsLoading,
   } = useCategoryData(categoryId, deferredParentSearchTerm);
@@ -148,6 +149,7 @@ function CategoryEditContent({ categoryId }: CategoryEditContentProps) {
           onSubmit={handleSubmit}
           onCancel={() => router.back()}
           parentCategories={parentCategories}
+          currentParentCategory={currentParentCategory}
           currentCategoryInfo={currentCategoryInfo}
           isParentOptionsLoading={
             areParentOptionsLoading ||
@@ -281,6 +283,50 @@ function useCategoryData(categoryId: string, parentSearch: string) {
     return filtered;
   }, [categoriesQuery.data, categoryId, categoryData?.parent, parentSearch]);
 
+  const currentParentCategory = React.useMemo<ParentCategory | undefined>(() => {
+    if (!categoryData?.parentId || !categoryData.parent) {
+      return undefined;
+    }
+
+    const existingParent = parentCategories.find(
+      category => category.id === categoryData.parentId
+    );
+    if (existingParent) {
+      return existingParent;
+    }
+
+    const categories = (categoriesQuery.data?.data || []) as Category[];
+    const pathById = buildCategoryPathMap([
+      ...categories.map(category => ({
+        id: category.id,
+        name: category.name,
+        code: category.code,
+        parentId: category.parentId,
+      })),
+      {
+        id: categoryData.parent.id,
+        name: categoryData.parent.name,
+        code: categoryData.parent.code ?? '',
+        parentId: null,
+      },
+    ]);
+
+    return {
+      id: categoryData.parent.id,
+      name: categoryData.parent.name,
+      code: categoryData.parent.code ?? '',
+      fullPath:
+        pathById.get(categoryData.parent.id) ?? categoryData.parent.name,
+      depth: 1,
+      parent: null,
+    };
+  }, [
+    categoriesQuery.data,
+    categoryData?.parent,
+    categoryData?.parentId,
+    parentCategories,
+  ]);
+
   const currentCategoryInfo = React.useMemo<
     CategoryCurrentInfo | undefined
   >(() => {
@@ -317,6 +363,7 @@ function useCategoryData(categoryId: string, parentSearch: string) {
     isCategoryLoading: categoryQuery.isLoading,
     categoryError: categoryQuery.error,
     parentCategories,
+    currentParentCategory,
     currentCategoryInfo,
     areParentOptionsLoading: categoriesQuery.isFetching,
   };

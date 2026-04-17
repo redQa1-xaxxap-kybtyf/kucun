@@ -16,6 +16,7 @@ import {
   type Category,
   type CategoryQueryParams,
 } from '@/lib/api/categories';
+import { paginationConfig } from '@/lib/env';
 import type { PaginatedResponse } from '@/lib/types/api';
 import { showError, showSuccess } from '@/lib/utils/toast-helper';
 
@@ -31,7 +32,8 @@ export function useCategories(initialParams?: CategoryQueryParams) {
   const [queryParams, setQueryParams] = React.useState<CategoryQueryParams>(
     initialParams || {
       page: 1,
-      limit: 10,
+      // 与服务端保持一致：一次性取回全量分类，保证层级结构完整展示
+      limit: paginationConfig.maxPageSize,
       search: '',
       status: undefined,
       sortBy: 'createdAt',

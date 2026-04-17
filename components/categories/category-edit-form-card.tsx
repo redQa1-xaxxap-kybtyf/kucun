@@ -50,6 +50,7 @@ interface CategoryEditFormCardProps {
   onSubmit: (data: UpdateCategoryData) => void;
   onCancel: () => void;
   parentCategories: ParentCategory[];
+  currentParentCategory?: ParentCategory;
   currentCategoryInfo?: CategoryCurrentInfo;
   isParentOptionsLoading: boolean;
   isSubmitting: boolean;
@@ -62,6 +63,7 @@ export function CategoryEditFormCard({
   onSubmit,
   onCancel,
   parentCategories,
+  currentParentCategory,
   currentCategoryInfo,
   isParentOptionsLoading,
   isSubmitting,
@@ -78,6 +80,7 @@ export function CategoryEditFormCard({
           onSubmit={onSubmit}
           onCancel={onCancel}
           parentCategories={parentCategories}
+          currentParentCategory={currentParentCategory}
           currentCategoryInfo={currentCategoryInfo}
           isParentOptionsLoading={isParentOptionsLoading}
           isSubmitting={isSubmitting}
@@ -128,6 +131,7 @@ interface CategoryEditFormBodyProps {
   onSubmit: (data: UpdateCategoryData) => void;
   onCancel: () => void;
   parentCategories: ParentCategory[];
+  currentParentCategory?: ParentCategory;
   currentCategoryInfo?: CategoryCurrentInfo;
   isParentOptionsLoading: boolean;
   isSubmitting: boolean;
@@ -140,6 +144,7 @@ function CategoryEditFormBody({
   onSubmit,
   onCancel,
   parentCategories,
+  currentParentCategory,
   currentCategoryInfo,
   isParentOptionsLoading,
   isSubmitting,
@@ -151,6 +156,24 @@ function CategoryEditFormBody({
     enabled: hasUnsavedChanges,
     message: '当前分类内容尚未保存，确定要离开吗？',
   });
+
+  React.useEffect(() => {
+    if (!currentParentCategory || form.formState.isDirty) {
+      return;
+    }
+
+    const currentParentId = form.getValues('parentId');
+    if (currentParentId && currentParentId !== 'none') {
+      return;
+    }
+
+    form.setValue('parentId', currentParentCategory.id, {
+      shouldDirty: false,
+      shouldTouch: false,
+      shouldValidate: false,
+    });
+  }, [currentParentCategory, form, form.formState.isDirty]);
+
   const handleCancel = () => {
     if (!confirmLeavePage()) {
       return;
@@ -166,6 +189,7 @@ function CategoryEditFormBody({
         <CategoryFormFieldGrid
           control={form.control}
           parentCategories={parentCategories}
+          currentParentCategory={currentParentCategory}
           isParentOptionsLoading={isParentOptionsLoading}
           parentSearchTerm={parentSearchTerm}
           onParentSearchChange={onParentSearchChange}
@@ -213,6 +237,7 @@ function CategoryCurrentInfoPanel({
 interface CategoryFormFieldGridProps {
   control: CategoryFormControl;
   parentCategories: ParentCategory[];
+  currentParentCategory?: ParentCategory;
   isParentOptionsLoading: boolean;
   parentSearchTerm: string;
   onParentSearchChange: React.Dispatch<React.SetStateAction<string>>;
@@ -221,6 +246,7 @@ interface CategoryFormFieldGridProps {
 function CategoryFormFieldGrid({
   control,
   parentCategories,
+  currentParentCategory,
   isParentOptionsLoading,
   parentSearchTerm,
   onParentSearchChange,
@@ -231,6 +257,7 @@ function CategoryFormFieldGrid({
       <CategoryParentField
         control={control}
         parentCategories={parentCategories}
+        currentParentCategory={currentParentCategory}
         isLoading={isParentOptionsLoading}
         parentSearchTerm={parentSearchTerm}
         onParentSearchChange={onParentSearchChange}
@@ -262,6 +289,7 @@ function CategoryNameField({ control }: { control: CategoryFormControl }) {
 interface CategoryParentFieldProps {
   control: CategoryFormControl;
   parentCategories: ParentCategory[];
+  currentParentCategory?: ParentCategory;
   isLoading: boolean;
   parentSearchTerm: string;
   onParentSearchChange: React.Dispatch<React.SetStateAction<string>>;
@@ -270,20 +298,36 @@ interface CategoryParentFieldProps {
 function CategoryParentField({
   control,
   parentCategories,
+  currentParentCategory,
   isLoading,
   parentSearchTerm,
   onParentSearchChange,
 }: CategoryParentFieldProps) {
   const disableSelect = isLoading && parentCategories.length === 0;
+  const availableParentCategories = React.useMemo(() => {
+    if (!currentParentCategory) {
+      return parentCategories;
+    }
+
+    if (parentCategories.some(category => category.id === currentParentCategory.id)) {
+      return parentCategories;
+    }
+
+    return [currentParentCategory, ...parentCategories];
+  }, [currentParentCategory, parentCategories]);
 
   return (
     <FormField
       control={control}
       name="parentId"
       render={({ field }) => {
-        const selectedParent = parentCategories.find(
-          category => category.id === field.value
-        );
+        const selectedParent =
+          availableParentCategories.find(category => category.id === field.value) ??
+          (currentParentCategory?.id === field.value
+            ? currentParentCategory
+            : undefined);
+        const displayParentPath =
+          selectedParent?.fullPath ?? selectedParent?.name ?? '请选择父级分类';
 
         return (
           <FormItem>
@@ -312,7 +356,7 @@ function CategoryParentField({
                       }`}
                     >
                       {field.value && field.value !== 'none'
-                        ? (selectedParent?.fullPath ?? '请选择父级分类')
+                        ? displayParentPath
                         : '请选择父级分类'}
                     </span>
                     {isLoading && (
@@ -331,14 +375,14 @@ function CategoryParentField({
                       <span>无（顶级分类）</span>
                     </div>
                   </SelectItem>
-                  {parentCategories.length === 0 ? (
+                  {availableParentCategories.length === 0 ? (
                     <SelectItem value="__empty" disabled>
                       <span className="text-muted-foreground">
                         无匹配的分类
                       </span>
                     </SelectItem>
                   ) : (
-                    parentCategories
+                    availableParentCategories
                       .slice()
                       .sort((a, b) =>
                         (a.fullPath ?? a.name).localeCompare(

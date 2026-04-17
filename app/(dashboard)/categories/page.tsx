@@ -14,6 +14,7 @@ import {
 import { getCategoriesServer } from '@/lib/api/categories-server';
 import { requireServerAuth } from '@/lib/auth/context';
 import { requirePermission } from '@/lib/auth/permissions';
+import { paginationConfig } from '@/lib/env';
 
 /**
  * 分类管理页面
@@ -49,7 +50,9 @@ export default async function CategoriesPage({
   // 解析查询参数
   const params = await searchParams;
   const page = Number(params.page) || 1;
-  const limit = Number(params.limit) || 10;
+  // 分类列表默认按层级一次性返回，避免扁平分页把同一父级下的子分类切到不同页，
+  // 导致前端找不到父节点、把子分类误作顶级平铺。
+  const limit = Number(params.limit) || paginationConfig.maxPageSize;
   const search = (params.search as string) || '';
   const status = params.status as 'active' | 'inactive' | undefined;
   const sortBy =
