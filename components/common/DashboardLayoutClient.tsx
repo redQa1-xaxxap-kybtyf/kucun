@@ -4,12 +4,7 @@ import dynamic from 'next/dynamic';
 import type { Session } from 'next-auth';
 import * as React from 'react';
 
-import { useMediaQuery } from '@/hooks/use-media-query';
-import type {
-  LayoutConfig,
-  NavigationItem,
-  SidebarState,
-} from '@/lib/types/layout';
+import type { NavigationItem, SidebarState } from '@/lib/types/layout';
 import { cn } from '@/lib/utils';
 
 import { Breadcrumb, CompactBreadcrumb } from './Breadcrumb';
@@ -25,6 +20,8 @@ const MobileNav = dynamic(
   () => import('./MobileNav').then(mod => mod.MobileNav),
   { ssr: false }
 );
+
+const MOBILE_BREAKPOINT = 768;
 
 interface DashboardLayoutClientProps {
   /** 子组件 */
@@ -100,9 +97,6 @@ export function DashboardLayoutClient({
   showHeader = true,
   showBreadcrumb = true,
 }: DashboardLayoutClientProps) {
-  const isMobile = useMediaQuery('(max-width: 768px)');
-  const isTablet = useMediaQuery('(min-width: 769px) and (max-width: 1024px)');
-
   // ✅ 在客户端根据 ID 重新组装导航项(包含 icon)
   const accessibleNavItems = React.useMemo(
     () => getNavItemsByIds(accessibleNavItemIds, navigationItems),
@@ -116,8 +110,8 @@ export function DashboardLayoutClient({
 
   // 侧边栏状态管理（优化：批量更新状态，避免多次渲染）
   const [sidebarSettings, setSidebarSettings] = React.useState(() => ({
-    isOpen: !isMobile,
-    isCollapsed: isTablet,
+    isOpen: showSidebar,
+    isCollapsed: false,
     mobileNavOpen: false,
   }));
 
@@ -172,28 +166,41 @@ export function DashboardLayoutClient({
   const [touchStart, setTouchStart] = React.useState<number | null>(null);
   const [touchEnd, setTouchEnd] = React.useState<number | null>(null);
 
-  // 响应式布局调整（优化：批量更新状态，避免多次渲染）
   React.useEffect(() => {
-    setSidebarSettings(prev => {
-      // 计算新状态
-      const newState = isMobile
-        ? { isOpen: false, isCollapsed: false, mobileNavOpen: false }
-        : isTablet
-          ? { isOpen: true, isCollapsed: true, mobileNavOpen: false }
-          : { isOpen: true, isCollapsed: false, mobileNavOpen: false };
+    if (!showSidebar) {
+      setSidebarSettings(prev =>
+        prev.isOpen || prev.mobileNavOpen
+          ? {
+              ...prev,
+              isOpen: false,
+              mobileNavOpen: false,
+            }
+          : prev
+      );
+      return;
+    }
 
-      // 只有状态真正变化时才更新
-      if (
-        prev.isOpen === newState.isOpen &&
-        prev.isCollapsed === newState.isCollapsed &&
-        prev.mobileNavOpen === newState.mobileNavOpen
-      ) {
-        return prev;
+    setSidebarSettings(prev =>
+      prev.isOpen ? prev : { ...prev, isOpen: true }
+    );
+  }, [showSidebar]);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const handleResize = () => {
+      if (window.innerWidth >= MOBILE_BREAKPOINT) {
+        setSidebarSettings(prev =>
+          prev.mobileNavOpen ? { ...prev, mobileNavOpen: false } : prev
+        );
       }
+    };
 
-      return newState;
-    });
-  }, [isMobile, isTablet]); // ✅ 只依赖媒体查询结果
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // 手势处理（使用 useCallback 优化）
   const minSwipeDistance = 50;
@@ -208,15 +215,16 @@ export function DashboardLayoutClient({
   }, []);
 
   const onTouchEnd = React.useCallback(() => {
-    if (!touchStart || !touchEnd) {
+    if (!touchStart || !touchEnd || typeof window === 'undefined') {
       return;
     }
 
     const distance = touchStart - touchEnd;
     const isLeftSwipe = distance > minSwipeDistance;
     const isRightSwipe = distance < -minSwipeDistance;
+    const isMobileViewport = window.innerWidth < MOBILE_BREAKPOINT;
 
-    if (isMobile) {
+    if (isMobileViewport) {
       // 右滑打开菜单，左滑关闭菜单
       if (isRightSwipe && !sidebarSettings.mobileNavOpen) {
         setMobileNavOpen(true);
@@ -224,21 +232,7 @@ export function DashboardLayoutClient({
         setMobileNavOpen(false);
       }
     }
-  }, [
-    touchStart,
-    touchEnd,
-    isMobile,
-    sidebarSettings.mobileNavOpen,
-    setMobileNavOpen,
-  ]);
-
-  const _layoutConfig: LayoutConfig = {
-    showSidebar,
-    showHeader,
-    sidebarCollapsed: sidebarSettings.isCollapsed,
-    isMobile,
-    theme: 'light', // 后续可以从用户设置中获取
-  };
+  }, [touchStart, touchEnd, sidebarSettings.mobileNavOpen, setMobileNavOpen]);
 
   return (
     <BreadcrumbProvider>
@@ -253,7 +247,7 @@ export function DashboardLayoutClient({
         {/* 顶部导航栏 - 固定高度 */}
         {showHeader && (
           <Header
-            showMobileMenuButton={isMobile}
+            showMobileMenuButton={showSidebar}
             onMobileMenuClick={() => setMobileNavOpen(true)}
             user={session.user} // 传递用户信息，避免客户端重复请求
             systemMode={systemMode}
@@ -262,16 +256,17 @@ export function DashboardLayoutClient({
 
         <div className="flex flex-1">
           {/* 桌面端侧边栏 - 固定位置，独立滚动 */}
-          {showSidebar && !isMobile && sidebarSettings.isOpen && (
+          {showSidebar && sidebarSettings.isOpen && (
             <SidebarClient
               state={sidebarState}
+              className="hidden md:flex"
               accessibleNavItems={accessibleNavItems}
               accessibleBottomNavItems={accessibleBottomNavItems}
             />
           )}
 
           {/* 移动端抽屉导航 */}
-          {isMobile && (
+          {showSidebar && (
             <MobileNav
               open={sidebarSettings.mobileNavOpen}
               onOpenChange={setMobileNavOpen}
@@ -284,27 +279,27 @@ export function DashboardLayoutClient({
             tabIndex={-1}
             className={cn(
               'flex flex-1 flex-col overflow-y-auto transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] focus:outline-none',
-              !isMobile &&
+              showSidebar &&
                 sidebarSettings.isOpen &&
-                (sidebarSettings.isCollapsed ? 'ml-20' : 'ml-72')
+                (sidebarSettings.isCollapsed ? 'md:ml-20' : 'md:ml-72')
             )}
-            onTouchStart={isMobile ? onTouchStart : undefined}
-            onTouchMove={isMobile ? onTouchMove : undefined}
-            onTouchEnd={isMobile ? onTouchEnd : undefined}
+            onTouchStart={showSidebar ? onTouchStart : undefined}
+            onTouchMove={showSidebar ? onTouchMove : undefined}
+            onTouchEnd={showSidebar ? onTouchEnd : undefined}
           >
             {/* 固定的顶部区域：面包屑和页面标题 */}
             {showBreadcrumb && (
               <div
                 className={cn(
                   'sticky top-0 z-40 flex-shrink-0 border-b border-slate-50 bg-white/40 backdrop-blur-md transition-all',
-                  isMobile ? 'px-4 py-3' : 'px-8 py-3'
+                  'px-4 py-3 md:px-8'
                 )}
               >
                 <div className="md:hidden">
-                  <CompactBreadcrumb className="text-xs font-medium text-muted-foreground" />
+                  <CompactBreadcrumb className="text-muted-foreground text-xs font-medium" />
                 </div>
                 <div className="hidden md:block">
-                  <Breadcrumb className="text-xs font-medium text-muted-foreground" />
+                  <Breadcrumb className="text-muted-foreground text-xs font-medium" />
                 </div>
               </div>
             )}

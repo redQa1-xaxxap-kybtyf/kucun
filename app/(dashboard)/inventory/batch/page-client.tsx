@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { BatchPageHeader } from '@/components/inventory/batch-page-header';
+import { TableSkeleton } from '@/components/ui/skeleton-compositions';
 import { useBatchSpecifications } from '@/lib/api/batch-specifications';
 import type {
   BatchSpecification,
@@ -32,11 +33,7 @@ const BatchSpecificationsTable = dynamic(
     ),
   {
     ssr: false,
-    loading: () => (
-      <div className="text-muted-foreground rounded-lg border border-dashed border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-6 text-sm">
-        列表加载中...
-      </div>
-    ),
+    loading: () => <TableSkeleton columns={7} rows={8} showPagination />,
   }
 );
 

@@ -8,6 +8,7 @@ import * as React from 'react';
 
 import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
+import { TableSkeleton } from '@/components/ui/skeleton-compositions';
 import type {
   CountStatus,
   CountType,
@@ -34,14 +35,12 @@ interface CountsPageClientProps {
 
 const CountList = dynamic(
   () =>
-    import('@/components/inventory/counts/count-list').then(mod => mod.CountList),
+    import('@/components/inventory/counts/count-list').then(
+      mod => mod.CountList
+    ),
   {
     ssr: false,
-    loading: () => (
-      <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
-        列表加载中...
-      </div>
-    ),
+    loading: () => <TableSkeleton columns={7} rows={8} showPagination />,
   }
 );
 

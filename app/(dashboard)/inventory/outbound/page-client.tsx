@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic';
 
 import { OutboundPageHeader } from '@/components/inventory/outbound-page-header';
+import { InventoryListSkeleton } from '@/components/ui/skeleton-compositions';
 import type { OutboundRecordQueryParams } from '@/lib/types/inventory';
 
 const ERPOutboundRecords = dynamic(
@@ -12,11 +13,7 @@ const ERPOutboundRecords = dynamic(
     ),
   {
     ssr: false,
-    loading: () => (
-      <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
-        列表加载中...
-      </div>
-    ),
+    loading: () => <InventoryListSkeleton />,
   }
 );
 

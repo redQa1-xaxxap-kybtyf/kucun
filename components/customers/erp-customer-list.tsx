@@ -251,23 +251,32 @@ export function ERPCustomerList({
 
             {/* Status Badges Overlay (Optional refinement) */}
             <div className="flex items-center gap-2">
-              <div
-                className={cn(
-                  'rounded-full px-3 py-1 text-[10px] font-semibold tracking-[0.2em]',
-                  customer.cooperationDays && customer.cooperationDays > 30
-                    ? 'bg-emerald-500 text-white'
-                    : 'bg-slate-100 text-slate-400'
-                )}
-              >
-                {customer.cooperationDays && customer.cooperationDays > 30
-                  ? '长期合作'
-                  : '新客户'}
-              </div>
-              {customer.returnOrderCount && customer.returnOrderCount > 5 && (
-                <div className="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold tracking-[0.2em] text-rose-700">
-                  高退货风险
-                </div>
-              )}
+              {(() => {
+                const cooperationDays = customer.cooperationDays ?? 0;
+                const returnOrderCount = customer.returnOrderCount ?? 0;
+                const isLongTermCustomer = cooperationDays > 30;
+                const hasHighReturnRisk = returnOrderCount > 5;
+
+                return (
+                  <>
+                    <div
+                      className={cn(
+                        'rounded-full px-3 py-1 text-[10px] font-semibold tracking-[0.2em]',
+                        isLongTermCustomer
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-slate-100 text-slate-400'
+                      )}
+                    >
+                      {isLongTermCustomer ? '长期合作' : '新客户'}
+                    </div>
+                    {hasHighReturnRisk && (
+                      <div className="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold tracking-[0.2em] text-rose-700">
+                        高退货风险
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           </div>
         ))}

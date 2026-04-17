@@ -8,6 +8,7 @@ import * as React from 'react';
 import { PageHeader } from '@/components/common/page-header';
 import { ProductImportDialog } from '@/components/products/product-import-dialog';
 import { Button } from '@/components/ui/button';
+import { ProductsSkeleton } from '@/components/ui/skeleton-compositions';
 import { getCategories } from '@/lib/api/categories';
 import { getProducts, type ProductListQueryParams } from '@/lib/api/products';
 import { paginationConfig } from '@/lib/config/pagination';
@@ -27,11 +28,7 @@ const ERPProductList = dynamic(
     ),
   {
     ssr: false,
-    loading: () => (
-      <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
-        产品列表加载中...
-      </div>
-    ),
+    loading: () => <ProductsSkeleton />,
   }
 );
 

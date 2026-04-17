@@ -4,8 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Building2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { use, type ReactNode } from 'react';
+import { use } from 'react';
 
+import { PageContainer } from '@/components/layouts/page-container';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { getSupplier, supplierQueryKeys } from '@/lib/api/suppliers';
@@ -33,39 +34,18 @@ interface EditSupplierPageProps {
 export default function EditSupplierPage({ params }: EditSupplierPageProps) {
   const { id } = use(params);
 
-  const HeaderCard = ({ subtitle }: { subtitle: ReactNode }) => (
-    <Card className="overflow-hidden">
-      <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-4 sm:p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-[0_10px_24px_rgba(9,88,217,0.22)]">
-              <Building2 className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
-                编辑供应商
-              </h1>
-              <div className="text-sm text-[hsl(var(--color-text-secondary))]">
-                {subtitle}
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-            <Button
-              variant="outline"
-              size="lg"
-              asChild
-              className="h-11 gap-2 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:border-[hsl(var(--color-border-strong))] hover:shadow-[var(--shadow-medium)]"
-            >
-              <Link href="/suppliers">
-                <ArrowLeft className="h-4 w-4" />
-                返回
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+  const actions = (
+    <Button
+      variant="outline"
+      size="lg"
+      asChild
+      className="h-11 gap-2 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:border-[hsl(var(--color-border-strong))] hover:shadow-[var(--shadow-medium)]"
+    >
+      <Link href="/suppliers">
+        <ArrowLeft className="h-4 w-4" />
+        返回
+      </Link>
+    </Button>
   );
 
   // 获取供应商详情
@@ -81,60 +61,59 @@ export default function EditSupplierPage({ params }: EditSupplierPageProps) {
   // 加载中
   if (isLoadingSupplier) {
     return (
-      <div className="flex h-full flex-col overflow-auto p-6">
-        <div className="space-y-6">
-          <HeaderCard subtitle="加载供应商信息中..." />
-        </div>
-      </div>
+      <PageContainer
+        title="编辑供应商"
+        description="加载供应商信息中..."
+        icon={<Building2 className="h-6 w-6 text-white" />}
+        actions={actions}
+        bodyClassName="space-y-6"
+      />
     );
   }
 
   // 错误处理
   if (error) {
     return (
-      <div className="flex h-full flex-col overflow-auto p-6">
-        <div className="space-y-6">
-          <HeaderCard
-            subtitle={
-              <span className="text-[hsl(var(--color-error))]">
-                加载失败: {error.message}
-              </span>
-            }
-          />
-        </div>
-      </div>
+      <PageContainer
+        title="编辑供应商"
+        description={
+          <span className="text-[hsl(var(--color-error))]">
+            加载失败: {error.message}
+          </span>
+        }
+        icon={<Building2 className="h-6 w-6 text-white" />}
+        actions={actions}
+        bodyClassName="space-y-6"
+      />
     );
   }
 
   // 供应商不存在
   if (!supplierData?.data) {
     return (
-      <div className="flex h-full flex-col overflow-auto p-6">
-        <div className="space-y-6">
-          <HeaderCard
-            subtitle={
-              <span className="text-[hsl(var(--color-error))]">
-                供应商不存在
-              </span>
-            }
-          />
-        </div>
-      </div>
+      <PageContainer
+        title="编辑供应商"
+        description={
+          <span className="text-[hsl(var(--color-error))]">供应商不存在</span>
+        }
+        icon={<Building2 className="h-6 w-6 text-white" />}
+        actions={actions}
+        bodyClassName="space-y-6"
+      />
     );
   }
 
   const supplier = supplierData.data;
 
   return (
-    <div className="flex h-full flex-col overflow-auto p-6">
-      <div className="space-y-6">
-        {/* 页面标题卡片 */}
-        <HeaderCard
-          subtitle={<>修改供应商 &ldquo;{supplier.name}&rdquo; 的信息</>}
-        />
-
-        <EditSupplierForm id={id} supplier={supplier} />
-      </div>
-    </div>
+    <PageContainer
+      title="编辑供应商"
+      description={<>修改供应商 &ldquo;{supplier.name}&rdquo; 的信息</>}
+      icon={<Building2 className="h-6 w-6 text-white" />}
+      actions={actions}
+      bodyClassName="space-y-6"
+    >
+      <EditSupplierForm id={id} supplier={supplier} />
+    </PageContainer>
   );
 }

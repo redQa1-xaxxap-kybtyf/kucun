@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 
+import { ActionBar } from '@/components/layouts/action-bar';
+import { PageContainer } from '@/components/layouts/page-container';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -79,41 +81,60 @@ export default function CreateSupplierPageClient() {
   const isLoading = createMutation.isPending;
 
   return (
-    <div className="flex h-full flex-col overflow-auto p-6">
+    <PageContainer
+      title="新建供应商"
+      description="创建新的供应商记录"
+      icon={<Building2 className="h-6 w-6 text-white" />}
+      actions={
+        <Button
+          variant="outline"
+          size="lg"
+          asChild
+          className="h-11 gap-2 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:border-[hsl(var(--color-border-strong))] hover:shadow-[var(--shadow-medium)]"
+        >
+          <Link href="/suppliers">
+            <ArrowLeft className="h-4 w-4" />
+            返回
+          </Link>
+        </Button>
+      }
+      bodyClassName="space-y-6"
+      footer={
+        <ActionBar>
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            onClick={() => router.push('/suppliers')}
+            disabled={isLoading}
+            className="h-11 gap-2 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:border-[hsl(var(--color-border-strong))] hover:shadow-[var(--shadow-medium)]"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            取消
+          </Button>
+          <Button
+            type="submit"
+            form={supplierFormId}
+            size="lg"
+            disabled={isLoading}
+            className="h-11 gap-2 bg-[hsl(var(--color-primary))] text-white shadow-[var(--shadow-medium)] transition-transform hover:-translate-y-0.5 hover:bg-[hsl(var(--color-primary-hover))] hover:shadow-[var(--shadow-heavy)] focus-visible:ring-[hsl(var(--color-primary))]"
+          >
+            {isLoading ? (
+              <>
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                保存中...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4" />
+                新建供应商
+              </>
+            )}
+          </Button>
+        </ActionBar>
+      }
+    >
       <div className="space-y-6">
-        {/* 页面标题卡片 */}
-        <Card className="overflow-hidden">
-          <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-[0_10px_24px_rgba(9,88,217,0.22)]">
-                  <Building2 className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
-                    新建供应商
-                  </h1>
-                  <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-                    创建新的供应商记录
-                  </p>
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                size="lg"
-                asChild
-                className="h-11 gap-2 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:border-[hsl(var(--color-border-strong))] hover:shadow-[var(--shadow-medium)]"
-              >
-                <Link href="/suppliers">
-                  <ArrowLeft className="h-4 w-4" />
-                  返回
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 表单 */}
         <Card className="overflow-hidden">
           <CardHeader className="border-b bg-gradient-to-r from-[hsl(var(--color-bg-secondary))] to-[hsl(var(--color-bg-tertiary))]">
             <CardTitle className="flex items-center text-[hsl(var(--color-text-primary))]">
@@ -204,45 +225,7 @@ export default function CreateSupplierPageClient() {
             </Form>
           </CardContent>
         </Card>
-
-        {/* 操作按钮 */}
-        <Card className="overflow-hidden">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-end gap-4">
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                onClick={() => router.push('/suppliers')}
-                disabled={isLoading}
-                className="h-11 gap-2 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:border-[hsl(var(--color-border-strong))] hover:shadow-[var(--shadow-medium)]"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                取消
-              </Button>
-              <Button
-                type="submit"
-                form={supplierFormId}
-                size="lg"
-                disabled={isLoading}
-                className="h-11 gap-2 bg-[hsl(var(--color-primary))] text-white shadow-[var(--shadow-medium)] transition-transform hover:-translate-y-0.5 hover:bg-[hsl(var(--color-primary-hover))] hover:shadow-[var(--shadow-heavy)] focus-visible:ring-[hsl(var(--color-primary))]"
-              >
-                {isLoading ? (
-                  <>
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    保存中...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4" />
-                    新建供应商
-                  </>
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       </div>
-    </div>
+    </PageContainer>
   );
 }

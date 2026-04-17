@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
 import { SalesOrderPageHeader } from '@/components/sales-orders/sales-order-page-header';
+import { SalesOrdersSkeleton } from '@/components/ui/skeleton-compositions';
 import { useUrlSearchParams } from '@/hooks/url-search-params';
 import { salesOrderParamsConfig } from '@/lib/schemas/sales-order-params-config';
 import type { SalesOrderQueryParams } from '@/lib/types/sales-order';
@@ -21,11 +22,7 @@ const ERPSalesOrderList = dynamic(
     ),
   {
     ssr: false,
-    loading: () => (
-      <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
-        列表加载中...
-      </div>
-    ),
+    loading: () => <SalesOrdersSkeleton />,
   }
 );
 

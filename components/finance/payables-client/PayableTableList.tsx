@@ -34,6 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { TableSkeleton } from '@/components/ui/skeleton-compositions';
 import { useToast } from '@/components/ui/use-toast';
 import {
   PAYABLE_SOURCE_TYPE_LABELS,
@@ -131,9 +132,7 @@ const getPaymentStatusBadge = (payable: PayableRecordDetail) => {
 };
 
 const PayableLoadingState = () => (
-  <div className="flex items-center justify-center py-8">
-    <div className="text-muted-foreground">加载中...</div>
-  </div>
+  <TableSkeleton columns={11} rows={8} showPagination />
 );
 
 const PayableEmptyState = () => (
@@ -543,14 +542,15 @@ const PayableDeleteDialog: React.FC<PayableDeleteDialogProps> = ({
   payable,
 }) => (
   <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>确认删除这笔应付款？</AlertDialogTitle>
-          <AlertDialogDescription>
-            将删除应付单 <span className="font-semibold">{payable?.payableNumber}</span>
-            ，删除后无法恢复。
-          </AlertDialogDescription>
-        </AlertDialogHeader>
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>确认删除这笔应付款？</AlertDialogTitle>
+        <AlertDialogDescription>
+          将删除应付单{' '}
+          <span className="font-semibold">{payable?.payableNumber}</span>
+          ，删除后无法恢复。
+        </AlertDialogDescription>
+      </AlertDialogHeader>
       <AlertDialogFooter>
         <AlertDialogCancel>取消</AlertDialogCancel>
         <AlertDialogAction

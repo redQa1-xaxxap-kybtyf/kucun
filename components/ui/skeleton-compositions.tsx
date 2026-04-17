@@ -72,6 +72,12 @@ interface TableSkeletonProps {
   columns?: number;
   /** 行数，默认 10 */
   rows?: number;
+  /** 是否显示表头，默认 true */
+  showHeader?: boolean;
+  /** 是否显示分页，默认 false */
+  showPagination?: boolean;
+  /** 表格密度，默认 compact */
+  density?: 'compact' | 'comfortable';
   /** 额外的 className */
   className?: string;
 }
@@ -79,48 +85,75 @@ interface TableSkeletonProps {
 export function TableSkeleton({
   columns = 6,
   rows = 10,
+  showHeader = true,
+  showPagination = false,
+  density = 'compact',
   className,
 }: TableSkeletonProps) {
+  const spacingClassName =
+    density === 'comfortable'
+      ? {
+          header: 'p-4',
+          row: 'p-4',
+          footer: 'pt-4',
+        }
+      : {
+          header: 'p-3',
+          row: 'p-3',
+          footer: 'pt-3',
+        };
+
   return (
-    <div
-      className={cn(
-        'bg-card rounded-lg border shadow-[var(--shadow-light)]',
-        className
-      )}
-    >
-      {/* 表头 */}
-      <div className="border-b bg-[hsl(var(--color-bg-tertiary))] p-4">
-        <div
-          className="grid [grid-template-columns:repeat(var(--skel-cols),minmax(0,1fr))] gap-4"
-          style={{ '--skel-cols': String(columns) } as CSSProperties}
-        >
-          {Array.from({ length: columns }).map((_, i) => (
-            <SkeletonBar
-              key={i}
-              delay={i + 1}
-              className="bg-[hsl(var(--color-border-strong))]"
-            />
-          ))}
-        </div>
+    <div className={cn('space-y-4', className)}>
+      <div className="bg-card rounded-lg border shadow-[var(--shadow-light)]">
+        {/* 表头 */}
+        {showHeader && (
+          <div
+            className={cn(
+              'border-b bg-[hsl(var(--color-bg-tertiary))]',
+              spacingClassName.header
+            )}
+          >
+            <div
+              className="grid [grid-template-columns:repeat(var(--skel-cols),minmax(0,1fr))] gap-4"
+              style={{ '--skel-cols': String(columns) } as CSSProperties}
+            >
+              {Array.from({ length: columns }).map((_, i) => (
+                <SkeletonBar
+                  key={i}
+                  delay={i + 1}
+                  className="bg-[hsl(var(--color-border-strong))]"
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 数据行 */}
+        {Array.from({ length: rows }).map((_, row) => (
+          <div
+            key={row}
+            className={cn(
+              'border-b last:border-b-0 hover:bg-[hsl(var(--color-bg-tertiary))]',
+              spacingClassName.row
+            )}
+          >
+            <div
+              className="grid [grid-template-columns:repeat(var(--skel-cols),minmax(0,1fr))] gap-4"
+              style={{ '--skel-cols': String(columns) } as CSSProperties}
+            >
+              {Array.from({ length: columns }).map((_, col) => {
+                const idx = row * columns + col;
+                return <SkeletonBar key={col} delay={Math.min(idx, 10)} />;
+              })}
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* 数据行 */}
-      {Array.from({ length: rows }).map((_, row) => (
-        <div
-          key={row}
-          className="border-b p-4 last:border-b-0 hover:bg-[hsl(var(--color-bg-tertiary))]"
-        >
-          <div
-            className="grid [grid-template-columns:repeat(var(--skel-cols),minmax(0,1fr))] gap-4"
-            style={{ '--skel-cols': String(columns) } as CSSProperties}
-          >
-            {Array.from({ length: columns }).map((_, col) => {
-              const idx = row * columns + col;
-              return <SkeletonBar key={col} delay={Math.min(idx, 10)} />;
-            })}
-          </div>
-        </div>
-      ))}
+      {showPagination && (
+        <PaginationSkeleton className={spacingClassName.footer} />
+      )}
     </div>
   );
 }
@@ -346,12 +379,18 @@ export interface ListSkeletonProps {
   rows?: number;
   /** 筛选器数量，默认 3 */
   filters?: number;
+  /** 是否显示筛选器，默认 true */
+  showFilters?: boolean;
   /** 是否显示统计卡片，默认 false */
   showStatsCards?: boolean;
   /** 统计卡片数量，默认 4 */
   statsCardCount?: number;
   /** 是否显示工具栏，默认 false */
   showToolbar?: boolean;
+  /** 是否显示分页，默认 true */
+  showPagination?: boolean;
+  /** 表格密度，默认 compact */
+  density?: 'compact' | 'comfortable';
   /** 工具栏操作按钮数量，默认 2 */
   toolbarActions?: number;
   /** 额外的 className */
@@ -362,9 +401,12 @@ export function ListSkeleton({
   columns = 6,
   rows = 10,
   filters = 3,
+  showFilters = true,
   showStatsCards = false,
   statsCardCount = 4,
   showToolbar = false,
+  showPagination = true,
+  density = 'compact',
   toolbarActions = 2,
   className,
 }: ListSkeletonProps) {
@@ -377,13 +419,15 @@ export function ListSkeleton({
       {showStatsCards && <StatsCardsSkeleton count={statsCardCount} />}
 
       {/* 搜索筛选 */}
-      <SearchFiltersSkeleton count={filters} />
+      {showFilters && <SearchFiltersSkeleton count={filters} />}
 
       {/* 表格 */}
-      <TableSkeleton columns={columns} rows={rows} />
-
-      {/* 分页 */}
-      <PaginationSkeleton />
+      <TableSkeleton
+        columns={columns}
+        rows={rows}
+        showPagination={showPagination}
+        density={density}
+      />
     </div>
   );
 }

@@ -11,6 +11,7 @@ import { useDebouncedCallback, type DebouncedState } from 'use-debounce';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
+import { FinanceListSkeleton } from '@/components/ui/skeleton-compositions';
 import { useFinanceExport } from '@/hooks/use-finance-export';
 import {
   PAYABLE_SORT_OPTIONS,
@@ -25,14 +26,13 @@ type PayableSortField =
   | 'remainingAmount';
 
 const PayablesClient = dynamic(
-  () => import('@/components/finance/payables-client').then(mod => mod.PayablesClient),
+  () =>
+    import('@/components/finance/payables-client').then(
+      mod => mod.PayablesClient
+    ),
   {
     ssr: false,
-    loading: () => (
-      <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
-        列表加载中...
-      </div>
-    ),
+    loading: () => <FinanceListSkeleton />,
   }
 );
 
@@ -628,13 +628,7 @@ export function PayablesPageClient({
         </Card>
 
         {/* 客户端交互组件 */}
-        <Suspense
-          fallback={
-            <div className="flex items-center justify-center py-12">
-              <div className="text-muted-foreground">加载中...</div>
-            </div>
-          }
-        >
+        <Suspense fallback={<FinanceListSkeleton />}>
           <PayablesClient
             initialStatistics={initialStatistics}
             initialParams={normalizedInitialParams}

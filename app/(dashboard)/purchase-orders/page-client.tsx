@@ -9,6 +9,7 @@ import { useDebouncedCallback } from 'use-debounce';
 
 import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
+import { TableSkeleton } from '@/components/ui/skeleton-compositions';
 import type { PurchaseOrderStatus } from '@/lib/types/purchase-order';
 
 const PurchaseOrderSearchToolbar = dynamic(
@@ -33,11 +34,7 @@ const PurchaseOrderList = dynamic(
     ),
   {
     ssr: false,
-    loading: () => (
-      <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
-        列表加载中...
-      </div>
-    ),
+    loading: () => <TableSkeleton columns={9} rows={8} showPagination />,
   }
 );
 

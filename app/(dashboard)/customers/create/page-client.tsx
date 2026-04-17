@@ -18,12 +18,5 @@ const ERPCustomerForm = dynamic(
 );
 
 export function CreateCustomerPageClient() {
-  return (
-    <div className="flex h-full flex-col overflow-auto p-6">
-      <div className="space-y-6">
-        <ERPCustomerForm mode="create" />
-      </div>
-    </div>
-  );
+  return <ERPCustomerForm mode="create" presentation="page" />;
 }
-

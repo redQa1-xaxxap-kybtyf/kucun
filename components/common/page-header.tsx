@@ -22,7 +22,7 @@ interface PageHeaderProps {
   /** 页面描述 */
   description: React.ReactNode;
   /** 图标元素 */
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
   /** 操作按钮区域 */
   actions?: React.ReactNode;
   /** 样式变体 */
@@ -84,19 +84,20 @@ export function PageHeader({
       >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3 sm:gap-4">
-            {/* 图标容器 */}
-            <div
-              className={cn(
-                'flex h-10 w-10 flex-shrink-0 sm:h-12 sm:w-12',
-                'items-center justify-center',
-                'card-shadow-light rounded-xl text-white'
-              )}
-              style={{
-                backgroundColor: iconBgColor,
-              }}
-            >
-              {icon}
-            </div>
+            {icon && (
+              <div
+                className={cn(
+                  'flex h-10 w-10 flex-shrink-0 sm:h-12 sm:w-12',
+                  'items-center justify-center',
+                  'card-shadow-light rounded-xl text-white'
+                )}
+                style={{
+                  backgroundColor: iconBgColor,
+                }}
+              >
+                {icon}
+              </div>
+            )}
 
             {/* 标题和描述 */}
             <div className="min-w-0 flex-1">

@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Pagination } from '@/components/ui/pagination';
+import { TableSkeleton } from '@/components/ui/skeleton-compositions';
 import {
   Table,
   TableBody,
@@ -65,11 +66,7 @@ export function ReceivablesTableList({
   onRetry,
 }: ReceivablesTableListProps) {
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-muted-foreground">加载中...</div>
-      </div>
-    );
+    return <TableSkeleton columns={9} rows={8} showPagination />;
   }
 
   if (error) {
@@ -87,11 +84,7 @@ export function ReceivablesTableList({
             {message}
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onRetry}
-        >
+        <Button variant="outline" size="sm" onClick={onRetry}>
           重试
         </Button>
       </div>

@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client';
 import {
   HydrationBoundary,
   QueryClient,
@@ -9,9 +10,13 @@ import { prisma } from '@/lib/db';
 import { queryKeys } from '@/lib/queryKeys';
 import {
   PAYABLE_SORT_OPTIONS,
+  type PayableRecordDetail,
   type PayableSourceType,
   type PayableStatus,
+  type PaymentOutMethod,
+  type PaymentOutStatus,
 } from '@/lib/types/payable';
+import { toNumber } from '@/lib/utils/number';
 
 type PayableSortField =
   | 'createdAt'
@@ -31,6 +36,103 @@ export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 export const runtime = 'nodejs';
 export const revalidate = 0;
+
+type RawPayableRecord = Prisma.PayableRecordGetPayload<{
+  include: {
+    supplier: {
+      select: {
+        id: true;
+        name: true;
+        phone: true;
+        address: true;
+      };
+    };
+    user: {
+      select: {
+        id: true;
+        name: true;
+        email: true;
+      };
+    };
+    paymentOutRecords: {
+      select: {
+        id: true;
+        paymentNumber: true;
+        payableRecordId: true;
+        supplierId: true;
+        userId: true;
+        paymentMethod: true;
+        paymentAmount: true;
+        actualPaymentAmount: true;
+        roundingAmount: true;
+        paymentDate: true;
+        status: true;
+        remarks: true;
+        voucherNumber: true;
+        bankInfo: true;
+        createdAt: true;
+        updatedAt: true;
+      };
+    };
+  };
+}>;
+
+function serializePayableRecord(
+  payable: RawPayableRecord
+): PayableRecordDetail {
+  return {
+    id: payable.id,
+    payableNumber: payable.payableNumber,
+    supplierId: payable.supplierId,
+    userId: payable.userId,
+    sourceType: payable.sourceType as PayableSourceType,
+    ...(payable.sourceId ? { sourceId: payable.sourceId } : {}),
+    ...(payable.sourceNumber ? { sourceNumber: payable.sourceNumber } : {}),
+    payableAmount: toNumber(payable.payableAmount),
+    paidAmount: toNumber(payable.paidAmount),
+    remainingAmount: toNumber(payable.remainingAmount),
+    ...(payable.dueDate ? { dueDate: payable.dueDate.toISOString() } : {}),
+    status: payable.status as PayableStatus,
+    paymentTerms: payable.paymentTerms,
+    ...(payable.description ? { description: payable.description } : {}),
+    ...(payable.remarks ? { remarks: payable.remarks } : {}),
+    createdAt: payable.createdAt.toISOString(),
+    updatedAt: payable.updatedAt.toISOString(),
+    supplier: {
+      id: payable.supplier.id,
+      name: payable.supplier.name,
+      ...(payable.supplier.phone ? { phone: payable.supplier.phone } : {}),
+      ...(payable.supplier.address
+        ? { address: payable.supplier.address }
+        : {}),
+    },
+    user: {
+      id: payable.user.id,
+      name: payable.user.name,
+      email: payable.user.email ?? '',
+    },
+    paymentOutRecords: payable.paymentOutRecords.map(record => ({
+      id: record.id,
+      paymentNumber: record.paymentNumber,
+      ...(record.payableRecordId
+        ? { payableRecordId: record.payableRecordId }
+        : {}),
+      supplierId: record.supplierId,
+      userId: record.userId,
+      paymentMethod: record.paymentMethod as PaymentOutMethod,
+      paymentAmount: toNumber(record.paymentAmount),
+      actualPaymentAmount: toNumber(record.actualPaymentAmount),
+      roundingAmount: toNumber(record.roundingAmount),
+      paymentDate: record.paymentDate.toISOString(),
+      status: record.status as PaymentOutStatus,
+      ...(record.remarks ? { remarks: record.remarks } : {}),
+      ...(record.voucherNumber ? { voucherNumber: record.voucherNumber } : {}),
+      ...(record.bankInfo ? { bankInfo: record.bankInfo } : {}),
+      createdAt: record.createdAt.toISOString(),
+      updatedAt: record.updatedAt.toISOString(),
+    })),
+  };
+}
 
 /**
  * 服务器端获取应付款数据
@@ -124,9 +226,20 @@ async function getPayablesData(searchParams: {
           select: {
             id: true,
             paymentNumber: true,
+            payableRecordId: true,
+            supplierId: true,
+            userId: true,
+            paymentMethod: true,
             paymentAmount: true,
+            actualPaymentAmount: true,
+            roundingAmount: true,
             paymentDate: true,
             status: true,
+            remarks: true,
+            voucherNumber: true,
+            bankInfo: true,
+            createdAt: true,
+            updatedAt: true,
           },
           orderBy: {
             createdAt: 'desc',
@@ -171,8 +284,7 @@ async function getPayablesData(searchParams: {
   );
 
   return {
-    payables:
-      payables as unknown as import('@/lib/types/payable').PayableRecordDetail[],
+    payables: payables.map(serializePayableRecord),
     statistics: {
       totalPayables: totals.totalPayables,
       totalPaidAmount: totals.totalPaidAmount,

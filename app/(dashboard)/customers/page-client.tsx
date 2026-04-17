@@ -1,14 +1,16 @@
 'use client';
 
-import { Download, Plus } from 'lucide-react';
+import { Download, Plus, Users } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
-import { SearchFilterCard } from '@/components/common/search-filter-card';
+import { FilterBar } from '@/components/layouts/filter-bar';
+import { PageContainer } from '@/components/layouts/page-container';
 import { Button } from '@/components/ui/button';
+import { TableSkeleton } from '@/components/ui/skeleton-compositions';
 import { useCustomersQuery } from '@/hooks/use-customers-query';
 import {
   CUSTOMER_SORT_OPTIONS,
@@ -28,11 +30,7 @@ const ERPCustomerList = dynamic(
     ),
   {
     ssr: false,
-    loading: () => (
-      <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
-        列表加载中...
-      </div>
-    ),
+    loading: () => <TableSkeleton columns={6} rows={8} showPagination />,
   }
 );
 
@@ -184,88 +182,92 @@ export function CustomersPageClient({
     setDeleteDialogOpen(true);
   };
 
+  const handleClearFilters = () => {
+    debouncedUpdateURL.cancel();
+    setSearch('');
+    setSortBy('createdAt');
+    setSortOrder('desc');
+    startTransition(() => {
+      router.push('/customers');
+    });
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50/50">
-      <div className="mx-auto max-w-[1680px] space-y-12 p-4 transition-all duration-500 lg:p-10 xl:p-14">
-        {/* Identity Header */}
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="space-y-2">
-            <h2 className="text-3xl font-semibold tracking-tighter text-slate-900">
-              客户管理
-            </h2>
-            <p className="max-w-2xl text-sm leading-relaxed font-bold text-slate-400">
-              统一维护客户资料，查看销售、退货和往来情况。
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="lg"
-              asChild
-              className="h-12 rounded-2xl border-none bg-white px-6 font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-900 hover:text-white active:scale-95"
-            >
-              <Link href="/customers/export">
-                <Download className="mr-2 h-4 w-4" />
-                导出客户列表
-              </Link>
-            </Button>
-            <Button
-              size="lg"
-              asChild
-              className="h-12 rounded-2xl border-none bg-slate-900 px-6 font-semibold text-white shadow-xl transition-all hover:shadow-slate-200 active:scale-95"
-            >
-              <Link href="/customers/create">
-                <Plus className="mr-2 h-4 w-4" />
-                新建客户
-              </Link>
-            </Button>
-          </div>
-        </div>
-
-        {/* Search & Filters */}
-        <div className="relative z-10">
-          <div className="absolute -inset-4 -z-10 rounded-full bg-gradient-to-tr from-slate-100/40 to-white/0 opacity-50 blur-2xl" />
-          <SearchFilterCard
-            // ... existing props
-            searchValue={search}
-            onSearchChange={handleSearch}
-            searchPlaceholder="搜索客户名称、电话或地址..."
-            filters={[
-              {
-                key: 'sortBy',
-                label: '排序依据',
-                options: CUSTOMER_SORT_OPTIONS.map(option => ({ ...option })),
-                width: 'w-36',
-              },
-              {
-                key: 'sortOrder',
-                label: '排序方式',
-                options: [
-                  { label: '升序', value: 'asc' },
-                  { label: '降序', value: 'desc' },
-                ],
-                width: 'w-28',
-              },
-            ]}
-            filterValues={{
-              sortBy,
-              sortOrder,
-            }}
-            onFilterChange={(key, value) => {
-              if (key === 'sortBy' && value) {
-                handleSortChange(value, sortOrder);
-              } else if (key === 'sortOrder' && value) {
-                handleSortChange(sortBy, value as 'asc' | 'desc');
-              }
-            }}
-            variant="pro"
-            compact={true}
-          />
-        </div>
-
-        {/* 客户列表 */}
-        <div className="relative">
+    <PageContainer
+      title="客户管理"
+      description="统一维护客户资料，查看销售、退货和往来情况。"
+      icon={<Users className="h-6 w-6 text-white" />}
+      actions={
+        <>
+          <Button
+            variant="ghost"
+            size="lg"
+            asChild
+            className="h-12 rounded-2xl border-none bg-white px-6 font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-900 hover:text-white active:scale-95"
+          >
+            <Link href="/customers/export">
+              <Download className="mr-2 h-4 w-4" />
+              导出客户列表
+            </Link>
+          </Button>
+          <Button
+            size="lg"
+            asChild
+            className="h-12 rounded-2xl border-none bg-slate-900 px-6 font-semibold text-white shadow-xl transition-all hover:shadow-slate-200 active:scale-95"
+          >
+            <Link href="/customers/create">
+              <Plus className="mr-2 h-4 w-4" />
+              新建客户
+            </Link>
+          </Button>
+        </>
+      }
+      banner={
+        <FilterBar
+          searchValue={search}
+          onSearchChange={handleSearch}
+          searchPlaceholder="搜索客户名称、电话或地址..."
+          filters={[
+            {
+              key: 'sortBy',
+              label: '排序依据',
+              options: CUSTOMER_SORT_OPTIONS.map(option => ({ ...option })),
+              width: 'w-36',
+              includeAllOption: false,
+              defaultValue: 'createdAt',
+            },
+            {
+              key: 'sortOrder',
+              label: '排序方式',
+              options: [
+                { label: '升序', value: 'asc' },
+                { label: '降序', value: 'desc' },
+              ],
+              width: 'w-28',
+              includeAllOption: false,
+              defaultValue: 'desc',
+            },
+          ]}
+          filterValues={{
+            sortBy,
+            sortOrder,
+          }}
+          onFilterChange={(key, value) => {
+            if (key === 'sortBy') {
+              handleSortChange(value ?? 'createdAt', sortOrder);
+            } else if (key === 'sortOrder') {
+              handleSortChange(sortBy, (value as 'asc' | 'desc') ?? 'desc');
+            }
+          }}
+          onClearFilters={handleClearFilters}
+        />
+      }
+      maxWidthClassName="max-w-[1680px]"
+      headerClassName="lg:px-10 lg:pt-10 xl:px-14 xl:pt-14"
+      bannerClassName="lg:px-10 xl:px-14"
+      bodyClassName="space-y-6 lg:px-10 lg:pb-10 xl:px-14 xl:pb-14"
+    >
+      <div className="relative">
           {isError && (
             <div className="animate-in fade-in slide-in-from-top-4 mb-8 flex items-center gap-3 rounded-2xl border border-rose-100 bg-rose-50/50 px-6 py-4 text-sm font-bold text-rose-600 duration-500">
               <div className="h-2 w-2 animate-pulse rounded-full bg-rose-500" />
@@ -282,14 +284,13 @@ export function CustomersPageClient({
             onDelete={handleDelete}
             onPageChange={handlePageChange}
           />
-        </div>
-
-        <CustomerDeleteDialog
-          customer={selectedCustomer}
-          open={deleteDialogOpen}
-          onOpenChange={setDeleteDialogOpen}
-        />
       </div>
-    </div>
+
+      <CustomerDeleteDialog
+        customer={selectedCustomer}
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+      />
+    </PageContainer>
   );
 }

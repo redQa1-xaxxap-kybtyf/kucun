@@ -1,16 +1,13 @@
 'use client';
 
-import {
-  Download,
-  Plus,
-  TrendingUp,
-} from 'lucide-react';
+import { Download, Plus, TrendingUp } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useCallback } from 'react';
 
 import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
+import { FinanceListSkeleton } from '@/components/ui/skeleton-compositions';
 import { useFinanceExport } from '@/hooks/use-finance-export';
 import type { ReceivablesParams } from '@/lib/schemas/receivables-params';
 
@@ -23,11 +20,7 @@ const ReceivablesClient = dynamic(
     ),
   {
     ssr: false,
-    loading: () => (
-      <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
-        列表加载中...
-      </div>
-    ),
+    loading: () => <FinanceListSkeleton />,
   }
 );
 

@@ -19,8 +19,13 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { useMediaQuery } from '@/hooks/use-media-query';
 import { cn } from '@/lib/utils';
+
+const MOBILE_BREAKPOINT = 768;
+
+function isMobileViewport() {
+  return typeof window !== 'undefined' && window.innerWidth < MOBILE_BREAKPOINT;
+}
 
 /**
  * 移动端优化的卡片组件
@@ -49,20 +54,17 @@ export function MobileCard({
   className,
   children,
 }: MobileCardProps) {
-  const isMobile = useMediaQuery('(max-width: 768px)');
-
   return (
     <Card
       className={cn(
-        'transition-all duration-200',
+        'touch-manipulation transition-all duration-200',
         onClick &&
           'cursor-pointer hover:[box-shadow:var(--shadow-medium)] active:scale-95',
-        isMobile && 'touch-manipulation',
         className
       )}
       onClick={onClick}
     >
-      <CardHeader className={cn('pb-3', isMobile && 'p-4')}>
+      <CardHeader className="p-4 pb-3 md:p-6 md:pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             {icon && (
@@ -71,13 +73,9 @@ export function MobileCard({
               </div>
             )}
             <div>
-              <CardTitle className={cn('text-base', isMobile && 'text-sm')}>
-                {title}
-              </CardTitle>
+              <CardTitle className="text-sm md:text-base">{title}</CardTitle>
               {description && (
-                <CardDescription
-                  className={cn('text-sm', isMobile && 'text-xs')}
-                >
+                <CardDescription className="text-xs md:text-sm">
                   {description}
                 </CardDescription>
               )}
@@ -85,7 +83,7 @@ export function MobileCard({
           </div>
 
           {badge && (
-            <Badge variant={badgeVariant} className={cn(isMobile && 'text-xs')}>
+            <Badge variant={badgeVariant} className="text-xs">
               {badge}
             </Badge>
           )}
@@ -93,11 +91,9 @@ export function MobileCard({
       </CardHeader>
 
       {(value || children) && (
-        <CardContent className={cn('pt-0', isMobile && 'p-4 pt-0')}>
+        <CardContent className="p-4 pt-0 md:p-6 md:pt-0">
           {value && (
-            <div className={cn('text-2xl font-bold', isMobile && 'text-xl')}>
-              {value}
-            </div>
+            <div className="text-xl font-bold md:text-2xl">{value}</div>
           )}
           {children}
         </CardContent>
@@ -127,7 +123,6 @@ export function MobileList<T>({
   className,
   emptyMessage = '暂无数据',
 }: MobileListProps<T>) {
-  const isMobile = useMediaQuery('(max-width: 768px)');
   const [swipeStates, setSwipeStates] = React.useState<
     Record<
       number,
@@ -140,7 +135,7 @@ export function MobileList<T>({
   >({});
 
   const handleTouchStart = (e: React.TouchEvent, index: number) => {
-    if (!isMobile || !onItemSwipe) {
+    if (!isMobileViewport() || !onItemSwipe) {
       return;
     }
 
@@ -156,7 +151,7 @@ export function MobileList<T>({
   };
 
   const handleTouchMove = (e: React.TouchEvent, index: number) => {
-    if (!isMobile || !onItemSwipe) {
+    if (!isMobileViewport() || !onItemSwipe) {
       return;
     }
 
@@ -177,7 +172,7 @@ export function MobileList<T>({
   };
 
   const handleTouchEnd = (item: T, index: number) => {
-    if (!isMobile || !onItemSwipe) {
+    if (!isMobileViewport() || !onItemSwipe) {
       return;
     }
 
@@ -222,9 +217,8 @@ export function MobileList<T>({
           <div
             key={index}
             className={cn(
-              'transition-transform duration-200',
-              onItemClick && 'cursor-pointer',
-              isMobile && 'touch-manipulation'
+              'touch-manipulation transition-transform duration-200',
+              onItemClick && 'cursor-pointer'
             )}
             style={{
               transform: swipeState?.isSwiping
@@ -268,13 +262,10 @@ export function MobileToolbar({
   actions = [],
   className,
 }: MobileToolbarProps) {
-  const isMobile = useMediaQuery('(max-width: 768px)');
-
   return (
     <div
       className={cn(
-        'bg-background/95 supports-backdrop-filter:bg-background/60 flex items-center justify-between border-b p-4 backdrop-blur-sm',
-        isMobile && 'sticky top-0 z-40',
+        'bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-40 flex items-center justify-between border-b p-4 backdrop-blur-sm md:static',
         className
       )}
     >
@@ -285,33 +276,42 @@ export function MobileToolbar({
           </Button>
         )}
 
-        {title && (
-          <h1 className={cn('font-semibold', isMobile ? 'text-lg' : 'text-xl')}>
-            {title}
-          </h1>
-        )}
+        {title && <h1 className="text-lg font-semibold md:text-xl">{title}</h1>}
       </div>
 
       {actions.length > 0 && (
         <div className="flex items-center space-x-2">
-          {actions.slice(0, isMobile ? 2 : 4).map((action, index) => (
+          {actions.slice(0, 4).map((action, index) => (
             <Button
               key={index}
               variant={action.variant || 'ghost'}
               size="sm"
               onClick={action.onClick}
-              className={cn('p-2', isMobile && 'touch-manipulation')}
+              className={cn(
+                'touch-manipulation p-2',
+                index >= 2 && 'hidden md:inline-flex'
+              )}
               title={action.label}
             >
               {action.icon}
-              {!isMobile && (
-                <span className="ml-2 text-sm">{action.label}</span>
-              )}
+              <span className="ml-2 hidden text-sm md:inline">
+                {action.label}
+              </span>
             </Button>
           ))}
 
-          {actions.length > (isMobile ? 2 : 4) && (
-            <Button variant="ghost" size="sm" className="p-2">
+          {actions.length > 2 && (
+            <Button variant="ghost" size="sm" className="p-2 md:hidden">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          )}
+
+          {actions.length > 4 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="hidden p-2 md:inline-flex"
+            >
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           )}
@@ -344,8 +344,6 @@ export function MobileViewSwitcher({
   onSearch,
   className,
 }: MobileViewSwitcherProps) {
-  const _isMobile = useMediaQuery('(max-width: 768px)');
-
   return (
     <div
       className={cn(
@@ -406,16 +404,14 @@ interface MobileBottomBarProps {
 }
 
 export function MobileBottomBar({ actions, className }: MobileBottomBarProps) {
-  const isMobile = useMediaQuery('(max-width: 768px)');
-
-  if (!isMobile || actions.length === 0) {
+  if (actions.length === 0) {
     return null;
   }
 
   return (
     <div
       className={cn(
-        'bg-background/95 supports-backdrop-filter:bg-background/60 fixed right-0 bottom-0 left-0 z-50 border-t p-4 backdrop-blur-sm',
+        'bg-background/95 supports-backdrop-filter:bg-background/60 fixed right-0 bottom-0 left-0 z-50 border-t p-4 backdrop-blur-sm md:hidden',
         className
       )}
     >

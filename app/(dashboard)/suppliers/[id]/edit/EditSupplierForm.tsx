@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 
+import { ActionBar } from '@/components/layouts/action-bar';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -205,7 +206,7 @@ export function EditSupplierForm({ id, supplier }: EditSupplierFormProps) {
 
       <Card className="overflow-hidden">
         <CardContent className="p-6">
-          <div className="flex items-center justify-end gap-4">
+          <ActionBar>
             <Button
               type="button"
               variant="outline"
@@ -234,9 +235,9 @@ export function EditSupplierForm({ id, supplier }: EditSupplierFormProps) {
                   <Save className="h-4 w-4" />
                   更新供应商
                 </>
-              )}
-            </Button>
-          </div>
+                )}
+              </Button>
+          </ActionBar>
         </CardContent>
       </Card>
     </>

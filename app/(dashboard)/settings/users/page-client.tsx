@@ -23,6 +23,7 @@ import { SettingsLayout } from '@/components/settings/SettingsLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { TableSkeleton } from '@/components/ui/skeleton-compositions';
 import { useToast } from '@/components/ui/use-toast';
 import { queryKeys } from '@/lib/queryKeys';
 import type {
@@ -44,12 +45,7 @@ const UserManagementTable = dynamic(
     ),
   {
     ssr: false,
-    loading: () => (
-      <div className="flex h-64 items-center justify-center bg-slate-50/30">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-        <span className="ml-3 font-medium text-slate-500">表格加载中...</span>
-      </div>
-    ),
+    loading: () => <TableSkeleton columns={6} rows={8} showPagination />,
   }
 );
 

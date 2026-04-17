@@ -3,9 +3,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Loader2, Users } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
+import { PageContainer } from '@/components/layouts/page-container';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { customerQueryKeys, getCustomer } from '@/lib/api/customers';
@@ -61,46 +63,31 @@ export default function CustomerEditPage({ params }: CustomerEditPageProps) {
     router.push('/customers');
   };
 
-  const HeaderCard = () => (
-    <Card className="overflow-hidden">
-      <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-[0_10px_24px_rgba(9,88,217,0.22)]">
-              <Users className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
-                编辑客户
-              </h1>
-              <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-                修改客户信息
-              </p>
-            </div>
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="lg"
-            onClick={handleBack}
-            className="h-11 gap-2 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:border-[hsl(var(--color-border-strong))] hover:shadow-[var(--shadow-medium)]"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            返回
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+  const backAction = (
+    <Button
+      type="button"
+      variant="outline"
+      size="lg"
+      asChild
+      className="h-11 gap-2 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:border-[hsl(var(--color-border-strong))] hover:shadow-[var(--shadow-medium)]"
+    >
+      <Link href="/customers">
+        <ArrowLeft className="h-4 w-4" />
+        返回
+      </Link>
+    </Button>
   );
 
   // 加载状态
   if (isLoading) {
     return (
-      <div className="flex h-full flex-col overflow-auto p-6">
-        <div className="space-y-6">
-          <HeaderCard />
-
-          {/* 加载提示 */}
+      <PageContainer
+        title="编辑客户"
+        description="修改客户信息"
+        icon={<Users className="h-6 w-6 text-white" />}
+        actions={backAction}
+        bodyClassName="space-y-6"
+      >
           <Card className="overflow-hidden">
             <CardContent className="p-12">
               <div className="flex items-center justify-center">
@@ -111,19 +98,20 @@ export default function CustomerEditPage({ params }: CustomerEditPageProps) {
               </div>
             </CardContent>
           </Card>
-        </div>
-      </div>
+      </PageContainer>
     );
   }
 
   // 错误状态
   if (error) {
     return (
-      <div className="flex h-full flex-col overflow-auto p-6">
-        <div className="space-y-6">
-          <HeaderCard />
-
-          {/* 错误提示 */}
+      <PageContainer
+        title="编辑客户"
+        description="修改客户信息"
+        icon={<Users className="h-6 w-6 text-white" />}
+        actions={backAction}
+        bodyClassName="space-y-6"
+      >
           <Card className="overflow-hidden">
             <CardContent className="p-12">
               <div className="text-center">
@@ -142,19 +130,20 @@ export default function CustomerEditPage({ params }: CustomerEditPageProps) {
               </div>
             </CardContent>
           </Card>
-        </div>
-      </div>
+      </PageContainer>
     );
   }
 
   // 客户不存在
   if (!customer) {
     return (
-      <div className="flex h-full flex-col overflow-auto p-6">
-        <div className="space-y-6">
-          <HeaderCard />
-
-          {/* 不存在提示 */}
+      <PageContainer
+        title="编辑客户"
+        description="修改客户信息"
+        icon={<Users className="h-6 w-6 text-white" />}
+        actions={backAction}
+        bodyClassName="space-y-6"
+      >
           <Card className="overflow-hidden">
             <CardContent className="p-12">
               <div className="text-center">
@@ -172,21 +161,17 @@ export default function CustomerEditPage({ params }: CustomerEditPageProps) {
               </div>
             </CardContent>
           </Card>
-        </div>
-      </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="flex h-full flex-col overflow-auto p-6">
-      <div className="space-y-6">
-        <ERPCustomerForm
-          mode="edit"
-          initialData={customer}
-          onSuccess={handleSuccess}
-          onCancel={handleBack}
-        />
-      </div>
-    </div>
+    <ERPCustomerForm
+      mode="edit"
+      initialData={customer}
+      onSuccess={handleSuccess}
+      onCancel={handleBack}
+      presentation="page"
+    />
   );
 }

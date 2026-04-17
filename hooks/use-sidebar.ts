@@ -4,7 +4,10 @@ import { useState, useEffect } from 'react';
 
 import type { SidebarState } from '@/lib/types/layout';
 
-import { useMediaQuery } from './use-media-query';
+import { useWindowWidth } from './use-media-query';
+
+const MOBILE_BREAKPOINT = 768;
+const DESKTOP_BREAKPOINT = 1024;
 
 /**
  * 侧边栏状态管理Hook
@@ -14,8 +17,9 @@ import { useMediaQuery } from './use-media-query';
  * @returns SidebarState - 侧边栏状态和操作方法
  */
 export function useSidebar(initialCollapsed: boolean = false): SidebarState {
-  const isMobile = useMediaQuery('(max-width: 768px)');
-  const isTablet = useMediaQuery('(min-width: 769px) and (max-width: 1024px)');
+  const width = useWindowWidth();
+  const isMobile = width < MOBILE_BREAKPOINT;
+  const isTablet = width >= MOBILE_BREAKPOINT && width < DESKTOP_BREAKPOINT;
 
   const [isOpen, setIsOpen] = useState(!isMobile);
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
@@ -81,8 +85,9 @@ export function useSidebarWithStorage(
   storageKey: string = 'sidebar-collapsed',
   initialCollapsed: boolean = false
 ): SidebarState {
-  const isMobile = useMediaQuery('(max-width: 768px)');
-  const isTablet = useMediaQuery('(min-width: 769px) and (max-width: 1024px)');
+  const width = useWindowWidth();
+  const isMobile = width < MOBILE_BREAKPOINT;
+  const isTablet = width >= MOBILE_BREAKPOINT && width < DESKTOP_BREAKPOINT;
 
   // 从本地存储读取初始状态
   const [isOpen, setIsOpen] = useState(!isMobile);

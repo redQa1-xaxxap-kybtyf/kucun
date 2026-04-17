@@ -279,32 +279,38 @@ export function ERPCustomerDetail({
           <div className="text-muted-foreground text-xs font-medium">
             客户状态
           </div>
-          <div className="flex items-center gap-2">
-            <Badge
-              variant={
-                customer.cooperationDays !== undefined &&
-                customer.cooperationDays > 0
-                  ? 'default'
-                  : customer.transactionCount && customer.transactionCount > 0
-                    ? 'secondary'
-                    : 'outline'
-              }
-              className="text-xs"
-            >
-              {customer.cooperationDays !== undefined &&
-              customer.cooperationDays > 0
+          {(() => {
+            const transactionCount = customer.transactionCount ?? 0;
+            const returnOrderCount = customer.returnOrderCount ?? 0;
+            const cooperationDays = customer.cooperationDays;
+            const statusVariant =
+              cooperationDays !== undefined && cooperationDays > 0
+                ? 'default'
+                : transactionCount > 0
+                  ? 'secondary'
+                  : 'outline';
+            const statusLabel =
+              cooperationDays !== undefined && cooperationDays > 0
                 ? '活跃客户'
-                : customer.transactionCount && customer.transactionCount > 0
+                : transactionCount > 0
                   ? '潜在客户'
-                  : '新客户'}
-            </Badge>
+                  : '新客户';
+            const hasReturnRecord = returnOrderCount > 0;
 
-            {customer.returnOrderCount && customer.returnOrderCount > 0 && (
-              <Badge variant="destructive" className="text-xs">
-                有退货记录
-              </Badge>
-            )}
-          </div>
+            return (
+              <div className="flex items-center gap-2">
+                <Badge variant={statusVariant} className="text-xs">
+                  {statusLabel}
+                </Badge>
+
+                {hasReturnRecord && (
+                  <Badge variant="destructive" className="text-xs">
+                    有退货记录
+                  </Badge>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         {/* 扩展信息 */}

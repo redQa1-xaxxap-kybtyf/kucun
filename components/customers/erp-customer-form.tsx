@@ -6,7 +6,8 @@ import { ArrowLeft, Loader2, Save, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useForm, type UseFormReturn } from 'react-hook-form';
 
-import { PageHeader } from '@/components/common/page-header';
+import { ActionBar } from '@/components/layouts/action-bar';
+import { PageContainer } from '@/components/layouts/page-container';
 import {
   AddressSelector,
   formatAddressString,
@@ -49,6 +50,7 @@ interface ERPCustomerFormProps {
   initialData?: Customer;
   onSuccess?: () => void;
   onCancel?: () => void;
+  presentation?: 'page' | 'embedded';
 }
 
 type CustomerFormInstance = UseFormReturn<CreateCustomerData>;
@@ -305,13 +307,15 @@ function FormActions({
   isLoading,
   mode,
   onCancel,
+  formId,
 }: {
   isLoading: boolean;
   mode: ERPCustomerFormProps['mode'];
   onCancel: () => void;
+  formId?: string;
 }) {
   return (
-    <div className="flex items-center justify-end gap-3">
+    <ActionBar>
       <Button
         type="button"
         variant="outline"
@@ -324,7 +328,8 @@ function FormActions({
         取消
       </Button>
       <Button
-        type="submit"
+        type={formId ? 'submit' : 'button'}
+        form={formId}
         size="lg"
         disabled={isLoading}
         className="h-10 gap-2 bg-[hsl(var(--color-primary))] text-white shadow-[var(--shadow-medium)] transition-transform hover:-translate-y-0.5 hover:bg-[hsl(var(--color-primary-hover))] hover:shadow-[var(--shadow-heavy)] focus-visible:ring-[hsl(var(--color-primary))]"
@@ -341,7 +346,7 @@ function FormActions({
           </>
         )}
       </Button>
-    </div>
+    </ActionBar>
   );
 }
 
@@ -354,10 +359,12 @@ export function ERPCustomerForm({
   initialData,
   onSuccess,
   onCancel,
+  presentation = 'embedded',
 }: ERPCustomerFormProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const customerFormId = `customer-${mode}-form`;
 
   const form = useForm<CreateCustomerData>({
     resolver: standardSchemaResolver(CreateCustomerSchema),
@@ -396,6 +403,7 @@ export function ERPCustomerForm({
     enabled: hasUnsavedChanges,
     message: '当前客户资料尚未保存，确定要离开吗？',
   });
+  const isPagePresentation = presentation === 'page';
 
   const handleProtectedCancel = () => {
     if (!confirmLeavePage()) {
@@ -406,28 +414,47 @@ export function ERPCustomerForm({
   };
 
   return (
-    <>
-      <PageHeader
-        title={isEdit ? '编辑客户' : '新建客户'}
-        description={isEdit ? '修改客户信息' : '创建新的客户记录'}
-        icon={<Users className="h-6 w-6 text-white" />}
-      />
+    <Form {...form}>
+      {isPagePresentation ? (
+        <PageContainer
+          title={isEdit ? '编辑客户' : '新建客户'}
+          description={isEdit ? '修改客户信息' : '创建新的客户记录'}
+          icon={<Users className="h-6 w-6 text-white" />}
+          bodyClassName="space-y-6"
+          footer={
+            <FormActions
+              isLoading={isLoading}
+              mode={mode}
+              onCancel={handleProtectedCancel}
+              formId={customerFormId}
+            />
+          }
+        >
+          <form
+            id={customerFormId}
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4"
+          >
+            <BasicInfoSection form={form} isLoading={isLoading} />
+          </form>
+        </PageContainer>
+      ) : (
+        <>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <BasicInfoSection form={form} isLoading={isLoading} />
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <BasicInfoSection form={form} isLoading={isLoading} />
-
-          <Card className="overflow-hidden">
-            <CardContent className="p-4">
-              <FormActions
-                isLoading={isLoading}
-                mode={mode}
-                onCancel={handleProtectedCancel}
-              />
-            </CardContent>
-          </Card>
-        </form>
-      </Form>
-    </>
+            <Card className="overflow-hidden">
+              <CardContent className="p-4">
+                <FormActions
+                  isLoading={isLoading}
+                  mode={mode}
+                  onCancel={handleProtectedCancel}
+                />
+              </CardContent>
+            </Card>
+          </form>
+        </>
+      )}
+    </Form>
   );
 }

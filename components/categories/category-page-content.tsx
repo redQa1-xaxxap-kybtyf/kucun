@@ -12,18 +12,17 @@ import { CategorySearchFilters } from '@/components/categories/category-search-f
 import { ContentLoading } from '@/components/common/loading';
 import { Card, CardContent } from '@/components/ui/card';
 import { Pagination } from '@/components/ui/pagination';
+import { TableSkeleton } from '@/components/ui/skeleton-compositions';
 import { type Category, type CategoryQueryParams } from '@/lib/api/categories';
 
 const CategoryList = dynamic(
   () =>
-    import('@/components/categories/category-list').then(mod => mod.CategoryList),
+    import('@/components/categories/category-list').then(
+      mod => mod.CategoryList
+    ),
   {
     ssr: false,
-    loading: () => (
-      <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
-        列表加载中...
-      </div>
-    ),
+    loading: () => <TableSkeleton columns={6} rows={8} showPagination />,
   }
 );
 

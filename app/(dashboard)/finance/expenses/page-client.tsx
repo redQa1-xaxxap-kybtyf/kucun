@@ -10,6 +10,10 @@ import { PageHeader } from '@/components/common/page-header';
 import { ExpenseFilters } from '@/components/finance/expenses/expense-filters';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+  StatsCardsSkeleton,
+  TableSkeleton,
+} from '@/components/ui/skeleton-compositions';
 import type {
   ExpenseQueryParams,
   ExpenseStatisticsParams,
@@ -23,11 +27,7 @@ const ExpenseList = dynamic(
     ),
   {
     ssr: false,
-    loading: () => (
-      <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
-        列表加载中...
-      </div>
-    ),
+    loading: () => <TableSkeleton columns={7} rows={8} showPagination />,
   }
 );
 
@@ -38,11 +38,7 @@ const ExpenseStatistics = dynamic(
     ),
   {
     ssr: false,
-    loading: () => (
-      <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
-        统计加载中...
-      </div>
-    ),
+    loading: () => <StatsCardsSkeleton count={4} />,
   }
 );
 
@@ -276,7 +272,11 @@ export function ExpensesPageClient({
           iconBgColor="hsl(var(--color-primary))"
           actions={
             hasManagePermission ? (
-              <Button size="lg" asChild className="h-11 shadow-[var(--shadow-light)]">
+              <Button
+                size="lg"
+                asChild
+                className="h-11 shadow-[var(--shadow-light)]"
+              >
                 <Link href="/finance/expenses/create">
                   <Plus className="mr-2 h-4 w-4" />
                   登记费用

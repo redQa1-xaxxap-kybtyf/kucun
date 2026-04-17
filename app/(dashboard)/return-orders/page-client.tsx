@@ -9,6 +9,7 @@ import * as React from 'react';
 
 import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
+import { ReturnOrdersSkeleton } from '@/components/ui/skeleton-compositions';
 import { getReturnOrders } from '@/lib/api/return-orders';
 import { paginationConfig } from '@/lib/config/pagination';
 import { queryKeys } from '@/lib/queryKeys';
@@ -27,11 +28,7 @@ const ReturnOrderListView = dynamic(
     ),
   {
     ssr: false,
-    loading: () => (
-      <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
-        列表加载中...
-      </div>
-    ),
+    loading: () => <ReturnOrdersSkeleton />,
   }
 );
 

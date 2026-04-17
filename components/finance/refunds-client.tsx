@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
+import { TableSkeleton } from '@/components/ui/skeleton-compositions';
 import {
   Table,
   TableBody,
@@ -255,6 +256,8 @@ export function RefundsClient({
     );
   };
 
+  const showLoadingState = isLoading && refunds.length === 0;
+
   return (
     <div className="space-y-6">
       {/* 统计卡片 */}
@@ -303,15 +306,15 @@ export function RefundsClient({
                   ).toFixed(1)
                 : '0.0'}
               %
-          </div>
-          <p className="text-muted-foreground text-xs">
+            </div>
+            <p className="text-muted-foreground text-xs">
               {statistics.processingCount} 笔待退款
-          </p>
-        </CardContent>
-      </Card>
+            </p>
+          </CardContent>
+        </Card>
 
-      <Card className="shadow-[var(--shadow-medium)]">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <Card className="shadow-[var(--shadow-medium)]">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">未完成金额</CardTitle>
             <Calendar className="h-4 w-4 text-[hsl(var(--color-primary))]" />
           </CardHeader>
@@ -379,208 +382,215 @@ export function RefundsClient({
             </div>
           )}
 
-          {/* 桌面端：表格视图 */}
-          <div className="mt-6 hidden overflow-x-auto rounded-md border md:block">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[180px]">退款单号</TableHead>
-                  <TableHead className="w-[100px] text-center">状态</TableHead>
-                  <TableHead className="w-[150px]">客户信息</TableHead>
-                  <TableHead className="w-[200px]">关联订单</TableHead>
-                  <TableHead className="w-[100px]">退款方式</TableHead>
-                  <TableHead className="w-[150px] text-right">
-                    金额信息
-                  </TableHead>
-                  <TableHead className="w-[150px] text-center">
-                    时间信息
-                  </TableHead>
-                  <TableHead className="w-[120px] text-center">操作</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading && refunds.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="h-24 text-center">
-                      加载中...
-                    </TableCell>
-                  </TableRow>
-                ) : refunds.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="h-24 text-center">
-                      <EmptyState title="暂无退款" compact />
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  refunds.map(refund => (
-                    <TableRow
-                      key={refund.id}
-                      className="hover:bg-muted/50 cursor-pointer"
-                      onClick={() => {
-                        router.push(`/finance/refunds/${refund.id}`);
-                      }}
-                    >
-                      <TableCell>
-                        <div className="flex flex-col gap-1">
-                          <div className="font-mono font-medium">
-                            <CopyableText text={refund.refundNumber} />
-                          </div>
-                          <Badge variant="outline" className="w-fit text-xs">
-                            {getTypeLabel(refund.refundType)}
-                          </Badge>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {getStatusBadge(refund.status)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col gap-1 text-sm">
-                          <span className="font-medium">
-                            {refund.customer?.name || '未知客户'}
-                          </span>
-                          {refund.customer?.phone && (
-                            <span className="text-muted-foreground text-xs">
-                              {refund.customer.phone}
-                            </span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col gap-1 text-sm">
-                          {refund.salesOrder?.orderNumber && (
-                            <div className="flex items-center gap-1">
-                              <span className="text-muted-foreground text-xs">
-                                销:
-                              </span>
-                              <CopyableText
-                                text={refund.salesOrder.orderNumber}
-                                className="font-mono"
-                              />
-                            </div>
-                          )}
-                          {(refund.returnOrder?.returnOrderNumber ||
-                            refund.returnOrderNumber) && (
-                            <div className="flex items-center gap-1">
-                              <span className="text-muted-foreground text-xs">
-                                退:
-                              </span>
-                              <CopyableText
-                                text={
-                                  refund.returnOrder?.returnOrderNumber ||
-                                  refund.returnOrderNumber ||
-                                  ''
-                                }
-                                className="font-mono"
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm">
-                          {getMethodLabel(refund.refundMethod)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex flex-col gap-1">
-                          <div className="font-mono font-bold text-[hsl(var(--color-warning))]">
-                            {formatCurrency(refund.refundAmount)}
-                          </div>
-                          {refund.processedAmount > 0 && (
-                            <div className="text-xs text-[hsl(var(--color-success))]">
-                              已退: {formatCurrency(refund.processedAmount)}
-                            </div>
-                          )}
-                          {refund.remainingAmount > 0 &&
-                            refund.remainingAmount < refund.refundAmount && (
-                              <div className="text-muted-foreground text-xs">
-                                待退: {formatCurrency(refund.remainingAmount)}
-                              </div>
-                            )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex flex-col gap-1 text-sm">
-                          <div className="text-muted-foreground flex items-center justify-center gap-1">
-                            <span className="text-xs">申:</span>
-                            <RelativeTime date={refund.refundDate} />
-                          </div>
-                          {refund.processedDate && (
-                            <div className="text-muted-foreground flex items-center justify-center gap-1">
-                              <span className="text-xs">处:</span>
-                              <RelativeTime date={refund.processedDate} />
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          {(refund.status === 'pending' ||
-                            refund.status === 'processing' ||
-                            refund.remainingAmount > 0) && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-primary hover:text-primary/80 h-8 px-2 hover:bg-[hsl(var(--color-primary-light))]"
-                              onClick={event => {
-                                event.stopPropagation();
-                                setSelectedRefundId(refund.id);
-                                setProcessDialogOpen(true);
-                              }}
-                            >
-                              处理
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* 移动端：卡片列表视图 */}
-          <div className="mt-4 space-y-3 md:hidden">
-            {isLoading && refunds.length === 0 ? (
-              <div className="text-muted-foreground flex items-center justify-center rounded-md border bg-[hsl(var(--color-bg-muted))] p-6 text-sm">
-                加载中...
-              </div>
-            ) : refunds.length === 0 ? (
-              <EmptyState title="暂无退款" compact />
-            ) : (
-              refunds.map(refund => renderRefundCard(refund))
-            )}
-          </div>
-
-          {/* 分页 */}
-          {pagination.totalPages > 1 && (
-            <div className="mt-6 flex items-center justify-between">
-              <p className="text-muted-foreground text-sm">
-                共 {pagination.total} 条记录
-              </p>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={pagination.page <= 1}
-                  onClick={() => onPageChange?.(pagination.page - 1)}
-                >
-                  上一页
-                </Button>
-                <span className="text-muted-foreground text-sm">
-                  第 {pagination.page} / {pagination.totalPages} 页
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={pagination.page >= pagination.totalPages}
-                  onClick={() => onPageChange?.(pagination.page + 1)}
-                >
-                  下一页
-                </Button>
-              </div>
+          {showLoadingState ? (
+            <div className="mt-6">
+              <TableSkeleton columns={8} rows={8} showPagination />
             </div>
+          ) : (
+            <>
+              {/* 桌面端：表格视图 */}
+              <div className="mt-6 hidden overflow-x-auto rounded-md border md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[180px]">退款单号</TableHead>
+                      <TableHead className="w-[100px] text-center">
+                        状态
+                      </TableHead>
+                      <TableHead className="w-[150px]">客户信息</TableHead>
+                      <TableHead className="w-[200px]">关联订单</TableHead>
+                      <TableHead className="w-[100px]">退款方式</TableHead>
+                      <TableHead className="w-[150px] text-right">
+                        金额信息
+                      </TableHead>
+                      <TableHead className="w-[150px] text-center">
+                        时间信息
+                      </TableHead>
+                      <TableHead className="w-[120px] text-center">
+                        操作
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {refunds.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="h-24 text-center">
+                          <EmptyState title="暂无退款" compact />
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      refunds.map(refund => (
+                        <TableRow
+                          key={refund.id}
+                          className="hover:bg-muted/50 cursor-pointer"
+                          onClick={() => {
+                            router.push(`/finance/refunds/${refund.id}`);
+                          }}
+                        >
+                          <TableCell>
+                            <div className="flex flex-col gap-1">
+                              <div className="font-mono font-medium">
+                                <CopyableText text={refund.refundNumber} />
+                              </div>
+                              <Badge
+                                variant="outline"
+                                className="w-fit text-xs"
+                              >
+                                {getTypeLabel(refund.refundType)}
+                              </Badge>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {getStatusBadge(refund.status)}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col gap-1 text-sm">
+                              <span className="font-medium">
+                                {refund.customer?.name || '未知客户'}
+                              </span>
+                              {refund.customer?.phone && (
+                                <span className="text-muted-foreground text-xs">
+                                  {refund.customer.phone}
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col gap-1 text-sm">
+                              {refund.salesOrder?.orderNumber && (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-muted-foreground text-xs">
+                                    销:
+                                  </span>
+                                  <CopyableText
+                                    text={refund.salesOrder.orderNumber}
+                                    className="font-mono"
+                                  />
+                                </div>
+                              )}
+                              {(refund.returnOrder?.returnOrderNumber ||
+                                refund.returnOrderNumber) && (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-muted-foreground text-xs">
+                                    退:
+                                  </span>
+                                  <CopyableText
+                                    text={
+                                      refund.returnOrder?.returnOrderNumber ||
+                                      refund.returnOrderNumber ||
+                                      ''
+                                    }
+                                    className="font-mono"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm">
+                              {getMethodLabel(refund.refundMethod)}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex flex-col gap-1">
+                              <div className="font-mono font-bold text-[hsl(var(--color-warning))]">
+                                {formatCurrency(refund.refundAmount)}
+                              </div>
+                              {refund.processedAmount > 0 && (
+                                <div className="text-xs text-[hsl(var(--color-success))]">
+                                  已退: {formatCurrency(refund.processedAmount)}
+                                </div>
+                              )}
+                              {refund.remainingAmount > 0 &&
+                                refund.remainingAmount <
+                                  refund.refundAmount && (
+                                  <div className="text-muted-foreground text-xs">
+                                    待退:{' '}
+                                    {formatCurrency(refund.remainingAmount)}
+                                  </div>
+                                )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className="flex flex-col gap-1 text-sm">
+                              <div className="text-muted-foreground flex items-center justify-center gap-1">
+                                <span className="text-xs">申:</span>
+                                <RelativeTime date={refund.refundDate} />
+                              </div>
+                              {refund.processedDate && (
+                                <div className="text-muted-foreground flex items-center justify-center gap-1">
+                                  <span className="text-xs">处:</span>
+                                  <RelativeTime date={refund.processedDate} />
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              {(refund.status === 'pending' ||
+                                refund.status === 'processing' ||
+                                refund.remainingAmount > 0) && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-primary hover:text-primary/80 h-8 px-2 hover:bg-[hsl(var(--color-primary-light))]"
+                                  onClick={event => {
+                                    event.stopPropagation();
+                                    setSelectedRefundId(refund.id);
+                                    setProcessDialogOpen(true);
+                                  }}
+                                >
+                                  处理
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* 移动端：卡片列表视图 */}
+              <div className="mt-4 space-y-3 md:hidden">
+                {refunds.length === 0 ? (
+                  <EmptyState title="暂无退款" compact />
+                ) : (
+                  refunds.map(refund => renderRefundCard(refund))
+                )}
+              </div>
+
+              {/* 分页 */}
+              {pagination.totalPages > 1 && (
+                <div className="mt-6 flex items-center justify-between">
+                  <p className="text-muted-foreground text-sm">
+                    共 {pagination.total} 条记录
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={pagination.page <= 1}
+                      onClick={() => onPageChange?.(pagination.page - 1)}
+                    >
+                      上一页
+                    </Button>
+                    <span className="text-muted-foreground text-sm">
+                      第 {pagination.page} / {pagination.totalPages} 页
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={pagination.page >= pagination.totalPages}
+                      onClick={() => onPageChange?.(pagination.page + 1)}
+                    >
+                      下一页
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>

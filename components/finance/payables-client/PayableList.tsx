@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import { useState } from 'react';
 
 import { PayableTableList } from '@/components/finance/payables-client/PayableTableList';
+import { TableSkeleton } from '@/components/ui/skeleton-compositions';
 import type { PayableRecordDetail } from '@/lib/types/payable';
 
 const PayablePaymentDialog = dynamic(
@@ -43,11 +44,7 @@ export function PayableList({ items, isLoading, onView, onPayNow }: Props) {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="text-muted-foreground">加载中...</div>
-      </div>
-    );
+    return <TableSkeleton columns={11} rows={8} showPagination />;
   }
 
   return (
