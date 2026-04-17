@@ -156,7 +156,12 @@ export function DataManagementExecuteDialog({
               isExecuting ||
               !isValidDataManagementConfirmText(action, confirmText)
             }
-            onClick={onExecute}
+            onClick={event => {
+              // 由成功回调显式关闭弹窗，避免 AlertDialogAction 自动关闭后
+              // 先触发 onOpenChange(false) 把确认词清空，导致请求拿到空字符串。
+              event.preventDefault();
+              onExecute();
+            }}
           >
             {isExecuting ? '执行中...' : '确认执行'}
           </AlertDialogAction>
