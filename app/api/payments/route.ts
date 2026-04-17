@@ -302,10 +302,10 @@ export const POST = withAuth(
             payments: {
               // ✅ 应收校验只计入真实已确认/已冲抵的收款，排除系统自动生成的应收建账占位记录
               where: {
-                status: { in: ['confirmed', 'applied'] },
+                status: { in: ['confirmed', 'applied', 'pending'] },
                 ...buildExcludeAutoReceivableConfirmationWhere(),
               },
-              select: { paymentAmount: true },
+              select: { paymentAmount: true, status: true },
             },
             prepaymentUsages: {
               select: { appliedAmount: true },
@@ -342,10 +342,18 @@ export const POST = withAuth(
         const orderTotalCents =
           toMinorUnits(salesOrder.totalAmount) +
           toMinorUnits(salesOrder.roundingAdjustment);
-        const totalPaidCents = salesOrder.payments.reduce(
-          (sum, payment) => sum + toMinorUnits(payment.paymentAmount),
-          0
-        );
+        const totalPaidCents = salesOrder.payments.reduce((sum, payment) => {
+          if (payment.status === 'pending') {
+            return sum;
+          }
+          return sum + toMinorUnits(payment.paymentAmount);
+        }, 0);
+        const pendingPaymentCents = salesOrder.payments.reduce((sum, payment) => {
+          if (payment.status !== 'pending') {
+            return sum;
+          }
+          return sum + toMinorUnits(payment.paymentAmount);
+        }, 0);
         const totalPrepaymentAppliedCents = salesOrder.prepaymentUsages.reduce(
           (sum, usage) => sum + toMinorUnits(usage.appliedAmount),
           0
@@ -355,6 +363,17 @@ export const POST = withAuth(
           0
         );
         const paymentCents = toMinorUnits(data.paymentAmount);
+
+        if (pendingPaymentCents > 0) {
+          return NextResponse.json(
+            {
+              success: false,
+              error:
+                '当前订单已有待确认到账的收款，请先到“收款管理”确认到账或取消后再继续登记。',
+            },
+            { status: 400 }
+          );
+        }
 
         // 验证收款金额不超过剩余应收金额
         // paymentAmount 代表本次要核销的应收账款金额

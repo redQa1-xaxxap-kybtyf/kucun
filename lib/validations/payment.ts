@@ -168,8 +168,6 @@ export const updatePaymentRecordSchema = z
       )
       .optional(),
 
-    status: paymentStatusSchema.optional(),
-
     remarks: z.string().optional().or(z.literal('')),
 
     receiptNumber: z.string().optional().or(z.literal('')),

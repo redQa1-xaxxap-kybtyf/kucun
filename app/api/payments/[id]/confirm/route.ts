@@ -128,32 +128,37 @@ export const POST = withAuth(
               totalAmount: true,
               roundingAdjustment: true,
               status: true,
+              prepaymentUsages: {
+                select: {
+                  appliedAmount: true,
+                },
+              },
             },
           });
 
           if (salesOrder) {
-            // ✅ P0修复: 聚合收款金额和抹零金额
+            // 按统一口径统计已核销金额：paymentAmount 已经等于 实收 + 抹零
             const confirmedSum = await tx.paymentRecord.aggregate({
               where: {
                 salesOrderId: updatedPayment.salesOrderId,
                 status: { in: ['confirmed', 'applied'] },
                 ...buildExcludeAutoReceivableConfirmationWhere(),
               },
-              _sum: { paymentAmount: true, roundingAmount: true },
+              _sum: { paymentAmount: true },
             });
 
-            // ✅ P0修复: 计算实际收款总额（包含抹零，Prisma Decimal -> number）
-            const totalPaid =
-              Number(confirmedSum._sum.paymentAmount ?? 0) +
-              Number(confirmedSum._sum.roundingAmount ?? 0);
+            const totalPaid = Number(confirmedSum._sum.paymentAmount ?? 0);
+            const prepaymentApplied = salesOrder.prepaymentUsages.reduce(
+              (sum, usage) => sum + Number(usage.appliedAmount ?? 0),
+              0
+            );
 
-            // ✅ P0修复: 计算订单应收总额（包含订单抹零）
             const orderDue =
               Number(salesOrder.totalAmount ?? 0) +
               Number(salesOrder.roundingAdjustment ?? 0);
+            const totalSettled = totalPaid + prepaymentApplied;
 
-            // ✅ P0修复: 只有当实际收款 >= 订单应收时，才自动完结订单
-            if (salesOrder.status === 'shipped' && totalPaid >= orderDue) {
+            if (salesOrder.status === 'shipped' && totalSettled >= orderDue) {
               await tx.salesOrder.update({
                 where: { id: salesOrder.id },
                 data: { status: 'completed' },

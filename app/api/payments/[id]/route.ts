@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import { resolveParams } from '@/lib/api/middleware';
 import { withAuth } from '@/lib/auth/api-helpers';
+import { clearCacheAfterPayment } from '@/lib/cache/finance-cache';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { getPaymentDetailRecord } from '@/lib/services/payment-detail-service';
@@ -93,8 +94,31 @@ export const PUT = withAuth(
         );
       }
 
+      if (existingPayment.status !== 'pending') {
+        return NextResponse.json(
+          {
+            success: false,
+            error: '只有待确认到账的收款记录才允许修改',
+          },
+          { status: 400 }
+        );
+      }
+
       // 解析请求体
       const body = await request.json();
+      if (
+        body &&
+        typeof body === 'object' &&
+        Object.prototype.hasOwnProperty.call(body, 'status')
+      ) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: '收款状态只能通过“确认到账”或“取消收款”流程变更',
+          },
+          { status: 400 }
+        );
+      }
       const parseNumber = (value: unknown): number => {
         if (typeof value === 'number' && Number.isFinite(value)) {
           return value;
@@ -175,6 +199,8 @@ export const PUT = withAuth(
           },
         },
       });
+
+      await clearCacheAfterPayment();
 
       const serializedPayment = {
         ...updatedPayment,
