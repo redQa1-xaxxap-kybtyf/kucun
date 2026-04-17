@@ -99,9 +99,15 @@ jest.mock('@/lib/db', () => ({
   prisma: {
     $queryRaw: jest.fn().mockResolvedValue([{ count: BigInt(0) }]),
     dataManagementTask: {
+      create: jest.fn(),
       findUnique: jest.fn(),
       updateMany: jest.fn(),
       update: jest.fn(),
+    },
+    systemSetting: {
+      findUnique: jest.fn(),
+      upsert: jest.fn().mockResolvedValue(undefined),
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
     },
     systemLog: {
       create: jest.fn(),
@@ -213,6 +219,10 @@ jest.mock('@/lib/db', () => ({
 
 // next/server minimal mock (for execute route permission test)
 jest.mock('next/server', () => {
+  const after = jest.fn(async (callback: () => Promise<void> | void) => {
+    await callback();
+  });
+
   class MockNextRequest {
     readonly url: string;
     readonly method: string;
@@ -244,6 +254,7 @@ jest.mock('next/server', () => {
   }
 
   return {
+    after,
     NextRequest: MockNextRequest,
     NextResponse: {
       json(data: unknown, init?: { status?: number }) {
@@ -280,6 +291,10 @@ const { NextRequest: MockNextRequest } = jest.requireMock('next/server') as {
   ) => NextRequest;
 };
 
+const { after: afterMock } = jest.requireMock('next/server') as {
+  after: jest.Mock;
+};
+
 function setDefaultPrismaMocks() {
   for (const value of Object.values(prisma)) {
     if (!value || typeof value !== 'object') continue;
@@ -294,6 +309,22 @@ function setDefaultPrismaMocks() {
       value.aggregate.mockResolvedValue({ _count: { id: 0 }, _sum: {} });
   }
 
+  prisma.dataManagementTask.create.mockResolvedValue({
+    id: 'task-001',
+    action: 'reset_trial',
+    status: 'queued',
+    requestedBy: 'user-001',
+    stage: 'S0',
+    idempotencyKey: null,
+    scope: null,
+    preview: null,
+    result: null,
+    errorMessage: null,
+    startedAt: null,
+    finishedAt: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
   prisma.dataManagementTask.updateMany.mockResolvedValue({ count: 1 });
   prisma.dataManagementTask.update.mockResolvedValue({});
   prisma.dataManagementTask.findUnique.mockResolvedValue({
@@ -310,6 +341,9 @@ function setDefaultPrismaMocks() {
     createdAt: new Date(),
     updatedAt: new Date(),
   });
+  prisma.systemSetting.findUnique.mockResolvedValue({ value: null });
+  prisma.systemSetting.upsert.mockResolvedValue(undefined);
+  prisma.systemSetting.updateMany.mockResolvedValue({ count: 1 });
 }
 
 describe('data-management regression', () => {
@@ -460,5 +494,196 @@ describe('data-management regression', () => {
 
     const response = await POST(request as any);
     expect((response as any).status).toBe(403);
+  });
+
+  test('POST /api/data-management/execute 会通过 after 调度后台任务', async () => {
+    getSystemMode.mockResolvedValue('trial');
+
+    const createdAt = new Date();
+    prisma.dataManagementTask.findUnique
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        id: 'task-003',
+        action: 'reset_trial',
+        status: 'queued',
+        requestedBy: 'admin-001',
+        stage: 'S0',
+        preview: null,
+        result: null,
+        errorMessage: null,
+        startedAt: null,
+        finishedAt: null,
+        createdAt,
+        updatedAt: createdAt,
+      });
+    prisma.dataManagementTask.create.mockResolvedValueOnce({
+      id: 'task-003',
+      action: 'reset_trial',
+      status: 'queued',
+      requestedBy: 'admin-001',
+      stage: 'S0',
+      idempotencyKey: 'idem-003',
+      scope: null,
+      preview: null,
+      result: null,
+      errorMessage: null,
+      startedAt: null,
+      finishedAt: null,
+      createdAt,
+      updatedAt: createdAt,
+    });
+
+    const { POST } = await import('@/app/api/data-management/execute/route');
+
+    const request = new MockNextRequest(
+      'http://localhost/api/data-management/execute',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': 'admin-001',
+          'x-user-username': 'admin',
+          'x-user-role': 'admin',
+        },
+        body: JSON.stringify({
+          action: 'reset_trial',
+          confirmText: '重置',
+          idempotencyKey: 'idem-003',
+        }),
+      }
+    );
+
+    const response = await POST(request as any);
+    const payload = await (response as any).json();
+
+    expect((response as any).status).toBe(200);
+    expect(payload).toEqual({
+      success: true,
+      data: { taskId: 'task-003' },
+    });
+    expect(afterMock).toHaveBeenCalledTimes(1);
+    expect(prisma.dataManagementTask.create).toHaveBeenCalledTimes(1);
+    expect(prisma.dataManagementTask.updateMany).toHaveBeenCalled();
+  });
+
+  test('POST /api/data-management/execute 接受“清理测试数据”作为正式账套确认文案', async () => {
+    getSystemMode.mockResolvedValue('production');
+    afterMock.mockImplementationOnce(async () => undefined);
+
+    const createdAt = new Date();
+    prisma.dataManagementTask.findUnique.mockResolvedValueOnce(null);
+    prisma.dataManagementTask.create.mockResolvedValueOnce({
+      id: 'task-004',
+      action: 'cleanup_test',
+      status: 'queued',
+      requestedBy: 'admin-001',
+      stage: 'S0',
+      idempotencyKey: 'idem-004',
+      scope: null,
+      preview: null,
+      result: null,
+      errorMessage: null,
+      startedAt: null,
+      finishedAt: null,
+      createdAt,
+      updatedAt: createdAt,
+    });
+
+    const { POST } = await import('@/app/api/data-management/execute/route');
+
+    const request = new MockNextRequest(
+      'http://localhost/api/data-management/execute',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': 'admin-001',
+          'x-user-username': 'admin',
+          'x-user-role': 'admin',
+        },
+        body: JSON.stringify({
+          action: 'cleanup_test',
+          confirmText: '清理测试数据',
+          idempotencyKey: 'idem-004',
+        }),
+      }
+    );
+
+    const response = await POST(request as any);
+    const payload = await (response as any).json();
+
+    expect((response as any).status).toBe(200);
+    expect(payload).toEqual({
+      success: true,
+      data: { taskId: 'task-004' },
+    });
+  });
+
+  test('system-write-lock 使用短字段存储并兼容旧格式读取', async () => {
+    const LOCK = {
+      locked: true,
+      taskId: '90b6c11f-3b06-443b-9b1c-87294e7187ab',
+      action: 'cleanup_test',
+      lockedAt: '2026-04-17T07:30:00.000Z',
+      lockedBy: '65621706-4f93-4d9c-bb93-1ca75539ea3b',
+      expiresAt: '2026-04-17T07:40:00.000Z',
+    };
+
+    const { getSystemWriteLock, setSystemWriteLock, clearSystemWriteLock } =
+      jest.requireActual('@/lib/services/system-write-lock') as typeof import('@/lib/services/system-write-lock');
+
+    await setSystemWriteLock(LOCK);
+
+    const compactValue = prisma.systemSetting.upsert.mock.calls[0]?.[0]?.create
+      ?.value as string;
+    expect(compactValue.length).toBeLessThanOrEqual(191);
+    expect(JSON.parse(compactValue)).toEqual({
+      l: true,
+      t: LOCK.taskId,
+      a: LOCK.action,
+      s: LOCK.lockedAt,
+      b: LOCK.lockedBy,
+      e: LOCK.expiresAt,
+    });
+
+    prisma.systemSetting.findUnique.mockResolvedValueOnce({
+      value: JSON.stringify(LOCK),
+    });
+    await expect(getSystemWriteLock()).resolves.toEqual(LOCK);
+
+    prisma.systemSetting.findUnique.mockResolvedValueOnce({
+      value: JSON.stringify({
+        l: true,
+        t: LOCK.taskId,
+        a: LOCK.action,
+        s: LOCK.lockedAt,
+        b: LOCK.lockedBy,
+        e: LOCK.expiresAt,
+      }),
+    });
+    await expect(getSystemWriteLock()).resolves.toEqual(LOCK);
+
+    prisma.systemSetting.findUnique.mockResolvedValueOnce({
+      value: JSON.stringify({
+        l: true,
+        t: LOCK.taskId,
+        a: LOCK.action,
+        s: LOCK.lockedAt,
+        b: LOCK.lockedBy,
+        e: LOCK.expiresAt,
+      }),
+    });
+    await clearSystemWriteLock(LOCK.taskId);
+
+    const clearedValue = prisma.systemSetting.updateMany.mock.calls[0]?.[0]
+      ?.data?.value as string;
+    expect(JSON.parse(clearedValue)).toEqual({
+      l: false,
+      t: LOCK.taskId,
+      a: LOCK.action,
+      s: LOCK.lockedAt,
+      b: LOCK.lockedBy,
+      e: LOCK.expiresAt,
+    });
   });
 });

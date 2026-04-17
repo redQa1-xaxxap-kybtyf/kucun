@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from 'next/server';
+import { after, type NextRequest, NextResponse } from 'next/server';
 
 import { withAuth } from '@/lib/auth/api-helpers';
 import { logger } from '@/lib/logger';
@@ -8,6 +8,11 @@ import {
   type DataManagementPreview,
 } from '@/lib/services/data-management/data-management-service';
 import { getSystemMode } from '@/lib/services/system-mode-service';
+import {
+  getDataManagementConfirmTextExamples,
+  getDataManagementPrimaryConfirmText,
+  isValidDataManagementConfirmText,
+} from '@/lib/utils/data-management-confirm';
 
 function getClientIp(request: NextRequest): string | null {
   const forwardedFor = request.headers.get('x-forwarded-for');
@@ -111,10 +116,14 @@ export const POST = withAuth(
 
     const confirmText =
       typeof body.confirmText === 'string' ? body.confirmText : '';
-    const expected = action === 'reset_trial' ? '重置' : '清理';
-    if (confirmText !== expected) {
+    const expected = getDataManagementPrimaryConfirmText(action);
+    const examples = getDataManagementConfirmTextExamples(action);
+    if (!isValidDataManagementConfirmText(action, confirmText)) {
       return NextResponse.json(
-        { success: false, error: `强确认失败：请输入“${expected}”` },
+        {
+          success: false,
+          error: `强确认失败：请输入“${expected}”或“${examples[1] ?? expected}”`,
+        },
         { status: 400 }
       );
     }
@@ -159,11 +168,15 @@ export const POST = withAuth(
       preview,
     });
 
-    void runDataManagementTask(task.id).catch(error => {
-      logger.error('data-management', '后台执行任务失败', error, {
-        taskId: task.id,
-        action,
-      });
+    after(async () => {
+      try {
+        await runDataManagementTask(task.id);
+      } catch (error) {
+        logger.error('data-management', '后台执行任务失败', error, {
+          taskId: task.id,
+          action,
+        });
+      }
     });
 
     return NextResponse.json({ success: true, data: { taskId: task.id } });

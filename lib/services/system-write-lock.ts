@@ -11,6 +11,15 @@ export type SystemWriteLock = {
   expiresAt: string;
 };
 
+type CompactSystemWriteLock = {
+  l: boolean;
+  t: string;
+  a: string;
+  s: string;
+  b: string;
+  e: string;
+};
+
 function safeParseJson(input: string | null | undefined): unknown {
   if (!input) {
     return null;
@@ -37,13 +46,59 @@ function isValidLock(value: unknown): value is SystemWriteLock {
   );
 }
 
+function isValidCompactLock(value: unknown): value is CompactSystemWriteLock {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  const lock = value as Partial<CompactSystemWriteLock>;
+  return (
+    typeof lock.l === 'boolean' &&
+    typeof lock.t === 'string' &&
+    typeof lock.a === 'string' &&
+    typeof lock.s === 'string' &&
+    typeof lock.b === 'string' &&
+    typeof lock.e === 'string'
+  );
+}
+
+function normaliseLock(value: unknown): SystemWriteLock | null {
+  if (isValidLock(value)) {
+    return value;
+  }
+
+  if (isValidCompactLock(value)) {
+    return {
+      locked: value.l,
+      taskId: value.t,
+      action: value.a,
+      lockedAt: value.s,
+      lockedBy: value.b,
+      expiresAt: value.e,
+    };
+  }
+
+  return null;
+}
+
+function serialiseLock(lock: SystemWriteLock): string {
+  // 使用短字段名，兼容尚未迁移到 TEXT 的旧库（历史上 value 列可能不足 191 字符）。
+  return JSON.stringify({
+    l: lock.locked,
+    t: lock.taskId,
+    a: lock.action,
+    s: lock.lockedAt,
+    b: lock.lockedBy,
+    e: lock.expiresAt,
+  } satisfies CompactSystemWriteLock);
+}
+
 export async function getSystemWriteLock(): Promise<SystemWriteLock | null> {
   const setting = await prisma.systemSetting.findUnique({
     where: { key: SYSTEM_WRITE_LOCK_SETTING_KEY },
     select: { value: true },
   });
-  const parsed = safeParseJson(setting?.value);
-  if (!isValidLock(parsed)) {
+  const parsed = normaliseLock(safeParseJson(setting?.value));
+  if (!parsed) {
     return null;
   }
   return parsed.locked ? parsed : null;
@@ -54,14 +109,14 @@ export async function setSystemWriteLock(lock: SystemWriteLock): Promise<void> {
     where: { key: SYSTEM_WRITE_LOCK_SETTING_KEY },
     create: {
       key: SYSTEM_WRITE_LOCK_SETTING_KEY,
-      value: JSON.stringify(lock),
+      value: serialiseLock(lock),
       category: 'basic',
       dataType: 'json',
       isPublic: false,
       description: '系统写入锁（数据管理任务运行中启用）',
     },
     update: {
-      value: JSON.stringify(lock),
+      value: serialiseLock(lock),
       category: 'basic',
       dataType: 'json',
       isPublic: false,
@@ -82,7 +137,7 @@ export async function clearSystemWriteLock(taskId: string): Promise<void> {
   await prisma.systemSetting.updateMany({
     where: { key: SYSTEM_WRITE_LOCK_SETTING_KEY },
     data: {
-      value: JSON.stringify({ ...current, locked: false }),
+      value: serialiseLock({ ...current, locked: false }),
       dataType: 'json',
     },
   });

@@ -3,6 +3,8 @@
 import dynamic from 'next/dynamic';
 import * as React from 'react';
 
+import { getDataManagementPrimaryConfirmText } from '@/lib/utils/data-management-confirm';
+
 import { DataManagementModeCard } from './components/DataManagementModeCard';
 import { DataManagementSwitchModeCard } from './components/DataManagementSwitchModeCard';
 import { DataManagementTaskProgressCard } from './components/DataManagementTaskProgressCard';
@@ -47,7 +49,7 @@ export function DataManagementPageClient({
 }) {
   const action: DataManagementAction =
     systemMode === 'trial' ? 'reset_trial' : 'cleanup_test';
-  const confirmWord = action === 'reset_trial' ? '重置' : '清理';
+  const confirmWord = getDataManagementPrimaryConfirmText(action);
 
   const switchTargetMode: SystemMode =
     systemMode === 'trial' ? 'production' : 'trial';
@@ -88,6 +90,7 @@ export function DataManagementPageClient({
     <div className="space-y-4 sm:space-y-6">
       <DataManagementModeCard
         systemMode={systemMode}
+        canSwitchMode={canSwitchMode}
         isPreviewPending={previewMutation.isPending}
         onPreview={() => {
           setPreviewOpen(true);
@@ -127,6 +130,7 @@ export function DataManagementPageClient({
         <DataManagementExecuteDialog
           open={executeOpen}
           onOpenChange={setExecuteOpen}
+          action={action}
           systemMode={systemMode}
           confirmWord={confirmWord}
           confirmText={confirmText}

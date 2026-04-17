@@ -12,6 +12,11 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import {
+  getDataManagementConfirmTextExamples,
+  isValidDataManagementConfirmText,
+  type DataManagementAction,
+} from '@/lib/utils/data-management-confirm';
 
 import type { Preview, SystemMode } from '../types';
 import { formatMoney } from '../utils';
@@ -90,6 +95,7 @@ export function DataManagementPreviewDialog({
 interface DataManagementExecuteDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  action: DataManagementAction;
   systemMode: SystemMode;
   confirmWord: string;
   confirmText: string;
@@ -101,6 +107,7 @@ interface DataManagementExecuteDialogProps {
 export function DataManagementExecuteDialog({
   open,
   onOpenChange,
+  action,
   systemMode,
   confirmWord,
   confirmText,
@@ -108,6 +115,8 @@ export function DataManagementExecuteDialog({
   isExecuting,
   onExecute,
 }: DataManagementExecuteDialogProps) {
+  const confirmExamples = getDataManagementConfirmTextExamples(action);
+
   return (
     <AlertDialog
       open={open}
@@ -120,7 +129,8 @@ export function DataManagementExecuteDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>强确认</AlertDialogTitle>
           <AlertDialogDescription>
-            本操作不可撤销。请输入“{confirmWord}”以继续。
+            本操作不可撤销。请输入“{confirmExamples[0]}”或“
+            {confirmExamples[1] ?? confirmExamples[0]}”以继续。
           </AlertDialogDescription>
         </AlertDialogHeader>
 
@@ -132,7 +142,7 @@ export function DataManagementExecuteDialog({
           />
           {systemMode === 'production' && (
             <div className="text-muted-foreground text-xs">
-              提示：退货结算相关退款不会直接影响权责利润；清理测试数据会通过作废/冲销保证往来台账可追溯。
+              提示：正式账套这里只会清理测试数据，不会直接清空全部初期资料。若当前仍是初始化阶段，请先切换为试用账套后再重置。退货结算相关退款会通过作废/冲销保证往来台账可追溯。
             </div>
           )}
         </div>
@@ -142,7 +152,10 @@ export function DataManagementExecuteDialog({
             取消
           </AlertDialogCancel>
           <AlertDialogAction
-            disabled={isExecuting || confirmText.trim() !== confirmWord}
+            disabled={
+              isExecuting ||
+              !isValidDataManagementConfirmText(action, confirmText)
+            }
             onClick={onExecute}
           >
             {isExecuting ? '执行中...' : '确认执行'}

@@ -10,6 +10,7 @@ import type { SystemMode } from '../types';
 
 interface DataManagementModeCardProps {
   systemMode: SystemMode;
+  canSwitchMode?: boolean;
   isPreviewPending: boolean;
   onPreview: () => void;
   onExecute: () => void;
@@ -17,6 +18,7 @@ interface DataManagementModeCardProps {
 
 export function DataManagementModeCard({
   systemMode,
+  canSwitchMode,
   isPreviewPending,
   onPreview,
   onExecute,
@@ -48,11 +50,18 @@ export function DataManagementModeCard({
               </span>
             </div>
           ) : (
-            <div className="flex items-start gap-2">
-              <Shield className="mt-0.5 h-4 w-4 text-amber-600" />
-              <span>
-                正式账套受保护：仅清理标记为测试的数据；已入账数据会作废/冲销，保证可追溯。
-              </span>
+            <div className="space-y-2">
+              <div className="flex items-start gap-2">
+                <Shield className="mt-0.5 h-4 w-4 text-amber-600" />
+                <span>
+                  正式账套受保护：这里只清理标记为测试的数据；已入账数据会作废/冲销，保证可追溯。
+                </span>
+              </div>
+              {canSwitchMode ? (
+                <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
+                  如果当前还是初始化阶段，需要清空全部初期数据，请先切换为试用账套，再执行“一键重置试用数据”。
+                </div>
+              ) : null}
             </div>
           )}
         </div>
