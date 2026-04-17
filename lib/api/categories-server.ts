@@ -14,6 +14,10 @@ import type {
   CategoryQueryParams,
 } from '@/lib/types/category-unified';
 import { toCategoryList, toCategory } from '@/lib/utils/category-transforms';
+import {
+  buildCategoryLevelMap,
+  buildCategoryPathMap,
+} from '@/lib/utils/category-utils';
 
 /**
  * 服务端获取分类列表
@@ -64,7 +68,7 @@ export const getCategoriesServer = cache(
     const skip = (page - 1) * limit;
 
     // 查询分类列表
-    const [categories, totalCount] = await Promise.all([
+    const [categories, totalCount, hierarchyNodes] = await Promise.all([
       prisma.category.findMany({
         where,
         skip,
@@ -83,10 +87,23 @@ export const getCategoriesServer = cache(
         },
       }),
       prisma.category.count({ where }),
+      prisma.category.findMany({
+        select: {
+          id: true,
+          name: true,
+          code: true,
+          parentId: true,
+        },
+      }),
     ]);
 
-    // 转换为带计数的分类 - 使用统一的转换函数
-    const transformedCategories = toCategoryList(categories);
+    const pathById = buildCategoryPathMap(hierarchyNodes);
+    const levelById = buildCategoryLevelMap(hierarchyNodes);
+    const transformedCategories = toCategoryList(categories).map(category => ({
+      ...category,
+      fullPath: pathById.get(category.id) ?? category.name,
+      level: levelById.get(category.id) ?? 0,
+    }));
 
     return {
       data: transformedCategories,

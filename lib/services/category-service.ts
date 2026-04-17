@@ -24,6 +24,10 @@ import type {
 } from '@/lib/types/category-unified';
 import { generateCategoryCode } from '@/lib/utils/category-code-generator';
 import { toCategory, toCategoryList } from '@/lib/utils/category-transforms';
+import {
+  buildCategoryLevelMap,
+  buildCategoryPathMap,
+} from '@/lib/utils/category-utils';
 
 // ==================== 辅助函数 ====================
 
@@ -205,7 +209,7 @@ export async function getCategories(
   const startTime = Date.now();
 
   // 执行查询 - 优化: 使用 select 替代 include,只选择需要的字段
-  const [categories, total] = await Promise.all([
+  const [categories, total, hierarchyNodes] = await Promise.all([
     prisma.category.findMany({
       where,
       skip,
@@ -240,6 +244,14 @@ export async function getCategories(
       },
     }),
     prisma.category.count({ where }),
+    prisma.category.findMany({
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        parentId: true,
+      },
+    }),
   ]);
 
   // 性能监控: 计算查询耗时
@@ -263,8 +275,13 @@ export async function getCategories(
     });
   }
 
-  // 转换数据格式 - 使用统一的转换函数
-  const transformedCategories = toCategoryList(categories);
+  const pathById = buildCategoryPathMap(hierarchyNodes);
+  const levelById = buildCategoryLevelMap(hierarchyNodes);
+  const transformedCategories = toCategoryList(categories).map(category => ({
+    ...category,
+    fullPath: pathById.get(category.id) ?? category.name,
+    level: levelById.get(category.id) ?? 0,
+  }));
 
   // 计算分页信息
   const totalPages = Math.ceil(total / limit);

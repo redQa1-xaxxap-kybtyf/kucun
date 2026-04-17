@@ -143,8 +143,8 @@ function buildCategoriesWithLevel(
 
         result.push({
           ...child,
-          level,
-          fullPath: pathById.get(child.id) ?? child.name,
+          level: Math.min(child.level ?? level, LEVEL_STYLES.length - 1),
+          fullPath: child.fullPath ?? pathById.get(child.id) ?? child.name,
         });
 
         // 最多显示到 L3，超过的层级依然按 L3 样式展示
@@ -168,8 +168,8 @@ function buildCategoriesWithLevel(
 
       result.push({
         ...orphan,
-        level: 0,
-        fullPath: pathById.get(orphan.id) ?? orphan.name,
+        level: Math.min(orphan.level ?? 0, LEVEL_STYLES.length - 1),
+        fullPath: orphan.fullPath ?? pathById.get(orphan.id) ?? orphan.name,
       });
 
       walk(orphan.id, 1);

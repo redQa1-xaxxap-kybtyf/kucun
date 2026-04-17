@@ -417,9 +417,8 @@ function useUpdateCategoryMutation({
         }),
       ]);
 
-      setTimeout(() => {
-        router.push('/categories');
-      }, 1500);
+      router.replace('/categories');
+      router.refresh();
     },
     onError: error => {
       const errorMessage = error instanceof Error ? error.message : '更新失败';

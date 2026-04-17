@@ -230,3 +230,55 @@ export function buildCategoryPathMap(
 
   return pathById;
 }
+
+/**
+ * 批量构建分类层级映射
+ * 顶级分类为 0，二级分类为 1，依次递增。
+ */
+export function buildCategoryLevelMap(
+  categories: CategoryBase[]
+): Map<string, number> {
+  const categoryById = new Map<string, CategoryBase>();
+  const levelById = new Map<string, number>();
+
+  categories.forEach(category => {
+    categoryById.set(category.id, category);
+  });
+
+  const resolveLevel = (categoryId: string): number => {
+    const cached = levelById.get(categoryId);
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    const visited = new Set<string>();
+    let currentId: string | null | undefined = categoryId;
+    let level = 0;
+    let safetyCounter = 0;
+
+    while (currentId && safetyCounter < 10 && !visited.has(currentId)) {
+      const current = categoryById.get(currentId);
+      if (!current) {
+        break;
+      }
+
+      visited.add(currentId);
+      if (!current.parentId) {
+        break;
+      }
+
+      level += 1;
+      currentId = current.parentId;
+      safetyCounter += 1;
+    }
+
+    levelById.set(categoryId, level);
+    return level;
+  };
+
+  categories.forEach(category => {
+    resolveLevel(category.id);
+  });
+
+  return levelById;
+}

@@ -50,6 +50,8 @@ export interface Category {
   code: string;
   description?: string | null;
   parentId?: string | null;
+  fullPath?: string;
+  level?: number;
   sortOrder: number;
   status: CategoryStatus;
   createdAt: string; // ISO 8601 字符串
