@@ -109,6 +109,7 @@ function ERPProductListFilters({
 interface ERPProductListTableCardProps {
   products: Product[];
   pagination?: PaginationInfo;
+  categoryPathById: Map<string, string>;
   onProductSelect?: (product: Product) => void;
   onDeleteProduct: ProductListState['handleDeleteProduct'];
   onPageChange: ProductListState['handlePageChange'];
@@ -117,6 +118,7 @@ interface ERPProductListTableCardProps {
 function ERPProductListTableCard({
   products,
   pagination,
+  categoryPathById,
   onProductSelect,
   onDeleteProduct,
   onPageChange,
@@ -125,6 +127,7 @@ function ERPProductListTableCard({
     <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
       <ProductTable
         products={products}
+        categoryPathById={categoryPathById}
         onProductSelect={onProductSelect}
         onDeleteProduct={onDeleteProduct}
       />
@@ -214,6 +217,9 @@ export function ERPProductList({
   });
 
   const categories = categoriesResponse?.data ?? [];
+  const categoryPathById = new Map(
+    categories.map(category => [category.id, category.fullPath ?? category.name])
+  );
 
   // ✅ 直接使用 initialParams，避免状态不同步（参考销售订单模块）
   // 获取产品列表数据
@@ -252,6 +258,7 @@ export function ERPProductList({
       <ERPProductListTableCard
         products={products}
         pagination={pagination}
+        categoryPathById={categoryPathById}
         onProductSelect={onProductSelect}
         onDeleteProduct={handleDeleteProduct}
         onPageChange={handlePageChange}

@@ -31,6 +31,7 @@ interface ProductTableProps {
   products: Product[];
   onProductSelect?: (product: Product) => void;
   onDeleteProduct: (productId: string, productCode: string) => void;
+  categoryPathById?: Map<string, string>;
   isLoading?: boolean;
 }
 
@@ -38,9 +39,17 @@ export function ProductTable({
   products,
   onProductSelect,
   onDeleteProduct,
+  categoryPathById,
   isLoading = false,
 }: ProductTableProps) {
   const router = useRouter();
+
+  const resolveCategoryLabel = (product: Product) =>
+    (product.category?.id
+      ? categoryPathById?.get(product.category.id)
+      : undefined) ??
+    product.category?.name ??
+    '-';
 
   // 状态标签渲染
   const getStatusBadge = (status: string) => (
@@ -115,7 +124,7 @@ export function ProductTable({
                         分类
                       </div>
                       <div className="mt-1 truncate font-medium text-[hsl(var(--color-text-secondary))]">
-                        {product.category?.name || '-'}
+                        {resolveCategoryLabel(product)}
                       </div>
                     </div>
                     <div className="min-w-0">
@@ -234,7 +243,7 @@ export function ProductTable({
                   </TableCell>
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell className="text-[hsl(var(--color-text-secondary))]">
-                    {product.category?.name || '-'}
+                    {resolveCategoryLabel(product)}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {ProductDataUtils.formatter.formatSpecification(
