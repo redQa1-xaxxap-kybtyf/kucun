@@ -178,9 +178,9 @@ export default function ShippingQueryPage() {
                   <Package className="h-7 w-7 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
+                  <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
                     运输智能查询{' '}
-                    <span className="ml-2 text-xs font-normal tracking-widest uppercase opacity-40 sm:text-sm">
+                    <span className="ml-2 text-xs font-normal opacity-40 sm:text-sm">
                       查询中心
                     </span>
                   </h1>
@@ -213,7 +213,7 @@ export default function ShippingQueryPage() {
 	              <div className="space-y-2 lg:col-span-5">
 	                <Label
 	                  htmlFor="site"
-	                  className="text-xs font-black tracking-widest text-slate-500 uppercase"
+	                  className="text-xs font-semibold text-slate-500"
 	                >
 	                  选择查询站点 *
 	                </Label>
@@ -240,7 +240,7 @@ export default function ShippingQueryPage() {
               <div className="space-y-2 lg:col-span-7">
                 <Label
                   htmlFor="keyword"
-                  className="text-xs font-black tracking-widest text-slate-500 uppercase"
+                  className="text-xs font-semibold text-slate-500"
                 >
                   全球追踪单号 *
                 </Label>
@@ -292,12 +292,12 @@ export default function ShippingQueryPage() {
 
                 <div className="relative z-10">
                   <div className="mb-8 flex items-center justify-between">
-                    <h3 className="border-l-4 border-slate-900 pl-3 text-sm font-black tracking-widest text-slate-900 uppercase">
+                    <h3 className="border-l-4 border-slate-900 pl-3 text-sm font-semibold text-slate-900">
                       实时运输状态追踪
                     </h3>
                     <span
                       className={cn(
-                        'rounded-full px-4 py-1.5 text-xs font-black tracking-widest uppercase shadow-sm',
+                        'rounded-full px-4 py-1.5 text-xs font-semibold shadow-sm',
                         currentResult.queryStatus === 'success'
                           ? 'bg-emerald-500 text-white'
                           : 'bg-rose-500 text-white'
@@ -312,10 +312,10 @@ export default function ShippingQueryPage() {
                   {currentResult.queryStatus === 'success' ? (
                     <div className="grid gap-8 md:grid-cols-3">
                       <div className="space-y-4">
-                        <div className="text-[11px] font-black tracking-tighter text-slate-400 uppercase">
+                        <div className="text-[11px] font-semibold tracking-tighter text-slate-400">
                           追踪单号
                         </div>
-                        <div className="font-mono text-xl leading-none font-black text-slate-900">
+                        <div className="font-mono text-xl leading-none font-semibold text-slate-900">
                           {currentResult.trackingNumber}
                         </div>
                         <div className="text-xs font-bold text-slate-500">
@@ -323,10 +323,10 @@ export default function ShippingQueryPage() {
                         </div>
                       </div>
                       <div className="space-y-4 md:border-x md:border-slate-200 md:px-8">
-                        <div className="text-[11px] font-black tracking-tighter text-slate-400 uppercase">
+                        <div className="text-[11px] font-semibold tracking-tighter text-slate-400">
                           当前物流节点
                         </div>
-                        <div className="text-lg leading-none font-black text-slate-900">
+                        <div className="text-lg leading-none font-semibold text-slate-900">
                           {currentResult.status || '准备中'}
                         </div>
                         <div className="text-xs font-bold text-slate-500">
@@ -339,10 +339,10 @@ export default function ShippingQueryPage() {
                         </div>
                       </div>
                       <div className="space-y-4">
-                        <div className="text-[11px] font-black tracking-tighter text-slate-400 uppercase">
+                        <div className="text-[11px] font-semibold tracking-tighter text-slate-400">
                           预计送达日期
                         </div>
-                        <div className="text-lg leading-none font-black text-blue-600">
+                        <div className="text-lg leading-none font-semibold text-blue-600">
                           {currentResult.estimatedArrival
                             ? new Date(
                                 currentResult.estimatedArrival
@@ -362,7 +362,7 @@ export default function ShippingQueryPage() {
                     <div className="flex items-center gap-4 rounded-xl border border-rose-100 bg-rose-50 p-6 text-rose-600">
                       <AlertCircle className="h-6 w-6 shrink-0" />
                       <div>
-                        <div className="mb-1 text-sm font-black tracking-widest uppercase">
+                        <div className="mb-1 text-sm font-semibold">
                           同步异常中断
                         </div>
                         <div className="text-sm font-bold opacity-80">
@@ -382,10 +382,10 @@ export default function ShippingQueryPage() {
           <CardHeader className="relative overflow-hidden border-b border-slate-50 bg-slate-50/30">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center text-lg font-black tracking-tight text-slate-900">
+                <CardTitle className="flex items-center text-lg font-semibold tracking-tight text-slate-900">
                   查询历史资源池
                 </CardTitle>
-                <CardDescription className="mt-1 text-xs font-bold tracking-widest text-slate-400 uppercase">
+                <CardDescription className="mt-1 text-xs font-bold text-slate-400">
                   最近 50 条查询记录 · 自动保存
                 </CardDescription>
               </div>
@@ -408,19 +408,19 @@ export default function ShippingQueryPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50/50">
-                    <TableHead className="h-auto py-4 text-[11px] font-black tracking-widest text-slate-400 uppercase">
+                    <TableHead className="h-auto py-4 text-[11px] font-semibold text-slate-400">
                       查询时间
                     </TableHead>
-                    <TableHead className="h-auto py-4 text-[11px] font-black tracking-widest text-slate-400 uppercase">
+                    <TableHead className="h-auto py-4 text-[11px] font-semibold text-slate-400">
                       物流站点
                     </TableHead>
-                    <TableHead className="h-auto py-4 text-[11px] font-black tracking-widest text-slate-400 uppercase">
+                    <TableHead className="h-auto py-4 text-[11px] font-semibold text-slate-400">
                       追踪单号
                     </TableHead>
-                    <TableHead className="h-auto py-4 text-[11px] font-black tracking-widest text-slate-400 uppercase">
+                    <TableHead className="h-auto py-4 text-[11px] font-semibold text-slate-400">
                       实时状态
                     </TableHead>
-                    <TableHead className="h-auto py-4 text-right text-[11px] font-black tracking-widest text-slate-400 uppercase">
+                    <TableHead className="h-auto py-4 text-right text-[11px] font-semibold text-slate-400">
                       同步结果
                     </TableHead>
                   </TableRow>
@@ -439,10 +439,10 @@ export default function ShippingQueryPage() {
                           minute: '2-digit',
                         })}
                       </TableCell>
-                      <TableCell className="py-4 font-black text-slate-900">
+                      <TableCell className="py-4 font-semibold text-slate-900">
                         {query.site?.name || '-'}
                       </TableCell>
-                      <TableCell className="py-4 font-mono text-xs font-black text-slate-900">
+                      <TableCell className="py-4 font-mono text-xs font-semibold text-slate-900">
                         {query.trackingNumber}
                       </TableCell>
                       <TableCell className="py-4">
@@ -450,7 +450,7 @@ export default function ShippingQueryPage() {
                           <span className="text-xs font-bold text-slate-900">
                             {query.status || '暂无更新'}
                           </span>
-                          <span className="mt-0.5 text-[10px] font-bold tracking-tighter text-slate-400 uppercase">
+                          <span className="mt-0.5 text-[10px] font-bold tracking-tighter text-slate-400">
                             {query.destination || '目的地：未知'}
                           </span>
                         </div>
@@ -458,7 +458,7 @@ export default function ShippingQueryPage() {
                       <TableCell className="py-4 text-right">
                         <span
                           className={cn(
-                            'inline-flex items-center rounded-lg px-3 py-1 text-[10px] font-black tracking-widest uppercase shadow-sm',
+                            'inline-flex items-center rounded-lg px-3 py-1 text-[10px] font-semibold shadow-sm',
                             query.queryStatus === 'success'
                               ? 'content-emerald-600 border border-emerald-200 bg-emerald-50 text-emerald-600'
                               : query.queryStatus === 'failed'

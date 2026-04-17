@@ -67,7 +67,7 @@ export function BatchHistorySummary({
       {/* 变动汇总 */}
       <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-3">
-          <span className="text-xs font-black tracking-wider text-slate-400 uppercase">
+          <span className="text-xs font-semibold text-slate-400">
             流水汇总
           </span>
           <div className="space-y-2">
@@ -114,17 +114,17 @@ function SummaryItem({
     >
       <div className="flex items-start justify-between">
         <div className="flex flex-col gap-1">
-          <span className="text-xs font-black tracking-wider text-slate-400 uppercase">
+          <span className="text-xs font-semibold text-slate-400">
             {title}
           </span>
           <div className="flex items-baseline gap-1">
             <span
-              className={`text-2xl font-black tabular-nums transition-colors ${emphasis ? 'text-emerald-600' : 'text-slate-900'}`}
+              className={`text-2xl font-semibold tabular-nums transition-colors ${emphasis ? 'text-emerald-600' : 'text-slate-900'}`}
             >
               {prefix}
               {displayValue}
             </span>
-            <span className="text-[10px] font-bold text-slate-300 uppercase">
+            <span className="text-[10px] font-bold text-slate-300">
               {unit}
             </span>
           </div>
@@ -143,7 +143,7 @@ function MiniRow({ label, value, color, prefix }: any) {
   return (
     <div className="flex items-center justify-between">
       <span className="text-[10px] font-bold text-slate-500">{label}</span>
-      <span className={`text-xs font-black tabular-nums ${color}`}>
+      <span className={`text-xs font-semibold tabular-nums ${color}`}>
         {value === 0 ? '0' : `${prefix}${formatNumber(value)}`}
       </span>
     </div>

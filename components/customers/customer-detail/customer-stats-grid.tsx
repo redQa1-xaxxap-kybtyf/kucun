@@ -90,7 +90,7 @@ export function CustomerStatsGrid({
                 {stat.icon}
               </div>
               <div className="text-right">
-                <span className="text-xs font-bold tracking-wider text-slate-500 uppercase">
+                <span className="text-xs font-bold text-slate-500">
                   指标活跃度
                 </span>
                 <div
@@ -107,12 +107,12 @@ export function CustomerStatsGrid({
             </div>
 
             <div className="space-y-1">
-              <p className="text-xs font-bold tracking-wider text-slate-500 uppercase">
+              <p className="text-xs font-bold text-slate-500">
                 {stat.title}
               </p>
               <div className="flex items-baseline gap-1">
-                <span className="text-sm font-black text-slate-400">¥</span>
-                <span className="text-2xl leading-none font-black tracking-tighter text-slate-900">
+                <span className="text-sm font-semibold text-slate-400">¥</span>
+                <span className="text-2xl leading-none font-semibold tracking-tighter text-slate-900">
                   {stat.value.toLocaleString('zh-CN', {
                     minimumFractionDigits: 2,
                   })}

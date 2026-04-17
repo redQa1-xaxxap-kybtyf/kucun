@@ -27,7 +27,7 @@ export function BatchPageHeader({
             <PackageSearch className="h-7 w-7 text-white" />
           </div>
           <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
               批次规格管理
             </h1>
             <p className="max-w-md text-sm leading-relaxed font-medium text-slate-500">

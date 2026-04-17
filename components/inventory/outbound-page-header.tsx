@@ -27,7 +27,7 @@ export function OutboundPageHeader() {
             <PackageX className="h-8 w-8 text-white" />
           </div>
           <div className="space-y-1.5">
-            <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
               产品出库记录
             </h1>
             <p className="text-sm font-medium text-slate-500">

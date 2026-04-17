@@ -62,7 +62,7 @@ export function PrepaymentUsageCard({ order }: { order: SalesOrderDetail }) {
       <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1.5">
-            <CardTitle className="flex items-center gap-2.5 text-sm font-black tracking-widest text-slate-900 uppercase">
+            <CardTitle className="flex items-center gap-2.5 text-sm font-semibold text-slate-900">
               <PiggyBank className="h-4 w-4 text-amber-600" />
               预收款抵扣记录
             </CardTitle>
@@ -72,7 +72,7 @@ export function PrepaymentUsageCard({ order }: { order: SalesOrderDetail }) {
           </div>
           <Badge
             variant="secondary"
-            className="hidden rounded-lg px-2.5 py-1 font-black sm:inline-flex"
+            className="hidden rounded-lg px-2.5 py-1 font-semibold sm:inline-flex"
           >
             合计抵扣：{formatCurrency(totalApplied)}
           </Badge>
@@ -121,10 +121,10 @@ export function PrepaymentUsageCard({ order }: { order: SalesOrderDetail }) {
                 </div>
                 <div className="flex items-center justify-between border-t border-slate-100 pt-3 sm:flex-col sm:items-end sm:gap-2 sm:border-0 sm:pt-0">
                   <div className="text-right">
-                    <p className="text-[9px] font-black tracking-tighter text-slate-400 uppercase">
+                    <p className="text-[9px] font-semibold tracking-tighter text-slate-400">
                       本次抵扣
                     </p>
-                    <p className="font-mono text-lg font-black tracking-tighter text-emerald-600">
+                    <p className="font-mono text-lg font-semibold tracking-tighter text-emerald-600">
                       -{formatCurrency(usage.appliedAmount)}
                     </p>
                   </div>
@@ -132,7 +132,7 @@ export function PrepaymentUsageCard({ order }: { order: SalesOrderDetail }) {
                     variant="ghost"
                     size="sm"
                     asChild
-                    className="h-8 rounded-lg px-3 text-xs font-black text-blue-600 hover:bg-blue-50"
+                    className="h-8 rounded-lg px-3 text-xs font-semibold text-blue-600 hover:bg-blue-50"
                   >
                     <Link href={`/finance/payments/${usage.paymentRecordId}`}>
                       溯源记录

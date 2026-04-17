@@ -48,7 +48,7 @@ export function RelatedReturnOrdersCard({
   return (
     <Card className="overflow-hidden rounded-2xl border-slate-100 shadow-sm ring-1 ring-slate-100/50">
       <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4">
-        <CardTitle className="flex items-center text-sm font-black tracking-widest text-slate-900 uppercase">
+        <CardTitle className="flex items-center text-sm font-semibold text-slate-900">
           <Receipt className="mr-2.5 h-4 w-4 text-rose-500" />
           关联退货单
         </CardTitle>
@@ -56,7 +56,7 @@ export function RelatedReturnOrdersCard({
       <CardContent className="bg-white p-0">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="border-b border-slate-100 bg-slate-50/80 text-[10px] font-bold tracking-wider text-slate-500 uppercase backdrop-blur-md">
+            <thead className="border-b border-slate-100 bg-slate-50/80 text-[10px] font-bold text-slate-500 backdrop-blur-md">
               <tr>
                 <th className="px-4 py-3 text-left font-medium">退货单号</th>
                 <th className="px-4 py-3 text-left font-medium">状态</th>
@@ -75,13 +75,13 @@ export function RelatedReturnOrdersCard({
                     key={returnOrder.id}
                     className="group transition-colors hover:bg-slate-50/50"
                   >
-                    <td className="px-4 py-3.5 font-mono text-sm font-black text-rose-600">
+                    <td className="px-4 py-3.5 font-mono text-sm font-semibold text-rose-600">
                       {returnOrder.returnNumber}
                     </td>
                     <td className="px-4 py-3.5">
                       <Badge
                         variant={displayStatus.variant}
-                        className="rounded-lg px-2 py-0.5 font-bold tracking-tighter uppercase"
+                        className="rounded-lg px-2 py-0.5 font-bold tracking-tighter"
                       >
                         {displayStatus.label}
                       </Badge>
@@ -93,7 +93,7 @@ export function RelatedReturnOrdersCard({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 rounded-lg font-black text-blue-600 hover:bg-blue-50"
+                        className="h-8 rounded-lg font-semibold text-blue-600 hover:bg-blue-50"
                         onClick={() =>
                           router.push(`/return-orders/${returnOrder.id}`)
                         }

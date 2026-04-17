@@ -21,7 +21,7 @@ const DashboardTrendChart = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-[480px] w-full animate-pulse rounded-3xl bg-white/40" />
+      <div className="h-[280px] w-full animate-pulse rounded-md bg-card" />
     ),
   }
 );
@@ -35,7 +35,7 @@ const StatCardsGrid = dynamic(
         {Array.from({ length: 4 }).map((_, idx) => (
           <div
             key={`stat-skeleton-${idx}`}
-            className="h-[160px] animate-pulse rounded-3xl bg-white/40"
+            className="h-[88px] animate-pulse rounded-md bg-card"
           />
         ))}
       </div>
@@ -52,7 +52,7 @@ const DashboardTodoBar = dynamic(
         {Array.from({ length: 2 }).map((_, idx) => (
           <div
             key={`todo-skeleton-${idx}`}
-            className="h-[92px] animate-pulse rounded-[32px] bg-white/40"
+            className="h-[60px] animate-pulse rounded-md bg-card"
           />
         ))}
       </div>
@@ -65,7 +65,7 @@ const ProductRanking = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-[500px] w-full animate-pulse rounded-3xl bg-white/40" />
+      <div className="h-[360px] w-full animate-pulse rounded-md bg-card" />
     ),
   }
 );
@@ -236,7 +236,7 @@ function DashboardHeader({
   return (
     <div className="flex flex-col gap-8 px-2 md:flex-row md:items-end md:justify-between">
       <div className="space-y-2">
-        <h2 className="text-3xl font-black tracking-tighter text-slate-900">
+        <h2 className="text-3xl font-semibold tracking-tighter text-slate-900">
           经营看板
         </h2>
         <p className="text-sm font-bold text-slate-400">

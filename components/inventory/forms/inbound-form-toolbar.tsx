@@ -53,7 +53,7 @@ export function InboundFormToolbar({
               <PackageCheck className="h-7 w-7 text-white" />
             </div>
             <div className="min-w-0 space-y-1">
-              <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
                 {title}
               </h1>
               <p className="text-sm font-medium text-slate-500">

@@ -409,7 +409,7 @@ export default function ShippingSitesAdmin({
                 <Globe className="h-8 w-8 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-black tracking-tight text-slate-900">
+                <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
                   运输查询站点管理
                 </h1>
                 <p className="mt-1 text-sm font-bold text-slate-500">
@@ -424,7 +424,7 @@ export default function ShippingSitesAdmin({
                 onClick={() =>
                   router.push('/settings/shipping-sites/selector-helper')
                 }
-                className="h-12 gap-2 rounded-2xl bg-slate-900 px-6 font-black shadow-lg shadow-slate-900/20 transition-all hover:scale-105 active:scale-95"
+                className="h-12 gap-2 rounded-2xl bg-slate-900 px-6 font-semibold shadow-lg shadow-slate-900/20 transition-all hover:scale-105 active:scale-95"
               >
                 <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-white/20">
                   <span className="text-sm">✨</span>
@@ -435,7 +435,7 @@ export default function ShippingSitesAdmin({
                 variant="outline"
                 size="lg"
                 onClick={() => router.push('/settings')}
-                className="h-12 gap-2 rounded-2xl border-slate-100 bg-white px-6 font-black text-slate-600 shadow-sm transition-all hover:scale-105 hover:bg-slate-50 active:scale-95"
+                className="h-12 gap-2 rounded-2xl border-slate-100 bg-white px-6 font-semibold text-slate-600 shadow-sm transition-all hover:scale-105 hover:bg-slate-50 active:scale-95"
               >
                 <ArrowLeft className="h-4 w-4" />
                 返回设置
@@ -450,10 +450,10 @@ export default function ShippingSitesAdmin({
         <div className="rounded-[32px] border border-white bg-white/60 p-8 shadow-xl shadow-slate-200/50 backdrop-blur-xl">
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
-              <p className="text-xs font-black tracking-widest text-slate-500 uppercase">
+              <p className="text-xs font-semibold text-slate-500">
                 站点管理 / 配置中心
               </p>
-              <h3 className="text-lg font-black tracking-tight text-slate-900">
+              <h3 className="text-lg font-semibold tracking-tight text-slate-900">
                 合作站点列表
               </h3>
               <p className="text-sm font-bold text-slate-400">
@@ -463,7 +463,7 @@ export default function ShippingSitesAdmin({
             <Button
               onClick={handleCreate}
               disabled={isLoading}
-              className="h-12 rounded-2xl bg-blue-600 px-6 font-black shadow-lg shadow-blue-600/20 transition-all hover:scale-105 active:scale-95"
+              className="h-12 rounded-2xl bg-blue-600 px-6 font-semibold shadow-lg shadow-blue-600/20 transition-all hover:scale-105 active:scale-95"
             >
               <Plus className="mr-2 h-5 w-5" />
               新增站点
@@ -478,21 +478,21 @@ export default function ShippingSitesAdmin({
             <Table>
               <TableHeader>
                 <TableRow className="border-slate-50 hover:bg-transparent">
-                  <TableHead className="text-xs font-black tracking-widest text-slate-500 uppercase">
+                  <TableHead className="text-xs font-semibold text-slate-500">
                     站点名称
                   </TableHead>
                   {isAdmin && (
-                    <TableHead className="text-xs font-black tracking-widest text-slate-500 uppercase">
+                    <TableHead className="text-xs font-semibold text-slate-500">
                       查询 URL
                     </TableHead>
                   )}
-                  <TableHead className="text-xs font-black tracking-widest text-slate-500 uppercase">
+                  <TableHead className="text-xs font-semibold text-slate-500">
                     功能描述
                   </TableHead>
-                  <TableHead className="text-xs font-black tracking-widest text-slate-500 uppercase">
+                  <TableHead className="text-xs font-semibold text-slate-500">
                     当前状态
                   </TableHead>
-                  <TableHead className="text-right text-xs font-black tracking-widest text-slate-500 uppercase">
+                  <TableHead className="text-right text-xs font-semibold text-slate-500">
                     管理操作
                   </TableHead>
                 </TableRow>
@@ -504,7 +504,7 @@ export default function ShippingSitesAdmin({
                     className="group border-slate-50 transition-all hover:bg-slate-50/50"
                   >
                     <TableCell className="py-5">
-                      <span className="text-sm font-black text-slate-900 transition-colors group-hover:text-blue-600">
+                      <span className="text-sm font-semibold text-slate-900 transition-colors group-hover:text-blue-600">
                         {site.name}
                       </span>
                     </TableCell>
@@ -519,7 +519,7 @@ export default function ShippingSitesAdmin({
                     <TableCell>
                       <div
                         className={cn(
-                          'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-black tracking-widest uppercase outline outline-1',
+                          'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-semibold outline outline-1',
                           site.status === 'active'
                             ? 'bg-emerald-50 text-emerald-600 outline-emerald-100'
                             : 'bg-slate-50 text-slate-500 outline-slate-100'
@@ -542,7 +542,7 @@ export default function ShippingSitesAdmin({
                           variant="outline"
                           size="sm"
                           onClick={() => handleEdit(site)}
-                          className="h-9 rounded-xl border-slate-100 bg-white font-black text-slate-600 shadow-sm hover:bg-slate-50"
+                          className="h-9 rounded-xl border-slate-100 bg-white font-semibold text-slate-600 shadow-sm hover:bg-slate-50"
                         >
                           编辑配置
                         </Button>
@@ -550,7 +550,7 @@ export default function ShippingSitesAdmin({
                           variant="destructive"
                           size="sm"
                           onClick={() => handleDelete(site)}
-                          className="h-9 rounded-xl font-black shadow-sm"
+                          className="h-9 rounded-xl font-semibold shadow-sm"
                         >
                           删除
                         </Button>
@@ -573,7 +573,7 @@ export default function ShippingSitesAdmin({
                     <Plus className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <DialogTitle className="text-xl font-black tracking-tight text-slate-900">
+                    <DialogTitle className="text-xl font-semibold tracking-tight text-slate-900">
                       {formMode === 'create' ? '新增站点配置' : '编辑站点配置'}
                     </DialogTitle>
                     <DialogDescription className="text-xs font-bold text-slate-500">
@@ -589,7 +589,7 @@ export default function ShippingSitesAdmin({
                   <div className="rounded-[24px] border border-white bg-white/40 p-6 shadow-sm">
                     <div className="mb-6 flex items-center gap-3 border-b border-slate-100 pb-4">
                       <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-                      <h4 className="text-sm font-black tracking-widest text-slate-900 uppercase">
+                      <h4 className="text-sm font-semibold text-slate-900">
                         基本信息
                       </h4>
                     </div>
@@ -598,7 +598,7 @@ export default function ShippingSitesAdmin({
                       <div className="space-y-2">
                         <Label
                           htmlFor="name"
-                          className="text-xs font-black tracking-widest text-slate-500 uppercase"
+                          className="text-xs font-semibold text-slate-500"
                         >
                           站点名称 <span className="text-rose-500">*</span>
                         </Label>
@@ -617,7 +617,7 @@ export default function ShippingSitesAdmin({
                         <div className="space-y-2">
                           <Label
                             htmlFor="url"
-                            className="text-xs font-black tracking-widest text-slate-500 uppercase"
+                            className="text-xs font-semibold text-slate-500"
                           >
                             站点主页链接{' '}
                             <span className="text-rose-500">*</span>
@@ -637,7 +637,7 @@ export default function ShippingSitesAdmin({
                       <div className="space-y-2 md:col-span-2">
                         <Label
                           htmlFor="description"
-                          className="text-xs font-black tracking-widest text-slate-500 uppercase"
+                          className="text-xs font-semibold text-slate-500"
                         >
                           业务描述 / 备注
                         </Label>
@@ -662,7 +662,7 @@ export default function ShippingSitesAdmin({
                   <div className="rounded-[24px] border border-white bg-white/40 p-6 shadow-sm">
                     <div className="mb-6 flex items-center gap-3 border-b border-slate-100 pb-4">
                       <div className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
-                      <h4 className="text-sm font-black tracking-widest text-slate-900 uppercase">
+                      <h4 className="text-sm font-semibold text-slate-900">
                         核心页面定位规则
                       </h4>
                     </div>
@@ -671,7 +671,7 @@ export default function ShippingSitesAdmin({
                       <div className="space-y-3 rounded-2xl bg-blue-50/50 p-4 ring-1 ring-blue-100">
                         <Label
                           htmlFor="searchInput"
-                          className="text-[11px] font-black tracking-widest text-blue-600 uppercase"
+                          className="text-[11px] font-semibold text-blue-600"
                         >
                           搜索框定位 <span className="text-rose-500">*</span>
                         </Label>
@@ -692,7 +692,7 @@ export default function ShippingSitesAdmin({
                       <div className="space-y-3 rounded-2xl bg-emerald-50/50 p-4 ring-1 ring-emerald-100">
                         <Label
                           htmlFor="searchButton"
-                          className="text-[11px] font-black tracking-widest text-emerald-600 uppercase"
+                          className="text-[11px] font-semibold text-emerald-600"
                         >
                           触发按钮定位 <span className="text-rose-500">*</span>
                         </Label>
@@ -713,7 +713,7 @@ export default function ShippingSitesAdmin({
                       <div className="space-y-3 rounded-2xl bg-purple-50/50 p-4 ring-1 ring-purple-100">
                         <Label
                           htmlFor="resultContainer"
-                          className="text-[11px] font-black tracking-widest text-purple-600 uppercase"
+                          className="text-[11px] font-semibold text-purple-600"
                         >
                           结果容器定位 <span className="text-rose-500">*</span>
                         </Label>
@@ -737,7 +737,7 @@ export default function ShippingSitesAdmin({
                   <div className="rounded-[24px] border border-white bg-white/40 p-6 shadow-sm">
                     <div className="mb-6 flex items-center gap-3 border-b border-slate-100 pb-4">
                       <div className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                      <h4 className="text-sm font-black tracking-widest text-slate-900 uppercase">
+                      <h4 className="text-sm font-semibold text-slate-900">
                         识别内容设置
                       </h4>
                     </div>
@@ -749,7 +749,7 @@ export default function ShippingSitesAdmin({
                           className="flex items-center gap-6 rounded-2xl bg-white/60 p-5 ring-1 ring-slate-100 transition-all hover:bg-white hover:ring-blue-200"
                         >
                           <div className="flex-1 space-y-1">
-                            <h5 className="text-sm font-black text-slate-900">
+                            <h5 className="text-sm font-semibold text-slate-900">
                               {fieldConfig.label}
                             </h5>
                             <p className="text-xs font-bold text-slate-400">
@@ -758,7 +758,7 @@ export default function ShippingSitesAdmin({
                           </div>
 
                           <div className="w-1/2 space-y-2">
-                            <Label className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
+                            <Label className="text-[10px] font-semibold text-slate-400">
                               CSS 选择器{' '}
                               <span className="text-rose-500">*</span>
                             </Label>
@@ -793,14 +793,14 @@ export default function ShippingSitesAdmin({
                     resetForm();
                   }}
                   disabled={saveSiteMutation.isPending}
-                  className="h-12 rounded-2xl px-8 font-black text-slate-500 transition-all hover:bg-slate-200"
+                  className="h-12 rounded-2xl px-8 font-semibold text-slate-500 transition-all hover:bg-slate-200"
                 >
                   取消配置
                 </Button>
                 <Button
                   onClick={handleSubmit}
                   disabled={saveSiteMutation.isPending}
-                  className="h-12 rounded-2xl bg-slate-900 px-10 font-black shadow-lg shadow-slate-900/10 transition-all hover:scale-105 active:scale-95"
+                  className="h-12 rounded-2xl bg-slate-900 px-10 font-semibold shadow-lg shadow-slate-900/10 transition-all hover:scale-105 active:scale-95"
                 >
                   {saveSiteMutation.isPending ? (
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />

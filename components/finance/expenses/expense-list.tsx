@@ -323,41 +323,41 @@ export function ExpenseList({
                 <Table>
                   <TableHeader>
                     <TableRow className="border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50/50">
-                      <TableHead className="h-auto py-4 text-[11px] font-black tracking-widest text-slate-400 uppercase">
+                      <TableHead className="h-auto py-4 text-[11px] font-semibold text-slate-400">
                         单号
                       </TableHead>
-                      <TableHead className="h-auto py-4 text-center text-[11px] font-black tracking-widest text-slate-400 uppercase">
+                      <TableHead className="h-auto py-4 text-center text-[11px] font-semibold text-slate-400">
                         分类/状态
                       </TableHead>
-                      <TableHead className="h-auto py-4 text-[11px] font-black tracking-widest text-slate-400 uppercase">
+                      <TableHead className="h-auto py-4 text-[11px] font-semibold text-slate-400">
                         费用事宜
                       </TableHead>
-                      <TableHead className="h-auto py-4 text-right text-[11px] font-black tracking-widest text-slate-400 uppercase">
+                      <TableHead className="h-auto py-4 text-right text-[11px] font-semibold text-slate-400">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleSort('expenseAmount')}
-                          className="h-auto p-0 text-[11px] font-black tracking-widest text-slate-400 uppercase hover:bg-transparent"
+                          className="h-auto p-0 text-[11px] font-semibold text-slate-400 hover:bg-transparent"
                         >
                           收支金额
                           <ArrowUpDown className="ml-1 h-3 w-3" />
                         </Button>
                       </TableHead>
-                      <TableHead className="h-auto py-4 text-center text-[11px] font-black tracking-widest text-slate-400 uppercase">
+                      <TableHead className="h-auto py-4 text-center text-[11px] font-semibold text-slate-400">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleSort('expenseDate')}
-                          className="h-auto p-0 text-[11px] font-black tracking-widest text-slate-400 uppercase hover:bg-transparent"
+                          className="h-auto p-0 text-[11px] font-semibold text-slate-400 hover:bg-transparent"
                         >
                           发生日期
                           <ArrowUpDown className="ml-1 h-3 w-3" />
                         </Button>
                       </TableHead>
-                      <TableHead className="h-auto py-4 text-[11px] font-black tracking-widest text-slate-400 uppercase">
+                      <TableHead className="h-auto py-4 text-[11px] font-semibold text-slate-400">
                         关联业务
                       </TableHead>
-                      <TableHead className="h-auto py-4 text-right text-[11px] font-black tracking-widest text-slate-400 uppercase">
+                      <TableHead className="h-auto py-4 text-right text-[11px] font-semibold text-slate-400">
                         操作
                       </TableHead>
                     </TableRow>
@@ -369,7 +369,7 @@ export function ExpenseList({
                         className="group transition-colors hover:bg-slate-50/30"
                       >
                         <TableCell className="py-4">
-                          <div className="font-mono text-xs font-black text-slate-900">
+                          <div className="font-mono text-xs font-semibold text-slate-900">
                             <CopyableText text={expense.expenseNumber} />
                           </div>
                         </TableCell>
@@ -377,13 +377,13 @@ export function ExpenseList({
                           <div className="flex flex-col items-center gap-1.5">
                             <Badge
                               variant="outline"
-                              className="border-slate-200 text-[10px] font-black text-slate-500 uppercase"
+                              className="border-slate-200 text-[10px] font-semibold text-slate-500"
                             >
                               {EXPENSE_TYPE_LABELS[expense.expenseType]}
                             </Badge>
                             <span
                               className={cn(
-                                'inline-flex items-center rounded-md border px-1.5 py-0.5 text-[9px] font-black tracking-tighter uppercase',
+                                'inline-flex items-center rounded-md border px-1.5 py-0.5 text-[9px] font-semibold tracking-tighter',
                                 getStatusBadgeVariant(expense.status)
                               )}
                             >
@@ -393,7 +393,7 @@ export function ExpenseList({
                         </TableCell>
                         <TableCell className="py-4">
                           <div className="flex flex-col">
-                            <span className="mb-1 text-sm leading-tight font-black text-slate-900">
+                            <span className="mb-1 text-sm leading-tight font-semibold text-slate-900">
                               {expense.expenseName}
                             </span>
                             {expense.remarks && (
@@ -404,7 +404,7 @@ export function ExpenseList({
                           </div>
                         </TableCell>
                         <TableCell className="py-4 text-right">
-                          <span className="font-mono text-base font-black text-slate-900">
+                          <span className="font-mono text-base font-semibold text-slate-900">
                             {formatCurrency(expense.expenseAmount)}
                           </span>
                         </TableCell>
@@ -416,11 +416,11 @@ export function ExpenseList({
                         <TableCell className="py-4">
                           {expense.relatedType && expense.relatedNumber ? (
                             <div className="flex flex-col gap-1">
-                              <div className="flex items-center gap-1.5 text-xs font-black text-slate-900">
+                              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-900">
                                 {getRelatedTypeIcon(expense.relatedType)}
                                 <CopyableText text={expense.relatedNumber} />
                               </div>
-                              <div className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">
+                              <div className="text-[10px] font-bold text-slate-400">
                                 {
                                   EXPENSE_RELATED_TYPE_LABELS[
                                     expense.relatedType as keyof typeof EXPENSE_RELATED_TYPE_LABELS
@@ -466,7 +466,7 @@ export function ExpenseList({
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="h-8 px-2 text-xs font-black text-blue-600 uppercase hover:text-blue-700"
+                                    className="h-8 px-2 text-xs font-semibold text-blue-600 hover:text-blue-700"
                                     onClick={() => setApproveTarget(expense)}
                                     disabled={approveMutation.isPending}
                                     aria-label={`审核费用 ${expense.expenseNumber}`}
@@ -633,23 +633,23 @@ function ExpenseCard({
       <div className="relative z-10">
         <div className="mb-4 flex items-start justify-between">
           <div className="space-y-1">
-            <div className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
+            <div className="text-[10px] font-semibold text-slate-400">
               流水编号
             </div>
-            <div className="font-mono text-xs leading-none font-black text-slate-900">
+            <div className="font-mono text-xs leading-none font-semibold text-slate-900">
               <CopyableText text={expense.expenseNumber} />
             </div>
           </div>
           <div className="flex flex-col items-end gap-1.5">
             <Badge
               variant="outline"
-              className="border-slate-200 px-1.5 py-0 text-[9px] font-black text-slate-500 uppercase"
+              className="border-slate-200 px-1.5 py-0 text-[9px] font-semibold text-slate-500"
             >
               {EXPENSE_TYPE_LABELS[expense.expenseType]}
             </Badge>
             <span
               className={cn(
-                'inline-flex items-center rounded-md border px-1.5 py-0.5 text-[9px] font-black tracking-tighter uppercase',
+                'inline-flex items-center rounded-md border px-1.5 py-0.5 text-[9px] font-semibold tracking-tighter',
                 getStatusBadgeVariant(expense.status)
               )}
             >
@@ -659,7 +659,7 @@ function ExpenseCard({
         </div>
 
         <div className="mb-5">
-          <h4 className="mb-1 text-sm leading-tight font-black text-slate-900">
+          <h4 className="mb-1 text-sm leading-tight font-semibold text-slate-900">
             {expense.expenseName}
           </h4>
           {expense.remarks && (
@@ -671,18 +671,18 @@ function ExpenseCard({
 
         <div className="mb-6 grid grid-cols-2 gap-4 border-t border-slate-50 pt-4">
           <div className="space-y-1">
-            <div className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
+            <div className="text-[10px] font-semibold text-slate-400">
               收支金额
             </div>
-            <div className="font-mono text-lg font-black text-slate-900">
+            <div className="font-mono text-lg font-semibold text-slate-900">
               {formatCurrency(expense.expenseAmount)}
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
+            <div className="text-[10px] font-semibold text-slate-400">
               业务日期
             </div>
-            <div className="text-xs font-black text-slate-600">
+            <div className="text-xs font-semibold text-slate-600">
               <RelativeTime date={expense.expenseDate} />
             </div>
           </div>
@@ -695,10 +695,10 @@ function ExpenseCard({
                 {getRelatedTypeIcon(expense.relatedType)}
               </div>
               <div className="flex flex-col">
-                <span className="mb-1 text-[10px] leading-none font-black tracking-tighter text-slate-900 uppercase">
+                <span className="mb-1 text-[10px] leading-none font-semibold tracking-tighter text-slate-900">
                   {expense.relatedNumber}
                 </span>
-                <span className="line-clamp-1 text-[9px] font-bold tracking-widest text-slate-400 uppercase">
+                <span className="line-clamp-1 text-[9px] font-bold text-slate-400">
                   {
                     EXPENSE_RELATED_TYPE_LABELS[
                       expense.relatedType as keyof typeof EXPENSE_RELATED_TYPE_LABELS
@@ -708,7 +708,7 @@ function ExpenseCard({
               </div>
             </div>
           ) : (
-            <span className="text-[10px] font-black tracking-widest text-slate-300 uppercase">
+            <span className="text-[10px] font-semibold text-slate-300">
               未关联资产
             </span>
           )}

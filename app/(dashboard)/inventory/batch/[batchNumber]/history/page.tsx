@@ -219,7 +219,7 @@ function ProductInfoCard({
   return (
     <Card className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <CardHeader className="border-b border-slate-100 bg-slate-50/50 px-6 py-4">
-        <CardTitle className="flex items-center text-sm font-black tracking-wider text-slate-500 uppercase">
+        <CardTitle className="flex items-center text-sm font-semibold text-slate-500">
           <Tag className="mr-2 h-4 w-4 text-violet-500" />
           核心产品信息
         </CardTitle>
@@ -252,11 +252,11 @@ function InfoField({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <div className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
+      <div className="text-[10px] font-semibold text-slate-400">
         {label}
       </div>
       <div
-        className={`font-black tracking-tight ${
+        className={`font-semibold tracking-tight ${
           isPrimary
             ? 'text-lg text-slate-900'
             : isBatch
@@ -280,11 +280,11 @@ function MovementHistoryCard({ groups }: { groups: BatchMovementGroup[] }) {
     <Card className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <CardHeader className="border-b border-slate-100 bg-slate-50/50 px-6 py-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center text-sm font-black tracking-wider text-slate-500 uppercase">
+          <CardTitle className="flex items-center text-sm font-semibold text-slate-500">
             <Clock className="mr-2 h-4 w-4 text-emerald-500" />
             批次变动记录
           </CardTitle>
-          <Badge className="bg-slate-900 text-[10px] font-black tracking-widest text-white">
+          <Badge className="bg-slate-900 text-[10px] font-semibold text-white">
             {totalCount} 条记录
           </Badge>
         </div>
@@ -313,22 +313,22 @@ function MovementTable({ groups }: { groups: BatchMovementGroup[] }) {
       <Table className="min-w-[860px] [&_th]:whitespace-nowrap">
         <TableHeader className="bg-slate-50/50">
           <TableRow className="border-b border-slate-100">
-            <TableHead className="py-4 pl-6 font-black text-slate-500">
+            <TableHead className="py-4 pl-6 font-semibold text-slate-500">
               时间
             </TableHead>
-            <TableHead className="py-4 font-black text-slate-500">
+            <TableHead className="py-4 font-semibold text-slate-500">
               类型
             </TableHead>
-            <TableHead className="py-4 font-black text-slate-500">
+            <TableHead className="py-4 font-semibold text-slate-500">
               单据编号
             </TableHead>
-            <TableHead className="py-4 text-right font-black text-slate-500">
+            <TableHead className="py-4 text-right font-semibold text-slate-500">
               变动
             </TableHead>
-            <TableHead className="py-4 text-right font-black text-slate-500">
+            <TableHead className="py-4 text-right font-semibold text-slate-500">
               余量
             </TableHead>
-            <TableHead className="py-4 pr-6 text-right font-black text-slate-500">
+            <TableHead className="py-4 pr-6 text-right font-semibold text-slate-500">
               操作人
             </TableHead>
           </TableRow>
@@ -391,14 +391,14 @@ function MovementRow({ entry }: { entry: InventoryMovementEntry }) {
       <TableCell className="py-4 whitespace-nowrap">
         <Badge
           variant={meta.badge}
-          className="rounded-full px-2.5 py-0.5 text-[9px] font-black tracking-wider uppercase"
+          className="rounded-full px-2.5 py-0.5 text-[9px] font-semibold"
         >
           {meta.label}
         </Badge>
       </TableCell>
       <TableCell className="min-w-[140px] py-4">
         <div className="flex flex-col gap-1">
-          <code className="text-[11px] font-black tracking-tight text-blue-600">
+          <code className="text-[11px] font-semibold tracking-tight text-blue-600">
             {entry.recordNumber}
           </code>
           {reasonLabel && (
@@ -409,7 +409,7 @@ function MovementRow({ entry }: { entry: InventoryMovementEntry }) {
         </div>
       </TableCell>
       <TableCell
-        className={`py-4 text-right text-xs font-black whitespace-nowrap tabular-nums ${changeColor}`}
+        className={`py-4 text-right text-xs font-semibold whitespace-nowrap tabular-nums ${changeColor}`}
       >
         {changePrefix}
         {changeDisplay}

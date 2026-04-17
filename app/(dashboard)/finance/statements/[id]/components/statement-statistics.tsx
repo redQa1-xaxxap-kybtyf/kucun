@@ -26,7 +26,7 @@ export function StatementStatistics({ summary }: StatementStatisticsProps) {
   return (
     <Card className="overflow-hidden border-slate-200 transition-all hover:shadow-lg">
       <CardHeader className="border-b border-slate-200 bg-slate-50 px-6 py-4">
-        <CardTitle className="flex items-center gap-2 text-sm font-black tracking-widest text-slate-500 uppercase italic">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-500 italic">
           <Activity className="h-4 w-4" />
           经营往来绩效看板
         </CardTitle>
@@ -35,7 +35,7 @@ export function StatementStatistics({ summary }: StatementStatisticsProps) {
         <div className="grid grid-cols-2 gap-px border-b border-slate-100 bg-slate-100">
           <div className="group bg-white p-6">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
+              <span className="text-[10px] font-semibold text-slate-400">
                 本月交易额
               </span>
               {monthTrend === 'up' ? (
@@ -44,7 +44,7 @@ export function StatementStatistics({ summary }: StatementStatisticsProps) {
                 <TrendingDown className="h-4 w-4 text-rose-500" />
               )}
             </div>
-            <div className="font-mono text-xl font-black text-slate-900">
+            <div className="font-mono text-xl font-semibold text-slate-900">
               {formatCurrency(summary.currentMonthAmount).replace('¥', '')}
             </div>
             <div className="mt-2 flex items-center gap-2">
@@ -64,19 +64,19 @@ export function StatementStatistics({ summary }: StatementStatisticsProps) {
                 ).toFixed(1)}
                 %
               </span>
-              <span className="text-[9px] font-bold text-slate-300 uppercase">
+              <span className="text-[9px] font-bold text-slate-300">
                 较上月同期
               </span>
             </div>
           </div>
           <div className="bg-white p-6">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
+              <span className="text-[10px] font-semibold text-slate-400">
                 平均结算周期
               </span>
               <Clock className="h-4 w-4 text-blue-500" />
             </div>
-            <div className="font-mono text-xl font-black text-slate-900">
+            <div className="font-mono text-xl font-semibold text-slate-900">
               {summary.averagePaymentDays}{' '}
               <span className="text-[10px] font-bold text-slate-400">天</span>
             </div>
@@ -95,11 +95,11 @@ export function StatementStatistics({ summary }: StatementStatisticsProps) {
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Zap className="h-3.5 w-3.5 animate-pulse text-amber-500" />
-              <span className="text-[11px] font-black tracking-widest text-slate-900 uppercase">
+              <span className="text-[11px] font-semibold text-slate-900">
                 账务结算健康度
               </span>
             </div>
-            <span className="font-mono text-sm font-black text-slate-900">
+            <span className="font-mono text-sm font-semibold text-slate-900">
               {summary.paymentRate.toFixed(1)}%
             </span>
           </div>
@@ -118,18 +118,18 @@ export function StatementStatistics({ summary }: StatementStatisticsProps) {
           </div>
           <div className="mt-4 grid grid-cols-2 gap-4">
             <div className="rounded-lg border border-slate-200 bg-white p-3 transition-all hover:border-blue-300">
-              <div className="mb-1 text-[9px] font-bold text-slate-400 uppercase">
+              <div className="mb-1 text-[9px] font-bold text-slate-400">
                 月均交易强度
               </div>
-              <div className="text-xs font-black text-slate-700">
+              <div className="text-xs font-semibold text-slate-700">
                 {formatCurrency(summary.averageMonthlyAmount)}
               </div>
             </div>
             <div className="rounded-lg border border-slate-200 bg-white p-3 transition-all hover:border-purple-300">
-              <div className="mb-1 text-[9px] font-bold text-slate-400 uppercase">
+              <div className="mb-1 text-[9px] font-bold text-slate-400">
                 上月结算基准
               </div>
-              <div className="text-xs font-black text-slate-700">
+              <div className="text-xs font-semibold text-slate-700">
                 {formatCurrency(summary.lastMonthAmount)}
               </div>
             </div>

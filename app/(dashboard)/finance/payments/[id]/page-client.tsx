@@ -449,7 +449,7 @@ export function PaymentDetailClient({
             <div className="grid grid-cols-3 gap-px border-b border-[hsl(var(--color-border-secondary))]/30 bg-[hsl(var(--color-border-secondary))]/30">
               {/* 1. 记账金额 */}
               <div className="flex flex-col items-center justify-center bg-white px-4 py-4 transition-colors hover:bg-[hsl(var(--color-bg-secondary))]">
-                <span className="mb-1.5 text-xs font-semibold tracking-wider text-[hsl(var(--color-text-tertiary))] uppercase">
+                <span className="mb-1.5 text-xs font-semibold text-[hsl(var(--color-text-tertiary))]">
                   {isSystemReceivableConfirmation ? '应收金额' : '记账金额'}
                 </span>
                 <span className="text-xl font-bold tracking-tight text-[hsl(var(--color-primary))]">
@@ -459,7 +459,7 @@ export function PaymentDetailClient({
 
               {/* 2. 收款差额 */}
               <div className="flex flex-col items-center justify-center bg-white px-4 py-4 transition-colors hover:bg-[hsl(var(--color-bg-secondary))]">
-                <span className="mb-1.5 text-xs font-semibold tracking-wider text-[hsl(var(--color-text-tertiary))] uppercase">
+                <span className="mb-1.5 text-xs font-semibold text-[hsl(var(--color-text-tertiary))]">
                   {isSystemReceivableConfirmation ? '金额差额' : '抹零金额'}
                 </span>
                 {payment.roundingAmount !== 0 ? (
@@ -499,7 +499,7 @@ export function PaymentDetailClient({
                     : 'bg-gradient-to-br from-[hsl(var(--color-success))]/5 to-white hover:from-[hsl(var(--color-success))]/10'
                 }`}
               >
-                <span className="mb-1.5 text-xs font-semibold tracking-wider text-[hsl(var(--color-text-tertiary))] uppercase">
+                <span className="mb-1.5 text-xs font-semibold text-[hsl(var(--color-text-tertiary))]">
                   {isSystemReceivableConfirmation ? '客户实付' : '实际收款'}
                 </span>
                 <span

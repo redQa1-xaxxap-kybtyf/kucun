@@ -186,7 +186,7 @@ export function BatchPurchaseInboundSection({
             >
               <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                 <div className="space-y-1">
-                  <p className="text-sm font-black text-slate-900">
+                  <p className="text-sm font-semibold text-slate-900">
                     第 {index + 1} 条明细
                   </p>
                   <p className="text-xs text-slate-500">
@@ -364,7 +364,7 @@ export function BatchPurchaseInboundSection({
                     <p className="text-xs font-medium text-slate-500">
                       合格入库
                     </p>
-                    <p className="mt-1 text-base font-black text-slate-900">
+                    <p className="mt-1 text-base font-semibold text-slate-900">
                       {quantitySummary.quantity ?? '—'} 片
                     </p>
                   </div>
@@ -518,12 +518,12 @@ export function BatchPurchaseInboundSection({
 
                         <div className="grid gap-3 self-start rounded-xl border border-slate-200 bg-white p-3 text-sm">
                           <div>
-                            <p className="text-xs font-bold tracking-widest text-slate-400 uppercase">
+                            <p className="text-xs font-bold text-slate-400">
                               合格入库
                             </p>
                             <p
                               className={cn(
-                                'mt-1 text-lg font-black',
+                                'mt-1 text-lg font-semibold',
                                 quantitySummary.quantity &&
                                   quantitySummary.quantity > 0
                                   ? 'text-slate-900'
@@ -534,10 +534,10 @@ export function BatchPurchaseInboundSection({
                             </p>
                           </div>
                           <div>
-                            <p className="text-xs font-bold tracking-widest text-slate-400 uppercase">
+                            <p className="text-xs font-bold text-slate-400">
                               破损折算
                             </p>
-                            <p className="mt-1 text-lg font-black text-amber-600">
+                            <p className="mt-1 text-lg font-semibold text-amber-600">
                               {quantitySummary.damagedQuantity ?? 0} 片
                             </p>
                           </div>

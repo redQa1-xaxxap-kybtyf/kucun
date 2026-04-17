@@ -38,7 +38,7 @@ export function SettingsLayout({
       {/* 页面标题区 - 保持全站统一的 v3 PRO 通透感 */}
       <div className="mx-auto max-w-[1440px] px-2">
         <div className="space-y-2">
-          <h1 className="text-3xl font-black tracking-tight text-slate-900">
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
             {title}
           </h1>
           <div className="flex items-center gap-3">
@@ -98,7 +98,7 @@ export function SettingsSection({
       <div className="mb-6 flex items-start gap-3">
         <div className="mt-1 h-4 w-1 rounded-full bg-blue-500" />
         <div className="space-y-1">
-          <h3 className="text-sm font-black tracking-tight text-slate-900">
+          <h3 className="text-sm font-semibold tracking-tight text-slate-900">
             {title}
           </h3>
           {description && (

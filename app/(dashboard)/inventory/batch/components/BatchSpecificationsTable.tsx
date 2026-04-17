@@ -58,31 +58,31 @@ export function BatchSpecificationsTable({
             <Table>
               <TableHeader className="card-shadow-light">
                 <TableRow className="border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50">
-                  <TableHead className="py-4 font-black text-slate-500 first:pl-6">
+                  <TableHead className="py-4 font-semibold text-slate-500 first:pl-6">
                     产品编码
                   </TableHead>
-                  <TableHead className="py-4 font-black text-slate-500">
+                  <TableHead className="py-4 font-semibold text-slate-500">
                     产品名称
                   </TableHead>
-                  <TableHead className="py-4 font-black text-slate-500">
+                  <TableHead className="py-4 font-semibold text-slate-500">
                     色号
                   </TableHead>
-                  <TableHead className="py-4 font-black text-slate-500">
+                  <TableHead className="py-4 font-semibold text-slate-500">
                     批次号
                   </TableHead>
-                  <TableHead className="py-4 font-black text-slate-500">
+                  <TableHead className="py-4 font-semibold text-slate-500">
                     规格
                   </TableHead>
-                  <TableHead className="py-4 text-right font-black text-slate-500">
+                  <TableHead className="py-4 text-right font-semibold text-slate-500">
                     装箱数
                   </TableHead>
-                  <TableHead className="py-4 text-right font-black text-slate-500">
+                  <TableHead className="py-4 text-right font-semibold text-slate-500">
                     本批次实际每件重量 (kg)
                   </TableHead>
-                  <TableHead className="py-4 font-black text-slate-500">
+                  <TableHead className="py-4 font-semibold text-slate-500">
                     创建时间
                   </TableHead>
-                  <TableHead className="py-4 pr-6 text-right font-black text-slate-500">
+                  <TableHead className="py-4 pr-6 text-right font-semibold text-slate-500">
                     操作
                   </TableHead>
                 </TableRow>
@@ -125,7 +125,7 @@ export function BatchSpecificationsTable({
                         key={spec.id}
                         className="group border-b border-slate-50 transition-colors hover:bg-blue-50/30"
                       >
-                        <TableCell className="py-4 pl-6 text-sm font-black tracking-tight text-slate-900 group-hover:text-blue-600">
+                        <TableCell className="py-4 pl-6 text-sm font-semibold tracking-tight text-slate-900 group-hover:text-blue-600">
                           {spec.product?.code || '-'}
                         </TableCell>
                         <TableCell className="py-4 text-xs font-bold text-slate-600">
@@ -135,7 +135,7 @@ export function BatchSpecificationsTable({
                           {spec.variant?.colorCode || '通用'}
                         </TableCell>
                         <TableCell className="py-4">
-                          <span className="rounded-md border border-amber-100 bg-amber-50 px-2 py-0.5 text-[10px] font-black text-amber-600 uppercase">
+                          <span className="rounded-md border border-amber-100 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-600">
                             {spec.batchNumber}
                           </span>
                         </TableCell>
@@ -252,7 +252,7 @@ export function BatchSpecificationsTable({
                 <div className="absolute top-0 right-0 p-2">
                   <Badge
                     variant="outline"
-                    className="h-5 border-amber-100 bg-amber-50 px-1.5 text-[9px] font-black text-amber-600 uppercase"
+                    className="h-5 border-amber-100 bg-amber-50 px-1.5 text-[9px] font-semibold text-amber-600"
                   >
                     {spec.batchNumber}
                   </Badge>
@@ -260,10 +260,10 @@ export function BatchSpecificationsTable({
 
                 <div className="flex flex-col gap-4">
                   <div>
-                    <div className="mb-1 text-[10px] font-black tracking-widest text-slate-400 uppercase">
+                    <div className="mb-1 text-[10px] font-semibold text-slate-400">
                       产品编码
                     </div>
-                    <div className="text-base font-black tracking-tight text-slate-900 transition-colors group-hover:text-blue-600">
+                    <div className="text-base font-semibold tracking-tight text-slate-900 transition-colors group-hover:text-blue-600">
                       {spec.product?.code || '-'}
                     </div>
                     <div className="mt-1 text-sm font-bold text-slate-600">
@@ -279,18 +279,18 @@ export function BatchSpecificationsTable({
 
                   <div className="grid grid-cols-2 gap-4 border-t border-slate-50 pt-4">
                     <div className="flex flex-col gap-1">
-                      <span className="text-[9px] font-black tracking-wider text-slate-400 uppercase">
+                      <span className="text-[9px] font-semibold text-slate-400">
                         装箱数
                       </span>
-                      <span className="text-sm font-black text-slate-700 tabular-nums">
+                      <span className="text-sm font-semibold text-slate-700 tabular-nums">
                         {formatNumber(spec.piecesPerUnit)} PCS
                       </span>
                     </div>
                     <div className="flex flex-col gap-1">
-                      <span className="text-[9px] font-black tracking-wider text-slate-400 uppercase">
+                      <span className="text-[9px] font-semibold text-slate-400">
                         本批次实际每件重量
                       </span>
-                      <span className="text-sm font-black text-slate-700 tabular-nums">
+                      <span className="text-sm font-semibold text-slate-700 tabular-nums">
                         {spec.weight
                           ? `${formatNumber(spec.weight, 2)} kg`
                           : '-'}

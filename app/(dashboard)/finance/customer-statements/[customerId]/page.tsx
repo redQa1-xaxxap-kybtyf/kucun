@@ -349,10 +349,10 @@ export default function CustomerStatementDetailPage() {
               </Button>
               <div className="space-y-2">
                 <div className="flex flex-wrap items-center gap-4">
-                  <h1 className="text-4xl font-black tracking-tighter text-slate-900">
+                  <h1 className="text-4xl font-semibold tracking-tighter text-slate-900">
                     {statementDetail.customerName}
                   </h1>
-                  <Badge className="rounded-full border-none bg-emerald-500/10 px-4 py-1.5 text-[10px] font-black tracking-widest text-emerald-600 uppercase ring-1 ring-emerald-500/20">
+                  <Badge className="rounded-full border-none bg-emerald-500/10 px-4 py-1.5 text-[10px] font-semibold text-emerald-600 ring-1 ring-emerald-500/20">
                     <ShieldCheck className="mr-1.5 h-3.5 w-3.5" />
                     往来客户
                   </Badge>
@@ -361,20 +361,20 @@ export default function CustomerStatementDetailPage() {
                 <div className="flex flex-wrap items-center gap-6">
                   <div className="flex items-center gap-2.5">
                     <div className="h-1.5 w-1.5 rounded-full bg-slate-300" />
-                    <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
+                    <span className="text-[10px] font-semibold text-slate-400">
                       统计期间
                     </span>
-                    <span className="text-sm font-black text-slate-700">
+                    <span className="text-sm font-semibold text-slate-700">
                       {formatDate(statementDetail.periodStart)} —{' '}
                       {formatDate(statementDetail.periodEnd)}
                     </span>
                   </div>
                   <div className="flex items-center gap-2.5 border-l border-slate-200 pl-6">
                     <div className="h-1.5 w-1.5 rounded-full bg-slate-300" />
-                    <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
+                    <span className="text-[10px] font-semibold text-slate-400">
                       最后对账
                     </span>
-                    <span className="text-sm font-black text-slate-700">
+                    <span className="text-sm font-semibold text-slate-700">
                       {formatDateTime(statementDetail.generatedAt)}
                     </span>
                   </div>
@@ -388,7 +388,7 @@ export default function CustomerStatementDetailPage() {
                 size="lg"
                 disabled={isFetching}
                 onClick={() => refetch()}
-                className="h-14 rounded-2xl border border-white bg-white/60 px-8 font-black text-slate-900 shadow-sm transition-all hover:bg-white active:scale-95"
+                className="h-14 rounded-2xl border border-white bg-white/60 px-8 font-semibold text-slate-900 shadow-sm transition-all hover:bg-white active:scale-95"
               >
                 <RefreshCw
                   className={cn('mr-2 h-5 w-5', isFetching && 'animate-spin')}
@@ -399,7 +399,7 @@ export default function CustomerStatementDetailPage() {
                 size="lg"
                 disabled={isExporting}
                 onClick={handleExport}
-                className="h-14 rounded-2xl bg-slate-900 px-10 font-black text-white shadow-xl transition-all hover:shadow-slate-200 active:scale-95"
+                className="h-14 rounded-2xl bg-slate-900 px-10 font-semibold text-white shadow-xl transition-all hover:shadow-slate-200 active:scale-95"
               >
                 <Download className="mr-2 h-5 w-5" />
                 {isExporting ? '正在生成...' : '导出当前对账单'}
@@ -411,7 +411,7 @@ export default function CustomerStatementDetailPage() {
         {/* Audit Control Bar */}
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="group max-w-2xl flex-1">
-            <div className="mb-4 flex items-center gap-2 px-1 text-[10px] font-black tracking-[0.2em] text-slate-300 uppercase">
+            <div className="mb-4 flex items-center gap-2 px-1 text-[10px] font-semibold tracking-[0.2em] text-slate-300">
               <Calendar className="h-3 w-3" />
               对账日期范围
             </div>
@@ -444,7 +444,7 @@ export default function CustomerStatementDetailPage() {
                     endDate: defaultEndDate,
                   })
                 }
-                className="h-14 rounded-[1.5rem] border border-white bg-white/60 px-10 font-black text-slate-400 shadow-sm transition-all hover:border-slate-900 hover:bg-slate-900 hover:text-white active:scale-95"
+                className="h-14 rounded-[1.5rem] border border-white bg-white/60 px-10 font-semibold text-slate-400 shadow-sm transition-all hover:border-slate-900 hover:bg-slate-900 hover:text-white active:scale-95"
               >
                 清空
               </Button>
@@ -497,7 +497,7 @@ export default function CustomerStatementDetailPage() {
             >
               <div className="relative z-10 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
+                  <span className="text-[10px] font-semibold text-slate-400">
                     {metric.label}
                   </span>
                   <metric.icon
@@ -506,7 +506,7 @@ export default function CustomerStatementDetailPage() {
                 </div>
                 <div
                   className={cn(
-                    'text-2xl font-black tracking-tighter',
+                    'text-2xl font-semibold tracking-tighter',
                     metric.color === 'emerald'
                       ? 'text-emerald-600'
                       : metric.color === 'rose'
@@ -516,7 +516,7 @@ export default function CustomerStatementDetailPage() {
                 >
                   {formatCurrency(metric.value)}
                 </div>
-                <div className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+                <div className="text-[10px] font-bold text-slate-400">
                   {metric.subValue}
                 </div>
               </div>
@@ -533,10 +533,10 @@ export default function CustomerStatementDetailPage() {
         {/* Audit Stream */}
         <div className="space-y-6">
           <div className="flex items-center justify-between px-2">
-            <h2 className="text-2xl font-black tracking-tight text-slate-900">
+            <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
               账务流水明细
             </h2>
-            <div className="flex items-center gap-2 text-[10px] font-black tracking-widest text-slate-300 uppercase">
+            <div className="flex items-center gap-2 text-[10px] font-semibold text-slate-300">
               <Clock className="h-3 w-3" />
               共查得 {transactions.length} 条记录
             </div>
@@ -545,7 +545,7 @@ export default function CustomerStatementDetailPage() {
           {transactions.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-[2.5rem] border border-dashed border-slate-200 bg-white/20 py-24">
               <FileText className="mb-4 h-12 w-12 text-slate-200" />
-              <p className="text-sm font-black tracking-widest text-slate-400 uppercase">
+              <p className="text-sm font-semibold text-slate-400">
                 当前期间暂无往来记录
               </p>
             </div>
@@ -562,7 +562,7 @@ export default function CustomerStatementDetailPage() {
                         <Layers className="h-6 w-6 text-slate-400 group-hover:text-white" />
                       </div>
                       <div className="space-y-0.5">
-                        <div className="text-xs font-black tracking-wider text-slate-400 uppercase">
+                        <div className="text-xs font-semibold text-slate-400">
                           {typeLabelMap[tx.transactionType] ||
                             tx.transactionType}
                         </div>
@@ -574,12 +574,12 @@ export default function CustomerStatementDetailPage() {
 
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center gap-3">
-                        <span className="text-sm font-black text-slate-900">
+                        <span className="text-sm font-semibold text-slate-900">
                           单号: {tx.referenceNumber}
                         </span>
                         <Badge
                           variant="secondary"
-                          className="bg-slate-100/50 py-0.5 text-[9px] font-black tracking-widest uppercase hover:bg-slate-100"
+                          className="bg-slate-100/50 py-0.5 text-[9px] font-semibold hover:bg-slate-100"
                         >
                           {formatTransactionStatus(tx.status)}
                         </Badge>
@@ -591,13 +591,13 @@ export default function CustomerStatementDetailPage() {
 
                     <div className="grid grid-cols-2 gap-8 lg:min-w-[360px] lg:border-l lg:border-slate-100 lg:pl-10">
                       <div className="space-y-1">
-                        <span className="text-[9px] font-black tracking-widest text-slate-300 uppercase">
+                        <span className="text-[9px] font-semibold text-slate-300">
                           本次变动
                         </span>
                         <div className="flex items-baseline gap-2">
                           <span
                             className={cn(
-                              'text-sm font-black',
+                              'text-sm font-semibold',
                               tx.debitAmount > 0
                                 ? 'text-emerald-600'
                                 : tx.creditAmount > 0
@@ -614,10 +614,10 @@ export default function CustomerStatementDetailPage() {
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <span className="text-[9px] font-black tracking-widest text-slate-300 uppercase">
+                        <span className="text-[9px] font-semibold text-slate-300">
                           余额
                         </span>
-                        <div className="text-sm font-black text-slate-900">
+                        <div className="text-sm font-semibold text-slate-900">
                           {formatCurrency(tx.balance)}
                         </div>
                       </div>

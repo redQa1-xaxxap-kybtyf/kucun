@@ -328,7 +328,7 @@ export function ProfitLossClient() {
                     : 'bg-slate-50 text-slate-900'
               )}
             >
-              <div className="mb-2 text-xs font-black tracking-[0.2em] uppercase opacity-60">
+              <div className="mb-2 text-xs font-semibold tracking-[0.2em] opacity-60">
                 当前盈亏情况
               </div>
               <div className="flex items-center gap-3">
@@ -350,7 +350,7 @@ export function ProfitLossClient() {
                     <RefreshCw className="h-6 w-6" />
                   )}
                 </div>
-                <div className="text-4xl font-black lg:text-5xl">
+                <div className="text-4xl font-semibold lg:text-5xl">
                   {analysis.status === 'profit'
                     ? '盈利'
                     : analysis.status === 'loss'
@@ -358,11 +358,11 @@ export function ProfitLossClient() {
                       : '盈亏平衡'}
                 </div>
               </div>
-              <div className="mt-6 font-mono text-3xl font-black tracking-tighter lg:text-4xl">
+              <div className="mt-6 font-mono text-3xl font-semibold tracking-tighter lg:text-4xl">
                 {formatCurrency(Math.abs(analysis.profit.netProfit))}
               </div>
               <div className="mt-2 flex items-center gap-2 text-sm font-bold opacity-70">
-                <span className="uppercase">净利率:</span>
+                <span>净利率:</span>
                 <span className="rounded-full bg-white/50 px-3 py-0.5 shadow-sm">
                   {analysis.profit.netProfitMargin.toFixed(2)}%
                 </span>
@@ -371,10 +371,10 @@ export function ProfitLossClient() {
 
             <div className="grid flex-[1.5] grid-cols-2 lg:grid-cols-3">
               <div className="flex flex-col justify-center border-r border-b border-slate-100 p-6 lg:p-8">
-                <div className="text-xs font-black tracking-widest text-slate-500 uppercase">
+                <div className="text-xs font-semibold text-slate-500">
                   销售总收入
                 </div>
-                <div className="mt-2 font-mono text-xl font-black text-slate-900">
+                <div className="mt-2 font-mono text-xl font-semibold text-slate-900">
                   {formatCurrency(analysis.revenue.totalRevenue)}
                 </div>
                 <div className="mt-1 text-xs font-bold text-slate-400">
@@ -382,10 +382,10 @@ export function ProfitLossClient() {
                 </div>
               </div>
               <div className="flex flex-col justify-center border-r border-b border-slate-100 p-6 lg:p-8">
-                <div className="text-xs font-black tracking-widest text-slate-500 uppercase">
+                <div className="text-xs font-semibold text-slate-500">
                   营业总成本
                 </div>
-                <div className="mt-2 font-mono text-xl font-black text-slate-900">
+                <div className="mt-2 font-mono text-xl font-semibold text-slate-900">
                   {formatCurrency(analysis.costs.totalCost)}
                 </div>
                 <div className="mt-1 text-xs font-bold text-slate-400">
@@ -393,10 +393,10 @@ export function ProfitLossClient() {
                 </div>
               </div>
               <div className="flex flex-col justify-center border-b border-slate-100 p-6 lg:border-r-0 lg:p-8">
-                <div className="text-xs font-black tracking-widest text-slate-500 uppercase">
+                <div className="text-xs font-semibold text-slate-500">
                   经营总费用
                 </div>
-                <div className="mt-2 font-mono text-xl font-black text-slate-900">
+                <div className="mt-2 font-mono text-xl font-semibold text-slate-900">
                   {formatCurrency(analysis.expenses.totalExpenses)}
                 </div>
                 <div className="mt-1 text-xs font-bold text-slate-400">
@@ -404,10 +404,10 @@ export function ProfitLossClient() {
                 </div>
               </div>
               <div className="flex flex-col justify-center border-r border-slate-100 p-6 lg:p-8">
-                <div className="text-xs font-black tracking-widest text-emerald-600 uppercase">
+                <div className="text-xs font-semibold text-emerald-600">
                   综合毛利润
                 </div>
-                <div className="mt-2 font-mono text-xl font-black text-emerald-600">
+                <div className="mt-2 font-mono text-xl font-semibold text-emerald-600">
                   {formatCurrency(analysis.profit.grossProfit)}
                 </div>
                 <div className="mt-1 text-xs font-bold text-slate-400">
@@ -415,10 +415,10 @@ export function ProfitLossClient() {
                 </div>
               </div>
               <div className="flex flex-col justify-center border-r border-slate-100 p-6 lg:p-8">
-                <div className="text-xs font-black tracking-widest text-blue-600 uppercase">
+                <div className="text-xs font-semibold text-blue-600">
                   直发业务利润
                 </div>
-                <div className="mt-2 font-mono text-xl font-black text-blue-600">
+                <div className="mt-2 font-mono text-xl font-semibold text-blue-600">
                   {formatCurrency(
                     analysis.factoryShipmentProfit.customerProfit
                   )}
@@ -429,10 +429,10 @@ export function ProfitLossClient() {
                 </div>
               </div>
               <div className="flex flex-col justify-center p-6 lg:p-8">
-                <div className="text-xs font-black tracking-widest text-slate-500 uppercase">
+                <div className="text-xs font-semibold text-slate-500">
                   营业经营利润
                 </div>
-                <div className="mt-2 font-mono text-xl font-black text-slate-900">
+                <div className="mt-2 font-mono text-xl font-semibold text-slate-900">
                   {formatCurrency(analysis.profit.operatingProfit)}
                 </div>
                 <div className="mt-1 text-xs font-bold text-slate-400">
@@ -450,7 +450,7 @@ export function ProfitLossClient() {
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="h-4 w-1 rounded-full bg-blue-500" />
-                <h2 className="text-sm font-black tracking-widest text-slate-900 uppercase">
+                <h2 className="text-sm font-semibold text-slate-900">
                   收入构成
                 </h2>
               </div>
@@ -497,7 +497,7 @@ export function ProfitLossClient() {
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="h-4 w-1 rounded-full bg-amber-500" />
-                <h2 className="text-sm font-black tracking-widest text-slate-900 uppercase">
+                <h2 className="text-sm font-semibold text-slate-900">
                   支出成本结构透视
                 </h2>
               </div>
@@ -538,7 +538,7 @@ export function ProfitLossClient() {
         {/* 费用细分看板 (v3 紧凑式) */}
         <section className="rounded-2xl border border-slate-100 p-6 shadow-sm">
           <div className="mb-6 flex items-center justify-between border-b border-slate-50 pb-4">
-            <h2 className="text-sm font-black tracking-widest text-slate-900 uppercase italic">
+            <h2 className="text-sm font-semibold text-slate-900 italic">
               费用开支明细账目
             </h2>
             <div className="text-xs font-bold text-slate-400">
@@ -561,10 +561,10 @@ export function ProfitLossClient() {
                 key={item.label}
                 className="flex flex-col rounded-xl bg-slate-50/50 p-4 transition-colors hover:bg-slate-100"
               >
-                <span className="text-xs font-black text-slate-400 uppercase">
+                <span className="text-xs font-semibold text-slate-400">
                   {item.label}
                 </span>
-                <span className="mt-2 font-mono text-sm font-black text-slate-900">
+                <span className="mt-2 font-mono text-sm font-semibold text-slate-900">
                   {formatCurrency(item.value)}
                 </span>
                 <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-slate-200">
@@ -586,7 +586,7 @@ export function ProfitLossClient() {
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="h-4 w-1 rounded-full bg-emerald-500" />
-                <h2 className="font-mono text-sm font-black tracking-widest text-slate-900 uppercase">
+                <h2 className="font-mono text-sm font-semibold text-slate-900">
                   核心盈利能力评估
                 </h2>
               </div>
@@ -621,7 +621,7 @@ export function ProfitLossClient() {
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="h-4 w-1 rounded-full bg-blue-500" />
-                <h2 className="font-mono text-sm font-black tracking-widest text-slate-900 uppercase">
+                <h2 className="font-mono text-sm font-semibold text-slate-900">
                   直发业务利润分析
                 </h2>
               </div>
@@ -686,7 +686,7 @@ export function ProfitLossClient() {
                           : 'border-blue-200 bg-white text-blue-700'
                     )}
                   >
-                    <div className="flex items-center gap-2 font-black tracking-tight uppercase">
+                    <div className="flex items-center gap-2 font-semibold tracking-tight">
                       <div
                         className={cn(
                           'h-2 w-2 rounded-full',
@@ -779,13 +779,13 @@ function StatCard({
     >
       <CardHeader className="flex flex-row items-start justify-between space-y-0 px-5 pt-5 pb-2">
         <div className="space-y-1">
-          <CardTitle className="text-xs font-bold tracking-wider uppercase opacity-80">
+          <CardTitle className="text-xs font-bold opacity-80">
             {title}
           </CardTitle>
           <div className="flex flex-col">
             <div
               className={cn(
-                'font-black tracking-tight',
+                'font-semibold tracking-tight',
                 size === 'lg' ? 'text-2xl sm:text-3xl' : 'text-xl'
               )}
             >

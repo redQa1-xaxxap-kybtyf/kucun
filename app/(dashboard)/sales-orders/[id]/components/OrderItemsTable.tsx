@@ -84,7 +84,7 @@ export function OrderItemsTable({
     <Card className="overflow-hidden rounded-2xl border-slate-100 shadow-sm ring-1 ring-slate-100/50">
       <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <CardTitle className="flex items-center gap-3 text-sm font-black tracking-widest text-slate-900 uppercase">
+          <CardTitle className="flex items-center gap-3 text-sm font-semibold text-slate-900">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-100/50 text-blue-600 shadow-sm">
               <ShoppingCart className="h-5 w-5" />
             </div>
@@ -120,7 +120,7 @@ export function OrderItemsTable({
         {/* 桌面端：表格视图 */}
         <div className="hidden overflow-x-auto md:block">
           <table className="w-full text-sm text-slate-600">
-            <thead className="sticky top-0 z-10 border-b border-slate-100 bg-slate-50/80 text-[11px] font-black tracking-widest text-slate-500 uppercase backdrop-blur-md">
+            <thead className="sticky top-0 z-10 border-b border-slate-100 bg-slate-50/80 text-[11px] font-semibold text-slate-500 backdrop-blur-md">
               <tr>
                 <th className="px-3 py-2.5 text-left font-medium whitespace-nowrap">
                   产品编码
@@ -358,7 +358,7 @@ export function OrderItemsTable({
                   colSpan={order.orderType === 'TRANSFER' ? 3 : 4}
                   className="px-4 py-5 text-right text-slate-500"
                 >
-                  <span className="text-[10px] font-black tracking-[0.2em] uppercase">
+                  <span className="text-[10px] font-semibold tracking-[0.2em]">
                     合计统计
                   </span>
                 </td>
@@ -373,7 +373,7 @@ export function OrderItemsTable({
                   </span>
                 </td>
                 <td className="px-3 py-5 text-right whitespace-nowrap">
-                  <span className="font-mono text-base font-black text-slate-900">
+                  <span className="font-mono text-base font-semibold text-slate-900">
                     {formatTotalQuantitySummary(orderItems, totalDisplayQuantity)}
                   </span>
                 </td>
@@ -404,7 +404,7 @@ export function OrderItemsTable({
                   </span>
                 </td>
                 <td className="px-3 py-5 text-right whitespace-nowrap">
-                  <span className="font-mono text-xl font-black text-blue-700">
+                  <span className="font-mono text-xl font-semibold text-blue-700">
                     {formatCurrency(productSubtotal)}
                   </span>
                 </td>
@@ -421,7 +421,7 @@ export function OrderItemsTable({
                       </span>
                     </td>
                     <td className="px-3 py-5 text-right whitespace-nowrap">
-                      <span className="font-mono text-lg font-black text-emerald-600">
+                      <span className="font-mono text-lg font-semibold text-emerald-600">
                         {formatCurrency(order.profitAmount)}
                       </span>
                     </td>

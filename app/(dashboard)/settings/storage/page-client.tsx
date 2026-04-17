@@ -262,12 +262,12 @@ export default function StorageSettingsPageClient({
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-black tracking-tighter text-slate-900">
+                <h1 className="text-3xl font-semibold tracking-tighter text-slate-900">
                   七牛云存储
                 </h1>
                 <Badge
                   variant="outline"
-                  className="border-slate-200 px-2.5 py-1 text-[10px] font-black tracking-widest text-slate-400 uppercase"
+                  className="border-slate-200 px-2.5 py-1 text-[10px] font-semibold text-slate-400"
                 >
                   External Cloud
                 </Badge>
@@ -280,7 +280,7 @@ export default function StorageSettingsPageClient({
           <Button
             variant="outline"
             onClick={() => router.push('/settings')}
-            className="h-11 rounded-xl border-slate-200 bg-white px-6 text-xs font-black text-slate-900 shadow-sm transition-all hover:bg-slate-50 active:scale-95"
+            className="h-11 rounded-xl border-slate-200 bg-white px-6 text-xs font-semibold text-slate-900 shadow-sm transition-all hover:bg-slate-50 active:scale-95"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             返回全局设置
@@ -292,7 +292,7 @@ export default function StorageSettingsPageClient({
           <div className="space-y-10">
             <section className="space-y-6">
               <div className="flex flex-col gap-1 px-1">
-                <h3 className="text-sm font-black tracking-widest text-slate-900 uppercase">
+                <h3 className="text-sm font-semibold text-slate-900">
                   服务接入配置
                 </h3>
                 <p className="text-[11px] font-medium text-slate-400">
@@ -312,7 +312,7 @@ export default function StorageSettingsPageClient({
                         queryKey: queryKeys.settings.storage(),
                       })
                     }
-                    className="mt-6 h-10 rounded-xl px-8 text-xs font-black"
+                    className="mt-6 h-10 rounded-xl px-8 text-xs font-semibold"
                   >
                     重试加载
                   </Button>
@@ -341,13 +341,13 @@ export default function StorageSettingsPageClient({
 
           <div className="space-y-8">
             <section className="space-y-4">
-              <h3 className="px-1 text-[11px] font-black tracking-widest text-slate-400 uppercase">
+              <h3 className="px-1 text-[11px] font-semibold text-slate-400">
                 配置指
               </h3>
               <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <span className="text-[11px] font-black text-slate-900">
+                    <span className="text-[11px] font-semibold text-slate-900">
                       获取密钥
                     </span>
                     <p className="text-[11px] leading-relaxed font-medium text-slate-400">
@@ -356,7 +356,7 @@ export default function StorageSettingsPageClient({
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <span className="text-[11px] font-black text-slate-900">
+                    <span className="text-[11px] font-semibold text-slate-900">
                       存储空间
                     </span>
                     <p className="text-[11px] leading-relaxed font-medium text-slate-400">

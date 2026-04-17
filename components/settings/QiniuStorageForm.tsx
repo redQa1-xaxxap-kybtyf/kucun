@@ -217,7 +217,7 @@ export const QiniuStorageForm = ({
               render={({ field }) => (
                 <FormItem className="space-y-3">
                   <div className="flex flex-col">
-                    <FormLabel className="text-sm font-black text-slate-900">
+                    <FormLabel className="text-sm font-semibold text-slate-900">
                       访问密钥（AK）
                     </FormLabel>
                     <span className="text-[11px] font-medium text-slate-400">
@@ -263,7 +263,7 @@ export const QiniuStorageForm = ({
               render={({ field }) => (
                 <FormItem className="space-y-3">
                   <div className="flex flex-col">
-                    <FormLabel className="text-sm font-black text-slate-900">
+                    <FormLabel className="text-sm font-semibold text-slate-900">
                       私有密钥（SK）
                     </FormLabel>
                     <span className="text-[11px] font-medium text-slate-400">
@@ -309,7 +309,7 @@ export const QiniuStorageForm = ({
               render={({ field }) => (
                 <FormItem className="space-y-3">
                   <div className="flex flex-col">
-                    <FormLabel className="text-sm font-black text-slate-900">
+                    <FormLabel className="text-sm font-semibold text-slate-900">
                       存储空间名称
                     </FormLabel>
                     <span className="text-[11px] font-medium text-slate-400">
@@ -338,7 +338,7 @@ export const QiniuStorageForm = ({
               render={({ field }) => (
                 <FormItem className="space-y-3">
                   <div className="flex flex-col">
-                    <FormLabel className="text-sm font-black text-slate-900">
+                    <FormLabel className="text-sm font-semibold text-slate-900">
                       外部访问域名
                     </FormLabel>
                     <span className="text-[11px] font-medium text-slate-400">
@@ -367,7 +367,7 @@ export const QiniuStorageForm = ({
               render={({ field }) => (
                 <FormItem className="space-y-3">
                   <div className="flex flex-col">
-                    <FormLabel className="text-sm font-black text-slate-900">
+                    <FormLabel className="text-sm font-semibold text-slate-900">
                       物理存储区域
                     </FormLabel>
                     <span className="text-[11px] font-medium text-slate-400">
@@ -410,7 +410,7 @@ export const QiniuStorageForm = ({
               render={({ field }) => (
                 <FormItem className="space-y-3">
                   <div className="flex flex-col">
-                    <FormLabel className="text-sm font-black text-slate-900">
+                    <FormLabel className="text-sm font-semibold text-slate-900">
                       预设存储路径格式
                     </FormLabel>
                     <span className="text-[11px] font-medium text-slate-400">
@@ -443,7 +443,7 @@ export const QiniuStorageForm = ({
               variant="outline"
               onClick={handleTestConnection}
               disabled={isFormDisabled}
-              className="h-11 rounded-2xl border-slate-200 bg-white px-8 text-xs font-black text-slate-900 transition-all hover:bg-slate-50 active:scale-95"
+              className="h-11 rounded-2xl border-slate-200 bg-white px-8 text-xs font-semibold text-slate-900 transition-all hover:bg-slate-50 active:scale-95"
             >
               {isTesting ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -455,7 +455,7 @@ export const QiniuStorageForm = ({
             <Button
               type="submit"
               disabled={isFormDisabled}
-              className="h-11 rounded-2xl bg-slate-900 px-10 text-xs font-black shadow-lg shadow-slate-900/10 transition-all hover:bg-slate-800 active:scale-95"
+              className="h-11 rounded-2xl bg-slate-900 px-10 text-xs font-semibold shadow-lg shadow-slate-900/10 transition-all hover:bg-slate-800 active:scale-95"
             >
               {isSaving ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -104,7 +104,7 @@ export default function LogsPage() {
         {/* Identity Header */}
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-2">
-            <h2 className="text-3xl font-black tracking-tighter text-slate-900">
+            <h2 className="text-3xl font-semibold tracking-tighter text-slate-900">
               操作记录
             </h2>
             <p className="text-slate-400 text-sm font-bold max-w-2xl leading-relaxed">
@@ -126,7 +126,7 @@ export default function LogsPage() {
           {error ? (
             <div className="flex flex-col items-center justify-center rounded-[32px] border border-dashed border-rose-200 bg-rose-50/30 py-20 text-center backdrop-blur-md">
               <AlertCircle className="mb-4 h-12 w-12 text-rose-300" />
-              <p className="mb-2 text-sm font-black uppercase tracking-widest text-rose-500">暂时无法加载操作记录</p>
+              <p className="mb-2 text-sm font-semibold text-rose-500">暂时无法加载操作记录</p>
               <p className="mb-4 text-sm font-bold text-rose-400">
                 {getFriendlyErrorMessage(error, "请稍后重试")}
               </p>

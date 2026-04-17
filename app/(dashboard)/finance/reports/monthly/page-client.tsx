@@ -446,7 +446,7 @@ export function MonthlyReportClient() {
         {/* 收入与支出明细 - 高清晰分组区 */}
         <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 sm:p-6">
           <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <h2 className="flex items-center gap-2 text-sm font-black tracking-widest text-slate-800 uppercase">
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-800">
               <TrendingUp className="h-4 w-4 text-emerald-500" />
               收支明细
             </h2>
@@ -518,17 +518,17 @@ export function MonthlyReportClient() {
         <div className="grid gap-6 xl:grid-cols-2">
           {/* 资金回收看板 */}
           <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-6">
-            <h2 className="mb-4 flex items-center gap-2 text-sm font-black tracking-widest text-slate-800 uppercase">
+            <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-800">
               <ChineseYuan className="h-4 w-4 text-blue-500" />
               资金回收看板
             </h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="rounded-xl border border-blue-100/50 bg-blue-50/50 p-4">
-                <div className="text-[10px] font-bold text-blue-600 uppercase">
+                <div className="text-[10px] font-bold text-blue-600">
                   累计应收 (回款率)
                 </div>
                 <div className="mt-1 flex items-baseline justify-between">
-                  <div className="text-xl font-black text-slate-900">
+                  <div className="text-xl font-semibold text-slate-900">
                     {formatCurrency(report.receivables.totalReceivable)}
                   </div>
                   <div className="text-xs font-bold text-blue-700">
@@ -552,11 +552,11 @@ export function MonthlyReportClient() {
                 </div>
               </div>
               <div className="rounded-xl border border-slate-200/50 bg-slate-50 p-4">
-                <div className="text-[10px] font-bold text-slate-500 uppercase">
+                <div className="text-[10px] font-bold text-slate-500">
                   业务应付 (结算进度)
                 </div>
                 <div className="mt-1 flex items-baseline justify-between">
-                  <div className="text-xl font-black text-slate-900">
+                  <div className="text-xl font-semibold text-slate-900">
                     {formatCurrency(report.receivables.totalPayable)}
                   </div>
                   <div className="text-xs font-bold text-slate-600">
@@ -584,7 +584,7 @@ export function MonthlyReportClient() {
               <span className="text-xs font-bold text-red-700">
                 待收余额 (欠款):
               </span>
-              <span className="text-lg font-black text-red-700">
+              <span className="text-lg font-semibold text-red-700">
                 {formatCurrency(report.receivables.receivableBalance)}
               </span>
             </div>
@@ -592,7 +592,7 @@ export function MonthlyReportClient() {
 
           {/* 供应链与直发分析 */}
           <div className="rounded-2xl border border-slate-100 bg-white p-4 text-sm shadow-sm sm:p-6">
-            <h2 className="mb-4 flex items-center gap-2 text-sm font-black tracking-widest text-slate-800 uppercase">
+            <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-800">
               <RefreshCw className="h-4 w-4 text-emerald-500" />
               效率与直发绩效
             </h2>
@@ -625,7 +625,7 @@ export function MonthlyReportClient() {
                     {item.icon}
                     {item.label}
                   </div>
-                  <div className={cn('text-lg font-black', item.color)}>
+                  <div className={cn('text-lg font-semibold', item.color)}>
                     {item.value}
                   </div>
                 </div>
@@ -637,7 +637,7 @@ export function MonthlyReportClient() {
         {/* 经营提醒 */}
         {report.alerts && report.alerts.length > 0 && (
           <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 sm:p-6">
-            <h2 className="mb-4 flex items-center gap-2 text-sm font-black tracking-widest text-amber-800 uppercase">
+            <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-amber-800">
               <Receipt className="h-4 w-4" />
               经营提醒
             </h2>
@@ -650,7 +650,7 @@ export function MonthlyReportClient() {
                   <div className="flex items-center justify-between">
                     <span
                       className={cn(
-                        'rounded-full px-2 py-0.5 text-[9px] font-black uppercase',
+                        'rounded-full px-2 py-0.5 text-[9px] font-semibold',
                         alert.type === 'danger'
                           ? 'bg-red-100 text-red-700'
                           : 'bg-amber-100 text-amber-700'
@@ -659,7 +659,7 @@ export function MonthlyReportClient() {
                       {alert.type === 'danger' ? '高风险' : '建议关注'}
                     </span>
                   </div>
-                  <div className="text-sm font-black text-slate-800">
+                  <div className="text-sm font-semibold text-slate-800">
                     {alert.title}
                   </div>
                   <div className="text-xs leading-relaxed text-slate-500">
@@ -741,12 +741,12 @@ function StatCard({
     >
       <CardHeader className="flex flex-row items-start justify-between space-y-0 px-4 pt-4 pb-2 sm:px-5 sm:pt-5">
         <div className="space-y-1">
-          <CardTitle className="text-xs font-bold tracking-wider uppercase opacity-80">
+          <CardTitle className="text-xs font-bold opacity-80">
             {title}
           </CardTitle>
           <div
             className={cn(
-              'font-black tracking-tight text-slate-900',
+              'font-semibold tracking-tight text-slate-900',
               size === 'lg' ? 'text-2xl lg:text-3xl' : 'text-xl sm:text-2xl'
             )}
           >

@@ -31,7 +31,7 @@ export function StatementBasicInfo({
   return (
     <Card className="overflow-hidden border-slate-200 transition-all hover:shadow-lg">
       <CardHeader className="border-b border-slate-200 bg-slate-50 px-6 py-4">
-        <CardTitle className="flex items-center gap-2 text-sm font-black tracking-widest text-slate-500 uppercase italic">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-500 italic">
           <Contact2 className="h-4 w-4" />
           往来伙伴关系名片
         </CardTitle>
@@ -42,7 +42,7 @@ export function StatementBasicInfo({
             <div className="bg-white p-6">
               <div className="mb-2 flex items-center gap-3 text-slate-400">
                 <MapPin className="h-4 w-4" />
-                <span className="text-[10px] font-black tracking-widest uppercase">
+                <span className="text-[10px] font-semibold">
                   物理地址
                 </span>
               </div>
@@ -53,11 +53,11 @@ export function StatementBasicInfo({
             <div className="bg-white p-6">
               <div className="mb-2 flex items-center gap-3 text-slate-400">
                 <Phone className="h-4 w-4" />
-                <span className="text-[10px] font-black tracking-widest uppercase">
+                <span className="text-[10px] font-semibold">
                   联系方式
                 </span>
               </div>
-              <p className="font-mono text-lg font-black text-slate-900">
+              <p className="font-mono text-lg font-semibold text-slate-900">
                 {entity.phone || '未绑定电话'}
               </p>
             </div>
@@ -91,11 +91,11 @@ export function StatementBasicInfo({
               >
                 <div className="mb-1 flex items-center gap-2">
                   <item.icon className="h-3 w-3 text-slate-400 transition-colors group-hover:text-blue-500" />
-                  <span className="text-[9px] font-bold tracking-wider text-slate-400 uppercase">
+                  <span className="text-[9px] font-bold text-slate-400">
                     {item.label}
                   </span>
                 </div>
-                <div className="truncate text-xs font-black text-slate-700">
+                <div className="truncate text-xs font-semibold text-slate-700">
                   {item.value}
                 </div>
               </div>

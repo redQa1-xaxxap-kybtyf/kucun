@@ -14,6 +14,7 @@ import {
 import React from 'react';
 
 import type { Category, CategoryQueryParams } from '@/lib/api/categories';
+import { paginationConfig } from '@/lib/env';
 
 interface DeleteDialogState {
   open: boolean;
@@ -41,7 +42,8 @@ const DEFAULT_QUERY_PARAMS: Required<
   >
 > = {
   page: 1,
-  limit: 10,
+  // 与服务端分类页保持一致：默认一次性取回完整层级，避免父级缺失后子级被误显示为“跑位”
+  limit: paginationConfig.maxPageSize,
   search: '',
   sortBy: 'createdAt',
   sortOrder: 'desc',

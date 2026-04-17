@@ -28,12 +28,12 @@ function RankingItem({ item }: { item: ProductSalesRanking }) {
   return (
     <Link
       href={`/products/${item.productId}`}
-      className="group relative flex items-center gap-4 rounded-2xl border border-white bg-white/40 p-3 transition-all duration-300 hover:-translate-x-1 hover:border-slate-200 hover:bg-white/80 hover:shadow-lg hover:shadow-slate-100"
+      className="group relative flex items-center gap-4 rounded-2xl border border-border bg-card p-3 transition-all duration-300 hover:-translate-x-1 hover:border-slate-200 hover:bg-card hover:shadow-lg hover:shadow-slate-100"
     >
       {/* 排名 */}
       <div
         className={cn(
-          'flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl font-black shadow-sm transition-all group-hover:scale-110',
+          'flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl font-semibold shadow-sm transition-all group-hover:scale-110',
           colors.bg,
           colors.text
         )}
@@ -43,17 +43,17 @@ function RankingItem({ item }: { item: ProductSalesRanking }) {
 
       {/* 产品信息 */}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-black text-slate-900 transition-colors group-hover:text-blue-600">
+        <p className="truncate text-sm font-semibold text-slate-900 transition-colors group-hover:text-blue-600">
           {item.productName}
         </p>
-        <p className="mt-0.5 text-xs font-bold tracking-widest text-slate-500 uppercase">
+        <p className="mt-0.5 text-xs font-bold text-slate-500">
           {item.productCode}
         </p>
       </div>
 
       {/* 销售统计 */}
       <div className="flex flex-shrink-0 flex-col items-end gap-0.5">
-        <p className="text-sm font-black text-slate-900">
+        <p className="text-sm font-semibold text-slate-900">
           {formatCurrency(item.totalAmount)}
         </p>
         <p className="text-xs font-bold text-slate-500">
@@ -78,7 +78,7 @@ function EmptyState({ source }: { source: 'warehouse' | 'factory' }) {
       <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-50">
         <Icon className="h-8 w-8 text-slate-200" />
       </div>
-      <p className="text-xs font-black tracking-[0.2em] text-slate-400 uppercase">
+      <p className="text-xs font-semibold tracking-[0.2em] text-slate-400">
         当前暂无销售数据
       </p>
     </div>
@@ -92,20 +92,20 @@ export function ProductRanking({
 }: ProductRankingProps) {
   if (loading) {
     return (
-      <div className="h-[500px] w-full animate-pulse rounded-3xl bg-white/40" />
+      <div className="h-[360px] w-full animate-pulse rounded-md bg-card" />
     );
   }
 
   return (
-    <div className="group relative flex flex-col rounded-3xl border border-white bg-white/60 p-8 shadow-sm backdrop-blur-md transition-all duration-500 hover:shadow-xl hover:shadow-slate-200/50">
+    <div className="group relative flex flex-col rounded-md border border-border bg-card p-4 shadow-sm transition-all duration-500 hover:shadow-xl hover:shadow-slate-200/50">
       <div className="mb-8 space-y-1">
         <div className="flex items-center gap-2">
           <div className="h-1.5 w-1.5 rounded-full bg-slate-900" />
-          <p className="text-xs font-black tracking-widest text-slate-500 uppercase">
+          <p className="text-xs font-semibold text-slate-500">
             Leaderboard / 热销排行
           </p>
         </div>
-        <p className="text-xl font-black tracking-tight text-slate-900">
+        <p className="text-xl font-semibold tracking-tight text-slate-900">
           表现最佳产品
         </p>
       </div>
@@ -114,13 +114,13 @@ export function ProductRanking({
         <TabsList className="grid h-11 w-full grid-cols-2 rounded-2xl border border-slate-200/50 bg-slate-100/50 p-1">
           <TabsTrigger
             value="warehouse"
-            className="rounded-xl text-xs font-black tracking-wider uppercase data-[state=active]:bg-slate-900 data-[state=active]:text-white"
+            className="rounded-xl text-xs font-semibold data-[state=active]:bg-slate-900 data-[state=active]:text-white"
           >
             本地仓库
           </TabsTrigger>
           <TabsTrigger
             value="factory"
-            className="rounded-xl text-xs font-black tracking-wider uppercase data-[state=active]:bg-slate-900 data-[state=active]:text-white"
+            className="rounded-xl text-xs font-semibold data-[state=active]:bg-slate-900 data-[state=active]:text-white"
           >
             厂家直发
           </TabsTrigger>

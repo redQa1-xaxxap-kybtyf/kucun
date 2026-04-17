@@ -97,7 +97,7 @@ export function ERPCustomerList({
           action={
             <Button
               onClick={handleCreateNew}
-              className="h-12 rounded-2xl bg-slate-900 px-8 font-black"
+              className="h-12 rounded-2xl bg-slate-900 px-8 font-semibold"
             >
               新增客户
             </Button>
@@ -130,7 +130,7 @@ export function ERPCustomerList({
                   <User className="h-7 w-7" />
                 </div>
                 <div className="space-y-1">
-                  <h3 className="text-xl font-black tracking-tight text-slate-900 transition-colors group-hover:text-blue-600">
+                  <h3 className="text-xl font-semibold tracking-tight text-slate-900 transition-colors group-hover:text-blue-600">
                     {customer.name}
                   </h3>
                   <div className="flex items-center gap-3 text-xs font-bold text-slate-400">
@@ -140,7 +140,7 @@ export function ERPCustomerList({
                       {formatDateTime(customer.createdAt).split(' ')[0]}
                     </span>
                     <span className="h-1 w-1 rounded-full bg-slate-200" />
-                    <span className="text-xs font-bold tracking-widest text-slate-400 uppercase">
+                    <span className="text-xs font-bold text-slate-400">
                       客户编号：{customer.id.slice(-6)}
                     </span>
                   </div>
@@ -166,34 +166,34 @@ export function ERPCustomerList({
               {/* Right: Business Insights */}
               <div className="grid grid-cols-3 gap-3">
                 <div className="flex min-w-[80px] flex-col items-center justify-center rounded-2xl border border-blue-100/50 bg-blue-50/50 px-4 py-3">
-                  <span className="mb-1 text-xs font-black tracking-widest text-blue-600 uppercase">
+                  <span className="mb-1 text-xs font-semibold text-blue-600">
                     交易次数
                   </span>
                   <div className="flex items-center gap-1 text-blue-700">
                     <TrendingUp className="h-3 w-3" />
-                    <span className="text-sm font-black">
+                    <span className="text-sm font-semibold">
                       {customer.transactionCount || 0}
                     </span>
                   </div>
                 </div>
                 <div className="flex min-w-[80px] flex-col items-center justify-center rounded-2xl border border-emerald-100/50 bg-emerald-50/50 px-4 py-3">
-                  <span className="mb-1 text-xs font-black tracking-widest text-emerald-600 uppercase">
+                  <span className="mb-1 text-xs font-semibold text-emerald-600">
                     合作天数
                   </span>
                   <div className="flex items-center gap-1 text-emerald-700">
                     <Calendar className="h-3 w-3" />
-                    <span className="text-sm font-black">
+                    <span className="text-sm font-semibold">
                       {customer.cooperationDays || 0}天
                     </span>
                   </div>
                 </div>
                 <div className="flex min-w-[80px] flex-col items-center justify-center rounded-2xl border border-rose-100/50 bg-rose-50/50 px-4 py-3">
-                  <span className="mb-1 text-xs font-black tracking-widest text-rose-600 uppercase">
+                  <span className="mb-1 text-xs font-semibold text-rose-600">
                     退货频率
                   </span>
                   <div className="flex items-center gap-1 text-rose-700">
                     <TrendingDown className="h-3 w-3" />
-                    <span className="text-sm font-black">
+                    <span className="text-sm font-semibold">
                       {customer.returnOrderCount || 0}
                     </span>
                   </div>
@@ -253,7 +253,7 @@ export function ERPCustomerList({
             <div className="flex items-center gap-2">
               <div
                 className={cn(
-                  'rounded-full px-3 py-1 text-[10px] font-black tracking-[0.2em] uppercase',
+                  'rounded-full px-3 py-1 text-[10px] font-semibold tracking-[0.2em]',
                   customer.cooperationDays && customer.cooperationDays > 30
                     ? 'bg-emerald-500 text-white'
                     : 'bg-slate-100 text-slate-400'
@@ -264,7 +264,7 @@ export function ERPCustomerList({
                   : '新客户'}
               </div>
               {customer.returnOrderCount && customer.returnOrderCount > 5 && (
-                <div className="rounded-full bg-rose-100 px-3 py-1 text-xs font-black tracking-[0.2em] text-rose-700 uppercase">
+                <div className="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold tracking-[0.2em] text-rose-700">
                   高退货风险
                 </div>
               )}
@@ -278,10 +278,10 @@ export function ERPCustomerList({
         <div className="flex items-center justify-center py-10">
           <div className="group flex h-16 items-center gap-6 rounded-3xl border border-white bg-white/60 px-8 py-3 shadow-sm backdrop-blur-xl transition-all hover:bg-white hover:shadow-xl">
             <div className="mr-2 flex items-center gap-1.5 border-r border-slate-100 pr-6">
-              <span className="text-xs font-bold tracking-widest text-slate-400 uppercase">
+              <span className="text-xs font-bold text-slate-400">
                 数据范围
               </span>
-              <span className="text-sm font-black text-slate-900">
+              <span className="text-sm font-semibold text-slate-900">
                 {pagination.total} 位客户
               </span>
             </div>

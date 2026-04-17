@@ -92,12 +92,12 @@ export function SupplierDetailPageClient({
               </div>
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center gap-3">
-                  <h1 className="text-4xl font-black tracking-tighter text-slate-900">
+                  <h1 className="text-4xl font-semibold tracking-tighter text-slate-900">
                     {supplier.name}
                   </h1>
                   <div
                     className={cn(
-                      'rounded-full px-4 py-1.5 text-xs font-black tracking-[0.2em] uppercase',
+                      'rounded-full px-4 py-1.5 text-xs font-semibold tracking-[0.2em]',
                       supplier.status === 'active'
                         ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200'
                         : 'bg-slate-100 text-slate-500'
@@ -109,16 +109,16 @@ export function SupplierDetailPageClient({
 
                 <div className="flex flex-wrap items-center gap-6">
                   <div className="flex items-center gap-2 text-sm font-bold text-slate-500">
-                    <span className="text-xs font-bold tracking-widest text-slate-400 uppercase">
+                    <span className="text-xs font-bold text-slate-400">
                       供应商编号
                     </span>
-                    <span className="font-black text-slate-700">
+                    <span className="font-semibold text-slate-700">
                       {supplier.id.substring(0, 8).toUpperCase()}
                     </span>
                   </div>
                   <span className="h-1 w-1 rounded-full bg-slate-200" />
                   <div className="flex items-center gap-2 text-sm font-bold text-slate-400">
-                    <span className="flex items-center gap-2 font-black text-slate-600">
+                    <span className="flex items-center gap-2 font-semibold text-slate-600">
                       <Phone className="h-4 w-4 text-slate-300" />{' '}
                       {supplier.phone || '未留电话'}
                     </span>
@@ -132,14 +132,14 @@ export function SupplierDetailPageClient({
                 variant="ghost"
                 size="lg"
                 onClick={() => router.push(`/suppliers/${supplier.id}/edit`)}
-                className="h-14 rounded-2xl border-none bg-white px-8 font-black text-slate-600 shadow-sm transition-all hover:bg-slate-900 hover:text-white active:scale-95"
+                className="h-14 rounded-2xl border-none bg-white px-8 font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-900 hover:text-white active:scale-95"
               >
                 <Edit className="mr-2 h-5 w-5" />
                 编辑资料
               </Button>
               <Button
                 size="lg"
-                className="h-14 rounded-2xl bg-slate-900 px-10 font-black text-white shadow-xl transition-all hover:shadow-slate-200 active:scale-95"
+                className="h-14 rounded-2xl bg-slate-900 px-10 font-semibold text-white shadow-xl transition-all hover:shadow-slate-200 active:scale-95"
                 onClick={() =>
                   router.push(
                     `/factory-shipments/create?supplierId=${supplier.id}`
@@ -160,11 +160,11 @@ export function SupplierDetailPageClient({
               <div className="space-y-4 rounded-3xl border border-white bg-white/60 p-8 shadow-sm backdrop-blur-md">
                 <div className="flex items-center gap-3">
                   <MapPin className="h-5 w-5 text-slate-400" />
-                  <span className="text-xs font-black tracking-widest text-slate-500 uppercase">
+                  <span className="text-xs font-semibold text-slate-500">
                     联系信息
                   </span>
                 </div>
-                <p className="text-xl leading-tight font-black text-slate-900">
+                <p className="text-xl leading-tight font-semibold text-slate-900">
                   {supplier.address || '未填写地址'}
                 </p>
                 <div className="flex items-center gap-4 pt-4">
@@ -187,13 +187,13 @@ export function SupplierDetailPageClient({
               <div className="space-y-4 rounded-3xl border border-rose-100 bg-rose-50/20 p-8 shadow-sm backdrop-blur-md">
                 <div className="flex items-center gap-3">
                   <AlertCircle className="h-5 w-5 text-rose-400" />
-                  <span className="text-xs font-black tracking-widest text-rose-600/80 uppercase">
+                  <span className="text-xs font-semibold text-rose-600/80">
                     风险与待付预警
                   </span>
                 </div>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-sm font-black text-rose-400">¥</span>
-                  <span className="text-4xl font-black tracking-tighter text-rose-600">
+                  <span className="text-sm font-semibold text-rose-400">¥</span>
+                  <span className="text-4xl font-semibold tracking-tighter text-rose-600">
                     {totalRemainingAmount.toLocaleString('zh-CN', {
                       minimumFractionDigits: 2,
                     })}
@@ -214,7 +214,7 @@ export function SupplierDetailPageClient({
           <div className="lg:col-span-1">
             <div className="space-y-6 rounded-3xl border border-white bg-white/60 p-8 shadow-sm backdrop-blur-md">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
+                <span className="text-[10px] font-semibold text-slate-400">
                   业务活跃度
                 </span>
                 <TrendingUp className="h-4 w-4 text-blue-500" />
@@ -227,7 +227,7 @@ export function SupplierDetailPageClient({
                       累计供货金额
                     </span>
                   </div>
-                  <span className="text-sm font-black text-slate-900">
+                  <span className="text-sm font-semibold text-slate-900">
                     {formatCurrency(totalShipmentAmount)}
                   </span>
                 </div>
@@ -238,7 +238,7 @@ export function SupplierDetailPageClient({
                       发货单数
                     </span>
                   </div>
-                  <span className="text-sm font-black text-slate-900">
+                  <span className="text-sm font-semibold text-slate-900">
                     {supplier._count.factoryShipments} 批次
                   </span>
                 </div>
@@ -249,7 +249,7 @@ export function SupplierDetailPageClient({
                       应付单数
                     </span>
                   </div>
-                  <span className="text-sm font-black text-slate-900">
+                  <span className="text-sm font-semibold text-slate-900">
                     {supplier._count.payableRecords} 记录
                   </span>
                 </div>
@@ -261,7 +261,7 @@ export function SupplierDetailPageClient({
         {/* Audit Stream Tabs */}
         <div className="rounded-[2.5rem] border border-white bg-white/40 p-1 shadow-sm backdrop-blur-md">
           <div className="p-8 pb-4">
-            <h2 className="text-2xl font-black tracking-tight text-slate-900">
+            <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
               供货记录与应付款
             </h2>
             <p className="mt-1 text-sm font-bold text-slate-400">
@@ -274,13 +274,13 @@ export function SupplierDetailPageClient({
               <TabsList className="h-14 rounded-2xl border border-slate-200/50 bg-slate-100/50 p-1.5">
                 <TabsTrigger
                   value="shipments"
-                  className="h-10 rounded-xl px-6 font-black transition-all data-[state=active]:bg-white data-[state=active]:shadow-xl"
+                  className="h-10 rounded-xl px-6 font-semibold transition-all data-[state=active]:bg-white data-[state=active]:shadow-xl"
                 >
                   发货记录 ({supplier._count.factoryShipments})
                 </TabsTrigger>
                 <TabsTrigger
                   value="payables"
-                  className="h-10 rounded-xl px-6 font-black transition-all data-[state=active]:bg-white data-[state=active]:shadow-xl"
+                  className="h-10 rounded-xl px-6 font-semibold transition-all data-[state=active]:bg-white data-[state=active]:shadow-xl"
                 >
                   应付款 ({supplier._count.payableRecords})
                 </TabsTrigger>
@@ -308,10 +308,10 @@ export function SupplierDetailPageClient({
                           </div>
                           <div className="space-y-1">
                             <div className="flex items-center gap-3">
-                              <span className="text-sm font-black tracking-tight text-slate-900 transition-colors group-hover:text-blue-600">
+                              <span className="text-sm font-semibold tracking-tight text-slate-900 transition-colors group-hover:text-blue-600">
                                 #{shipment.shipmentNumber}
                               </span>
-                              <div className="rounded-md border border-slate-200/50 bg-slate-100 px-2 py-0.5 text-xs font-bold tracking-widest text-slate-500 uppercase">
+                              <div className="rounded-md border border-slate-200/50 bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-500">
                                 {shipment.status}
                               </div>
                             </div>
@@ -322,10 +322,10 @@ export function SupplierDetailPageClient({
                         </div>
                         <div className="flex items-center gap-8">
                           <div className="text-right">
-                            <p className="text-lg font-black tracking-tighter text-slate-900">
+                            <p className="text-lg font-semibold tracking-tighter text-slate-900">
                               {formatCurrency(shipment.totalAmount)}
                             </p>
-                            <span className="text-xs font-bold tracking-widest text-slate-400 uppercase italic">
+                            <span className="text-xs font-bold text-slate-400 italic">
                               发货金额
                             </span>
                           </div>
@@ -337,7 +337,7 @@ export function SupplierDetailPageClient({
                 ) : (
                   <div className="m-6 flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-slate-50/50 py-20">
                     <History className="mb-4 h-10 w-10 text-slate-200" />
-                    <p className="text-sm font-black tracking-widest text-slate-400 uppercase">
+                    <p className="text-sm font-semibold text-slate-400">
                       暂无厂家发货记录
                     </p>
                   </div>
@@ -380,12 +380,12 @@ export function SupplierDetailPageClient({
                           </div>
                           <div className="space-y-1">
                             <div className="flex items-center gap-3">
-                              <span className="text-sm font-black tracking-tight text-slate-900 transition-colors group-hover:text-blue-600">
+                              <span className="text-sm font-semibold tracking-tight text-slate-900 transition-colors group-hover:text-blue-600">
                                 #{record.payableNumber}
                               </span>
                               <div
                                 className={cn(
-                                  'rounded-md px-2 py-0.5 text-xs font-bold tracking-widest uppercase',
+                                  'rounded-md px-2 py-0.5 text-xs font-bold',
                                   record.status === 'paid'
                                     ? 'bg-emerald-100 text-emerald-700'
                                     : 'bg-rose-100 text-rose-700'
@@ -408,7 +408,7 @@ export function SupplierDetailPageClient({
                             <div className="flex flex-col items-end">
                               <span
                                 className={cn(
-                                  'text-lg font-black tracking-tighter',
+                                  'text-lg font-semibold tracking-tighter',
                                   record.remainingAmount > 0
                                     ? 'text-rose-600'
                                     : 'text-slate-900'
@@ -416,7 +416,7 @@ export function SupplierDetailPageClient({
                               >
                                 {formatCurrency(record.remainingAmount)}
                               </span>
-                              <span className="text-[9px] font-black tracking-widest text-slate-300 uppercase">
+                              <span className="text-[9px] font-semibold text-slate-300">
                                 / {formatCurrency(record.payableAmount)}
                               </span>
                             </div>
@@ -429,7 +429,7 @@ export function SupplierDetailPageClient({
                 ) : (
                   <div className="m-6 flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-slate-50/50 py-20">
                     <History className="mb-4 h-10 w-10 text-slate-200" />
-                    <p className="text-sm font-black tracking-widest text-slate-400 uppercase">
+                    <p className="text-sm font-semibold text-slate-400">
                       暂无账务历史
                     </p>
                   </div>

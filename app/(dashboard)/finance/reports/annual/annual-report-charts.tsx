@@ -50,7 +50,7 @@ export function AnnualReportCharts({ report }: { report: AnnualReport }) {
         {/* 月度趋势图 */}
         <Card className="overflow-hidden border-slate-100 shadow-sm">
           <CardHeader className="border-b border-slate-100 bg-slate-50/50 px-4 py-4 sm:px-6">
-            <CardTitle className="text-sm font-black tracking-wider text-slate-700 uppercase">
+            <CardTitle className="text-sm font-semibold text-slate-700">
               第一部分：月度营业趋势
             </CardTitle>
           </CardHeader>
@@ -116,7 +116,7 @@ export function AnnualReportCharts({ report }: { report: AnnualReport }) {
         {/* 季度对比分析 */}
         <Card className="overflow-hidden border-slate-100 shadow-sm">
           <CardHeader className="border-b border-slate-100 bg-slate-50/50 px-4 py-4 sm:px-6">
-            <CardTitle className="text-sm font-black tracking-wider text-slate-700 uppercase">
+            <CardTitle className="text-sm font-semibold text-slate-700">
               第二部分：季度经营对比
             </CardTitle>
           </CardHeader>
@@ -181,7 +181,7 @@ export function AnnualReportCharts({ report }: { report: AnnualReport }) {
         {/* 厂家发货汇总 - 占据3栏 */}
         <div className="flex flex-col rounded-2xl border border-blue-100 bg-blue-50/50 p-4 sm:p-6 xl:col-span-3">
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="flex items-center gap-2 text-sm font-black tracking-widest text-slate-800 uppercase">
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-800">
               <Package className="h-4 w-4 text-blue-500" />
               厂家直发业务年度报告
             </h2>
@@ -189,18 +189,18 @@ export function AnnualReportCharts({ report }: { report: AnnualReport }) {
 
           <div className="mb-6 grid gap-4 sm:grid-cols-2">
             <div className="rounded-xl border border-blue-100 bg-white p-4 shadow-sm">
-              <div className="text-[10px] font-black tracking-wider text-blue-400 uppercase">
+              <div className="text-[10px] font-semibold text-blue-400">
                 客户货利润
               </div>
-              <div className="mt-1 text-2xl font-black text-slate-900">
+              <div className="mt-1 text-2xl font-semibold text-slate-900">
                 {formatCurrency(report.factoryShipmentProfit?.customerProfit)}
               </div>
             </div>
             <div className="rounded-xl border border-blue-100 bg-white p-4 shadow-sm">
-              <div className="text-[10px] font-black tracking-wider text-blue-400 uppercase">
+              <div className="text-[10px] font-semibold text-blue-400">
                 平均利润率
               </div>
-              <div className="mt-1 text-2xl font-black text-slate-900">
+              <div className="mt-1 text-2xl font-semibold text-slate-900">
                 {report.factoryShipmentProfit?.averageProfitMargin.toFixed(2)}%
               </div>
             </div>
@@ -249,7 +249,7 @@ export function AnnualReportCharts({ report }: { report: AnnualReport }) {
         {/* 费用分布 - 占据2栏 */}
         <Card className="border-slate-100 shadow-sm xl:col-span-2">
           <CardHeader className="border-b border-slate-50 px-4 py-4 sm:px-6">
-            <CardTitle className="text-xs font-black tracking-widest text-slate-500 uppercase">
+            <CardTitle className="text-xs font-semibold text-slate-500">
               费用支出结构
             </CardTitle>
           </CardHeader>
@@ -295,7 +295,7 @@ export function AnnualReportCharts({ report }: { report: AnnualReport }) {
                       {item.typeName}
                     </span>
                   </div>
-                  <span className="font-mono font-black text-slate-400">
+                  <span className="font-mono font-semibold text-slate-400">
                     {item.percentage.toFixed(1)}%
                   </span>
                 </div>

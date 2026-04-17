@@ -88,11 +88,11 @@ export const LogFilters = ({ filters, onFiltersChange }: LogFiltersProps) => {
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <div className="h-1.5 w-1.5 rounded-full bg-slate-900" />
-            <p className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
+            <p className="text-[11px] font-semibold text-slate-400">
               筛选条件
             </p>
           </div>
-          <p className="text-xl font-black tracking-tight text-slate-900">
+          <p className="text-xl font-semibold tracking-tight text-slate-900">
             操作记录筛选
           </p>
         </div>
@@ -114,7 +114,7 @@ export const LogFilters = ({ filters, onFiltersChange }: LogFiltersProps) => {
         <div className="space-y-2.5">
           <Label
             htmlFor="search"
-            className="ml-1 text-[11px] font-black tracking-widest text-slate-400 uppercase"
+            className="ml-1 text-[11px] font-semibold text-slate-400"
           >
             关键词
           </Label>
@@ -132,7 +132,7 @@ export const LogFilters = ({ filters, onFiltersChange }: LogFiltersProps) => {
 
         {/* 记录类型 */}
         <div className="space-y-2.5">
-          <Label className="ml-1 text-[11px] font-black tracking-widest text-slate-400 uppercase">
+          <Label className="ml-1 text-[11px] font-semibold text-slate-400">
             记录类型
           </Label>
           <select
@@ -152,7 +152,7 @@ export const LogFilters = ({ filters, onFiltersChange }: LogFiltersProps) => {
 
         {/* 日志级别 */}
         <div className="space-y-2.5">
-          <Label className="ml-1 text-[11px] font-black tracking-widest text-slate-400 uppercase">
+          <Label className="ml-1 text-[11px] font-semibold text-slate-400">
             风险级别
           </Label>
           <select
@@ -174,7 +174,7 @@ export const LogFilters = ({ filters, onFiltersChange }: LogFiltersProps) => {
         <div className="space-y-2.5">
           <Label
             htmlFor="action"
-            className="ml-1 text-[11px] font-black tracking-widest text-slate-400 uppercase"
+            className="ml-1 text-[11px] font-semibold text-slate-400"
           >
             操作名称
           </Label>
@@ -196,7 +196,7 @@ export const LogFilters = ({ filters, onFiltersChange }: LogFiltersProps) => {
             }}
             onChange={handleDateRangeChange}
             label="时间范围"
-            className="rounded-2xl border-slate-100 bg-slate-50/50 font-black"
+            className="rounded-2xl border-slate-100 bg-slate-50/50 font-semibold"
             showPresets={true}
             showClearButton={true}
           />

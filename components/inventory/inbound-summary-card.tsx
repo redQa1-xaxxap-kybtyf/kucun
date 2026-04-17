@@ -60,10 +60,10 @@ function DetailStat({
           {icon}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-[10px] font-black tracking-widest text-slate-400 uppercase sm:text-[11px]">
+          <div className="text-[10px] font-semibold text-slate-400 sm:text-[11px]">
             {label}
           </div>
-          <div className="mt-0.5 truncate text-sm leading-tight font-black text-slate-900 sm:text-base">
+          <div className="mt-0.5 truncate text-sm leading-tight font-semibold text-slate-900 sm:text-base">
             {value ?? '—'}
           </div>
         </div>
@@ -219,7 +219,7 @@ export function InboundSummaryCard({
       <Card className="overflow-hidden border-slate-200 bg-white transition-all hover:shadow-lg">
         <CardHeader className="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/50 px-4 py-4 sm:px-6 sm:py-5 xl:flex-row xl:items-center xl:justify-between">
           <div className="space-y-1.5 text-left">
-            <CardTitle className="flex items-center justify-start gap-2 text-lg font-black tracking-tight text-slate-900 sm:text-xl">
+            <CardTitle className="flex items-center justify-start gap-2 text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">
               <Package className="h-5 w-5 text-blue-600" />
               入库单 {record.recordNumber}
             </CardTitle>
@@ -238,7 +238,7 @@ export function InboundSummaryCard({
           <div className="flex w-full flex-wrap items-center gap-2 xl:w-auto xl:justify-end">
             <Badge
               variant={reasonVariant}
-              className="w-fit px-3 py-1 text-[11px] font-black tracking-widest uppercase"
+              className="w-fit px-3 py-1 text-[11px] font-semibold"
             >
               {reasonLabel}
             </Badge>

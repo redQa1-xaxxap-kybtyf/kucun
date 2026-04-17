@@ -204,7 +204,7 @@ function HeaderComponent({
                   <Badge
                     variant="secondary"
                     className={cn(
-                      'rounded-full px-2 py-1 text-[10px] font-black sm:px-3',
+                      'rounded-full px-2 py-1 text-[10px] font-semibold sm:px-3',
                       systemMode === 'trial'
                         ? 'bg-emerald-50 text-emerald-700'
                         : 'bg-amber-50 text-amber-700'
@@ -224,7 +224,7 @@ function HeaderComponent({
               </PopoverTrigger>
               <PopoverContent align="end" className="w-80 rounded-xl">
                 <div className="space-y-2">
-                  <div className="text-sm font-black text-slate-900">
+                  <div className="text-sm font-semibold text-slate-900">
                     账套模式说明
                   </div>
                   <div className="text-xs leading-relaxed text-slate-600">
@@ -281,7 +281,7 @@ function HeaderComponent({
               align="end"
               className="w-56 rounded-xl border-slate-100 p-1.5 shadow-xl"
             >
-              <DropdownMenuLabel className="px-2 py-1.5 text-xs font-black tracking-wider text-slate-500 uppercase">
+              <DropdownMenuLabel className="px-2 py-1.5 text-xs font-semibold text-slate-500">
                 核心配置
               </DropdownMenuLabel>
               <DropdownMenuItem
@@ -333,7 +333,7 @@ function HeaderComponent({
               >
                 <Bell className="h-[18px] w-[18px]" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 p-0 text-xs leading-none font-black text-white ring-2 ring-white">
+                  <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 p-0 text-xs leading-none font-semibold text-white ring-2 ring-white">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
@@ -344,11 +344,11 @@ function HeaderComponent({
               className="w-[360px] rounded-2xl border-slate-100 p-0 shadow-2xl"
             >
               <div className="flex items-center justify-between border-b border-slate-50 p-4">
-                <h3 className="text-sm font-black text-slate-900">通知中心</h3>
+                <h3 className="text-sm font-semibold text-slate-900">通知中心</h3>
                 {unreadCount > 0 && (
                   <Badge
                     variant="secondary"
-                    className="bg-blue-50 text-[10px] font-black text-blue-600"
+                    className="bg-blue-50 text-[10px] font-semibold text-blue-600"
                   >
                     {unreadCount} 条未读
                   </Badge>
@@ -436,7 +436,7 @@ function HeaderComponent({
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden text-left lg:block">
-                  <p className="text-xs leading-none font-black text-slate-900">
+                  <p className="text-xs leading-none font-semibold text-slate-900">
                     {currentUser?.name}
                   </p>
                   <p className="mt-1 text-xs leading-none font-bold text-slate-500 capitalize">
@@ -458,7 +458,7 @@ function HeaderComponent({
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col">
-                  <p className="text-sm font-black text-slate-900">
+                  <p className="text-sm font-semibold text-slate-900">
                     {currentUser?.name}
                   </p>
                   <p className="text-xs font-bold text-slate-500">

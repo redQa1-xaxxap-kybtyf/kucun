@@ -51,25 +51,25 @@ export function CustomerActivityTabs({
         <TabsList className="h-14 rounded-2xl border border-slate-200/50 bg-slate-100/50 p-1.5">
           <TabsTrigger
             value="sales"
-            className="h-10 rounded-xl px-6 font-black transition-all data-[state=active]:bg-white data-[state=active]:shadow-xl"
+            className="h-10 rounded-xl px-6 font-semibold transition-all data-[state=active]:bg-white data-[state=active]:shadow-xl"
           >
             销售记录
           </TabsTrigger>
           <TabsTrigger
             value="returns"
-            className="h-10 rounded-xl px-6 font-black transition-all data-[state=active]:bg-white data-[state=active]:shadow-xl"
+            className="h-10 rounded-xl px-6 font-semibold transition-all data-[state=active]:bg-white data-[state=active]:shadow-xl"
           >
             退货记录
           </TabsTrigger>
           <TabsTrigger
             value="unpaid"
-            className="h-10 rounded-xl px-6 font-black transition-all data-[state=active]:bg-rose-500 data-[state=active]:text-white data-[state=active]:shadow-xl"
+            className="h-10 rounded-xl px-6 font-semibold transition-all data-[state=active]:bg-rose-500 data-[state=active]:text-white data-[state=active]:shadow-xl"
           >
             应收账款 ({unpaidOrders.length})
           </TabsTrigger>
         </TabsList>
 
-        <div className="hidden items-center gap-2 text-xs font-bold tracking-wider text-slate-400 uppercase md:flex">
+        <div className="hidden items-center gap-2 text-xs font-bold text-slate-400 md:flex">
           <History className="h-3.5 w-3.5" />
           持续更新
         </div>
@@ -176,12 +176,12 @@ function OrderCard({
         </div>
         <div className="space-y-1">
           <div className="flex items-center gap-3">
-            <span className="text-sm font-black tracking-tight text-slate-900 transition-colors group-hover:text-blue-600">
+            <span className="text-sm font-semibold tracking-tight text-slate-900 transition-colors group-hover:text-blue-600">
               #{orderNumber}
             </span>
             <div
               className={cn(
-                'rounded-md px-2 py-0.5 text-xs font-bold tracking-wider uppercase',
+                'rounded-md px-2 py-0.5 text-xs font-bold',
                 status === 'completed'
                   ? 'bg-emerald-100 text-emerald-700'
                   : 'bg-slate-100 text-slate-500'
@@ -199,14 +199,14 @@ function OrderCard({
         <div className="text-right">
           <p
             className={cn(
-              'text-lg font-black tracking-tighter text-slate-900',
+              'text-lg font-semibold tracking-tighter text-slate-900',
               amountClass
             )}
           >
             {amountPrefix}
             {formatCurrency(amount)}
           </p>
-          <span className="text-xs font-bold tracking-wider text-slate-400 uppercase">
+          <span className="text-xs font-bold text-slate-400">
             金额
           </span>
         </div>
@@ -240,10 +240,10 @@ function UnpaidOrderCard({
         </div>
         <div className="space-y-1">
           <div className="flex items-center gap-3">
-            <span className="text-sm font-black tracking-tight text-rose-900">
+            <span className="text-sm font-semibold tracking-tight text-rose-900">
               #{orderNumber}
             </span>
-            <div className="rounded-md bg-rose-100 px-2 py-0.5 text-xs font-bold tracking-wider text-rose-700 uppercase">
+            <div className="rounded-md bg-rose-100 px-2 py-0.5 text-xs font-bold text-rose-700">
               待收款
             </div>
           </div>
@@ -255,12 +255,12 @@ function UnpaidOrderCard({
       <div className="flex items-center gap-8">
         <div className="text-right">
           <div className="flex items-baseline justify-end gap-1">
-            <span className="text-xs font-black text-rose-400">¥</span>
-            <p className="text-lg font-black tracking-tighter text-rose-600">
+            <span className="text-xs font-semibold text-rose-400">¥</span>
+            <p className="text-lg font-semibold tracking-tighter text-rose-600">
               {formatCurrency(unpaidAmount).replace('¥', '')}
             </p>
           </div>
-          <p className="text-xs font-bold tracking-wider text-slate-400 uppercase">
+          <p className="text-xs font-bold text-slate-400">
             待收金额
           </p>
         </div>
@@ -274,7 +274,7 @@ function EmptyState({ message }: { message: string }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-[2.5rem] border border-dashed border-slate-200 bg-slate-50/50 py-20">
       <CheckCircle2 className="mb-4 h-10 w-10 text-slate-200" />
-      <p className="text-sm font-black tracking-widest text-slate-400 uppercase">
+      <p className="text-sm font-semibold text-slate-400">
         {message}
       </p>
     </div>

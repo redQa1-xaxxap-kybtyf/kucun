@@ -58,11 +58,11 @@ export function DashboardTodoBar({
           key={todo.id}
           data-testid={`dashboard-todo-${todo.id}`}
           className={cn(
-            'group relative overflow-hidden rounded-[32px] border border-white p-1 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/50',
+            'group relative overflow-hidden rounded-md border border-white p-1 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/50',
             todo.bg
           )}
         >
-          <div className="flex items-center justify-between rounded-[28px] bg-white/60 p-5 backdrop-blur-md">
+          <div className="flex items-center justify-between rounded-md bg-card p-5">
             <div className="flex items-center gap-5">
               <div
                 className={cn(
@@ -73,13 +73,13 @@ export function DashboardTodoBar({
                 <todo.icon className="h-6 w-6 text-white" />
               </div>
               <div className="space-y-0.5">
-                <p className="text-xs font-black tracking-widest text-slate-500 uppercase">
+                <p className="text-xs font-semibold text-slate-500">
                   {todo.title}
                 </p>
                 <div className="flex items-baseline gap-2">
                   <span
                     className={cn(
-                      'text-2xl font-black tracking-tighter',
+                      'text-2xl font-semibold tracking-tighter',
                       todo.text
                     )}
                   >

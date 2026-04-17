@@ -26,7 +26,7 @@ export function FeeItemsCard({
   return (
     <Card className="overflow-hidden rounded-2xl border-slate-100 shadow-sm ring-1 ring-slate-100/50">
       <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4">
-        <CardTitle className="flex items-center justify-between text-sm font-black tracking-widest text-slate-900 uppercase">
+        <CardTitle className="flex items-center justify-between text-sm font-semibold text-slate-900">
           <div className="flex items-center">
             <ChineseYuan className="mr-2.5 h-4 w-4 text-blue-600" />
             业务附加费用明细
@@ -39,7 +39,7 @@ export function FeeItemsCard({
       <CardContent className="bg-white p-0">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="border-b border-slate-100 bg-slate-50/80 text-[10px] font-bold tracking-wider text-slate-500 uppercase backdrop-blur-md">
+            <thead className="border-b border-slate-100 bg-slate-50/80 text-[10px] font-bold text-slate-500 backdrop-blur-md">
               <tr className="text-xs font-semibold text-slate-500">
                 <th className="px-4 py-3 text-center font-medium">#</th>
                 <th className="px-4 py-3 text-left font-medium">费项类别</th>
@@ -97,12 +97,12 @@ export function FeeItemsCard({
             <tfoot className="border-t-2 border-slate-200 bg-slate-50/50">
               <tr className="font-bold">
                 <td colSpan={4} className="px-4 py-4 text-right text-slate-500">
-                  <span className="text-[10px] font-bold tracking-widest uppercase">
+                  <span className="text-[10px] font-bold">
                     客户承担小计
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <span className="font-mono text-sm font-black text-slate-900">
+                  <span className="font-mono text-sm font-semibold text-slate-900">
                     {formatCurrency(customerPaidTotal)}
                   </span>
                 </td>
@@ -110,7 +110,7 @@ export function FeeItemsCard({
               </tr>
               <tr className="border-t border-slate-100 font-bold">
                 <td colSpan={4} className="px-4 py-4 text-right text-slate-500">
-                  <span className="text-[10px] font-bold tracking-widest uppercase">
+                  <span className="text-[10px] font-bold">
                     公司承担小计
                   </span>
                 </td>
@@ -121,10 +121,10 @@ export function FeeItemsCard({
                 </td>
                 <td className="px-4 py-3"></td>
               </tr>
-              <tr className="border-t border-slate-200 bg-slate-100/20 font-black">
+              <tr className="border-t border-slate-200 bg-slate-100/20 font-semibold">
                 <td colSpan={4} className="px-4 py-5 text-right text-slate-900">
                   <div className="flex items-center justify-end gap-3">
-                    <span className="text-xs font-bold tracking-widest uppercase">
+                    <span className="text-xs font-bold">
                       业务应收总额
                     </span>
                     <span className="text-[10px] font-medium text-slate-400">
@@ -134,7 +134,7 @@ export function FeeItemsCard({
                   </div>
                 </td>
                 <td className="px-4 py-5 text-right">
-                  <span className="font-mono text-xl font-black text-blue-600">
+                  <span className="font-mono text-xl font-semibold text-blue-600">
                     {formatCurrency(order.totalAmount)}
                   </span>
                 </td>

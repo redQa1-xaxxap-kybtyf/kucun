@@ -109,10 +109,10 @@ function SidebarComponent({
               <Package className="h-5 w-5 text-white" />
             </div>
             <div className="flex flex-col">
-              <span className="text-base font-black tracking-tighter text-slate-900">
+              <span className="text-base font-semibold tracking-tighter text-slate-900">
                 库存管理
               </span>
-              <span className="text-xs font-black tracking-widest text-slate-500 uppercase">
+              <span className="text-xs font-semibold text-slate-500">
                 Control Center
               </span>
             </div>

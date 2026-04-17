@@ -91,7 +91,7 @@ export function CustomerContactCard({
               icon={<MapPin className="h-3.5 w-3.5" />}
             />
             <div className="flex-1">
-              <p className="text-xs font-bold tracking-wider text-slate-500 uppercase">
+              <p className="text-xs font-bold text-slate-500">
                 地址
               </p>
               <p className="mt-1 text-sm font-bold text-slate-700">{address}</p>
@@ -170,7 +170,7 @@ export function CustomerContactCard({
               }
               label="信用额度"
               value={
-                <span className="font-mono font-black text-emerald-600">
+                <span className="font-mono font-semibold text-emerald-600">
                   {formatCurrency(extendedInfo.creditLimit || 0)}
                 </span>
               }
@@ -220,7 +220,7 @@ export function CustomerContactCard({
           </div>
           <div className="flex shrink-0 flex-col gap-4 border-l border-slate-50 pl-6">
             <div className="space-y-1">
-              <p className="text-xs font-bold tracking-wider text-slate-500 uppercase">
+              <p className="text-xs font-bold text-slate-500">
                 创建时间
               </p>
               <p className="font-mono text-xs font-bold text-slate-700">
@@ -228,7 +228,7 @@ export function CustomerContactCard({
               </p>
             </div>
             <div className="space-y-1">
-              <p className="text-xs font-bold tracking-wider text-slate-500 uppercase">
+              <p className="text-xs font-bold text-slate-500">
                 最后更新
               </p>
               <p className="font-mono text-xs font-bold text-slate-700">
@@ -265,7 +265,7 @@ function SectionItem({
     <div className="flex items-center gap-3">
       {icon}
       <div className="space-y-0.5">
-        <p className="text-xs font-bold tracking-wider text-slate-500 uppercase">
+        <p className="text-xs font-bold text-slate-500">
           {label}
         </p>
         <div className="text-sm font-bold text-slate-700">{value}</div>

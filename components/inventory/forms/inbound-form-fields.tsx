@@ -417,7 +417,7 @@ export function InboundPurchaseDamageSection({ form }: InboundFormFieldsProps) {
           name="damagedInputQuantity"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm font-black text-slate-700">
+              <FormLabel className="text-sm font-semibold text-slate-700">
                 到货破损数量
               </FormLabel>
               <FormControl>
@@ -476,7 +476,7 @@ export function InboundPurchaseDamageSection({ form }: InboundFormFieldsProps) {
           name="damageHandling"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm font-black text-slate-700">
+              <FormLabel className="text-sm font-semibold text-slate-700">
                 破损处理方式
               </FormLabel>
               <Select
@@ -505,26 +505,26 @@ export function InboundPurchaseDamageSection({ form }: InboundFormFieldsProps) {
 
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
         <div className="rounded-xl border border-white/70 bg-white/80 p-4">
-          <p className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
+          <p className="text-[11px] font-semibold text-slate-400">
             实际入库
           </p>
-          <p className="mt-1 text-lg font-black text-slate-900">
+          <p className="mt-1 text-lg font-semibold text-slate-900">
             {formatNumber(acceptedQuantity)}片
           </p>
         </div>
         <div className="rounded-xl border border-white/70 bg-white/80 p-4">
-          <p className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
+          <p className="text-[11px] font-semibold text-slate-400">
             到货合计
           </p>
-          <p className="mt-1 text-lg font-black text-slate-900">
+          <p className="mt-1 text-lg font-semibold text-slate-900">
             {formatNumber(summary.arrivalQuantity)}片
           </p>
         </div>
         <div className="rounded-xl border border-white/70 bg-white/80 p-4">
-          <p className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
+          <p className="text-[11px] font-semibold text-slate-400">
             {summary.damageAmountLabel}
           </p>
-          <p className="mt-1 text-lg font-black text-amber-700">
+          <p className="mt-1 text-lg font-semibold text-amber-700">
             {summary.damageAmount > 0
               ? formatCurrency(summary.damageAmount)
               : '—'}

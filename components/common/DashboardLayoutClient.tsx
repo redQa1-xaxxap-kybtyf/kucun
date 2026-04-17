@@ -301,10 +301,10 @@ export function DashboardLayoutClient({
                 )}
               >
                 <div className="md:hidden">
-                  <CompactBreadcrumb className="text-xs font-black text-slate-500" />
+                  <CompactBreadcrumb className="text-xs font-medium text-muted-foreground" />
                 </div>
                 <div className="hidden md:block">
-                  <Breadcrumb className="text-xs font-black tracking-widest text-slate-500 uppercase" />
+                  <Breadcrumb className="text-xs font-medium text-muted-foreground" />
                 </div>
               </div>
             )}

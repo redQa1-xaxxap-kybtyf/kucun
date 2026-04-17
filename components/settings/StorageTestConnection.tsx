@@ -45,7 +45,7 @@ export const StorageTestConnection = ({
             <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
           </div>
           <div className="text-center">
-            <h4 className="text-sm font-black text-slate-900">
+            <h4 className="text-sm font-semibold text-slate-900">
               正在检查连接状态
             </h4>
             <p className="mt-1 text-xs font-medium text-slate-500">
@@ -69,17 +69,17 @@ export const StorageTestConnection = ({
               <XCircle className="h-6 w-6 text-white" />
             </div>
             <div className="space-y-0.5">
-              <h4 className="text-base font-black text-rose-900">
+              <h4 className="text-base font-semibold text-rose-900">
                 配置验证未通过
               </h4>
-              <p className="text-xs font-bold tracking-widest text-rose-500 uppercase">
+              <p className="text-xs font-bold text-rose-500">
                 检测未通过
               </p>
             </div>
           </div>
 
           <div className="rounded-2xl border border-rose-100/50 bg-white/80 p-5">
-            <span className="mb-2 block text-xs font-black text-rose-500 uppercase">
+            <span className="mb-2 block text-xs font-semibold text-rose-500">
               问题说明
             </span>
             <p className="text-sm leading-relaxed font-bold text-slate-700">
@@ -89,7 +89,7 @@ export const StorageTestConnection = ({
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <h5 className="text-xs font-black tracking-wider text-slate-900 uppercase">
+              <h5 className="text-xs font-semibold text-slate-900">
                 处理建议
               </h5>
               <ul className="space-y-1.5">
@@ -113,7 +113,7 @@ export const StorageTestConnection = ({
                 <Button
                   variant="outline"
                   onClick={onRetry}
-                  className="h-10 rounded-xl border-rose-100 bg-white px-6 text-xs font-black text-rose-600 transition-all hover:bg-rose-50 active:scale-95"
+                  className="h-10 rounded-xl border-rose-100 bg-white px-6 text-xs font-semibold text-rose-600 transition-all hover:bg-rose-50 active:scale-95"
                 >
                   重新检查
                 </Button>
@@ -136,10 +136,10 @@ export const StorageTestConnection = ({
                 <CheckCircle className="h-6 w-6 text-white" />
               </div>
               <div className="space-y-0.5">
-                <h4 className="text-base font-black text-emerald-900">
+                <h4 className="text-base font-semibold text-emerald-900">
                   存储连接已就绪
                 </h4>
-                <p className="text-[11px] font-bold tracking-widest text-emerald-400 uppercase">
+                <p className="text-[11px] font-bold text-emerald-400">
                   检查通过
                 </p>
               </div>
@@ -148,7 +148,7 @@ export const StorageTestConnection = ({
               <Button
                 variant="ghost"
                 onClick={onRetry}
-                className="h-9 rounded-lg text-[10px] font-black tracking-widest text-slate-400 uppercase hover:bg-emerald-100/50"
+                className="h-9 rounded-lg text-[10px] font-semibold text-slate-400 hover:bg-emerald-100/50"
               >
                 重新检查
               </Button>
@@ -169,10 +169,10 @@ export const StorageTestConnection = ({
                   key={i}
                   className="rounded-2xl border border-emerald-100/50 bg-white/60 p-4 transition-all hover:shadow-md"
                 >
-                  <span className="mb-1 block text-[10px] font-black text-emerald-400 uppercase">
+                  <span className="mb-1 block text-[10px] font-semibold text-emerald-400">
                     {info.label}
                   </span>
-                  <span className="text-xs font-black text-slate-900">
+                  <span className="text-xs font-semibold text-slate-900">
                     {info.value}
                   </span>
                 </div>
@@ -183,7 +183,7 @@ export const StorageTestConnection = ({
           <div className="flex items-start gap-3 rounded-2xl border border-emerald-100/30 bg-emerald-50/50 p-4">
             <Info className="mt-0.5 h-4 w-4 text-emerald-500" />
             <div className="space-y-1">
-              <p className="text-[11px] font-black text-emerald-900 uppercase">
+              <p className="text-[11px] font-semibold text-emerald-900">
                 配置启用说明
               </p>
               <p className="text-[11px] leading-relaxed font-medium text-emerald-600/80">

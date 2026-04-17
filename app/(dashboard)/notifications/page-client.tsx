@@ -130,7 +130,7 @@ export function NotificationsPageClient() {
 
         <Card>
           <CardHeader className="border-b border-slate-100">
-            <CardTitle className="text-base font-black text-slate-900">
+            <CardTitle className="text-base font-semibold text-slate-900">
               通知列表
             </CardTitle>
           </CardHeader>
@@ -241,10 +241,10 @@ function SummaryCard({
   return (
     <Card>
       <CardContent className="space-y-2 p-5">
-        <div className="text-xs font-bold tracking-wider text-slate-500 uppercase">
+        <div className="text-xs font-bold text-slate-500">
           {title}
         </div>
-        <div className="text-2xl font-black tracking-tight text-slate-900">
+        <div className="text-2xl font-semibold tracking-tight text-slate-900">
           {value}
         </div>
         <div className="text-xs leading-5 text-slate-500">{description}</div>

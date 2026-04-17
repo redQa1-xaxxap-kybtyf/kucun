@@ -22,12 +22,12 @@ export function TransferModeInfoCard({ order }: { order: SalesOrderDetail }) {
         </div>
         <div className="ml-5 flex-1">
           <div className="flex items-center gap-3">
-            <h3 className="text-sm font-black tracking-widest text-amber-900 uppercase">
+            <h3 className="text-sm font-semibold text-amber-900">
               {SALES_ORDER_TYPE_LABELS.TRANSFER}履约说明
             </h3>
             <Badge
               variant="outline"
-              className="border-amber-300 bg-white text-[10px] font-black text-amber-700"
+              className="border-amber-300 bg-white text-[10px] font-semibold text-amber-700"
             >
               {order.transferMode === 'MIXED'
                 ? TRANSFER_MODE_LABELS.MIXED
@@ -37,7 +37,7 @@ export function TransferModeInfoCard({ order }: { order: SalesOrderDetail }) {
           <div className="mt-3 space-y-2 text-xs font-medium text-amber-800">
             {order.transferMode === 'MIXED' ? (
               <p className="flex items-center gap-2">
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-600 text-[10px] font-black text-white">
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-600 text-[10px] font-semibold text-white">
                   ✓
                 </span>
                 <span>
@@ -47,7 +47,7 @@ export function TransferModeInfoCard({ order }: { order: SalesOrderDetail }) {
               </p>
             ) : (
               <p className="flex items-center gap-2">
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-600 text-[10px] font-black text-white">
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-600 text-[10px] font-semibold text-white">
                   !
                 </span>
                 <span>
@@ -58,10 +58,10 @@ export function TransferModeInfoCard({ order }: { order: SalesOrderDetail }) {
               </p>
             )}
             <div className="ml-6 flex items-center gap-2 text-[11px] text-amber-700">
-              <span className="font-bold tracking-tighter uppercase opacity-70">
+              <span className="font-bold tracking-tighter opacity-70">
                 指定的履约供应商:
               </span>
-              <span className="rounded bg-amber-100/50 px-2 py-0.5 font-black">
+              <span className="rounded bg-amber-100/50 px-2 py-0.5 font-semibold">
                 {order.supplier?.name}
               </span>
             </div>

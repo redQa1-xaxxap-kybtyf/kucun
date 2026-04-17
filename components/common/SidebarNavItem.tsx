@@ -259,7 +259,7 @@ export const SidebarNavItem = React.memo(
               <span
                 className={cn(
                   'flex-1 truncate text-left text-sm',
-                  isActive ? 'font-black' : 'font-bold'
+                  isActive ? 'font-semibold' : 'font-bold'
                 )}
               >
                 {item.title}
@@ -316,7 +316,7 @@ export const SidebarNavItem = React.memo(
                 <span
                   className={cn(
                     'flex-1 truncate text-left text-sm',
-                    isActive || hasActiveChild ? 'font-black' : 'font-bold'
+                    isActive || hasActiveChild ? 'font-semibold' : 'font-bold'
                   )}
                 >
                   {item.title}

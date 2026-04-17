@@ -334,7 +334,7 @@ export function SuppliersPageClient({
                 action={
                   <Button
                     onClick={() => router.push('/suppliers/create')}
-                    className="h-12 rounded-2xl bg-slate-900 px-8 font-black"
+                    className="h-12 rounded-2xl bg-slate-900 px-8 font-semibold"
                   >
                     新增供应商
                   </Button>
@@ -362,7 +362,7 @@ export function SuppliersPageClient({
                         <Building2 className="h-7 w-7" />
                       </div>
                       <div className="space-y-1">
-                        <h3 className="text-xl font-black tracking-tight text-slate-900 transition-colors group-hover:text-amber-600">
+                        <h3 className="text-xl font-semibold tracking-tight text-slate-900 transition-colors group-hover:text-amber-600">
                           {supplier.name}
                         </h3>
                         <div className="flex items-center gap-3 text-xs font-bold text-slate-400">
@@ -371,7 +371,7 @@ export function SuppliersPageClient({
                             建档时间 {formatDate(supplier.createdAt)}
                           </span>
                           <span className="h-1 w-1 rounded-full bg-slate-200" />
-                          <span className="text-xs font-bold tracking-widest text-slate-400 uppercase">
+                          <span className="text-xs font-bold text-slate-400">
                             编号：{supplier.id.slice(-6)}
                           </span>
                         </div>
@@ -397,23 +397,23 @@ export function SuppliersPageClient({
                     {/* Right: Business Insights */}
                     <div className="grid min-w-[240px] grid-cols-2 gap-3">
                       <div className="flex flex-col items-center justify-center rounded-2xl border border-amber-100/50 bg-amber-50/50 px-4 py-3">
-                        <span className="mb-1 text-xs font-black tracking-widest text-amber-600 uppercase">
+                        <span className="mb-1 text-xs font-semibold text-amber-600">
                           合作状态
                         </span>
                         <div className="flex items-center gap-1 text-amber-700">
                           <Truck className="h-3 w-3" />
-                          <span className="text-sm font-black text-amber-900">
+                          <span className="text-sm font-semibold text-amber-900">
                             {formatSupplierStatus(supplier.status)}
                           </span>
                         </div>
                       </div>
                       <div className="flex flex-col items-center justify-center rounded-2xl border border-blue-100/50 bg-blue-50/50 px-4 py-3">
-                        <span className="mb-1 text-xs font-black tracking-widest text-blue-600 uppercase">
+                        <span className="mb-1 text-xs font-semibold text-blue-600">
                           联系资料
                         </span>
                         <div className="flex items-center gap-1 text-blue-700">
                           <TrendingUp className="h-3 w-3" />
-                          <span className="text-sm font-black text-blue-900">
+                          <span className="text-sm font-semibold text-blue-900">
                             {supplier.phone || supplier.address
                               ? '已完善'
                               : '待补充'}
@@ -435,7 +435,7 @@ export function SuppliersPageClient({
                   <div className="flex items-center gap-2">
                     <div
                       className={cn(
-                        'rounded-full px-3 py-1 text-xs font-black tracking-[0.2em] uppercase',
+                        'rounded-full px-3 py-1 text-xs font-semibold tracking-[0.2em]',
                         supplier.status === 'active'
                           ? 'bg-emerald-500 text-white'
                           : 'bg-slate-100 text-slate-500'
@@ -455,10 +455,10 @@ export function SuppliersPageClient({
           <div className="flex items-center justify-center py-10">
             <div className="group flex h-16 items-center gap-6 rounded-3xl border border-white bg-white/60 px-8 py-3 shadow-sm backdrop-blur-xl transition-all hover:bg-white hover:shadow-xl">
               <div className="mr-2 flex items-center gap-1.5 border-r border-slate-100 pr-6">
-                <span className="text-xs font-black tracking-widest text-slate-500 uppercase">
+                <span className="text-xs font-semibold text-slate-500">
                   供应规模
                 </span>
-                <span className="text-sm font-black text-slate-900">
+                <span className="text-sm font-semibold text-slate-900">
                   {pagination.total} 家供应商
                 </span>
               </div>

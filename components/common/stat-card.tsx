@@ -72,12 +72,12 @@ export function StatCard({
     >
       <CardHeader className="flex flex-row items-start justify-between space-y-0 px-5 pt-5 pb-2">
         <div className="space-y-1">
-          <CardTitle className="text-xs font-bold tracking-wider text-slate-500 uppercase">
+          <CardTitle className="text-xs font-bold text-slate-500">
             {title}
           </CardTitle>
           <div
             className={cn(
-              'font-black tracking-tight text-slate-900',
+              'font-semibold tracking-tight text-slate-900',
               size === 'lg' ? 'text-3xl' : 'text-2xl'
             )}
           >

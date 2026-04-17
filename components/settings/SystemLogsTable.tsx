@@ -76,7 +76,7 @@ export const SystemLogsTable = ({
     return (
       <div className="flex flex-col items-center justify-center rounded-[32px] border border-dashed border-slate-200 bg-white/40 py-20 text-center backdrop-blur-md">
         <Loader2 className="mb-4 h-12 w-12 text-slate-200" />
-        <p className="text-sm font-black tracking-widest text-slate-400 uppercase">
+        <p className="text-sm font-semibold text-slate-400">
           当前暂无操作记录
         </p>
       </div>
@@ -98,13 +98,13 @@ export const SystemLogsTable = ({
           >
             {/* 时间轴圆点 */}
             <div className="relative z-10 flex h-20 w-20 flex-shrink-0 flex-col items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-slate-100 transition-all group-hover:scale-110 group-hover:ring-slate-900">
-              <span className="text-xs font-black tracking-tighter text-slate-500 uppercase">
+              <span className="text-xs font-semibold tracking-tighter text-slate-500">
                 {new Date(log.createdAt).toLocaleDateString('zh-CN', {
                   month: 'short',
                   day: 'numeric',
                 })}
               </span>
-              <span className="text-lg font-black tracking-tight text-slate-900">
+              <span className="text-lg font-semibold tracking-tight text-slate-900">
                 {new Date(log.createdAt).toLocaleTimeString('zh-CN', {
                   hour: '2-digit',
                   minute: '2-digit',
@@ -120,7 +120,7 @@ export const SystemLogsTable = ({
                 <div className="flex flex-shrink-0 flex-col gap-2">
                   <Badge
                     variant={LOG_TYPE_CONFIG[log.type].variant}
-                    className="rounded-lg px-2 text-xs font-black tracking-tight uppercase"
+                    className="rounded-lg px-2 text-xs font-semibold tracking-tight"
                   >
                     {LOG_TYPE_CONFIG[log.type].label}
                   </Badge>
@@ -138,7 +138,7 @@ export const SystemLogsTable = ({
 
                 {/* 核心操作描述 */}
                 <div className="min-w-0">
-                  <p className="truncate leading-tight font-black text-slate-900">
+                  <p className="truncate leading-tight font-semibold text-slate-900">
                     {log.action}
                   </p>
                   <p className="mt-1 truncate text-xs font-bold text-slate-400">
@@ -151,7 +151,7 @@ export const SystemLogsTable = ({
                 {/* 用户信息 */}
                 <div className="flex flex-col items-end gap-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-black text-slate-900">
+                    <span className="text-sm font-semibold text-slate-900">
                       {log.user?.name || '系统'}
                     </span>
                     <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-slate-100">
@@ -185,7 +185,7 @@ export const SystemLogsTable = ({
 
       {/* 分页控制 (v3 PRO 胶囊风格) */}
       <div className="flex items-center justify-between rounded-3xl bg-white/40 p-4 backdrop-blur-md">
-        <div className="ml-4 text-xs font-black tracking-widest text-slate-500 uppercase">
+        <div className="ml-4 text-xs font-semibold text-slate-500">
           记录：
           <span className="text-slate-900">
             {(page - 1) * limit + 1} - {Math.min(page * limit, total)}
@@ -220,7 +220,7 @@ export const SystemLogsTable = ({
                   size="sm"
                   onClick={() => onPageChange(pageNum)}
                   className={cn(
-                    'h-10 w-10 rounded-xl font-black transition-all',
+                    'h-10 w-10 rounded-xl font-semibold transition-all',
                     pageNum === page
                       ? 'bg-slate-900 text-white shadow-lg'
                       : 'text-slate-400 hover:bg-slate-100'

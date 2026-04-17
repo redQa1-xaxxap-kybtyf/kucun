@@ -394,7 +394,7 @@ export default function SelectorHelperPage() {
                 <ArrowLeft className="h-6 w-6" />
               </Button>
               <div>
-                <h1 className="text-2xl font-black tracking-tight text-slate-900">
+                <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
                   网页定位规则助手
                 </h1>
                 <p className="mt-1 text-sm font-bold text-slate-500">
@@ -418,18 +418,18 @@ export default function SelectorHelperPage() {
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
                   <Sparkles className="h-5 w-5" />
                 </div>
-                <h3 className="text-lg font-black tracking-tight text-slate-900">
+                <h3 className="text-lg font-semibold tracking-tight text-slate-900">
                   步骤 1: 粘贴网页代码
                 </h3>
               </div>
-              <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
+              <span className="text-[10px] font-semibold text-slate-400">
                 步骤 01 / 输入
               </span>
             </div>
 
             <div className="space-y-6">
               <div className="space-y-3">
-                <Label className="text-xs font-black tracking-widest text-slate-500 uppercase">
+                <Label className="text-xs font-semibold text-slate-500">
                   解析目标类型
                 </Label>
                 <div className="flex flex-wrap gap-2">
@@ -461,7 +461,7 @@ export default function SelectorHelperPage() {
                 <div className="flex items-center justify-between">
                   <Label
                     htmlFor="htmlInput"
-                    className="text-xs font-black tracking-widest text-slate-500 uppercase"
+                    className="text-xs font-semibold text-slate-500"
                   >
                     网页代码片段
                   </Label>
@@ -487,7 +487,7 @@ export default function SelectorHelperPage() {
               <Button
                 onClick={analyzeHTML}
                 disabled={isAnalyzing || !htmlInput.trim()}
-                className="h-14 w-full rounded-2xl bg-blue-600 font-black tracking-widest shadow-xl shadow-blue-600/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:bg-slate-200"
+                className="h-14 w-full rounded-2xl bg-blue-600 font-semibold shadow-xl shadow-blue-600/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:bg-slate-200"
               >
                 {isAnalyzing ? (
                   <div className="flex items-center gap-2">
@@ -510,7 +510,7 @@ export default function SelectorHelperPage() {
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
                   <div className="h-5 w-5">⭐</div>
                 </div>
-                <h3 className="text-lg font-black tracking-tight text-slate-900">
+                <h3 className="text-lg font-semibold tracking-tight text-slate-900">
                   步骤 2: 查看识别结果
                 </h3>
               </div>
@@ -520,7 +520,7 @@ export default function SelectorHelperPage() {
                     variant="outline"
                     size="sm"
                     onClick={copyAsJSON}
-                    className="h-9 rounded-xl border-slate-100 bg-white font-black text-slate-600 shadow-sm transition-all hover:bg-slate-50 active:scale-95"
+                    className="h-9 rounded-xl border-slate-100 bg-white font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-50 active:scale-95"
                   >
                     <Copy className="mr-2 h-4 w-4" />
                     配置格式
@@ -529,7 +529,7 @@ export default function SelectorHelperPage() {
                     variant="outline"
                     size="sm"
                     onClick={copyAllSelectors}
-                    className="h-9 rounded-xl border-slate-100 bg-white font-black text-slate-600 shadow-sm transition-all hover:bg-slate-50 active:scale-95"
+                    className="h-9 rounded-xl border-slate-100 bg-white font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-50 active:scale-95"
                   >
                     <Copy className="mr-2 h-4 w-4" />
                     全选
@@ -543,7 +543,7 @@ export default function SelectorHelperPage() {
                   <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-lg">
                     <Globe className="h-10 w-10 text-slate-200" />
                   </div>
-                  <h4 className="text-sm font-black text-slate-400">
+                  <h4 className="text-sm font-semibold text-slate-400">
                     暂无分析数据
                   </h4>
                   <p className="mt-2 max-w-[200px] text-xs font-bold text-slate-400">
@@ -561,10 +561,10 @@ export default function SelectorHelperPage() {
                       <div className="mb-4 flex items-center justify-between border-b border-slate-50 pb-4">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-black text-slate-900 transition-colors group-hover:text-blue-600">
+                            <span className="text-sm font-semibold text-slate-900 transition-colors group-hover:text-blue-600">
                               {field.label}
                             </span>
-                            <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-black text-slate-500">
+                            <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
                               {field.options.length} 种方案
                             </span>
                           </div>
@@ -602,7 +602,7 @@ export default function SelectorHelperPage() {
                                   )}
                                   <span
                                     className={cn(
-                                      'rounded-lg px-2 py-1 text-[10px] font-black tracking-widest outline outline-1',
+                                      'rounded-lg px-2 py-1 text-[10px] font-semibold outline outline-1',
                                       option.type === 'xpath'
                                         ? 'bg-purple-50 text-purple-600 outline-purple-100'
                                         : 'bg-emerald-50 text-emerald-600 outline-emerald-100'
@@ -612,7 +612,7 @@ export default function SelectorHelperPage() {
                                   </span>
                                   <div
                                     className={cn(
-                                      'flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-black tracking-widest uppercase',
+                                      'flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-semibold',
                                       option.confidence === 'high'
                                         ? 'text-emerald-600'
                                         : option.confidence === 'medium'
@@ -678,10 +678,10 @@ export default function SelectorHelperPage() {
         {/* 使用说明 */}
         <div className="rounded-[32px] border border-white bg-slate-900 p-8 shadow-2xl transition-transform hover:scale-[1.01]">
           <div className="mb-8 border-b border-slate-800 pb-6 text-center">
-            <h2 className="mb-2 text-xl font-black tracking-tight text-white">
+            <h2 className="mb-2 text-xl font-semibold tracking-tight text-white">
               配置使用指南
             </h2>
-            <p className="text-center text-sm font-bold tracking-widest text-slate-500 uppercase">
+            <p className="text-center text-sm font-bold text-slate-500">
               接入流程
             </p>
           </div>
@@ -715,13 +715,13 @@ export default function SelectorHelperPage() {
                 >
                   <div
                     className={cn(
-                      'mb-4 inline-flex items-center justify-center rounded-xl px-3 py-1 text-xs font-black text-white shadow-lg',
+                      'mb-4 inline-flex items-center justify-center rounded-xl px-3 py-1 text-xs font-semibold text-white shadow-lg',
                       step.color
                     )}
                   >
                     STEP {step.num}
                   </div>
-                  <h3 className="mb-2 text-sm font-black text-white">
+                  <h3 className="mb-2 text-sm font-semibold text-white">
                     {step.title}
                   </h3>
                   <p className="text-xs leading-relaxed font-bold text-slate-500">
@@ -734,13 +734,13 @@ export default function SelectorHelperPage() {
             <div className="grid gap-6 md:grid-cols-2">
               {/* 选择器类型说明 */}
               <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-6">
-                <h3 className="mb-4 flex items-center gap-2 text-sm font-black text-amber-500">
+                <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-amber-500">
                   <div className="h-1.5 w-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
                   规则选择建议
                 </h3>
                 <div className="space-y-4">
                   <div className="space-y-1">
-                    <span className="text-[11px] font-black tracking-widest text-amber-600/80 uppercase">
+                    <span className="text-[11px] font-semibold text-amber-600/80">
                       XPath 规则（推荐）
                     </span>
                     <p className="text-xs leading-relaxed font-bold text-amber-100/80">
@@ -749,7 +749,7 @@ export default function SelectorHelperPage() {
                     </p>
                   </div>
                   <div className="space-y-1 border-t border-amber-500/10 pt-4">
-                    <span className="text-[11px] font-black tracking-widest text-emerald-600/80 uppercase">
+                    <span className="text-[11px] font-semibold text-emerald-600/80">
                       CSS 选择器
                     </span>
                     <p className="text-xs leading-relaxed font-bold text-emerald-100/80">
@@ -761,7 +761,7 @@ export default function SelectorHelperPage() {
 
               {/* 实际案例 */}
               <div className="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-6">
-                <h3 className="mb-4 flex items-center gap-2 text-sm font-black text-blue-500">
+                <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-blue-500">
                   <div className="h-1.5 w-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
                   示例预览
                 </h3>

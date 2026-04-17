@@ -145,12 +145,12 @@ function CustomerHeader({
           </div>
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-4xl font-black tracking-tighter text-slate-900">
+              <h1 className="text-4xl font-semibold tracking-tighter text-slate-900">
                 {customer.name}
               </h1>
               <div
                 className={cn(
-                  'rounded-full px-4 py-1.5 text-xs font-bold tracking-wider uppercase',
+                  'rounded-full px-4 py-1.5 text-xs font-bold',
                   customer.status === 'active'
                     ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200'
                     : 'bg-slate-100 text-slate-500'
@@ -162,7 +162,7 @@ function CustomerHeader({
 
             <div className="flex flex-wrap items-center gap-6">
               <div className="flex items-center gap-2 text-sm font-bold text-slate-400">
-                <span className="text-xs tracking-wider text-slate-500 uppercase">
+                <span className="text-xs text-slate-500">
                   客户编号
                 </span>
                 <span className="font-bold text-slate-600">
@@ -171,7 +171,7 @@ function CustomerHeader({
               </div>
               <span className="h-1 w-1 rounded-full bg-slate-200" />
               <div className="flex items-center gap-2 text-sm font-bold text-slate-400">
-                <span className="text-xs tracking-wider text-slate-500 uppercase">
+                <span className="text-xs text-slate-500">
                   建档时间
                 </span>
                 <span className="font-bold text-slate-600">
@@ -187,14 +187,14 @@ function CustomerHeader({
             variant="ghost"
             size="lg"
             onClick={onEdit}
-            className="h-14 rounded-2xl border-none bg-white px-8 font-black text-slate-600 shadow-sm transition-all hover:bg-slate-900 hover:text-white active:scale-95"
+            className="h-14 rounded-2xl border-none bg-white px-8 font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-900 hover:text-white active:scale-95"
           >
             <Edit className="mr-2 h-5 w-5" />
             编辑资料
           </Button>
           <Button
             size="lg"
-            className="h-14 rounded-2xl bg-slate-900 px-10 font-black text-white shadow-xl transition-all hover:shadow-slate-200 active:scale-95"
+            className="h-14 rounded-2xl bg-slate-900 px-10 font-semibold text-white shadow-xl transition-all hover:shadow-slate-200 active:scale-95"
             onClick={() =>
               router.push(
                 withReturnTo(
@@ -284,7 +284,7 @@ function CustomerDetailContent({ customer }: { customer: CustomerDetail }) {
 
         <div className="rounded-[2.5rem] border border-white bg-white/40 p-1 shadow-sm backdrop-blur-md">
           <div className="p-8 pb-4">
-            <h2 className="text-2xl font-black tracking-tight text-slate-900">
+            <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
               业务往来与近期记录
             </h2>
             <p className="mt-1 text-sm font-bold text-slate-400">

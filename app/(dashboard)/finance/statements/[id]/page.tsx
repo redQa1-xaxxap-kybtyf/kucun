@@ -271,12 +271,12 @@ export default function StatementDetailPage() {
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100/80 text-blue-600 transition-transform group-hover:scale-110">
                     <FileText className="h-4 w-4" />
                   </div>
-                  <span className="text-xs font-black tracking-widest text-slate-400 uppercase">
+                  <span className="text-xs font-semibold text-slate-400">
                     成交笔数
                   </span>
                 </div>
                 <div className="mt-3 flex items-baseline gap-1">
-                  <span className="text-2xl font-black tracking-tight text-slate-900">
+                  <span className="text-2xl font-semibold tracking-tight text-slate-900">
                     {statement.totalOrders}
                   </span>
                   <span className="text-[10px] font-bold text-slate-400">
@@ -292,12 +292,12 @@ export default function StatementDetailPage() {
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-100/80 text-purple-600 transition-transform group-hover:scale-110">
                     <ChineseYuan className="h-4 w-4" />
                   </div>
-                  <span className="text-xs font-black tracking-widest text-slate-400 uppercase">
+                  <span className="text-xs font-semibold text-slate-400">
                     往来总额
                   </span>
                 </div>
                 <div className="mt-3 flex items-baseline gap-1">
-                  <span className="text-2xl font-black tracking-tight text-slate-900">
+                  <span className="text-2xl font-semibold tracking-tight text-slate-900">
                     {formatCurrency(Math.abs(statement.totalAmount)).replace(
                       '¥',
                       ''
@@ -316,12 +316,12 @@ export default function StatementDetailPage() {
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100/80 text-emerald-600 transition-transform group-hover:scale-110">
                     <TrendingUp className="h-4 w-4" />
                   </div>
-                  <span className="text-xs font-black tracking-widest text-slate-400 uppercase">
+                  <span className="text-xs font-semibold text-slate-400">
                     已结清额
                   </span>
                 </div>
                 <div className="mt-3 flex items-baseline gap-1">
-                  <span className="text-2xl font-black tracking-tight text-slate-900">
+                  <span className="text-2xl font-semibold tracking-tight text-slate-900">
                     {formatCurrency(Math.abs(statement.paidAmount)).replace(
                       '¥',
                       ''
@@ -352,13 +352,13 @@ export default function StatementDetailPage() {
                   >
                     <TrendingDown className="h-4 w-4" />
                   </div>
-                  <span className="text-xs font-black tracking-widest text-slate-400 uppercase">
+                  <span className="text-xs font-semibold text-slate-400">
                     {statement.currentBalance > 0 ? '应收余额' : '应付余额'}
                   </span>
                 </div>
                 <div className="mt-3 flex items-baseline gap-1">
                   <span
-                    className={`text-2xl font-black tracking-tight ${
+                    className={`text-2xl font-semibold tracking-tight ${
                       statement.currentBalance > 0
                         ? 'text-orange-600'
                         : 'text-rose-600'
@@ -413,7 +413,7 @@ export default function StatementDetailPage() {
                   size="sm"
                   onClick={() => refetch()}
                   disabled={isFetching}
-                  className="h-9 px-4 text-xs font-bold tracking-widest text-slate-500 uppercase hover:bg-white hover:text-blue-600"
+                  className="h-9 px-4 text-xs font-bold text-slate-500 hover:bg-white hover:text-blue-600"
                 >
                   <RefreshCw
                     className={`mr-2 h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`}

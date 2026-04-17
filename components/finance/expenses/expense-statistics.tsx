@@ -82,20 +82,20 @@ export function ExpenseStatistics({ params }: ExpenseStatisticsProps) {
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
               <ChineseYuan className="h-5 w-5" />
             </div>
-            <span className="text-sm font-black tracking-widest text-slate-400 uppercase">
+            <span className="text-sm font-semibold text-slate-400">
               全额累计支出
             </span>
           </div>
           <div className="flex items-baseline gap-1">
-            <span className="text-3xl font-black tracking-tighter text-slate-900">
+            <span className="text-3xl font-semibold tracking-tighter text-slate-900">
               {formatCurrency(statistics.totalAmount)}
             </span>
           </div>
           <div className="mt-4 flex items-center justify-between border-t border-slate-50 pt-4">
-            <div className="text-[11px] font-bold tracking-widest text-slate-400 uppercase">
+            <div className="text-[11px] font-bold text-slate-400">
               当前时段累计
             </div>
-            <div className="rounded bg-blue-50 px-2 py-0.5 text-[11px] font-black text-blue-600 uppercase">
+            <div className="rounded bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-600">
               {params.startDate} - {params.endDate}
             </div>
           </div>
@@ -112,18 +112,18 @@ export function ExpenseStatistics({ params }: ExpenseStatisticsProps) {
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
               <FileText className="h-5 w-5" />
             </div>
-            <span className="text-sm font-black tracking-widest text-slate-400 uppercase">
+            <span className="text-sm font-semibold text-slate-400">
               账目条数统计
             </span>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-black tracking-tighter text-slate-900">
+            <span className="text-3xl font-semibold tracking-tighter text-slate-900">
               {statistics.totalCount}
             </span>
             <span className="text-sm font-bold text-slate-400">项流水记录</span>
           </div>
           <div className="mt-4 flex items-center justify-between border-t border-slate-50 pt-4">
-            <div className="text-[11px] font-bold tracking-widest text-slate-400 uppercase">
+            <div className="text-[11px] font-bold text-slate-400">
               数据实时监控中
             </div>
             <div className="flex h-3 items-center gap-1">
@@ -145,17 +145,17 @@ export function ExpenseStatistics({ params }: ExpenseStatisticsProps) {
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
               <TrendingUp className="h-5 w-5" />
             </div>
-            <span className="text-sm font-black tracking-widest text-slate-400 uppercase">
+            <span className="text-sm font-semibold text-slate-400">
               单笔均值开支
             </span>
           </div>
           <div className="flex items-baseline gap-1">
-            <span className="text-3xl font-black tracking-tighter text-amber-600">
+            <span className="text-3xl font-semibold tracking-tighter text-amber-600">
               {formatCurrency(statistics.averageAmount)}
             </span>
           </div>
           <div className="mt-4 flex items-center justify-between border-t border-slate-50 pt-4">
-            <div className="text-[11px] font-bold tracking-widest text-slate-400 uppercase">
+            <div className="text-[11px] font-bold text-slate-400">
               单笔平均财务压力
             </div>
             <div className="h-1.5 w-16 overflow-hidden rounded-full bg-slate-100">

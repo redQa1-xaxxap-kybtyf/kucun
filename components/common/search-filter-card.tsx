@@ -601,7 +601,7 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
                       className={cn(
                         'h-8 w-full justify-center gap-1.5 self-end transition-all md:w-auto',
                         isPro
-                          ? 'font-black text-slate-400 hover:bg-white/50 hover:text-slate-900'
+                          ? 'font-semibold text-slate-400 hover:bg-white/50 hover:text-slate-900'
                           : 'hover:border-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-light))]'
                       )}
                     >

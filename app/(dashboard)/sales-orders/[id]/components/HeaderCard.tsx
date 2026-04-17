@@ -161,11 +161,11 @@ function SalesOrderMeta({ order }: SalesOrderMetaProps) {
         <Truck className="h-7 w-7" />
       </div>
       <div className="min-w-0">
-        <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
           销售订单
         </h1>
         <div className="mt-1.5 flex flex-wrap items-center gap-2.5">
-          <span className="text-sm font-bold tracking-wider text-slate-500 uppercase">
+          <span className="text-sm font-bold text-slate-500">
             {order.orderNumber}
           </span>
           <div className="h-3.5 w-px bg-slate-200" />

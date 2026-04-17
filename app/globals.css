@@ -16,6 +16,17 @@
 }
 
 @theme {
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', 'Source Han Sans CN',
+    'Noto Sans CJK SC', 'WenQuanYi Micro Hei', sans-serif;
+  --font-mono:
+    ui-monospace, 'SF Mono', Menlo, Consolas, 'Roboto Mono',
+    'PingFang SC', 'Microsoft YaHei', monospace;
+  --font-number:
+    ui-monospace, 'SF Mono', 'Roboto Mono', Menlo, Consolas,
+    'PingFang SC', 'Microsoft YaHei', monospace;
+
   --color-border: hsl(var(--color-border-secondary));
   --color-input: hsl(var(--color-border-primary));
   --color-ring: hsl(var(--color-focus));
@@ -99,6 +110,19 @@
 
 @layer base {
   :root {
+    /* Font family stacks — see @theme block above. Mirrored here so that
+       non-Tailwind rules (e.g. body, print styles) can reference var(--font-*). */
+    --font-sans:
+      -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+      'Hiragino Sans GB', 'Microsoft YaHei', 'Source Han Sans CN',
+      'Noto Sans CJK SC', 'WenQuanYi Micro Hei', sans-serif;
+    --font-mono:
+      ui-monospace, 'SF Mono', Menlo, Consolas, 'Roboto Mono',
+      'PingFang SC', 'Microsoft YaHei', monospace;
+    --font-number:
+      ui-monospace, 'SF Mono', 'Roboto Mono', Menlo, Consolas,
+      'PingFang SC', 'Microsoft YaHei', monospace;
+
     /* Core palette */
     --primary-500: 215 100% 54.3%;
     --primary-400: 213 100% 62.5%;
@@ -296,7 +320,12 @@
   body {
     background-color: hsl(var(--color-bg-primary));
     color: hsl(var(--color-text-primary));
+    font-family: var(--font-sans);
     font-feature-settings: 'liga', 'kern';
+    /* 全局启用等宽数字，避免列表/表格中金额/数量小数点错位 */
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
@@ -460,16 +489,29 @@
 
 @layer utilities {
   /* 语义化排版工具类，统一表格和卡片的文字层级 */
+  /* 中文友好：不使用 uppercase/tracking-widest（对汉字无效且破坏节奏） */
   .text-table-header {
     font-size: 0.75rem; /* Tailwind text-xs */
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    font-weight: 500;
+    letter-spacing: 0;
     color: hsl(var(--color-text-secondary));
   }
 
   .text-table-cell {
     font-size: 0.75rem; /* Tailwind text-xs */
+    color: hsl(var(--color-text-primary));
+  }
+
+  .text-page-title {
+    font-size: 1.125rem; /* 18px */
+    font-weight: 600;
+    line-height: 1.5;
+    color: hsl(var(--color-text-primary));
+  }
+
+  .text-section-title {
+    font-size: 0.875rem; /* 14px */
+    font-weight: 600;
     color: hsl(var(--color-text-primary));
   }
 
@@ -482,6 +524,12 @@
   .text-card-subtitle {
     font-size: 0.875rem; /* Tailwind text-sm */
     color: hsl(var(--color-text-secondary));
+  }
+
+  .text-caption {
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: hsl(var(--color-text-tertiary));
   }
 
   /* 统一卡片阴影工具类，替代 inline style boxShadow 写法 */
@@ -500,5 +548,30 @@
 
   .fade-delay {
     animation-delay: var(--fade-delay, 0ms);
+  }
+
+  /* 等宽数字 — 应用于金额/数量/SKU/单号等需对齐的场景 */
+  .num-tabular {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+  }
+
+  /* 金额列：等宽数字字体 + tabular-nums（右对齐由列本身的 text-right 负责） */
+  .num-money {
+    font-family: var(--font-number);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+  }
+
+  /* 数量列：纯 tabular-nums，不强制数字字体（避免中文"件/箱"错位） */
+  .num-count {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+  }
+
+  /* 单号/SKU：等宽 + tabular，英数混排 */
+  .num-code {
+    font-family: var(--font-number);
+    font-variant-numeric: tabular-nums;
   }
 }

@@ -255,17 +255,17 @@ export function CustomerStatementsPageClient({
           <div className="group relative overflow-hidden rounded-[2rem] border border-white bg-white/60 p-8 text-emerald-600 backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:bg-white hover:shadow-2xl">
             <div className="relative z-10 space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold tracking-wider text-slate-500 uppercase">
+                <h3 className="text-xs font-bold text-slate-500">
                   应收账款余额
                 </h3>
                 <TrendingUp className="h-5 w-5" />
               </div>
-              <div className="text-3xl font-black tracking-tighter text-slate-900">
+              <div className="text-3xl font-semibold tracking-tighter text-slate-900">
                 {statisticsLoading
                   ? '---'
                   : formatCurrency(totalReceivableBalance)}
               </div>
-              <p className="text-xs font-medium tracking-normal text-slate-500 uppercase">
+              <p className="text-xs font-medium tracking-normal text-slate-500">
                 待回收货款总额
               </p>
             </div>
@@ -275,17 +275,17 @@ export function CustomerStatementsPageClient({
           <div className="group relative overflow-hidden rounded-[2rem] border border-white bg-white/60 p-8 text-rose-600 backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:bg-white hover:shadow-2xl">
             <div className="relative z-10 space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold tracking-wider text-slate-500 uppercase">
+                <h3 className="text-xs font-bold text-slate-500">
                   应付账款余额
                 </h3>
                 <TrendingDown className="h-5 w-5" />
               </div>
-              <div className="text-3xl font-black tracking-tighter text-slate-900">
+              <div className="text-3xl font-semibold tracking-tighter text-slate-900">
                 {statisticsLoading
                   ? '---'
                   : formatCurrency(totalPayableBalance)}
               </div>
-              <p className="text-xs font-medium tracking-normal text-slate-500 uppercase">
+              <p className="text-xs font-medium tracking-normal text-slate-500">
                 待支付货款总额
               </p>
             </div>
@@ -295,17 +295,17 @@ export function CustomerStatementsPageClient({
           <div className="group relative overflow-hidden rounded-[2rem] border border-white bg-white/60 p-8 text-amber-600 backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:bg-white hover:shadow-2xl">
             <div className="relative z-10 space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold tracking-wider text-slate-500 uppercase">
+                <h3 className="text-xs font-bold text-slate-500">
                   总应退金额
                 </h3>
                 <History className="h-5 w-5" />
               </div>
-              <div className="text-3xl font-black tracking-tighter text-slate-900">
+              <div className="text-3xl font-semibold tracking-tighter text-slate-900">
                 {statisticsLoading
                   ? '---'
                   : formatCurrency(totalPendingRefundBalance)}
               </div>
-              <div className="flex items-center gap-2 text-xs font-medium tracking-normal text-slate-500 uppercase">
+              <div className="flex items-center gap-2 text-xs font-medium tracking-normal text-slate-500">
                 已处理退款 {formatCurrency(totalRefundPaidAmount)}
               </div>
             </div>
@@ -315,15 +315,15 @@ export function CustomerStatementsPageClient({
           <div className="group relative overflow-hidden rounded-[2rem] border border-white bg-white/60 p-8 text-slate-900 backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:bg-white hover:shadow-2xl">
             <div className="relative z-10 space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold tracking-wider text-slate-500 uppercase">
+                <h3 className="text-xs font-bold text-slate-500">
                   往来净额
                 </h3>
                 <Wallet className="h-5 w-5 text-slate-400" />
               </div>
-              <div className="text-3xl font-black tracking-tighter text-slate-900">
+              <div className="text-3xl font-semibold tracking-tighter text-slate-900">
                 {statisticsLoading ? '---' : formatCurrency(totalNetBalance)}
               </div>
-              <p className="text-xs font-medium tracking-normal text-slate-500 uppercase">
+              <p className="text-xs font-medium tracking-normal text-slate-500">
                 应收减应付结余
               </p>
             </div>
@@ -388,7 +388,7 @@ export function CustomerStatementsPageClient({
                           <User className="h-8 w-8" />
                         </div>
                         <div className="space-y-1.5">
-                          <h3 className="text-xl font-black tracking-tight text-slate-900 transition-colors group-hover:text-blue-600">
+                          <h3 className="text-xl font-semibold tracking-tight text-slate-900 transition-colors group-hover:text-blue-600">
                             {statement.customerName}
                           </h3>
                           <div className="flex items-center gap-3">
@@ -396,7 +396,7 @@ export function CustomerStatementsPageClient({
                               <Wallet className="h-3 w-3" />
                               {statement.customerPhone || '未留联系方式'}
                             </div>
-                            <span className="text-xs font-bold tracking-normal text-slate-400 uppercase">
+                            <span className="text-xs font-bold tracking-normal text-slate-400">
                               客户编号: {statement.customerId.slice(-6)}
                             </span>
                           </div>
@@ -406,32 +406,32 @@ export function CustomerStatementsPageClient({
                       {/* Middle: Financial Insight Grid */}
                       <div className="grid flex-1 grid-cols-2 gap-6 border-slate-100 lg:border-x lg:px-8 xl:grid-cols-4">
                         <div className="space-y-1">
-                          <span className="text-xs font-bold tracking-wider text-slate-500 uppercase">
+                          <span className="text-xs font-bold text-slate-500">
                             应收金额
                           </span>
-                          <p className="text-lg font-black text-emerald-600">
+                          <p className="text-lg font-semibold text-emerald-600">
                             {formatCurrency(
                               statement.summary.receivables.receivableBalance
                             )}
                           </p>
                         </div>
                         <div className="space-y-1">
-                          <span className="text-xs font-bold tracking-wider text-slate-500 uppercase">
+                          <span className="text-xs font-bold text-slate-500">
                             应付金额
                           </span>
-                          <p className="text-lg font-black text-rose-600">
+                          <p className="text-lg font-semibold text-rose-600">
                             {formatCurrency(
                               statement.summary.payables.payableBalance
                             )}
                           </p>
                         </div>
                         <div className="space-y-1">
-                          <span className="text-xs font-bold tracking-wider text-slate-500 uppercase">
+                          <span className="text-xs font-bold text-slate-500">
                             往来净额
                           </span>
                           <div
                             className={cn(
-                              'text-lg font-black',
+                              'text-lg font-semibold',
                               netBalance > 0
                                 ? 'text-emerald-600'
                                 : netBalance < 0
@@ -443,12 +443,12 @@ export function CustomerStatementsPageClient({
                           </div>
                         </div>
                         <div className="space-y-1">
-                          <span className="text-xs font-bold tracking-wider text-slate-500 uppercase">
+                          <span className="text-xs font-bold text-slate-500">
                             待退款
                           </span>
                           <p
                             className={cn(
-                              'text-lg font-black',
+                              'text-lg font-semibold',
                               refundMetrics.pendingRefundAmount > 0
                                 ? 'text-amber-600'
                                 : 'text-slate-300'
@@ -466,7 +466,7 @@ export function CustomerStatementsPageClient({
                             <span className="font-bold text-slate-500 transition-colors group-hover:text-slate-400">
                               净销售额
                             </span>
-                            <span className="font-black text-slate-700 transition-colors group-hover:text-white">
+                            <span className="font-semibold text-slate-700 transition-colors group-hover:text-white">
                               {formatCurrency(receivableOverview.netSales)}
                             </span>
                           </div>
@@ -474,7 +474,7 @@ export function CustomerStatementsPageClient({
                             <span className="font-bold text-slate-500 transition-colors group-hover:text-slate-400">
                               净收款
                             </span>
-                            <span className="font-black text-slate-700 transition-colors group-hover:text-white">
+                            <span className="font-semibold text-slate-700 transition-colors group-hover:text-white">
                               {formatCurrency(receivableOverview.netReceipts)}
                             </span>
                           </div>
@@ -493,7 +493,7 @@ export function CustomerStatementsPageClient({
                     {/* Footer: Metadata & Audit Indicators */}
                     <div className="mt-8 flex items-center justify-between border-t border-slate-50 pt-5">
                       <div className="flex items-center gap-6">
-                        <div className="flex items-center gap-2 text-xs font-bold tracking-wider text-slate-500 uppercase">
+                        <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
                           <History className="h-3.5 w-3.5 text-slate-400" />
                           最后交易时间{' '}
                           <span className="ml-1 text-slate-900">
@@ -502,7 +502,7 @@ export function CustomerStatementsPageClient({
                               : '--'}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 text-xs font-bold tracking-wider text-slate-500 uppercase">
+                        <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
                           <ArrowUpRight className="h-3.5 w-3.5 text-slate-400" />
                           交易笔数{' '}
                           <span className="ml-1 text-blue-600">
@@ -512,7 +512,7 @@ export function CustomerStatementsPageClient({
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold tracking-wider text-slate-400 uppercase">
+                        <span className="text-xs font-bold text-slate-400">
                           数据已更新
                         </span>
                         <div className="flex h-3 w-3 items-center justify-center rounded-sm bg-emerald-500/20">
@@ -530,7 +530,7 @@ export function CustomerStatementsPageClient({
         {/* 分页 */}
         {pagination && pagination.totalPages > 1 && (
           <div className="flex flex-col items-center justify-between gap-6 border-t border-slate-100 pt-8 sm:flex-row">
-            <div className="text-xs font-bold tracking-wider text-slate-500 uppercase">
+            <div className="text-xs font-bold text-slate-500">
               第 <span className="text-slate-900">{pagination.page}</span> 页 /
               共 {pagination.totalPages} 页 — {pagination.total} 条记录
             </div>
@@ -540,7 +540,7 @@ export function CustomerStatementsPageClient({
                 size="lg"
                 disabled={pagination.page === 1}
                 onClick={() => handlePageChange(pagination.page - 1)}
-                className="h-12 rounded-xl border-none bg-white font-black text-slate-900 shadow-sm transition-all hover:bg-slate-900 hover:text-white disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-slate-900"
+                className="h-12 rounded-xl border-none bg-white font-semibold text-slate-900 shadow-sm transition-all hover:bg-slate-900 hover:text-white disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-slate-900"
               >
                 上一页
               </Button>
@@ -549,7 +549,7 @@ export function CustomerStatementsPageClient({
                 size="lg"
                 disabled={pagination.page === pagination.totalPages}
                 onClick={() => handlePageChange(pagination.page + 1)}
-                className="h-12 rounded-xl border-none bg-white font-black text-slate-900 shadow-sm transition-all hover:bg-slate-900 hover:text-white disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-slate-900"
+                className="h-12 rounded-xl border-none bg-white font-semibold text-slate-900 shadow-sm transition-all hover:bg-slate-900 hover:text-white disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-slate-900"
               >
                 下一页
               </Button>

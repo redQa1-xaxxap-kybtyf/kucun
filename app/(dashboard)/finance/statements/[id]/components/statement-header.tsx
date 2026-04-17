@@ -53,7 +53,7 @@ export function StatementHeader({
             </div>
             <div className="space-y-1.5">
               <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+                <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
                   往来对账明细
                 </h1>
                 <Badge className="border-blue-100 bg-blue-50 text-blue-600 hover:bg-blue-100">
@@ -76,7 +76,7 @@ export function StatementHeader({
                 <div className="flex items-center gap-1.5 text-sm">
                   <span className="font-medium">账面余额：</span>
                   <span
-                    className={`font-black tracking-wider ${
+                    className={`font-semibold ${
                       currentBalance > 0
                         ? 'text-orange-600'
                         : currentBalance < 0

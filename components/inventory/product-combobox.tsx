@@ -188,7 +188,7 @@ export function ProductCombobox({
                         />
                         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-black text-slate-900">
+                            <span className="text-sm font-semibold text-slate-900">
                               {product.code}
                             </span>
                             <span className="text-xs font-bold text-slate-400">

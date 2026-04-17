@@ -296,7 +296,7 @@ export function BasicSettingsForm() {
               render={({ field }) => (
                 <FormItem className="relative flex h-[130px] flex-col justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md">
                   <div className="space-y-1">
-                    <FormLabel className="text-sm font-black text-slate-900">
+                    <FormLabel className="text-sm font-semibold text-slate-900">
                       系统显示名称 *
                     </FormLabel>
                     <p className="text-xs font-medium text-slate-500">
@@ -321,7 +321,7 @@ export function BasicSettingsForm() {
               render={({ field }) => (
                 <FormItem className="relative flex h-[130px] flex-col justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md">
                   <div className="space-y-1">
-                    <FormLabel className="text-sm font-black text-slate-900">
+                    <FormLabel className="text-sm font-semibold text-slate-900">
                       系统默认语言
                     </FormLabel>
                     <p className="text-xs font-medium text-slate-500">
@@ -358,7 +358,7 @@ export function BasicSettingsForm() {
             render={({ field }) => (
               <FormItem className="relative flex flex-col gap-4 rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md">
                 <div className="space-y-1">
-                  <FormLabel className="text-sm font-black text-slate-900">
+                  <FormLabel className="text-sm font-semibold text-slate-900">
                     系统全局描述 / 标语
                   </FormLabel>
                   <p className="text-xs font-medium text-slate-500">
@@ -390,7 +390,7 @@ export function BasicSettingsForm() {
               render={({ field }) => (
                 <FormItem className="relative flex h-[130px] flex-col justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md">
                   <div className="space-y-1">
-                    <FormLabel className="flex items-center gap-2 text-sm font-black text-slate-900">
+                    <FormLabel className="flex items-center gap-2 text-sm font-semibold text-slate-900">
                       <RefreshCw className="h-4 w-4 text-blue-500" />
                       低库存全局预警值
                     </FormLabel>
@@ -402,7 +402,7 @@ export function BasicSettingsForm() {
                     <div className="relative mt-2 w-full max-w-[180px]">
                       <Input
                         type="number"
-                        className="h-11 border-slate-100 bg-slate-50/50 px-4 font-mono text-lg font-black text-slate-900 focus:bg-white focus:ring-blue-500"
+                        className="h-11 border-slate-100 bg-slate-50/50 px-4 font-mono text-lg font-semibold text-slate-900 focus:bg-white focus:ring-blue-500"
                         {...field}
                         onChange={e => {
                           const value = e.target.value;
@@ -424,7 +424,7 @@ export function BasicSettingsForm() {
               render={({ field }) => (
                 <FormItem className="flex h-[130px] flex-row items-center justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md">
                   <div className="space-y-1">
-                    <FormLabel className="text-sm font-black text-slate-900">
+                    <FormLabel className="text-sm font-semibold text-slate-900">
                       自动预警通知
                     </FormLabel>
                     <FormDescription className="max-w-[240px] text-[11px] leading-relaxed font-medium text-slate-400">
@@ -440,7 +440,7 @@ export function BasicSettingsForm() {
                     </FormControl>
                     <span
                       className={cn(
-                        'text-xs font-black tracking-tighter uppercase transition-colors',
+                        'text-xs font-semibold tracking-tighter transition-colors',
                         field.value ? 'text-blue-600' : 'text-slate-300'
                       )}
                     >
@@ -465,7 +465,7 @@ export function BasicSettingsForm() {
               render={({ field }) => (
                 <FormItem className="relative flex h-[130px] flex-col justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md">
                   <div className="space-y-1">
-                    <FormLabel className="flex items-center gap-2 text-sm font-black text-slate-900 uppercase">
+                    <FormLabel className="flex items-center gap-2 text-sm font-semibold text-slate-900">
                       订单唯一识别前缀
                     </FormLabel>
                     <p className="text-[11px] font-medium text-slate-400">
@@ -476,7 +476,7 @@ export function BasicSettingsForm() {
                     <Input
                       placeholder="如: SO"
                       maxLength={10}
-                      className="mt-2 h-11 w-full max-w-[180px] border-slate-100 bg-slate-50/50 font-mono font-black text-blue-600 uppercase transition-all focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10"
+                      className="mt-2 h-11 w-full max-w-[180px] border-slate-100 bg-slate-50/50 font-mono font-semibold text-blue-600 transition-all focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10"
                       {...field}
                     />
                   </FormControl>
@@ -491,7 +491,7 @@ export function BasicSettingsForm() {
               render={({ field }) => (
                 <FormItem className="flex h-[130px] flex-row items-center justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md">
                   <div className="space-y-1">
-                    <FormLabel className="text-sm font-black text-slate-900">
+                    <FormLabel className="text-sm font-semibold text-slate-900">
                       强制订单审批
                     </FormLabel>
                     <FormDescription className="max-w-[240px] text-[11px] leading-relaxed font-medium text-slate-400">
@@ -507,7 +507,7 @@ export function BasicSettingsForm() {
                     </FormControl>
                     <span
                       className={cn(
-                        'text-xs font-black tracking-tighter uppercase transition-colors',
+                        'text-xs font-semibold tracking-tighter transition-colors',
                         field.value ? 'text-blue-600' : 'text-slate-300'
                       )}
                     >
@@ -538,7 +538,7 @@ export function BasicSettingsForm() {
           <Button
             type="submit"
             disabled={isSubmitting || !hasChanges}
-            className="h-11 min-w-0 flex-1 rounded-full bg-slate-900 px-5 font-black text-white shadow-lg hover:bg-slate-800 disabled:bg-slate-200 sm:flex-none sm:px-10"
+            className="h-11 min-w-0 flex-1 rounded-full bg-slate-900 px-5 font-semibold text-white shadow-lg hover:bg-slate-800 disabled:bg-slate-200 sm:flex-none sm:px-10"
           >
             {isSubmitting ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

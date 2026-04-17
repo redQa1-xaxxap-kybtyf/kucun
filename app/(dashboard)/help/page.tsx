@@ -154,10 +154,10 @@ export default function HelpPage() {
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-black tracking-tighter text-slate-900">
+                <h1 className="text-3xl font-semibold tracking-tighter text-slate-900">
                   帮助中心
                 </h1>
-                <Badge className="bg-slate-900 px-2.5 py-1 text-[10px] font-black tracking-widest text-white uppercase hover:bg-slate-800">
+                <Badge className="bg-slate-900 px-2.5 py-1 text-[10px] font-semibold text-white hover:bg-slate-800">
                   使用指南
                 </Badge>
               </div>
@@ -169,7 +169,7 @@ export default function HelpPage() {
           <div className="flex items-center gap-3">
             <Button
               variant="outline"
-              className="h-11 rounded-xl border-slate-200 bg-white px-6 text-xs font-black text-slate-900 shadow-sm transition-all hover:bg-slate-50 active:scale-95"
+              className="h-11 rounded-xl border-slate-200 bg-white px-6 text-xs font-semibold text-slate-900 shadow-sm transition-all hover:bg-slate-50 active:scale-95"
             >
               <Mail className="mr-2 h-4 w-4 text-slate-400" />
               提交问题反馈
@@ -212,7 +212,7 @@ export default function HelpPage() {
               <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-50 transition-transform group-hover:scale-110">
                 <service.icon className={cn('h-6 w-6', service.color)} />
               </div>
-              <h3 className="mb-2 text-lg font-black text-slate-900">
+              <h3 className="mb-2 text-lg font-semibold text-slate-900">
                 {service.title}
               </h3>
               <p className="mb-6 text-sm leading-relaxed font-medium text-slate-400">
@@ -221,7 +221,7 @@ export default function HelpPage() {
               <Button
                 variant="ghost"
                 className={cn(
-                  'h-9 rounded-xl p-0 text-xs font-black transition-all hover:bg-transparent',
+                  'h-9 rounded-xl p-0 text-xs font-semibold transition-all hover:bg-transparent',
                   service.color
                 )}
               >
@@ -242,7 +242,7 @@ export default function HelpPage() {
           <div className="space-y-10">
             <section className="space-y-6">
               <div className="flex flex-col gap-1 px-1">
-                <h3 className="text-sm font-black tracking-widest text-slate-900 uppercase">
+                <h3 className="text-sm font-semibold text-slate-900">
                   系统操作指南目录
                 </h3>
                 <p className="text-[11px] font-medium text-slate-400">
@@ -264,7 +264,7 @@ export default function HelpPage() {
                             <IconComponent className="h-5 w-5 text-slate-600" />
                           </div>
                           <div>
-                            <h4 className="text-base font-black text-slate-900">
+                            <h4 className="text-base font-semibold text-slate-900">
                               {category.title}
                             </h4>
                             <p className="text-[11px] font-medium text-slate-400">
@@ -278,7 +278,7 @@ export default function HelpPage() {
                               key={index}
                               className="group flex flex-col items-start rounded-2xl border border-slate-50 bg-white p-5 text-left transition-all hover:border-blue-100 hover:shadow-sm"
                             >
-                              <span className="text-sm font-black text-slate-700 transition-colors group-hover:text-blue-600">
+                              <span className="text-sm font-semibold text-slate-700 transition-colors group-hover:text-blue-600">
                                 {item.title}
                               </span>
                               <span className="mt-1 text-[11px] leading-relaxed font-medium text-slate-400">
@@ -299,14 +299,14 @@ export default function HelpPage() {
           <div className="space-y-10">
             {/* 常见问题模块 */}
             <section className="space-y-6">
-              <h3 className="px-1 text-[11px] font-black tracking-widest text-slate-400 uppercase">
+              <h3 className="px-1 text-[11px] font-semibold text-slate-400">
                 常见问题
               </h3>
               <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
                 <div className="space-y-6">
                   {faqItems.map((faq, index) => (
                     <div key={index} className="group space-y-2">
-                      <h4 className="flex items-center gap-2 text-sm font-black text-slate-800 transition-colors group-hover:text-blue-600">
+                      <h4 className="flex items-center gap-2 text-sm font-semibold text-slate-800 transition-colors group-hover:text-blue-600">
                         <div className="h-1.5 w-1.5 rounded-full bg-slate-200 group-hover:bg-blue-400" />
                         {faq.question}
                       </h4>
@@ -321,7 +321,7 @@ export default function HelpPage() {
 
             {/* 专业支持渠道 */}
             <section className="space-y-6">
-              <h3 className="px-1 text-[11px] font-black tracking-widest text-slate-400 uppercase">
+              <h3 className="px-1 text-[11px] font-semibold text-slate-400">
                 联系支持
               </h3>
               <div className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm">
@@ -339,7 +339,7 @@ export default function HelpPage() {
                             <IconComponent className="h-5 w-5 text-slate-400 group-hover:text-slate-900" />
                           </div>
                           <div className="space-y-0.5">
-                            <span className="text-sm font-black text-slate-900">
+                            <span className="text-sm font-semibold text-slate-900">
                               {method.type}
                             </span>
                             <p className="text-[10px] font-medium text-slate-400">
@@ -357,26 +357,26 @@ export default function HelpPage() {
 
             {/* 系统服务健康度 */}
             <section className="space-y-6">
-              <h3 className="px-1 text-[11px] font-black tracking-widest text-slate-400 uppercase">
+              <h3 className="px-1 text-[11px] font-semibold text-slate-400">
                 系统服务状态
               </h3>
               <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col gap-1">
-                    <span className="text-xs font-black text-slate-900">
+                    <span className="text-xs font-semibold text-slate-900">
                       核心引擎状态
                     </span>
                     <p className="text-[10px] font-medium text-slate-400">
                       所有数据中心均处于最优负载
                     </p>
                   </div>
-                  <Badge className="flex items-center gap-2 border-none bg-emerald-50 px-3 py-1 font-black text-emerald-600">
+                  <Badge className="flex items-center gap-2 border-none bg-emerald-50 px-3 py-1 font-semibold text-emerald-600">
                     <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
                     正常运行
                   </Badge>
                 </div>
                 <Separator className="my-5 bg-slate-50" />
-                <p className="text-right text-[10px] font-bold tracking-widest text-slate-300 uppercase">
+                <p className="text-right text-[10px] font-bold text-slate-300">
                   最近更新：{' '}
                   {new Date().toLocaleTimeString([], {
                     hour: '2-digit',

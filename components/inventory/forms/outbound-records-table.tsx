@@ -101,7 +101,7 @@ export function OutboundRecordsTable({
       <div className="border-b border-slate-100 bg-slate-50/50 px-4 py-3">
         <div className="flex items-center gap-2">
           <Package className="h-4 w-4 text-slate-500" />
-          <span className="text-sm font-black text-slate-700">
+          <span className="text-sm font-semibold text-slate-700">
             出库记录流水 ({records.length} 条)
           </span>
         </div>
@@ -112,28 +112,28 @@ export function OutboundRecordsTable({
         <Table className="min-w-[1120px] [&_th]:whitespace-nowrap">
           <TableHeader className="card-shadow-light">
             <TableRow className="border-b border-slate-200 hover:bg-transparent">
-              <TableHead className="py-4 font-black text-slate-700">
+              <TableHead className="py-4 font-semibold text-slate-700">
                 单据编号
               </TableHead>
-              <TableHead className="py-4 font-black text-slate-700">
+              <TableHead className="py-4 font-semibold text-slate-700">
                 产品编码
               </TableHead>
-              <TableHead className="py-4 font-black text-slate-700">
+              <TableHead className="py-4 font-semibold text-slate-700">
                 产品名称
               </TableHead>
-              <TableHead className="py-4 font-black text-slate-700">
+              <TableHead className="py-4 font-semibold text-slate-700">
                 批次/规格
               </TableHead>
-              <TableHead className="py-4 font-black text-slate-700">
+              <TableHead className="py-4 font-semibold text-slate-700">
                 装箱数
               </TableHead>
-              <TableHead className="py-4 text-right font-black text-slate-700">
+              <TableHead className="py-4 text-right font-semibold text-slate-700">
                 出库总量
               </TableHead>
-              <TableHead className="py-4 font-black text-slate-700">
+              <TableHead className="py-4 font-semibold text-slate-700">
                 业务类型
               </TableHead>
-              <TableHead className="py-4 font-black text-slate-700">
+              <TableHead className="py-4 font-semibold text-slate-700">
                 经办时间
               </TableHead>
             </TableRow>
@@ -162,7 +162,7 @@ export function OutboundRecordsTable({
                     </div>
                   </TableCell>
                   <TableCell className="py-4 whitespace-nowrap">
-                    <div className="text-sm leading-tight font-black text-slate-900">
+                    <div className="text-sm leading-tight font-semibold text-slate-900">
                       <CopyableText text={record.productCode || '-'} />
                     </div>
                   </TableCell>
@@ -176,7 +176,7 @@ export function OutboundRecordsTable({
                       {record.batchNumber ? (
                         <Badge
                           variant="outline"
-                          className="w-fit border-amber-100 bg-amber-50 px-1.5 py-0 text-[10px] font-black text-amber-600"
+                          className="w-fit border-amber-100 bg-amber-50 px-1.5 py-0 text-[10px] font-semibold text-amber-600"
                         >
                           {record.batchNumber}
                         </Badge>
@@ -193,17 +193,17 @@ export function OutboundRecordsTable({
                   </TableCell>
                   <TableCell className="py-4 whitespace-nowrap">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-black text-slate-700">
+                      <span className="text-xs font-semibold text-slate-700">
                         {record.piecesPerUnit || '-'}
                       </span>
-                      <span className="rounded-md border border-blue-50 bg-blue-50/30 px-1 py-0.5 text-[9px] font-black text-blue-500">
+                      <span className="rounded-md border border-blue-50 bg-blue-50/30 px-1 py-0.5 text-[9px] font-semibold text-blue-500">
                         片/件
                       </span>
                     </div>
                   </TableCell>
                   <TableCell className="py-4 text-right whitespace-nowrap">
                     <div className="flex flex-col items-end gap-0.5">
-                      <div className="text-sm font-black text-slate-900">
+                      <div className="text-sm font-semibold text-slate-900">
                         {formatQuantity(record.quantity, record.piecesPerUnit)}
                       </div>
                       <div className="text-[10px] font-bold text-slate-400">
@@ -217,7 +217,7 @@ export function OutboundRecordsTable({
                         variant={
                           OUTBOUND_TYPE_VARIANTS[record.type] || 'default'
                         }
-                        className="w-fit text-[10px] font-black"
+                        className="w-fit text-[10px] font-semibold"
                       >
                         {OUTBOUND_TYPE_LABELS[record.type] || '未知'}
                       </Badge>
@@ -262,7 +262,7 @@ export function OutboundRecordsTable({
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm leading-tight font-black text-slate-900">
+                  <div className="truncate text-sm leading-tight font-semibold text-slate-900">
                     {record.productCode || '-'}
                   </div>
                   <div className="mt-0.5 text-[11px] font-bold text-slate-400">
@@ -282,7 +282,7 @@ export function OutboundRecordsTable({
                         {record.batchNumber ? (
                           <Badge
                             variant="outline"
-                            className="h-4 border-amber-100 bg-amber-50 px-1 text-[9px] font-black text-amber-600"
+                            className="h-4 border-amber-100 bg-amber-50 px-1 text-[9px] font-semibold text-amber-600"
                           >
                             {record.batchNumber}
                           </Badge>
@@ -292,10 +292,10 @@ export function OutboundRecordsTable({
                       </span>
                       <span className="flex items-center gap-1 text-slate-500">
                         包装：
-                        <span className="font-black text-slate-600">
+                        <span className="font-semibold text-slate-600">
                           {record.piecesPerUnit || '-'}
                         </span>
-                        <span className="rounded bg-blue-50 px-1 py-0.5 text-[9px] font-black text-blue-500">
+                        <span className="rounded bg-blue-50 px-1 py-0.5 text-[9px] font-semibold text-blue-500">
                           片/件
                         </span>
                       </span>
@@ -305,7 +305,7 @@ export function OutboundRecordsTable({
                 <div className="shrink-0 text-right">
                   <Badge
                     variant={OUTBOUND_TYPE_VARIANTS[record.type] || 'default'}
-                    className="mb-1 text-[10px] font-black"
+                    className="mb-1 text-[10px] font-semibold"
                   >
                     {OUTBOUND_TYPE_LABELS[record.type] || '未知'}
                   </Badge>
@@ -323,7 +323,7 @@ export function OutboundRecordsTable({
                   </span>
                 </div>
                 <div className="flex flex-col items-end gap-0.5">
-                  <div className="text-sm font-black text-slate-900">
+                  <div className="text-sm font-semibold text-slate-900">
                     {formatQuantity(record.quantity, record.piecesPerUnit)}
                   </div>
                   <div className="text-[10px] font-bold text-slate-400">

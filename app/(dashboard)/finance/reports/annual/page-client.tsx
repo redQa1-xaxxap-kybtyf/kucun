@@ -439,7 +439,7 @@ export function AnnualReportClient() {
         {/* 经营绩效与效率 - 高清晰分组区 */}
         <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 sm:p-6">
           <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <h2 className="flex items-center gap-2 text-sm font-black tracking-widest text-slate-800 uppercase">
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-800">
               <TrendingUp className="h-4 w-4 text-emerald-500" />
               年度经营效率看板
             </h2>
@@ -491,7 +491,7 @@ export function AnnualReportClient() {
           <div className="rounded-2xl border border-amber-100 bg-amber-50/60 p-4 sm:p-6">
             <div className="mb-4 flex items-center gap-2">
               <div className="h-4 w-1 rounded-full bg-amber-500" />
-              <h2 className="text-sm font-black tracking-widest text-slate-900 uppercase">
+              <h2 className="text-sm font-semibold text-slate-900">
                 年度样品分析
               </h2>
             </div>
@@ -529,7 +529,7 @@ export function AnnualReportClient() {
 
           <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-6">
             <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <h2 className="text-sm font-black tracking-widest text-slate-900 uppercase">
+              <h2 className="text-sm font-semibold text-slate-900">
                 样品客户排行
               </h2>
               <span className="text-xs font-semibold text-slate-400">
@@ -543,7 +543,7 @@ export function AnnualReportClient() {
                     key={customer.customerId}
                     className="grid grid-cols-[36px_minmax(0,1fr)] gap-3 rounded-xl border border-slate-100 px-3 py-3 sm:grid-cols-[40px_minmax(0,1fr)_auto_auto] sm:items-center"
                   >
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-black text-slate-600">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
                       {index + 1}
                     </div>
                     <div className="min-w-0">
@@ -556,13 +556,13 @@ export function AnnualReportClient() {
                     </div>
                     <div className="col-span-2 flex items-center justify-between gap-3 border-t border-slate-100 pt-3 sm:col-span-1 sm:block sm:border-t-0 sm:pt-0 sm:text-right">
                       <div className="text-xs text-slate-400">样品数量</div>
-                      <div className="text-sm font-black text-slate-900">
+                      <div className="text-sm font-semibold text-slate-900">
                         {customer.sampleQuantity}
                       </div>
                     </div>
                     <div className="col-span-2 flex items-center justify-between gap-3 border-t border-slate-100 pt-3 sm:col-span-1 sm:block sm:border-t-0 sm:pt-0 sm:text-right">
                       <div className="text-xs text-slate-400">样品费</div>
-                      <div className="text-sm font-black text-amber-700">
+                      <div className="text-sm font-semibold text-amber-700">
                         {formatCurrency(customer.sampleRevenue)}
                       </div>
                     </div>
@@ -648,13 +648,13 @@ function StatCard({
     >
       <CardHeader className="flex flex-row items-start justify-between space-y-0 px-4 pt-4 pb-2 sm:px-5 sm:pt-5">
         <div className="space-y-1">
-          <CardTitle className="text-xs font-bold tracking-wider uppercase opacity-80">
+          <CardTitle className="text-xs font-bold opacity-80">
             {title}
           </CardTitle>
           <div className="flex flex-col">
             <div
               className={cn(
-                'font-black tracking-tight',
+                'font-semibold tracking-tight',
                 size === 'lg' ? 'text-2xl lg:text-3xl' : 'text-xl sm:text-2xl'
               )}
             >

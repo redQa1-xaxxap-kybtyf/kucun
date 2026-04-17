@@ -30,26 +30,26 @@ export function BatchHistoryHeader({
           </div>
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-black tracking-tight text-slate-900">
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
                 批次变动历史
               </h1>
               <Badge
                 variant="outline"
-                className="h-6 border-violet-100 bg-violet-50 px-2 text-[10px] font-black text-violet-600 shadow-sm"
+                className="h-6 border-violet-100 bg-violet-50 px-2 text-[10px] font-semibold text-violet-600 shadow-sm"
               >
                 批次详情
               </Badge>
             </div>
             <div className="flex items-center gap-2 text-sm font-medium text-slate-500">
               <span>批次号：</span>
-              <span className="font-black text-slate-900 tabular-nums">
+              <span className="font-semibold text-slate-900 tabular-nums">
                 {batchNumber}
               </span>
               {filteredInventoryId && (
                 <>
                   <span className="mx-2 h-3 w-px bg-slate-200" />
                   <span>库存实例：</span>
-                  <span className="font-black text-slate-700">
+                  <span className="font-semibold text-slate-700">
                     {filteredInventoryId}
                   </span>
                 </>

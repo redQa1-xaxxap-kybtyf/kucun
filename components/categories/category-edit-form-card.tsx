@@ -321,9 +321,15 @@ function CategoryParentField({
       control={control}
       name="parentId"
       render={({ field }) => {
+        const selectedParentId =
+          field.value && field.value !== 'none'
+            ? field.value
+            : currentParentCategory?.id;
         const selectedParent =
-          availableParentCategories.find(category => category.id === field.value) ??
-          (currentParentCategory?.id === field.value
+          availableParentCategories.find(
+            category => category.id === selectedParentId
+          ) ??
+          (currentParentCategory?.id === selectedParentId
             ? currentParentCategory
             : undefined);
         const displayParentPath =
@@ -343,19 +349,19 @@ function CategoryParentField({
               />
               <Select
                 onValueChange={field.onChange}
-                value={field.value || 'none'}
+                value={selectedParentId ?? 'none'}
                 disabled={disableSelect}
               >
                 <FormControl>
                   <SelectTrigger className="relative">
                     <span
                       className={`block truncate pr-6 text-left ${
-                        field.value && field.value !== 'none'
+                        selectedParentId
                           ? 'text-foreground'
                           : 'text-muted-foreground'
                       }`}
                     >
-                      {field.value && field.value !== 'none'
+                      {selectedParentId
                         ? displayParentPath
                         : '请选择父级分类'}
                     </span>

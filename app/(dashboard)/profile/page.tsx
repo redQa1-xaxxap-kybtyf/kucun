@@ -319,7 +319,7 @@ export default function ProfilePage() {
           <div className="flex items-center gap-6">
             <div className="relative">
               <Avatar className="h-20 w-20 shadow-xl ring-4 ring-white">
-                <AvatarFallback className="bg-slate-900 text-2xl font-black text-white">
+                <AvatarFallback className="bg-slate-900 text-2xl font-semibold text-white">
                   {displayUser ? getInitials(displayUser.name) : '用户'}
                 </AvatarFallback>
               </Avatar>
@@ -329,10 +329,10 @@ export default function ProfilePage() {
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-black tracking-tighter text-slate-900">
+                <h1 className="text-3xl font-semibold tracking-tighter text-slate-900">
                   {displayUser?.name || '我的资料'}
                 </h1>
-                <Badge className="bg-slate-900 px-2.5 py-1 text-[10px] font-black tracking-widest text-white uppercase hover:bg-slate-800">
+                <Badge className="bg-slate-900 px-2.5 py-1 text-[10px] font-semibold text-white hover:bg-slate-800">
                   {getUserRoleLabel(displayUser?.role || '')}
                 </Badge>
               </div>
@@ -350,7 +350,7 @@ export default function ProfilePage() {
           <div className="space-y-8">
             <section className="space-y-4">
               <div className="flex flex-col gap-1 px-1">
-                <h3 className="text-sm font-black tracking-widest text-slate-900 uppercase">
+                <h3 className="text-sm font-semibold text-slate-900">
                   基本信息管理
                 </h3>
                 <p className="text-[11px] font-medium text-slate-400">
@@ -367,7 +367,7 @@ export default function ProfilePage() {
                     {/* 姓名行 */}
                     <div className="flex flex-col gap-6 p-8 md:flex-row md:items-center">
                       <div className="w-full md:w-1/3">
-                        <FormLabel className="text-sm font-black text-slate-900">
+                        <FormLabel className="text-sm font-semibold text-slate-900">
                           您的姓名
                         </FormLabel>
                         <p className="mt-1 text-[11px] font-medium text-slate-400">
@@ -405,7 +405,7 @@ export default function ProfilePage() {
                     {/* 邮箱行 */}
                     <div className="flex flex-col gap-6 bg-slate-50/20 p-8 md:flex-row md:items-center">
                       <div className="w-full md:w-1/3">
-                        <FormLabel className="text-sm font-black text-slate-900">
+                        <FormLabel className="text-sm font-semibold text-slate-900">
                           电子邮箱
                         </FormLabel>
                         <p className="mt-1 text-[11px] font-medium text-slate-400">
@@ -448,7 +448,7 @@ export default function ProfilePage() {
                     {/* 只读项：登录账号 */}
                     <div className="flex flex-col gap-6 p-8 md:flex-row md:items-center">
                       <div className="w-full md:w-1/3">
-                        <span className="text-sm font-black text-slate-900">
+                        <span className="text-sm font-semibold text-slate-900">
                           登录账号
                         </span>
                         <p className="mt-1 text-[11px] font-medium text-slate-400">
@@ -456,7 +456,7 @@ export default function ProfilePage() {
                         </p>
                       </div>
                       <div className="flex-1">
-                        <div className="inline-block rounded-lg bg-slate-100/50 px-4 py-2 font-mono text-sm font-black text-slate-500">
+                        <div className="inline-block rounded-lg bg-slate-100/50 px-4 py-2 font-mono text-sm font-semibold text-slate-500">
                           {displayUser?.username || '—'}
                         </div>
                       </div>
@@ -465,7 +465,7 @@ export default function ProfilePage() {
                     {/* 只读项：周期信息 */}
                     <div className="flex flex-col gap-6 bg-slate-50/20 p-8 md:flex-row md:items-center">
                       <div className="w-full md:w-1/3">
-                        <span className="text-sm font-black text-slate-900">
+                        <span className="text-sm font-semibold text-slate-900">
                           账户信息
                         </span>
                         <p className="mt-1 text-[11px] font-medium text-slate-400">
@@ -474,7 +474,7 @@ export default function ProfilePage() {
                       </div>
                       <div className="flex flex-1 items-center gap-6">
                         <div className="space-y-1">
-                          <span className="block text-[10px] font-black text-slate-300 uppercase">
+                          <span className="block text-[10px] font-semibold text-slate-300">
                             注册于
                           </span>
                           <span className="text-xs font-bold text-slate-600">
@@ -487,7 +487,7 @@ export default function ProfilePage() {
                         </div>
                         <div className="h-8 w-px bg-slate-200" />
                         <div className="space-y-1">
-                          <span className="block text-[10px] font-black text-slate-300 uppercase">
+                          <span className="block text-[10px] font-semibold text-slate-300">
                             账户角色
                           </span>
                           <span className="text-xs font-bold text-slate-600">
@@ -505,7 +505,7 @@ export default function ProfilePage() {
                     </p>
                     <Button
                       type="submit"
-                      className="h-11 rounded-2xl bg-slate-900 px-8 text-xs font-black shadow-lg shadow-slate-900/10 transition-all hover:bg-slate-800 active:scale-95"
+                      className="h-11 rounded-2xl bg-slate-900 px-8 text-xs font-semibold shadow-lg shadow-slate-900/10 transition-all hover:bg-slate-800 active:scale-95"
                       disabled={isLoadingProfile || isSavingProfile}
                     >
                       {isSavingProfile ? (
@@ -525,7 +525,7 @@ export default function ProfilePage() {
           <div className="space-y-8">
             <section className="space-y-4">
               <div className="flex flex-col gap-1 px-1">
-                <h3 className="text-sm font-black tracking-widest text-slate-900 uppercase">
+                <h3 className="text-sm font-semibold text-slate-900">
                   账号安全管理
                 </h3>
                 <p className="text-[11px] font-medium text-slate-400">
@@ -542,7 +542,7 @@ export default function ProfilePage() {
                       rules={{ required: '请输入当前密码' }}
                       render={({ field }) => (
                         <FormItem className="space-y-2">
-                          <FormLabel className="text-[11px] font-black tracking-wider text-slate-400 uppercase">
+                          <FormLabel className="text-[11px] font-semibold text-slate-400">
                             验证当前密码
                           </FormLabel>
                           <FormControl>
@@ -595,7 +595,7 @@ export default function ProfilePage() {
                       }}
                       render={({ field }) => (
                         <FormItem className="space-y-2">
-                          <FormLabel className="text-[11px] font-black tracking-wider text-slate-400 uppercase">
+                          <FormLabel className="text-[11px] font-semibold text-slate-400">
                             设置新密码
                           </FormLabel>
                           <FormControl>
@@ -622,7 +622,7 @@ export default function ProfilePage() {
                       }}
                       render={({ field }) => (
                         <FormItem className="space-y-2">
-                          <FormLabel className="text-[11px] font-black tracking-wider text-slate-400 uppercase">
+                          <FormLabel className="text-[11px] font-semibold text-slate-400">
                             再次确认新密码
                           </FormLabel>
                           <FormControl>
@@ -641,7 +641,7 @@ export default function ProfilePage() {
                     <Button
                       type="submit"
                       variant="outline"
-                      className="h-12 w-full rounded-2xl border-slate-200 text-xs font-black text-slate-900 transition-all hover:bg-slate-50 active:scale-[0.98]"
+                      className="h-12 w-full rounded-2xl border-slate-200 text-xs font-semibold text-slate-900 transition-all hover:bg-slate-50 active:scale-[0.98]"
                       disabled={isChangingPassword}
                     >
                       {isChangingPassword ? (
@@ -658,7 +658,7 @@ export default function ProfilePage() {
 
             {/* 登录记录 */}
             <section className="space-y-4">
-              <h3 className="px-1 text-[11px] font-black tracking-widest text-slate-400 uppercase">
+              <h3 className="px-1 text-[11px] font-semibold text-slate-400">
                 最近登录记录
               </h3>
               <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white/60 p-2">
@@ -668,7 +668,7 @@ export default function ProfilePage() {
                       <Loader2 className="mx-auto h-4 w-4 animate-spin" />
                     </div>
                   ) : loginLogs.length === 0 ? (
-                    <div className="py-6 text-center text-[10px] font-bold text-slate-300 uppercase">
+                    <div className="py-6 text-center text-[10px] font-bold text-slate-300">
                       暂无登录记录
                     </div>
                   ) : (
@@ -687,7 +687,7 @@ export default function ProfilePage() {
                             )}
                           />
                           <div className="flex flex-col">
-                            <span className="text-[11px] font-black text-slate-900">
+                            <span className="text-[11px] font-semibold text-slate-900">
                               {log.type === 'success'
                                 ? '登录成功'
                                 : log.type === 'failed'
@@ -699,7 +699,7 @@ export default function ProfilePage() {
                             </span>
                           </div>
                         </div>
-                        <span className="text-right text-[9px] font-black text-slate-300 uppercase">
+                        <span className="text-right text-[9px] font-semibold text-slate-300">
                           {new Date(log.timestamp).toLocaleTimeString([], {
                             hour: '2-digit',
                             minute: '2-digit',

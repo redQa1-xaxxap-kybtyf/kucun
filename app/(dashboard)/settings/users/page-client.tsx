@@ -401,7 +401,7 @@ export default function UsersSettingsPageClient({
           <Users className="h-10 w-10" />
         </div>
         <div className="space-y-2">
-          <h2 className="text-xl font-black text-slate-900">权限受限</h2>
+          <h2 className="text-xl font-semibold text-slate-900">权限受限</h2>
           <p className="text-sm font-medium text-slate-500">
             只有管理员可以查看和管理成员账号。
           </p>

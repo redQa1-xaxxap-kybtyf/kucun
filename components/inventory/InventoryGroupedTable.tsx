@@ -164,36 +164,36 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
       >
         <TableHeader className="card-shadow-light sticky top-0 z-20 bg-white/95 backdrop-blur-md">
           <TableRow className="border-b border-slate-200 hover:bg-transparent">
-            <TableHead className="w-16 py-4 font-black text-slate-700">
+            <TableHead className="w-16 py-4 font-semibold text-slate-700">
               预览图
             </TableHead>
-            <TableHead className="py-4 font-black text-slate-700">
+            <TableHead className="py-4 font-semibold text-slate-700">
               产品编码
             </TableHead>
-            <TableHead className="py-4 font-black text-slate-700">
+            <TableHead className="py-4 font-semibold text-slate-700">
               产品名称
             </TableHead>
-            <TableHead className="py-4 font-black text-slate-700">
+            <TableHead className="py-4 font-semibold text-slate-700">
               批次/规格
             </TableHead>
-            <TableHead className="py-4 font-black text-slate-700">
+            <TableHead className="py-4 font-semibold text-slate-700">
               装箱数
             </TableHead>
-            <TableHead className="py-4 text-right font-black text-slate-700">
+            <TableHead className="py-4 text-right font-semibold text-slate-700">
               库存总量
             </TableHead>
-            <TableHead className="py-4 text-right font-black text-slate-700">
+            <TableHead className="py-4 text-right font-semibold text-slate-700">
               预留/可用
             </TableHead>
             {hasFinancePermission && (
-              <TableHead className="py-4 text-right font-black text-slate-700">
+              <TableHead className="py-4 text-right font-semibold text-slate-700">
                 单位成本/货值评估
               </TableHead>
             )}
-            <TableHead className="py-4 font-black text-slate-700">
+            <TableHead className="py-4 font-semibold text-slate-700">
               健康度
             </TableHead>
-            <TableHead className="py-4 text-right font-black text-slate-700">
+            <TableHead className="py-4 text-right font-semibold text-slate-700">
               操作
             </TableHead>
           </TableRow>
@@ -321,7 +321,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     <TableCell className="py-3 whitespace-nowrap">
                       <div className="flex flex-col gap-1">
                         <div
-                          className={`text-sm font-black tracking-tight ${isFirstInGroup ? 'text-slate-900' : 'text-slate-400'}`}
+                          className={`text-sm font-semibold tracking-tight ${isFirstInGroup ? 'text-slate-900' : 'text-slate-400'}`}
                         >
                           <CopyableText text={group.productCode} />
                         </div>
@@ -346,14 +346,14 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                         <div className="flex items-center gap-1.5">
                           <Badge
                             variant="outline"
-                            className="h-4 border-amber-100 bg-amber-50 px-1.5 text-[9px] font-black text-amber-600"
+                            className="h-4 border-amber-100 bg-amber-50 px-1.5 text-[9px] font-semibold text-amber-600"
                           >
                             {item.batchNumber
                               ? item.batchNumber.toUpperCase().slice(-8)
                               : '常规'}
                           </Badge>
                           {isFirstInGroup && group.items.length > 1 && (
-                            <Badge className="h-4 bg-indigo-600 px-1.5 text-[9px] font-black text-white shadow-sm shadow-indigo-200">
+                            <Badge className="h-4 bg-indigo-600 px-1.5 text-[9px] font-semibold text-white shadow-sm shadow-indigo-200">
                               共 {group.items.length} 批次
                             </Badge>
                           )}
@@ -365,10 +365,10 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     <TableCell className="py-3 whitespace-nowrap">
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-1">
-                          <span className="text-sm font-black text-slate-700">
+                          <span className="text-sm font-semibold text-slate-700">
                             {packaging}
                           </span>
-                          <span className="rounded-md border border-blue-50 bg-blue-50/30 px-1 py-0.5 text-[9px] font-black text-blue-500 uppercase">
+                          <span className="rounded-md border border-blue-50 bg-blue-50/30 px-1 py-0.5 text-[9px] font-semibold text-blue-500">
                             片/件
                           </span>
                         </div>
@@ -384,12 +384,12 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     <TableCell className="py-3 text-right whitespace-nowrap">
                       <div className="flex flex-col items-end gap-1.5">
                         {isFirstInGroup && group.items.length > 1 && (
-                          <div className="rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-black text-white shadow-md ring-2 ring-white">
+                          <div className="rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-semibold text-white shadow-md ring-2 ring-white">
                             汇总: {group.totalQuantityDisplay}
                           </div>
                         )}
                         <div
-                          className={`text-sm font-black ${isFirstInGroup ? 'text-emerald-600' : 'text-slate-400'}`}
+                          className={`text-sm font-semibold ${isFirstInGroup ? 'text-emerald-600' : 'text-slate-400'}`}
                         >
                           {quantityDisplay}
                         </div>
@@ -404,12 +404,12 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                         </div>
                         <div className="flex flex-col items-end gap-1.5">
                           {isFirstInGroup && group.items.length > 1 && (
-                            <div className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[9px] font-black text-slate-600">
+                            <div className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[9px] font-semibold text-slate-600">
                               总可用: {group.totalAvailableDisplay}
                             </div>
                           )}
                           <div
-                            className={`text-sm font-black ${isFirstInGroup ? 'text-indigo-600' : 'text-slate-400'}`}
+                            className={`text-sm font-semibold ${isFirstInGroup ? 'text-indigo-600' : 'text-slate-400'}`}
                           >
                             {availableDisplay}
                           </div>
@@ -426,7 +426,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                             <div className="text-[10px] font-bold text-slate-400">
                               成本单价: {formatCostPrice(item.unitCost)}
                             </div>
-                            <div className="text-sm font-black text-slate-900">
+                            <div className="text-sm font-semibold text-slate-900">
                               {formatCurrency(item.quantity * item.unitCost)}
                             </div>
                           </div>
@@ -440,7 +440,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     <TableCell className="py-3 whitespace-nowrap">
                       <Badge
                         variant={variant}
-                        className={`rounded-full px-3 py-0.5 text-[10px] font-black tracking-wider uppercase ${
+                        className={`rounded-full px-3 py-0.5 text-[10px] font-semibold ${
                           variant === 'destructive' || variant === 'warning'
                             ? 'animate-breathe'
                             : ''

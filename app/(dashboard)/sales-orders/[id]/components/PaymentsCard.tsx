@@ -75,7 +75,7 @@ function PaymentItem({ payment }: { payment: PaymentRecord }) {
         )}
       </div>
       <div className="border-t border-slate-100 pt-3 sm:border-0 sm:pt-0">
-        <div className="font-mono text-xl font-black text-emerald-600">
+        <div className="font-mono text-xl font-semibold text-emerald-600">
           +{formatCurrency(Number(payment.paymentAmount))}
         </div>
       </div>
@@ -95,7 +95,7 @@ function ReceivableConfirmationNote({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-black tracking-widest text-slate-500 uppercase">
+            <span className="text-xs font-semibold text-slate-500">
               应收已登记
             </span>
             <Badge
@@ -147,10 +147,10 @@ function PaymentsSummary({ order }: { order: SalesOrderDetail }) {
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-4">
           <div className="space-y-1">
-            <p className="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+            <p className="text-[10px] font-bold text-slate-500">
               业务应收总计
             </p>
-            <p className="font-mono text-xl font-black tracking-tighter text-slate-900 sm:text-2xl">
+            <p className="font-mono text-xl font-semibold tracking-tighter text-slate-900 sm:text-2xl">
               {formatCurrency(receivableTotal)}
             </p>
             {!receivableEnabled && order.isSampleOrder && (
@@ -165,10 +165,10 @@ function PaymentsSummary({ order }: { order: SalesOrderDetail }) {
             )}
           </div>
           <div className="space-y-1 text-right">
-            <p className="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+            <p className="text-[10px] font-bold text-slate-500">
               账务结算
             </p>
-            <p className="text-xl font-black text-slate-900">
+            <p className="text-xl font-semibold text-slate-900">
               {progress.toFixed(0)}%
             </p>
           </div>
@@ -176,10 +176,10 @@ function PaymentsSummary({ order }: { order: SalesOrderDetail }) {
 
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-4">
-            <p className="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+            <p className="text-[10px] font-bold text-slate-500">
               已核销金额
             </p>
-            <p className="font-mono text-lg font-black tracking-tighter text-emerald-600">
+            <p className="font-mono text-lg font-semibold tracking-tighter text-emerald-600">
               {formatCurrency(Number(order.paidAmount))}
             </p>
           </div>
@@ -225,7 +225,7 @@ export function PaymentsCard({ order }: { order: SalesOrderDetail }) {
       <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1.5">
-            <CardTitle className="flex items-center gap-2.5 text-sm font-black tracking-widest text-slate-900 uppercase">
+            <CardTitle className="flex items-center gap-2.5 text-sm font-semibold text-slate-900">
               <Receipt className="h-4 w-4 text-blue-600" />
               真实收款与核销明细
             </CardTitle>
@@ -237,7 +237,7 @@ export function PaymentsCard({ order }: { order: SalesOrderDetail }) {
           </div>
           <Badge
             variant="secondary"
-            className="hidden rounded-lg px-2.5 py-1 font-black sm:inline-flex"
+            className="hidden rounded-lg px-2.5 py-1 font-semibold sm:inline-flex"
           >
             合计：{formatCurrency(Number(order.paidAmount))}
           </Badge>

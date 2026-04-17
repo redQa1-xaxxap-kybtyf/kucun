@@ -189,7 +189,7 @@ export function InboundRecordsTable({
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <div className="text-sm font-black text-[hsl(var(--color-text-primary))]">
+                    <div className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
                       {record.product?.code || record.productId}
                     </div>
                     <div className="mt-0.5 text-xs text-[hsl(var(--color-text-secondary))]">
@@ -257,7 +257,7 @@ export function InboundRecordsTable({
                   <span className="font-bold text-slate-500">
                     {showDamage ? '合格入库' : '入库数量'}
                   </span>
-                  <span className="font-black text-blue-600">
+                  <span className="font-semibold text-blue-600">
                     {formatQuantity(record.quantity, piecesPerUnit)}
                   </span>
                 </div>
@@ -265,7 +265,7 @@ export function InboundRecordsTable({
                 {showDamage ? (
                   <div className="mt-2 flex items-center justify-between rounded-lg border border-blue-100 bg-blue-50/70 px-3 py-2 text-xs">
                     <span className="font-bold text-blue-600">到货总量</span>
-                    <span className="font-black text-blue-700">
+                    <span className="font-semibold text-blue-700">
                       {formatQuantity(
                         getArrivalQuantity(record),
                         piecesPerUnit
@@ -277,7 +277,7 @@ export function InboundRecordsTable({
                 {showDamage ? (
                   <div className="mt-2 flex items-center justify-between rounded-lg border border-red-100 bg-red-50/70 px-3 py-2 text-xs">
                     <span className="font-bold text-red-600">到货破损</span>
-                    <span className="font-black text-red-600">
+                    <span className="font-semibold text-red-600">
                       {formatQuantity(damagedQuantity, piecesPerUnit)}
                     </span>
                   </div>
@@ -363,35 +363,35 @@ function RecordsTable({
     <Table className="min-w-[1220px] [&_th]:whitespace-nowrap">
       <TableHeader className="bg-slate-50">
         <TableRow className="border-b border-slate-200 hover:bg-transparent">
-          <TableHead className="py-4 font-black text-slate-700">
+          <TableHead className="py-4 font-semibold text-slate-700">
             单据编号
           </TableHead>
-          <TableHead className="py-4 font-black text-slate-700">
+          <TableHead className="py-4 font-semibold text-slate-700">
             产品编码/名称
           </TableHead>
-          <TableHead className="py-4 font-black text-slate-700">
+          <TableHead className="py-4 font-semibold text-slate-700">
             产品批次
           </TableHead>
-          <TableHead className="py-4 font-black text-slate-700">
+          <TableHead className="py-4 font-semibold text-slate-700">
             规格型号
           </TableHead>
-          <TableHead className="py-4 font-black text-slate-700">
+          <TableHead className="py-4 font-semibold text-slate-700">
             装箱数
           </TableHead>
-          <TableHead className="py-4 text-right font-black text-slate-700">
+          <TableHead className="py-4 text-right font-semibold text-slate-700">
             合格入库 / 到货
           </TableHead>
-          <TableHead className="py-4 font-black text-slate-700">
+          <TableHead className="py-4 font-semibold text-slate-700">
             业务类型
           </TableHead>
-          <TableHead className="py-4 font-black text-slate-700">
+          <TableHead className="py-4 font-semibold text-slate-700">
             记账时间
           </TableHead>
-          <TableHead className="py-4 font-black text-slate-700">
+          <TableHead className="py-4 font-semibold text-slate-700">
             备注说明
           </TableHead>
           {canManageOpeningBalance ? (
-            <TableHead className="py-4 font-black text-slate-700">
+            <TableHead className="py-4 font-semibold text-slate-700">
               期初纠错
             </TableHead>
           ) : null}
@@ -458,7 +458,7 @@ function InboundRecordRow({
       </TableCell>
       <TableCell className="min-w-[180px]">
         <div className="flex flex-col py-1">
-          <span className="text-sm leading-tight font-black text-slate-900">
+          <span className="text-sm leading-tight font-semibold text-slate-900">
             {record.product?.code || record.productId}
           </span>
           <span className="mt-1 text-[11px] font-bold text-slate-400">
@@ -470,7 +470,7 @@ function InboundRecordRow({
         {record.batchNumber ? (
           <Badge
             variant="outline"
-            className="border-amber-100 bg-amber-50 px-2 py-0.5 font-mono text-[11px] font-black text-amber-600"
+            className="border-amber-100 bg-amber-50 px-2 py-0.5 font-mono text-[11px] font-semibold text-amber-600"
           >
             <CopyableText text={record.batchNumber} />
           </Badge>
@@ -491,10 +491,10 @@ function InboundRecordRow({
       <TableCell className="text-xs font-bold whitespace-nowrap text-slate-500">
         {piecesPerUnit > 0 ? (
           <div className="flex items-center gap-1.5">
-            <span className="text-sm font-black text-slate-700">
+            <span className="text-sm font-semibold text-slate-700">
               {piecesPerUnit}
             </span>
-            <span className="rounded-md border border-blue-50 bg-blue-50/30 px-1.5 py-0.5 text-[10px] font-black text-blue-500">
+            <span className="rounded-md border border-blue-50 bg-blue-50/30 px-1.5 py-0.5 text-[10px] font-semibold text-blue-500">
               片/件
             </span>
           </div>
@@ -504,7 +504,7 @@ function InboundRecordRow({
       </TableCell>
       <TableCell className="text-right whitespace-nowrap">
         <div className="flex flex-col items-end gap-1">
-          <span className="text-sm font-black text-blue-600">
+          <span className="text-sm font-semibold text-blue-600">
             {formatQuantity(record.quantity, piecesPerUnit)}
           </span>
           {showDamage ? (
@@ -523,14 +523,14 @@ function InboundRecordRow({
         <div className="flex flex-wrap gap-1">
           <Badge
             variant={getOperationTypeVariant(record.reason)}
-            className="text-[10px] font-black tracking-wider uppercase"
+            className="text-[10px] font-semibold"
           >
             {getOperationTypeLabel(record.reason)}
           </Badge>
           {showDamage ? (
             <Badge
               variant="destructive"
-              className="text-[10px] font-black tracking-wider"
+              className="text-[10px] font-semibold"
             >
               有破损
             </Badge>
@@ -540,7 +540,7 @@ function InboundRecordRow({
       <TableCell className="text-xs whitespace-nowrap text-slate-500">
         <div className="flex flex-col gap-1">
           <RelativeTime date={record.createdAt} />
-          <div className="flex items-center gap-1 text-[11px] font-black tracking-widest text-slate-400 uppercase">
+          <div className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
             <User className="h-2.5 w-2.5" />
             操作员
           </div>

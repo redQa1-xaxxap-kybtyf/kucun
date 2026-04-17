@@ -341,7 +341,7 @@ export function Breadcrumb({
 
             {item.isCurrent ? (
               <span
-                className="rounded-md bg-slate-100/50 px-2 py-0.5 text-xs font-black tracking-tight text-slate-900"
+                className="rounded-md bg-slate-100/50 px-2 py-0.5 text-xs font-semibold text-slate-900"
                 aria-current="page"
               >
                 {item.title}
@@ -354,12 +354,12 @@ export function Breadcrumb({
                 {index === 0 && showHome && (
                   <Home className="h-3.5 w-3.5 opacity-60 transition-all group-hover:scale-110 group-hover:opacity-100" />
                 )}
-                <span className="text-xs font-black tracking-wider uppercase">
+                <span className="text-xs font-medium">
                   {item.title}
                 </span>
               </Link>
             ) : (
-              <span className="px-2 py-0.5 font-bold text-slate-400">
+              <span className="px-2 py-0.5 font-medium text-slate-400">
                 {item.title}
               </span>
             )}

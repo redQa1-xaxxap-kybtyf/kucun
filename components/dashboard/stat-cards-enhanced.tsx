@@ -109,7 +109,7 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
       return (
         <Card
           className={cn(
-            'h-[160px] animate-pulse rounded-3xl bg-white/40',
+            'h-[88px] animate-pulse rounded-md bg-card',
             className
           )}
           ref={ref}
@@ -121,7 +121,7 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
     const cardContent = (
       <div
         className={cn(
-          'group relative flex h-[160px] flex-col justify-between overflow-hidden rounded-3xl border border-white bg-white/60 p-6 shadow-sm backdrop-blur-md transition-all duration-500',
+          'group relative flex h-[88px] flex-col justify-between overflow-hidden rounded-md border border-border bg-card p-4 shadow-sm transition-all duration-500',
           'hover:-translate-y-1 hover:border-slate-200 hover:shadow-xl hover:shadow-slate-200/50',
           href && 'cursor-pointer',
           className
@@ -143,11 +143,11 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
               <div
                 className={cn('h-1.5 w-1.5 rounded-full', colorClasses.dot)}
               />
-              <p className="text-xs font-bold tracking-wider text-slate-500 uppercase">
+              <p className="text-xs font-bold text-slate-500">
                 {title}
               </p>
             </div>
-            <p className="text-3xl font-black tracking-tighter text-slate-900">
+            <p className="text-3xl font-semibold tracking-tighter text-slate-900">
               {typeof value === 'number'
                 ? dashboardUtils.formatNumber(value)
                 : value}
@@ -169,7 +169,7 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
               <Badge
                 variant="outline"
                 className={cn(
-                  'h-6 rounded-lg border-none px-2 text-xs font-bold tracking-tight uppercase',
+                  'h-6 rounded-lg border-none px-2 text-xs font-bold tracking-tight',
                   change.type === 'increase'
                     ? 'bg-emerald-50 text-emerald-700'
                     : change.type === 'decrease'

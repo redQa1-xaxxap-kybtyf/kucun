@@ -25,21 +25,21 @@ export function DashboardTrendChart({
 }: DashboardTrendChartProps) {
   if (loading) {
     return (
-      <div className="h-[480px] w-full animate-pulse rounded-3xl bg-white/40" />
+      <div className="h-[280px] w-full animate-pulse rounded-md bg-card" />
     );
   }
 
   return (
-    <div className="group relative flex flex-col rounded-3xl border border-white bg-white/60 p-8 shadow-sm backdrop-blur-md transition-all duration-500 hover:shadow-xl hover:shadow-slate-200/50">
+    <div className="group relative flex flex-col rounded-md border border-border bg-card p-4 shadow-sm transition-all duration-500 hover:shadow-xl hover:shadow-slate-200/50">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <div className="h-1.5 w-1.5 rounded-full bg-slate-900" />
-            <p className="text-xs font-black tracking-widest text-slate-500 uppercase">
+            <p className="text-xs font-semibold text-slate-500">
               Performance / 销售趋势
             </p>
           </div>
-          <p className="text-xl font-black tracking-tight text-slate-900">
+          <p className="text-xl font-semibold tracking-tight text-slate-900">
             销售业绩分析
           </p>
         </div>
@@ -48,19 +48,19 @@ export function DashboardTrendChart({
           <TabsList className="h-11 rounded-2xl border border-slate-200/50 bg-slate-100/50 p-1">
             <TabsTrigger
               value="weekly"
-              className="rounded-xl px-4 text-xs font-black tracking-wider uppercase data-[state=active]:bg-slate-900 data-[state=active]:text-white"
+              className="rounded-xl px-4 text-xs font-semibold data-[state=active]:bg-slate-900 data-[state=active]:text-white"
             >
               最近7天
             </TabsTrigger>
             <TabsTrigger
               value="monthly"
-              className="rounded-xl px-4 text-xs font-black tracking-wider uppercase data-[state=active]:bg-slate-900 data-[state=active]:text-white"
+              className="rounded-xl px-4 text-xs font-semibold data-[state=active]:bg-slate-900 data-[state=active]:text-white"
             >
               最近30天
             </TabsTrigger>
             <TabsTrigger
               value="yearly"
-              className="rounded-xl px-4 text-xs font-black tracking-wider uppercase data-[state=active]:bg-slate-900 data-[state=active]:text-white"
+              className="rounded-xl px-4 text-xs font-semibold data-[state=active]:bg-slate-900 data-[state=active]:text-white"
             >
               年度概览
             </TabsTrigger>
@@ -134,11 +134,11 @@ function ChartContainer({
           content={({ active, payload, label }) => {
             if (active && payload && payload.length) {
               return (
-                <div className="rounded-2xl border border-slate-100 bg-white/80 p-3 shadow-xl backdrop-blur-md">
-                  <p className="mb-1 text-xs font-black tracking-widest text-slate-500 uppercase">
+                <div className="rounded-2xl border border-slate-100 bg-card p-3 shadow-xl">
+                  <p className="mb-1 text-xs font-semibold text-slate-500">
                     {label}
                   </p>
-                  <p className="text-sm font-black text-slate-900">
+                  <p className="text-sm font-semibold text-slate-900">
                     {dashboardUtils.formatCurrency(payload[0].value as number)}
                   </p>
                 </div>

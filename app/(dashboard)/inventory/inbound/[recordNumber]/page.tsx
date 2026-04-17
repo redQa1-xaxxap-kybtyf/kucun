@@ -75,7 +75,7 @@ function ProductInfoCard({ record }: { record: InboundRecordDetail }) {
   return (
     <Card className="border-slate-200 bg-white shadow-sm transition-all hover:shadow-md">
       <CardHeader className="border-b border-slate-100 bg-slate-50 px-4 py-4 sm:px-6">
-        <CardTitle className="text-sm font-black tracking-widest text-slate-500 uppercase italic">
+        <CardTitle className="text-sm font-semibold text-slate-500 italic">
           核心产品信息
         </CardTitle>
       </CardHeader>
@@ -152,13 +152,13 @@ function OperationRecordCard({
   return (
     <Card className="border-slate-200 bg-white shadow-sm transition-all hover:shadow-md">
       <CardHeader className="border-b border-slate-100 bg-slate-50 px-4 py-4 sm:px-6">
-        <CardTitle className="text-sm font-black tracking-widest text-slate-500 uppercase italic">
+        <CardTitle className="text-sm font-semibold text-slate-500 italic">
           入库信息
         </CardTitle>
       </CardHeader>
       <CardContent className="grid gap-4 p-4 text-sm sm:p-6">
         <div className="grid gap-1 sm:grid-cols-[100px_1fr] sm:items-center sm:gap-2">
-          <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
+          <span className="text-[11px] font-semibold text-slate-400">
             经办人员
           </span>
           <span className="font-bold text-slate-900">
@@ -166,14 +166,14 @@ function OperationRecordCard({
           </span>
         </div>
         <div className="grid gap-1 sm:grid-cols-[100px_1fr] sm:items-center sm:gap-2">
-          <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
+          <span className="text-[11px] font-semibold text-slate-400">
             录入时间
           </span>
           <span className="font-mono text-xs text-slate-500">{createdAt}</span>
         </div>
         {updatedAt && (
           <div className="grid gap-1 sm:grid-cols-[100px_1fr] sm:items-center sm:gap-2">
-            <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
+            <span className="text-[11px] font-semibold text-slate-400">
               最近修改
             </span>
             <span className="font-mono text-xs text-slate-500">
@@ -182,7 +182,7 @@ function OperationRecordCard({
           </div>
         )}
         <div className="grid gap-1 sm:grid-cols-[100px_1fr] sm:items-center sm:gap-2">
-          <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
+          <span className="text-[11px] font-semibold text-slate-400">
             库位
           </span>
           <span className="font-bold text-slate-700">
@@ -190,7 +190,7 @@ function OperationRecordCard({
           </span>
         </div>
         <div className="grid gap-1 sm:grid-cols-[100px_1fr] sm:items-center sm:gap-2">
-          <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
+          <span className="text-[11px] font-semibold text-slate-400">
             导入批次
           </span>
           <span className="font-mono text-xs text-slate-600">
@@ -198,7 +198,7 @@ function OperationRecordCard({
           </span>
         </div>
         <div className="grid gap-1 sm:grid-cols-[100px_1fr] sm:items-center sm:gap-2">
-          <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
+          <span className="text-[11px] font-semibold text-slate-400">
             实际入库
           </span>
           <span className="font-bold text-slate-900">{acceptedQuantity}</span>
@@ -206,7 +206,7 @@ function OperationRecordCard({
         {hasDamage ? (
           <>
             <div className="grid gap-1 sm:grid-cols-[100px_1fr] sm:items-center sm:gap-2">
-              <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
+              <span className="text-[11px] font-semibold text-slate-400">
                 到货总量
               </span>
               <span className="font-bold text-slate-900">
@@ -214,7 +214,7 @@ function OperationRecordCard({
               </span>
             </div>
             <div className="grid gap-1 sm:grid-cols-[100px_1fr] sm:items-center sm:gap-2">
-              <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
+              <span className="text-[11px] font-semibold text-slate-400">
                 到货破损
               </span>
               <span className="font-bold text-amber-700">
@@ -222,7 +222,7 @@ function OperationRecordCard({
               </span>
             </div>
             <div className="grid gap-1 sm:grid-cols-[100px_1fr] sm:items-center sm:gap-2">
-              <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
+              <span className="text-[11px] font-semibold text-slate-400">
                 处理方式
               </span>
               <span className="font-bold text-slate-700">
@@ -230,7 +230,7 @@ function OperationRecordCard({
               </span>
             </div>
             <div className="grid gap-1 sm:grid-cols-[100px_1fr] sm:gap-2">
-              <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
+              <span className="text-[11px] font-semibold text-slate-400">
                 破损说明
               </span>
               <span className="text-xs text-slate-500 italic">
@@ -243,7 +243,7 @@ function OperationRecordCard({
           </>
         ) : null}
         <div className="grid gap-1 border-t border-slate-50 pt-2 sm:grid-cols-[100px_1fr] sm:gap-2">
-          <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
+          <span className="text-[11px] font-semibold text-slate-400">
             备注摘要
           </span>
           <span className="text-xs text-slate-500 italic">
@@ -260,7 +260,7 @@ function BatchTraceCard({ batchNumber }: { batchNumber: string }) {
     <Card className="border-slate-200 bg-white shadow-sm transition-all hover:shadow-md">
       <CardHeader className="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/50 px-4 py-4 sm:px-6 sm:py-5 xl:flex-row xl:items-center xl:justify-between">
         <div>
-          <CardTitle className="text-sm font-black tracking-widest text-slate-500 uppercase italic">
+          <CardTitle className="text-sm font-semibold text-slate-500 italic">
             批次去向
           </CardTitle>
           <p className="mt-1 text-xs font-bold text-slate-400">

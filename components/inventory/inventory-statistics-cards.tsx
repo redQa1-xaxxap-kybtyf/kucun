@@ -239,7 +239,7 @@ export function InventoryStatisticsCards({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between px-1">
-        <div className="text-sm font-black tracking-wide text-slate-400 uppercase">
+        <div className="text-sm font-semibold tracking-wide text-slate-400">
           实时库存指标集
         </div>
         <Button
@@ -263,9 +263,9 @@ export function InventoryStatisticsCards({
             >
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <p className="text-xs font-black text-slate-400">{title}</p>
+                  <p className="text-xs font-semibold text-slate-400">{title}</p>
                   <div
-                    className={`text-2xl font-black tracking-tight ${color}`}
+                    className={`text-2xl font-semibold tracking-tight ${color}`}
                   >
                     {value}
                   </div>
