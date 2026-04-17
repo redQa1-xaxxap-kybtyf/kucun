@@ -3,7 +3,7 @@
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
@@ -35,6 +35,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import { useConfirmPayment, useCreatePaymentRecord } from '@/lib/api/payments';
 import { invalidateFinanceCaches } from '@/lib/cache/invalidation-helpers';
+import { queryKeys } from '@/lib/queryKeys';
 import type { ReceivableItem } from '@/lib/services/receivables-service';
 import {
   DEFAULT_PAYMENT_METHODS,
@@ -48,9 +49,23 @@ import {
 } from '@/lib/validations/payment';
 
 type FormValues = CreatePaymentRecordData;
+type SubmitAction = 'pending' | 'confirm';
+
+export interface ReceivablePaymentTarget
+  extends Pick<
+    ReceivableItem,
+    | 'id'
+    | 'orderNumber'
+    | 'customerId'
+    | 'customerName'
+    | 'totalAmount'
+    | 'paidAmount'
+    | 'remainingAmount'
+    | 'lastPaymentDate'
+  > {}
 
 interface ReceivablePaymentDialogProps {
-  receivable: ReceivableItem | null;
+  receivable: ReceivablePaymentTarget | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
@@ -66,6 +81,7 @@ export function ReceivablePaymentDialog({
   const createPaymentMutation = useCreatePaymentRecord();
   const confirmPaymentMutation = useConfirmPayment();
   const queryClient = useQueryClient();
+  const [activeAction, setActiveAction] = useState<SubmitAction | null>(null);
 
   const defaultValues = useMemo<FormValues>(
     () => ({
@@ -158,7 +174,17 @@ export function ReceivablePaymentDialog({
     forceClose(nextOpen);
   };
 
-  const handleSubmit = async (values: FormValues) => {
+  const refreshRelatedQueries = (salesOrderId: string) => {
+    invalidateFinanceCaches(queryClient);
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.salesOrders.detail(salesOrderId),
+    });
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.salesOrders.all,
+    });
+  };
+
+  const handleSubmit = async (values: FormValues, action: SubmitAction) => {
     if (!receivable) {
       return;
     }
@@ -187,27 +213,58 @@ export function ReceivablePaymentDialog({
     };
 
     try {
+      setActiveAction(action);
       const paymentRecord = await createPaymentMutation.mutateAsync(payload);
-      await confirmPaymentMutation.mutateAsync({ id: paymentRecord.id });
 
-      // ✅ 使用统一的缓存刷新工具函数
-      invalidateFinanceCaches(queryClient);
+      if (action === 'pending') {
+        refreshRelatedQueries(receivable.id);
+        toast({
+          title: '已登记待确认收款',
+          description:
+            '这笔收款已经登记成功，请到“收款管理”里确认到账。',
+          variant: 'success',
+        });
+        forceClose(false);
+        onSuccess?.();
+        return;
+      }
 
-      toast({
-        title: '收款已确认',
-        description: `已确认到账 ${formatCurrency(payload.actualPaymentAmount)}`,
-      });
-      forceClose(false);
-      onSuccess?.();
+      try {
+        await confirmPaymentMutation.mutateAsync({ id: paymentRecord.id });
+        refreshRelatedQueries(receivable.id);
+        toast({
+          title: '收款已确认到账',
+          description: `已确认到账 ${formatCurrency(payload.actualPaymentAmount)}`,
+          variant: 'success',
+        });
+        forceClose(false);
+        onSuccess?.();
+      } catch (confirmError) {
+        refreshRelatedQueries(receivable.id);
+        toast({
+          title: '已登记待确认收款',
+          description: getFriendlyErrorMessage(
+            confirmError,
+            '收款记录已经登记成功，但这次未能自动确认到账，请到“收款管理”里继续确认。'
+          ),
+          variant: 'warning',
+        });
+        forceClose(false);
+        onSuccess?.();
+      }
     } catch (error) {
       toast({
-        title: '收款失败',
+        title: action === 'pending' ? '登记失败' : '收款失败',
         description: getFriendlyErrorMessage(
           error,
-          '这笔收款暂时保存不了，请稍后再试'
+          action === 'pending'
+            ? '这笔待确认收款暂时登记不了，请稍后再试'
+            : '这笔收款暂时保存不了，请稍后再试'
         ),
         variant: 'destructive',
       });
+    } finally {
+      setActiveAction(null);
     }
   };
 
@@ -215,7 +272,7 @@ export function ReceivablePaymentDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>登记收款并确认到账</DialogTitle>
+          <DialogTitle>登记收款</DialogTitle>
         </DialogHeader>
         {receivable ? (
           <div className="space-y-4">
@@ -266,10 +323,16 @@ export function ReceivablePaymentDialog({
               </div>
             </div>
 
+            <div className="rounded-lg border border-dashed border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-4 py-3 text-sm text-[hsl(var(--color-text-secondary))]">
+              款项已经到账时，直接点“登记并确认到账”；如果只是先录入收款记录，后续再由财务确认，请点“登记待确认收款”。
+            </div>
+
             <Form {...form}>
               <form
                 className="space-y-3"
-                onSubmit={form.handleSubmit(handleSubmit)}
+                onSubmit={form.handleSubmit(values =>
+                  handleSubmit(values, 'confirm')
+                )}
               >
                 <FormField
                   control={form.control}
@@ -470,8 +533,31 @@ export function ReceivablePaymentDialog({
                     type="button"
                     variant="outline"
                     onClick={() => handleClose(false)}
+                    disabled={
+                      createPaymentMutation.isPending ||
+                      confirmPaymentMutation.isPending
+                    }
                   >
                     取消
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={
+                      createPaymentMutation.isPending ||
+                      confirmPaymentMutation.isPending
+                    }
+                    onClick={() => {
+                      void form.handleSubmit(values =>
+                        handleSubmit(values, 'pending')
+                      )();
+                    }}
+                  >
+                    {activeAction === 'pending' &&
+                    (createPaymentMutation.isPending ||
+                      confirmPaymentMutation.isPending)
+                      ? '登记中...'
+                      : '登记待确认收款'}
                   </Button>
                   <Button
                     type="submit"
@@ -480,10 +566,11 @@ export function ReceivablePaymentDialog({
                       confirmPaymentMutation.isPending
                     }
                   >
-                    {createPaymentMutation.isPending ||
-                    confirmPaymentMutation.isPending
-                      ? '保存中...'
-                      : '保存并确认到账'}
+                    {activeAction === 'confirm' &&
+                    (createPaymentMutation.isPending ||
+                      confirmPaymentMutation.isPending)
+                      ? '处理中...'
+                      : '登记并确认到账'}
                   </Button>
                 </div>
               </form>

@@ -303,7 +303,7 @@ function ReceivableTableRow({
               disabled
               className="h-6 cursor-not-allowed border-gray-300 bg-gray-50 px-2 text-xs text-gray-500"
             >
-              待确认到账
+              已有待确认
             </Button>
           ) : (
             amounts.actualRemaining > 0 && (
@@ -313,7 +313,7 @@ function ReceivableTableRow({
                 onClick={() => onOpenPaymentDialog(receivable)}
                 className="h-6 bg-green-600 px-2 text-xs text-white hover:bg-green-700"
               >
-                登记到账
+                登记收款
               </Button>
             )
           )}
@@ -336,7 +336,7 @@ function ReceivableTableRow({
                     className="text-green-600"
                   >
                     <DollarSign className="mr-2 h-4 w-4" />
-                    登记到账
+                    登记收款
                   </DropdownMenuItem>
                 )}
             </DropdownMenuContent>
@@ -446,7 +446,7 @@ function ReceivableCard({
               disabled
               className="h-8 cursor-not-allowed border-gray-300 bg-gray-50 px-3 text-xs text-gray-500"
             >
-              待确认到账
+              已有待确认
             </Button>
           ) : (
             amounts.actualRemaining > 0 && (
@@ -456,7 +456,7 @@ function ReceivableCard({
                 onClick={() => onOpenPaymentDialog(receivable)}
                 className="h-8 bg-green-600 px-3 text-xs text-white hover:bg-green-700"
               >
-                登记到账
+                登记收款
               </Button>
             )
           )}
@@ -480,7 +480,7 @@ function ReceivableCard({
                   className="text-green-600"
                 >
                   <DollarSign className="mr-2 h-4 w-4" />
-                  登记到账
+                  登记收款
                 </DropdownMenuItem>
               )}
           </DropdownMenuContent>

@@ -4,9 +4,13 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowUpRight, Calendar, FileText, Receipt, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 
 import { ContentLoading } from '@/components/common/loading';
+import {
+  ReceivablePaymentDialog,
+  type ReceivablePaymentTarget,
+} from '@/components/finance/receivable-payment-dialog';
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -137,8 +141,10 @@ function formatPaymentMethod(method?: string): string {
 
 function ReceivableHeaderActions({
   receivable,
+  onOpenPaymentDialog,
 }: {
   receivable: ReceivableDetail;
+  onOpenPaymentDialog: () => void;
 }) {
   return (
     <div className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
@@ -165,16 +171,19 @@ function ReceivableHeaderActions({
               查看销售订单
             </Link>
           </Button>
-          {receivable.status !== 'paid' && (
-            <Button size="sm" asChild className="w-full">
-              <Link
-                href={`/finance/payments/create?orderId=${receivable.salesOrder.id}`}
-              >
+          {receivable.status === 'pending' ? (
+            <Button size="sm" variant="outline" asChild className="w-full">
+              <Link href="/finance/payments?status=pending">
                 <ChineseYuan className="mr-2 h-4 w-4" />
-                登记待确认收款
+                去收款管理确认
               </Link>
             </Button>
-          )}
+          ) : receivable.status !== 'paid' ? (
+            <Button size="sm" className="w-full" onClick={onOpenPaymentDialog}>
+              <ChineseYuan className="mr-2 h-4 w-4" />
+              登记收款
+            </Button>
+          ) : null}
         </div>
       </div>
     </div>
@@ -556,21 +565,32 @@ function AmountSummaryCard({
   );
 }
 
-function QuickActionsCard({ receivable }: { receivable: ReceivableDetail }) {
+function QuickActionsCard({
+  receivable,
+  onOpenPaymentDialog,
+}: {
+  receivable: ReceivableDetail;
+  onOpenPaymentDialog: () => void;
+}) {
   return (
     <Card>
       <CardHeader className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
         <CardTitle>快速操作</CardTitle>
       </CardHeader>
       <CardContent className="space-y-2 pt-6">
-        <Button className="w-full" size="sm" asChild>
-          <Link
-            href={`/finance/payments/create?orderId=${receivable.salesOrder.id}`}
-          >
+        {receivable.status === 'pending' ? (
+          <Button className="w-full" size="sm" variant="outline" asChild>
+            <Link href="/finance/payments?status=pending">
+              <ChineseYuan className="mr-2 h-4 w-4" />
+              去收款管理确认
+            </Link>
+          </Button>
+        ) : (
+          <Button className="w-full" size="sm" onClick={onOpenPaymentDialog}>
             <ChineseYuan className="mr-2 h-4 w-4" />
-            登记待确认收款
-          </Link>
-        </Button>
+            登记收款
+          </Button>
+        )}
         <Button variant="outline" className="w-full" size="sm" asChild>
           <Link href={`/sales-orders/${receivable.salesOrder.id}`}>
             <Receipt className="mr-2 h-4 w-4" />
@@ -625,11 +645,13 @@ export default function ReceivableDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
 
   const {
     data: receivable,
     isLoading,
     error,
+    refetch,
   } = useQuery<ReceivableDetail>({
     queryKey: queryKeys.finance.receivable(id),
     queryFn: () => fetchReceivableDetail(id),
@@ -667,9 +689,25 @@ export default function ReceivableDetailPage() {
         100
       : 0;
 
+  const paymentDialogReceivable: ReceivablePaymentTarget = {
+    id: receivable.salesOrder.id,
+    orderNumber: receivable.salesOrder.orderNumber,
+    customerId: receivable.customerId,
+    customerName: receivable.customer.name,
+    totalAmount: receivable.salesOrder.totalAmount,
+    paidAmount: receivable.receivedAmount,
+    remainingAmount: receivable.remainingAmount,
+    lastPaymentDate:
+      receivable.paymentRecords[0]?.paymentDate ??
+      receivable.receivableConfirmation?.paymentDate,
+  };
+
   return (
     <div className="mx-auto max-w-7xl space-y-4 p-4 sm:space-y-6 sm:p-6">
-      <ReceivableHeaderActions receivable={receivable} />
+      <ReceivableHeaderActions
+        receivable={receivable}
+        onOpenPaymentDialog={() => setIsPaymentDialogOpen(true)}
+      />
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <div className="space-y-4 xl:col-span-2">
           <BasicInfoCard receivable={receivable} router={router} />
@@ -686,11 +724,22 @@ export default function ReceivableDetailPage() {
             paymentProgress={paymentProgress}
           />
           {receivable.status !== 'paid' && (
-            <QuickActionsCard receivable={receivable} />
+            <QuickActionsCard
+              receivable={receivable}
+              onOpenPaymentDialog={() => setIsPaymentDialogOpen(true)}
+            />
           )}
           <CustomerInfoCard receivable={receivable} router={router} />
         </div>
       </div>
+      <ReceivablePaymentDialog
+        open={isPaymentDialogOpen}
+        onOpenChange={setIsPaymentDialogOpen}
+        receivable={paymentDialogReceivable}
+        onSuccess={() => {
+          void refetch();
+        }}
+      />
     </div>
   );
 }
