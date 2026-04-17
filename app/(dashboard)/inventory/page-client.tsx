@@ -144,6 +144,12 @@ export function InventoryPageClient({
         const inventories = await fetchInventoryExportData(
           ctrl.currentQueryParams
         );
+        const categoryPathById = new Map(
+          categoryOptions.map(category => [
+            category.id,
+            category.fullPath ?? category.name,
+          ])
+        );
 
         if (inventories.length === 0) {
           toast({
@@ -157,6 +163,7 @@ export function InventoryPageClient({
         await ExportService.exportToExcel(
           buildInventoryExportRows(inventories, {
             includeFinance: hasFinancePermission,
+            categoryPathById,
           }),
           {
             filename: buildInventoryExportFilename(),
@@ -180,7 +187,13 @@ export function InventoryPageClient({
         setIsExporting(false);
       }
     })();
-  }, [ctrl.currentQueryParams, hasFinancePermission, isExporting, toast]);
+  }, [
+    categoryOptions,
+    ctrl.currentQueryParams,
+    hasFinancePermission,
+    isExporting,
+    toast,
+  ]);
 
   return (
     <InventoryContent

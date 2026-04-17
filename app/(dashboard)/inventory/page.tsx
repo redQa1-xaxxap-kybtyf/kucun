@@ -117,6 +117,8 @@ export default async function InventoryPage({
   const categoryOptions = categoriesResult.data.map(cat => ({
     id: cat.id,
     name: cat.name,
+    fullPath: cat.fullPath,
+    level: cat.level,
     code: cat.code,
     status: cat.status,
     createdAt: cat.createdAt,

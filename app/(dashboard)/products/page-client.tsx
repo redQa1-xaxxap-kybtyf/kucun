@@ -8,7 +8,9 @@ import * as React from 'react';
 import { PageHeader } from '@/components/common/page-header';
 import { ProductImportDialog } from '@/components/products/product-import-dialog';
 import { Button } from '@/components/ui/button';
+import { getCategories } from '@/lib/api/categories';
 import { getProducts, type ProductListQueryParams } from '@/lib/api/products';
+import { paginationConfig } from '@/lib/config/pagination';
 import { ExportService } from '@/lib/services/export-service';
 import type { Product, ProductQueryParams } from '@/lib/types/product';
 import {
@@ -62,6 +64,22 @@ async function fetchProductsForExport(
   return products;
 }
 
+async function fetchCategoryPathMapForExport(): Promise<Map<string, string>> {
+  const response = await getCategories({
+    status: 'active',
+    limit: paginationConfig.maxPageSize,
+    sortBy: 'name',
+    sortOrder: 'asc',
+  });
+
+  return new Map(
+    response.data.map(category => [
+      category.id,
+      category.fullPath ?? category.name,
+    ])
+  );
+}
+
 /**
  * 产品管理页面客户端组件
  * 使用 ERPProductList 组件统一产品列表的渲染逻辑
@@ -82,7 +100,10 @@ export function ProductsPageClient({ initialParams }: ProductsPageClientProps) {
       setIsExporting(true);
 
       try {
-        const products = await fetchProductsForExport(initialParams);
+        const [products, categoryPathById] = await Promise.all([
+          fetchProductsForExport(initialParams),
+          fetchCategoryPathMapForExport(),
+        ]);
 
         if (products.length === 0) {
           showWarning('没有可导出的产品', {
@@ -91,11 +112,14 @@ export function ProductsPageClient({ initialParams }: ProductsPageClientProps) {
           return;
         }
 
-        await ExportService.exportToExcel(buildProductExportRows(products), {
-          filename: buildProductExportFilename(),
-          sheetName: '产品列表',
-          includeHeaders: true,
-        });
+        await ExportService.exportToExcel(
+          buildProductExportRows(products, { categoryPathById }),
+          {
+            filename: buildProductExportFilename(),
+            sheetName: '产品列表',
+            includeHeaders: true,
+          }
+        );
 
         showSuccess('产品导出成功', {
           description: `已导出 ${products.length} 条产品记录`,

@@ -150,6 +150,8 @@ export interface CategoryOption {
   name: string;
   code: string;
   description?: string;
+  fullPath?: string;
+  level?: number;
   disabled?: boolean;
 }
 

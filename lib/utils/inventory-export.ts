@@ -7,6 +7,7 @@ export const INVENTORY_EXPORT_PAGE_SIZE = 100;
 
 export interface BuildInventoryExportRowsOptions {
   includeFinance?: boolean;
+  categoryPathById?: Map<string, string>;
 }
 
 function resolveUnitLabel(inventory: Inventory): string {
@@ -30,7 +31,7 @@ export function buildInventoryExportRows(
   inventories: Inventory[],
   options: BuildInventoryExportRowsOptions = {}
 ): Array<Record<string, unknown>> {
-  const { includeFinance = false } = options;
+  const { includeFinance = false, categoryPathById } = options;
 
   return inventories.map(inventory => {
     const packaging =
@@ -40,12 +41,18 @@ export function buildInventoryExportRows(
       inventory.quantity - (inventory.reservedQuantity ?? 0),
       0
     );
+    const categoryPath =
+      (inventory.product?.category?.id
+        ? categoryPathById?.get(inventory.product.category.id)
+        : undefined) ??
+      inventory.product?.category?.name ??
+      '';
 
     const row: Record<string, unknown> = {
       产品编码: inventory.product?.code ?? '未知编码',
       产品名称: inventory.product?.name ?? '未知产品',
       规格: inventory.product?.specification ?? '',
-      分类: inventory.product?.category?.name ?? '',
+      分类: categoryPath,
       批次: inventory.batchNumber ?? '常规',
       库位: inventory.location ?? '',
       单位: unitLabel,

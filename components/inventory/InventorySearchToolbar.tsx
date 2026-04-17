@@ -26,7 +26,12 @@ import type { InventoryQueryParams } from '@/lib/types/inventory';
 
 interface InventorySearchToolbarProps {
   queryParams: InventoryQueryParams;
-  categoryOptions: Array<{ id: string; name: string }>;
+  categoryOptions: Array<{
+    id: string;
+    name: string;
+    fullPath?: string;
+    level?: number;
+  }>;
   searchValue?: string;
   onSearch: (value: string) => void;
   onFilter: (
@@ -75,7 +80,7 @@ export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
           key: 'categoryId',
           label: '分类',
           options: categoryOptions.map(category => ({
-            label: category.name,
+            label: category.fullPath ?? category.name,
             value: category.id,
           })),
           width: 'w-[160px]',

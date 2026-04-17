@@ -425,7 +425,7 @@ function useCreateCategoryController(): CreateCategoryController {
         // ignore cache invalidation errors
       });
 
-      router.push('/categories');
+      router.replace('/categories');
       router.refresh();
     },
     onError: error => {

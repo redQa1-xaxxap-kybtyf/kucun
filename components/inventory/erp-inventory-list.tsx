@@ -25,7 +25,12 @@ interface ERPInventoryListProps {
       totalPages: number;
     };
   };
-  categoryOptions: Array<{ id: string; name: string }>;
+  categoryOptions: Array<{
+    id: string;
+    name: string;
+    fullPath?: string;
+    level?: number;
+  }>;
   queryParams: InventoryQueryParams;
   /** ✅ 本地输入框值，提供即时UI反馈 */
   searchValue?: string;
@@ -156,7 +161,7 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
       const items: Array<{ key: string; label: string; value: string }> = [];
       const categoryName = categoryOptions.find(
         category => category.id === queryParams.categoryId
-      )?.name;
+      );
       const keyword = queryParams.search?.trim();
       const dateRangeSummary = formatDateRangeSummary(
         queryParams.startDate,
@@ -175,7 +180,7 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
         items.push({
           key: 'category',
           label: '分类',
-          value: categoryName,
+          value: categoryName.fullPath ?? categoryName.name,
         });
       }
 
