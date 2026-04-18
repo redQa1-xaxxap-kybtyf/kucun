@@ -108,6 +108,7 @@ function normalizeInitialStockImportRow(
     normalizedRow.单片成本 !== undefined
   ) {
     normalizedRow.单位成本 = normalizedRow.单片成本;
+    normalizedRow.unitCostBasis = 'piece';
   }
 
   if (
@@ -115,6 +116,7 @@ function normalizeInitialStockImportRow(
     normalizedRow['单片成本(元/片)'] !== undefined
   ) {
     normalizedRow.单位成本 = normalizedRow['单片成本(元/片)'];
+    normalizedRow.unitCostBasis = 'piece';
   }
 
   return normalizedRow as InitialStockRowInput;

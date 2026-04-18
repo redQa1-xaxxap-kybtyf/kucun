@@ -56,6 +56,13 @@ export const PRODUCT_SORT_FIELD_LABELS = {
   [PRODUCT_SORT_FIELDS.UPDATED_AT]: '更新时间',
 } as const;
 
+// 产品默认排序
+// 默认按名称升序，让同前缀/相近名称的产品自然排列在一起，方便快速查找
+export const PRODUCT_DEFAULT_SORT = {
+  sortBy: PRODUCT_SORT_FIELDS.NAME,
+  sortOrder: 'asc',
+} as const;
+
 // 产品状态选项（用于下拉框）
 export const PRODUCT_STATUS_OPTIONS = [
   {

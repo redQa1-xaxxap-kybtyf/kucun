@@ -1,6 +1,10 @@
 import { SearchFilterCard } from '@/components/common/search-filter-card';
-import { COUNT_TYPE_OPTIONS } from '@/lib/constants/inventory-filters';
-import type { InventoryCountQueryParams } from '@/lib/types/inventory-count';
+import { Input } from '@/components/ui/input';
+import {
+  COUNT_STATUS_OPTIONS,
+  COUNT_TYPE_OPTIONS,
+  type InventoryCountQueryParams,
+} from '@/lib/types/inventory-count';
 
 interface CountRecordsFiltersProps {
   filters: InventoryCountQueryParams;
@@ -19,16 +23,29 @@ export function CountRecordsFilters({
       onFiltersChange({
         countType: value as InventoryCountQueryParams['countType'],
       });
+      return;
+    }
+
+    if (key === 'status') {
+      onFiltersChange({
+        status: value as InventoryCountQueryParams['status'],
+      });
     }
   };
 
   return (
     <SearchFilterCard
-      searchValue={filters.location || ''}
-      onSearchChange={val => onFiltersChange({ location: val })}
-      searchPlaceholder="搜索盘点位置..."
+      searchValue={filters.search || ''}
+      onSearchChange={val => onFiltersChange({ search: val })}
+      searchPlaceholder="搜索盘点单名称或编号..."
       // 筛选器配置
       filters={[
+        {
+          key: 'status',
+          label: '状态',
+          options: COUNT_STATUS_OPTIONS,
+          width: 'w-36',
+        },
         {
           key: 'countType',
           label: '盘点类型',
@@ -37,9 +54,23 @@ export function CountRecordsFilters({
         },
       ]}
       filterValues={{
+        status: filters.status || 'all',
         countType: filters.countType || 'all',
       }}
       onFilterChange={handleFilterChange}
+      customFilters={
+        <Input
+          aria-label="库位/存放区域"
+          value={filters.location || ''}
+          onChange={event =>
+            onFiltersChange({
+              location: event.target.value || undefined,
+            })
+          }
+          placeholder="库位/存放区域"
+          className="h-14 w-full rounded-2xl border-white bg-white/40 font-bold shadow-sm backdrop-blur-md hover:bg-white sm:w-48"
+        />
+      }
       // 日期范围筛选
       dateRangeFilter={{
         key: 'dateRange',
@@ -58,7 +89,9 @@ export function CountRecordsFilters({
       }}
       onClearFilters={onReset}
       hasActiveFilters={
+        !!filters.search ||
         !!filters.location ||
+        !!filters.status ||
         !!filters.countType ||
         !!filters.startDate ||
         !!filters.endDate

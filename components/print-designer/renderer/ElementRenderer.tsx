@@ -11,7 +11,9 @@ import type { DesignElement } from '@/lib/print-designer/schemas';
 import {
   BarcodeRenderer,
   ImageRenderer,
+  LineRenderer,
   PlaceholderRenderer,
+  RectRenderer,
   TableRenderer,
   TextRenderer,
 } from './elements';
@@ -59,6 +61,12 @@ export function ElementRenderer({
 
       case 'barcode':
         return <BarcodeRenderer element={element} data={data} scale={scale} />;
+
+      case 'line':
+        return <LineRenderer element={element} />;
+
+      case 'rect':
+        return <RectRenderer element={element} />;
 
       default:
         // TypeScript 穷尽检查

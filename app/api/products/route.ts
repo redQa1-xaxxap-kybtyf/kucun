@@ -14,6 +14,7 @@ import type { ProductListQueryParams } from '@/lib/api/products';
 import { getProductsForServer } from '@/lib/api/products-server';
 import { successResponse, withAuth } from '@/lib/auth/api-helpers';
 import { publishDataUpdate, revalidateProducts } from '@/lib/cache';
+import { PRODUCT_DEFAULT_SORT } from '@/lib/config/product';
 import { productConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { productCreateSchema } from '@/lib/validations/product';
@@ -43,8 +44,9 @@ function parseProductQueryParams(
   const search = searchParams.get('search') || undefined;
   const categoryId = searchParams.get('categoryId') || undefined;
   const status = searchParams.get('status') || undefined;
-  const sortBy = searchParams.get('sortBy') || 'createdAt';
-  const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
+  const sortBy = searchParams.get('sortBy') || PRODUCT_DEFAULT_SORT.sortBy;
+  const sortOrder = (searchParams.get('sortOrder') ||
+    PRODUCT_DEFAULT_SORT.sortOrder) as 'asc' | 'desc';
 
   return {
     page,

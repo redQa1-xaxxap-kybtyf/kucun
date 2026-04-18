@@ -5,21 +5,31 @@
 'use client';
 
 import {
+  LayoutTemplate,
   CalendarDays,
   FileText,
   Hash,
   Image,
+  Minus,
   QrCode,
+  Square,
   Table,
   Type,
 } from 'lucide-react';
 import { useMemo } from 'react';
 
 import {
+  createQuickLayoutElements,
+  getQuickLayoutPresets,
+  type QuickLayoutPresetKey,
+} from '@/lib/print-designer/editor-quick-layouts';
+import {
   getFieldsForTemplateType,
+  getRecommendedFieldsForTemplateType,
   groupFields,
   type FieldDefinition,
 } from '@/lib/print-designer/field-registry';
+import type { TemplateType } from '@/lib/print-designer/schemas';
 import { getTemplateTypeMeta } from '@/lib/print-designer/template-meta';
 import { cn } from '@/lib/utils';
 
@@ -49,6 +59,18 @@ const componentItems = [
     type: 'barcode',
     label: '条码',
     icon: QrCode,
+    category: 'basic',
+  },
+  {
+    type: 'line',
+    label: '横线',
+    icon: Minus,
+    category: 'basic',
+  },
+  {
+    type: 'rect',
+    label: '边框框',
+    icon: Square,
     category: 'basic',
   },
 ];
@@ -148,11 +170,26 @@ function FieldItem({ field }: FieldItemProps) {
 export function ComponentToolbar() {
   const templateType = useDesignerStore(s => s.template?.type ?? 'sales-order');
   const templateMeta = getTemplateTypeMeta(templateType);
+  const addElements = useDesignerStore(s => s.addElements);
 
   const groupedFields = useMemo(
     () => groupFields(getFieldsForTemplateType(templateType)),
     [templateType]
   );
+  const quickFieldSuggestions = useMemo(
+    () => getRecommendedFieldsForTemplateType(templateType).slice(0, 6),
+    [templateType]
+  );
+  const quickLayoutPresets = useMemo(
+    () => getQuickLayoutPresets(templateType as TemplateType),
+    [templateType]
+  );
+
+  const handleApplyQuickLayout = (presetKey: QuickLayoutPresetKey) => {
+    addElements(
+      createQuickLayoutElements(templateType as TemplateType, presetKey)
+    );
+  };
 
   return (
     <aside className="flex w-64 flex-col border-r bg-stone-50">
@@ -169,6 +206,34 @@ export function ComponentToolbar() {
           先拖基础组件，再拖数据项替换固定文字，更符合中国企业常见的单据制作习惯。
         </div>
       </div>
+
+      {quickLayoutPresets.length > 0 && (
+        <div className="border-b p-3">
+          <div className="mb-2 flex items-center gap-2">
+            <LayoutTemplate className="h-4 w-4 text-stone-600" />
+            <h3 className="text-xs font-medium tracking-[0.12em] text-stone-500 uppercase">
+              一键版式
+            </h3>
+          </div>
+          <div className="space-y-2">
+            {quickLayoutPresets.map(preset => (
+              <button
+                key={preset.key}
+                type="button"
+                onClick={() => handleApplyQuickLayout(preset.key)}
+                className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-left transition-colors hover:border-amber-300 hover:bg-amber-50"
+              >
+                <div className="text-sm font-medium text-stone-900">
+                  {preset.label}
+                </div>
+                <div className="mt-1 text-[11px] leading-5 text-stone-500">
+                  {preset.description}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 基础组件 */}
       <div className="border-b p-3">
@@ -197,6 +262,20 @@ export function ComponentToolbar() {
             {Object.values(groupedFields).flat().length} 项
           </span>
         </div>
+
+        {quickFieldSuggestions.length > 0 && (
+          <section className="mb-4">
+            <div className="mb-2 flex items-center justify-between">
+              <h4 className="text-xs font-medium text-stone-700">常用数据项</h4>
+              <span className="text-[10px] text-stone-400">先放这些更快</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {quickFieldSuggestions.map(field => (
+                <FieldItem key={`quick-${field.path}`} field={field} />
+              ))}
+            </div>
+          </section>
+        )}
 
         <div className="space-y-4">
           {Object.entries(groupedFields).map(([group, fields]) => (

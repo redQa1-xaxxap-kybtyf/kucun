@@ -22,6 +22,7 @@ interface CountsPageClientProps {
   initialParams: {
     page: number;
     pageSize: number;
+    search?: string;
     status?: string;
     countType?: string;
     location?: string;
@@ -40,7 +41,7 @@ const CountList = dynamic(
     ),
   {
     ssr: false,
-    loading: () => <TableSkeleton columns={7} rows={8} showPagination />,
+    loading: () => <TableSkeleton columns={8} rows={8} showPagination />,
   }
 );
 
@@ -54,13 +55,14 @@ export function CountsPageClient({
   const [filters, setFilters] = React.useState<InventoryCountQueryParams>({
     page: initialParams.page,
     pageSize: initialParams.pageSize,
+    search: initialParams.search,
     status: initialParams.status as CountStatus | undefined,
     countType: initialParams.countType as CountType | undefined,
     location: initialParams.location,
     categoryId: initialParams.categoryId,
     startDate: initialParams.startDate,
     endDate: initialParams.endDate,
-    sortBy: initialParams.sortBy as 'planDate' | 'createdAt',
+    sortBy: initialParams.sortBy as InventoryCountQueryParams['sortBy'],
     sortOrder: initialParams.sortOrder,
   });
 
@@ -74,6 +76,9 @@ export function CountsPageClient({
       }
       if (newFilters.pageSize && newFilters.pageSize !== 20) {
         params.set('pageSize', newFilters.pageSize.toString());
+      }
+      if (newFilters.search) {
+        params.set('search', newFilters.search);
       }
       if (newFilters.status) {
         params.set('status', newFilters.status);
@@ -142,8 +147,8 @@ export function CountsPageClient({
       <div className="space-y-6">
         {/* 页面标题 */}
         <PageHeader
-          title="库存盘点"
-          description="管理库存盘点计划，跟踪盘点进度"
+          title="盘点单"
+          description="管理盘点单，查看录入进度"
           icon={<ClipboardCheck className="h-6 w-6 text-white" />}
           iconBgColor="hsl(var(--color-info))"
           actions={
@@ -155,7 +160,7 @@ export function CountsPageClient({
               >
                 <Link href="/inventory/counts/new">
                   <Plus className="mr-2 h-4 w-4" />
-                  新建盘点计划
+                  新建盘点单
                 </Link>
               </Button>
             ) : undefined
@@ -169,7 +174,7 @@ export function CountsPageClient({
           onReset={handleResetFilters}
         />
 
-        {/* 盘点计划列表 */}
+        {/* 盘点单列表 */}
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
           <CountList filters={filters} />
         </div>

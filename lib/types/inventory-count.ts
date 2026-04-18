@@ -215,6 +215,7 @@ export interface SubmitCountDataRequest {
 
 // 盘点查询参数
 export interface InventoryCountQueryParams {
+  search?: string;
   status?: CountStatus;
   countType?: CountType;
   location?: string;

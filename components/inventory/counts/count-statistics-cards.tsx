@@ -40,14 +40,14 @@ export function CountStatisticsCards({
   const cardConfigs = [
     {
       id: 'totalCounts',
-      title: '总盘点次数',
+      title: '盘点单总数',
       icon: FileText,
       value: formatNumber(statistics.totalCounts),
-      description: `草稿 ${formatNumber(statistics.draftCounts)} 个`,
+      description: `草稿 ${formatNumber(statistics.draftCounts)} 单`,
     },
     {
       id: 'inProgressCounts',
-      title: '进行中盘点',
+      title: '盘点中',
       icon: Loader2,
       value: formatNumber(statistics.inProgressCounts),
       description: getRatioText(
@@ -57,7 +57,7 @@ export function CountStatisticsCards({
     },
     {
       id: 'completedCounts',
-      title: '已完成盘点',
+      title: '已提交',
       icon: CheckCircle,
       value: formatNumber(statistics.completedCounts),
       description: getRatioText(
@@ -67,17 +67,17 @@ export function CountStatisticsCards({
     },
     {
       id: 'differenceItems',
-      title: '差异明细总数',
+      title: '有差异商品数',
       icon: Package,
       value: formatNumber(statistics.differenceItems),
-      description: `总明细 ${formatNumber(statistics.totalItems)} 个`,
+      description: `盘点商品 ${formatNumber(statistics.totalItems)} 条`,
     },
     {
       id: 'totalDifferenceCost',
-      title: '差异总金额',
+      title: '差异金额',
       icon: TrendingDown,
       value: `￥${formatCurrency(statistics.totalDifferenceCost)}`,
-      description: `差异数量 ${formatNumber(statistics.totalDifference)}`,
+      description: `差异总量 ${formatNumber(statistics.totalDifference)}`,
     },
   ];
 

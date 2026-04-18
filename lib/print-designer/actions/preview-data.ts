@@ -14,6 +14,8 @@ import {
   getSalesOrderItemSpecification,
   getSalesOrderItemWeightKg,
   getSalesOrderNormalizedDisplayUnit,
+  getSalesOrderPiecesPerUnit,
+  getSalesOrderTotalPieces,
   getSalesOrderTotalQuantitySummary,
   getSalesOrderTotalWeightKg,
 } from '@/lib/utils/sales-order-display';
@@ -36,6 +38,77 @@ function todayYmd(): string {
   return new Date().toISOString().split('T')[0];
 }
 
+function toSafeInteger(value: unknown): number {
+  const numeric = Number(value ?? 0);
+
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    return 0;
+  }
+
+  return Math.floor(numeric);
+}
+
+function toSafeNumber(value: unknown): number {
+  const numeric = Number(value ?? 0);
+  return Number.isFinite(numeric) ? numeric : 0;
+}
+
+function resolvePiecesPerUnit(...values: unknown[]): number {
+  for (const value of values) {
+    const numeric = toSafeInteger(value);
+    if (numeric > 0) {
+      return numeric;
+    }
+  }
+
+  return 0;
+}
+
+function buildUnitBasedQuantityFields(
+  quantity: unknown,
+  unit: string,
+  piecesPerUnit = 0
+) {
+  const normalizedQuantity = toSafeInteger(quantity);
+  const normalizedUnit = unit.trim();
+  const boxes = normalizedUnit === '件' ? normalizedQuantity : 0;
+  const pieces =
+    piecesPerUnit > 1 && normalizedUnit === '件'
+      ? normalizedQuantity * piecesPerUnit
+      : normalizedQuantity;
+
+  return {
+    boxes,
+    pieces,
+    piecesPerUnit,
+  };
+}
+
+function buildPieceBackedQuantityFields(
+  totalPieces: unknown,
+  unit: string,
+  piecesPerUnit = 0,
+  displayQuantity?: unknown
+) {
+  const pieces = toSafeInteger(totalPieces);
+  const normalizedUnit = unit.trim();
+  const rawDisplayQuantity = Number(displayQuantity);
+  const boxes =
+    normalizedUnit === '件'
+      ? Number.isFinite(rawDisplayQuantity) && rawDisplayQuantity > 0
+        ? rawDisplayQuantity
+        : piecesPerUnit > 1
+          ? pieces / piecesPerUnit
+          : 0
+      : 0;
+
+  return {
+    boxes,
+    pieces,
+    piecesPerUnit,
+  };
+}
+
 export interface RecentPrintDocumentOption {
   id: string;
   label: string;
@@ -54,6 +127,7 @@ export async function getSalesOrderForPrint(orderId: string) {
     where: { id: orderId },
     include: {
       customer: true,
+      supplier: true,
       user: { select: { name: true } },
       items: {
         include: {
@@ -102,8 +176,13 @@ export async function getSalesOrderForPrint(orderId: string) {
     const unit = getSalesOrderNormalizedDisplayUnit(displayItem);
     const quantityText = getSalesOrderItemQuantityText(displayItem);
     const itemWeightKg = getSalesOrderItemWeightKg(displayItem);
-    const boxCount =
-      unit === '件' ? getSalesOrderDisplayQuantityValue(displayItem) : 0;
+    const piecesPerUnit = getSalesOrderPiecesPerUnit(displayItem) ?? 0;
+    const quantityFields = buildPieceBackedQuantityFields(
+      displayItem.quantity,
+      unit,
+      piecesPerUnit,
+      unit === '件' ? getSalesOrderDisplayQuantityValue(displayItem) : undefined
+    );
 
     return {
       // 推荐通用字段（新模板优先使用）
@@ -114,8 +193,12 @@ export async function getSalesOrderForPrint(orderId: string) {
       quantity: quantityText,
       unitPrice: Number(displayItem.unitPrice),
       subtotal: Number(displayItem.subtotal),
+      totalPrice: Number(displayItem.subtotal),
       batchNumber: displayItem.batchNumber ?? '',
+      colorNo: displayItem.colorCode ?? '',
       remark: displayItem.remarks ?? '',
+      remarks: displayItem.remarks ?? '',
+      ...quantityFields,
 
       // 兼容字段（旧模板仍可用）
       productName: name,
@@ -124,15 +207,15 @@ export async function getSalesOrderForPrint(orderId: string) {
 
       // 其他补充信息（可选）
       weight: itemWeightKg ?? 0,
-      boxes: boxCount,
     };
   });
 
   return {
     order: {
       orderNumber: order.orderNumber,
-      createdAt: formatDate(order.createdAt),
+      createdAt: formatDate(order.orderDate ?? order.createdAt),
       status: order.status,
+      transferMode: order.transferMode,
       remark: order.remarks ?? '',
       deliveryDate: '',
     },
@@ -142,12 +225,22 @@ export async function getSalesOrderForPrint(orderId: string) {
       address: order.customer?.address ?? '',
       contact: '', // Customer 模型没有 contactName
     },
+    supplier: {
+      name: order.supplier?.name ?? '',
+      phone: order.supplier?.phone ?? '',
+      address: order.supplier?.address ?? '',
+      supplierCode: order.supplier?.supplierCode ?? '',
+    },
     items: mappedItems,
     totalAmount: Number(order.totalAmount),
     totalAmountCap: Number(order.totalAmount),
     totalQuantity: getSalesOrderTotalQuantitySummary(normalizedItems),
+    totalPieces: getSalesOrderTotalPieces(normalizedItems),
     totalWeight: getSalesOrderTotalWeightKg(normalizedItems),
-    totalBoxes: mappedItems.reduce((sum, item) => sum + Number(item.boxes || 0), 0),
+    totalBoxes: mappedItems.reduce(
+      (sum, item) => sum + toSafeNumber(item.boxes),
+      0
+    ),
     operator: {
       name: order.user?.name ?? '',
     },
@@ -196,18 +289,31 @@ export async function getPurchaseOrderForPrint(orderId: string) {
     const unit = resolveUnitLabel(
       item.manualUnit ?? item.unit ?? item.product?.unit ?? 'sheet'
     );
+    const quantity = toSafeInteger(item.quantity);
+    const piecesPerUnit = resolvePiecesPerUnit(
+      item.piecesPerUnit,
+      item.product?.piecesPerUnit
+    );
+    const quantityFields = buildUnitBasedQuantityFields(
+      quantity,
+      unit,
+      piecesPerUnit
+    );
 
     return {
       name,
       code,
       spec,
       unit,
-      quantity: item.quantity,
+      quantity,
       unitPrice: Number(item.unitPrice),
       subtotal: Number(item.totalPrice),
+      totalPrice: Number(item.totalPrice),
       batchNumber: item.batchNumber ?? '',
       supplierName: item.supplier?.name ?? order.supplier?.name ?? '',
       remark: item.remarks ?? '',
+      remarks: item.remarks ?? '',
+      ...quantityFields,
 
       productName: name,
       productCode: code,
@@ -236,6 +342,8 @@ export async function getPurchaseOrderForPrint(orderId: string) {
     items: mappedItems,
     totalAmount: Number(order.totalAmount),
     totalQuantity: order.items.reduce((sum, i) => sum + i.quantity, 0),
+    totalBoxes: mappedItems.reduce((sum, item) => sum + item.boxes, 0),
+    totalPieces: mappedItems.reduce((sum, item) => sum + item.pieces, 0),
     operator: {
       name: order.user?.name ?? '',
     },
@@ -284,18 +392,33 @@ export async function getFactoryShipmentForPrint(orderId: string) {
     const unit = resolveUnitLabel(
       item.manualUnit ?? item.unit ?? item.product?.unit ?? 'sheet'
     );
+    const quantity = toSafeInteger(item.quantity);
+    const piecesPerUnit = resolvePiecesPerUnit(
+      item.piecesPerUnit,
+      item.product?.piecesPerUnit
+    );
+    const quantityFields = buildUnitBasedQuantityFields(
+      quantity,
+      unit,
+      piecesPerUnit
+    );
+    const weight = toSafeNumber(item.manualWeight ?? item.weight);
 
     return {
       name,
       code,
       spec,
       unit,
-      quantity: item.quantity,
+      quantity,
       unitPrice: Number(item.unitPrice),
       subtotal: Number(item.totalPrice),
+      totalPrice: Number(item.totalPrice),
       batchNumber: item.batchNumber ?? '',
       supplierName: item.supplier?.name ?? '',
       remark: item.remarks ?? '',
+      remarks: item.remarks ?? '',
+      weight,
+      ...quantityFields,
 
       productName: name,
       productCode: code,
@@ -325,6 +448,9 @@ export async function getFactoryShipmentForPrint(orderId: string) {
     items: mappedItems,
     totalAmount: Number(order.totalAmount),
     totalQuantity: order.items.reduce((sum, i) => sum + i.quantity, 0),
+    totalBoxes: mappedItems.reduce((sum, item) => sum + item.boxes, 0),
+    totalPieces: mappedItems.reduce((sum, item) => sum + item.pieces, 0),
+    totalWeight: mappedItems.reduce((sum, item) => sum + item.weight, 0),
     operator: {
       name: order.user?.name ?? '',
     },
@@ -380,6 +506,12 @@ export async function getDeliveryNoteForPrint(recordNumber: string) {
   const spec = record.product?.specification ?? '';
   const unit = resolveUnitLabel(record.product?.unit ?? 'sheet') || '片';
   const customer = record.customer ?? record.salesOrder?.customer;
+  const piecesPerUnit = resolvePiecesPerUnit(record.product?.piecesPerUnit);
+  const quantityFields = buildPieceBackedQuantityFields(
+    record.quantity,
+    unit,
+    piecesPerUnit
+  );
 
   const itemRow = {
     name,
@@ -389,8 +521,12 @@ export async function getDeliveryNoteForPrint(recordNumber: string) {
     quantity: Number(record.quantity),
     unitPrice: Number(record.unitCost ?? 0),
     subtotal: Number(record.totalCost ?? 0),
+    totalPrice: Number(record.totalCost ?? 0),
     batchNumber: record.batchNumber ?? '',
+    colorNo: record.variant?.colorCode ?? '',
     remark: record.notes ?? '',
+    remarks: record.notes ?? '',
+    ...quantityFields,
 
     productName: name,
     productCode: code,
@@ -414,6 +550,8 @@ export async function getDeliveryNoteForPrint(recordNumber: string) {
     items: [itemRow],
     totalAmount: Number(record.totalCost ?? 0),
     totalQuantity: Number(record.quantity),
+    totalBoxes: itemRow.boxes,
+    totalPieces: itemRow.pieces,
     operator: {
       name: record.operator?.name ?? '',
     },
@@ -453,8 +591,17 @@ export async function getInboundRecordForPrint(recordNumber: string) {
   const name = record.product?.name ?? '';
   const spec = record.product?.specification ?? '';
   const unit = resolveUnitLabel(record.product?.unit ?? 'sheet') || '片';
+  const piecesPerUnit = resolvePiecesPerUnit(
+    record.batchSpecification?.piecesPerUnit,
+    record.product?.piecesPerUnit
+  );
   const batchNumber =
     record.batchNumber ?? record.batchSpecification?.batchNumber ?? '';
+  const quantityFields = buildPieceBackedQuantityFields(
+    record.quantity,
+    unit,
+    piecesPerUnit
+  );
 
   const itemRow = {
     name,
@@ -463,8 +610,12 @@ export async function getInboundRecordForPrint(recordNumber: string) {
     unit,
     quantity: record.quantity,
     batchNumber,
+    colorNo: record.variant?.colorCode ?? '',
     supplierName: record.supplier?.name ?? '',
     remark: record.remarks ?? '',
+    remarks: record.remarks ?? '',
+    locationName: record.location ?? '',
+    ...quantityFields,
 
     productName: name,
     productCode: code,
@@ -483,6 +634,7 @@ export async function getInboundRecordForPrint(recordNumber: string) {
       name: record.supplier?.name ?? '',
       phone: record.supplier?.phone ?? '',
       address: record.supplier?.address ?? '',
+      supplierCode: record.supplier?.supplierCode ?? '',
     },
     product: {
       code,
@@ -493,6 +645,8 @@ export async function getInboundRecordForPrint(recordNumber: string) {
     },
     quantity: record.quantity,
     items: [itemRow],
+    totalBoxes: itemRow.boxes,
+    totalPieces: itemRow.pieces,
     operator: {
       name: record.user?.name ?? '',
     },
@@ -541,6 +695,15 @@ export async function getReturnOrderForPrint(orderId: string) {
         'sheet'
     );
     const batchNumber = item.salesOrderItem?.batchNumber ?? '';
+    const piecesPerUnit = resolvePiecesPerUnit(
+      item.salesOrderItem?.piecesPerUnit,
+      item.product?.piecesPerUnit
+    );
+    const quantityFields = buildPieceBackedQuantityFields(
+      item.returnQuantity,
+      unit,
+      piecesPerUnit
+    );
 
     return {
       name,
@@ -551,8 +714,12 @@ export async function getReturnOrderForPrint(orderId: string) {
       quantity: item.returnQuantity,
       unitPrice: Number(item.unitPrice),
       subtotal: Number(item.subtotal),
+      totalPrice: Number(item.subtotal),
       batchNumber,
+      colorNo: item.colorCode ?? '',
       remark: item.reason ?? '',
+      remarks: item.reason ?? '',
+      ...quantityFields,
 
       returnQuantity: item.returnQuantity,
       damagedQuantity: item.damagedQuantity,
@@ -586,6 +753,8 @@ export async function getReturnOrderForPrint(orderId: string) {
     items: mappedItems,
     totalAmount: Number(order.totalAmount),
     refundAmount: Number(order.refundAmount),
+    totalBoxes: mappedItems.reduce((sum, item) => sum + item.boxes, 0),
+    totalPieces: mappedItems.reduce((sum, item) => sum + item.pieces, 0),
     operator: {
       name: order.user?.name ?? '',
     },

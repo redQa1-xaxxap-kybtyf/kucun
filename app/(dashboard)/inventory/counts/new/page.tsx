@@ -8,8 +8,8 @@ import { can } from '@/lib/auth/permissions';
 import { NewCountPageClient } from './page-client';
 
 export const metadata: Metadata = {
-  title: '创建盘点计划 - 库存管理',
-  description: '创建新的库存盘点计划',
+  title: '新建盘点单 - 库存管理',
+  description: '新建盘点单并设置盘点范围',
 };
 
 /**

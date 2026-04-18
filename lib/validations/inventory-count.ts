@@ -274,6 +274,12 @@ export const submitCountDataSchema = z.object({
 
 // 盘点查询参数验证规则
 export const inventoryCountQuerySchema = z.object({
+  search: z
+    .string()
+    .optional()
+    .transform(val => val?.trim() || undefined)
+    .describe('盘点单名称或编号搜索（可选）'),
+
   status: countStatusSchema.optional().describe('状态筛选（可选）'),
 
   countType: countTypeSchema.optional().describe('类型筛选（可选）'),

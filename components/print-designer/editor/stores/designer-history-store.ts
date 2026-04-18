@@ -35,6 +35,7 @@ interface DesignerActions {
   ) => void;
   updatePageSettings: (settings: Partial<PageSettings>) => void;
   addElement: (element: DesignElement) => void;
+  addElements: (elements: DesignElement[]) => void;
   updateElement: (id: string, updates: Partial<DesignElement>) => void;
   removeElement: (id: string) => void;
   duplicateElement: (id: string) => void;
@@ -101,6 +102,17 @@ export const useDesignerStore = create<DesignerStore>()(
           if (state.template) {
             state.template.elements.push(element);
             state.selectedElementId = element.id;
+          }
+        });
+      },
+
+      addElements: (elements: DesignElement[]) => {
+        if (elements.length === 0) return;
+
+        set((state: DesignerStore) => {
+          if (state.template) {
+            state.template.elements.push(...elements);
+            state.selectedElementId = elements[elements.length - 1]?.id ?? null;
           }
         });
       },

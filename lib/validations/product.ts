@@ -9,6 +9,7 @@
 import { z } from 'zod';
 
 import {
+  PRODUCT_DEFAULT_SORT,
   PRODUCT_STATUS_VALUES,
   PRODUCT_UNIT_VALUES,
 } from '@/lib/config/product';
@@ -165,8 +166,8 @@ export const productSearchSchema = z.object({
   unit: z.enum(['piece', 'sheet', 'strip', '']).optional(),
   sortBy: z
     .enum(['name', 'code', 'createdAt', 'updatedAt'])
-    .default('createdAt'),
-  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+    .default(PRODUCT_DEFAULT_SORT.sortBy),
+  sortOrder: z.enum(['asc', 'desc']).default(PRODUCT_DEFAULT_SORT.sortOrder),
 });
 
 // 产品查询参数验证
@@ -181,8 +182,8 @@ export const productQuerySchema = z.object({
   search: z.string().optional(),
   sortBy: z
     .enum(['name', 'code', 'createdAt', 'updatedAt'])
-    .default('createdAt'),
-  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+    .default(PRODUCT_DEFAULT_SORT.sortBy),
+  sortOrder: z.enum(['asc', 'desc']).default(PRODUCT_DEFAULT_SORT.sortOrder),
   status: z.enum(['active', 'inactive', 'all']).optional(),
   unit: z.string().optional(),
   categoryId: z.string().optional(),
@@ -362,6 +363,6 @@ export const productSearchDefaults: ProductSearchFormData = {
   search: '',
   status: 'all',
   unit: '',
-  sortBy: 'createdAt',
-  sortOrder: 'desc',
+  sortBy: PRODUCT_DEFAULT_SORT.sortBy,
+  sortOrder: PRODUCT_DEFAULT_SORT.sortOrder,
 };

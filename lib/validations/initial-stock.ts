@@ -7,6 +7,7 @@ import {
 } from '@/lib/utils/cost-price';
 
 export type InitialStockQuantityUnit = '片' | '件';
+export type InitialStockUnitCostBasis = 'entry' | 'piece';
 
 const INITIAL_STOCK_QUANTITY_UNIT_ALIASES: Record<
   string,
@@ -100,6 +101,15 @@ function optionalQuantityUnit(label: string) {
   );
 }
 
+function hasAtMostDecimals(value: number, maxDecimals: number): boolean {
+  if (!Number.isFinite(value)) {
+    return false;
+  }
+
+  const scale = 10 ** maxDecimals;
+  return Math.abs(value * scale - Math.round(value * scale)) < 1e-8;
+}
+
 function requiredExcelNumber(
   label: string,
   options: {
@@ -153,9 +163,9 @@ function requiredExcelNumber(
         val =>
           maxDecimals === undefined
             ? true
-            : maxDecimals === 3
+            : maxDecimals === 3 && label === '单位成本'
               ? hasAtMostCostPriceDecimals(val)
-              : true,
+              : hasAtMostDecimals(val, maxDecimals),
         {
           message: `${label}最多保留${maxDecimals}位小数`,
         }
@@ -228,9 +238,9 @@ function optionalExcelNumber(
             ? true
             : maxDecimals === undefined
               ? true
-              : maxDecimals === 3
+              : maxDecimals === 3 && label === '单位成本'
                 ? hasAtMostCostPriceDecimals(val)
-                : true,
+                : hasAtMostDecimals(val, maxDecimals),
         {
           message: `${label}最多保留${maxDecimals}位小数`,
         }
@@ -274,36 +284,44 @@ export const initialStockRowSchema = z
       max: 10000,
       maxDecimals: 3,
     }),
-    数量: requiredExcelNumber('数量', { integer: true, min: 1 }),
+    数量: requiredExcelNumber('数量', { min: 0.001, maxDecimals: 3 }),
     数量单位: optionalQuantityUnit('数量单位'),
     单位成本: requiredExcelNumber('单位成本', {
       min: 0,
       max: COST_PRICE_MAX,
       maxDecimals: 3,
     }),
+    unitCostBasis: z.enum(['entry', 'piece']).optional(),
     供应商: optionalExcelText('供应商', 150),
     成本来源: optionalExcelText('成本来源', 200),
     库位: optionalExcelText('库位', 100),
     备注: optionalExcelText('备注', 500),
   })
   .superRefine((row, ctx) => {
-    if (row.产品编码) {
-      return;
+    if (!row.产品编码) {
+      if (!row.产品名称) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['产品名称'],
+          message: '未填写产品编码时，产品名称不能为空',
+        });
+      }
+
+      if (!row.规格) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['规格'],
+          message: '未填写产品编码时，规格不能为空',
+        });
+      }
     }
 
-    if (!row.产品名称) {
+    const quantityUnit = row.数量单位 ?? '片';
+    if (quantityUnit === '片' && !Number.isInteger(row.数量)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        path: ['产品名称'],
-        message: '未填写产品编码时，产品名称不能为空',
-      });
-    }
-
-    if (!row.规格) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['规格'],
-        message: '未填写产品编码时，规格不能为空',
+        path: ['数量'],
+        message: '按片导入时，数量必须是整数片数',
       });
     }
   });

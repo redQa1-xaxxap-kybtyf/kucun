@@ -17,6 +17,7 @@ import {
 } from '@/lib/api/handlers/products-list';
 import type { ProductListQueryParams } from '@/lib/api/products';
 import { buildCacheKey, CACHE_STRATEGY, getOrSetJSON } from '@/lib/cache';
+import { PRODUCT_DEFAULT_SORT } from '@/lib/config/product';
 import { paginationConfig, productConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import type { PaginatedResponse } from '@/lib/types/api';
@@ -54,8 +55,8 @@ export const getProductsForServer = cache(
     const page = params.page ?? 1;
     const limit = params.limit ?? paginationConfig.defaultPageSize;
     const search = params.search;
-    const sortBy = params.sortBy ?? 'createdAt';
-    const sortOrder = params.sortOrder ?? 'desc';
+    const sortBy = params.sortBy ?? PRODUCT_DEFAULT_SORT.sortBy;
+    const sortOrder = params.sortOrder ?? PRODUCT_DEFAULT_SORT.sortOrder;
     const status =
       params.status && (params.status as string) !== 'all'
         ? params.status

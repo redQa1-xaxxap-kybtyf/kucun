@@ -73,6 +73,8 @@ export const ElementTypeSchema = z.enum([
   'table',
   'image',
   'barcode',
+  'line',
+  'rect',
 ]);
 
 export type ElementType = z.infer<typeof ElementTypeSchema>;

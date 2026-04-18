@@ -2,9 +2,12 @@
  * 库存盘点明细相关辅助函数
  */
 
+import { getInventories } from '@/lib/api/inventory';
 import type { InventoryCountDetail } from '@/lib/types/inventory-count';
 import type { InventoryQueryParams } from '@/lib/types/inventory-queries';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
+
+const COUNT_ITEM_PAGE_SIZE = 100;
 
 /**
  * 生成库存记录的唯一键
@@ -36,7 +39,7 @@ export function buildGenerateAllParams(
 ): InventoryQueryParams {
   const params: InventoryQueryParams = {
     page: 1,
-    limit: 100,
+    limit: COUNT_ITEM_PAGE_SIZE,
   };
 
   if (count.location) {
@@ -59,7 +62,7 @@ export function buildAddProductParams(
 ): InventoryQueryParams {
   const params: InventoryQueryParams = {
     page: 1,
-    limit: 100,
+    limit: COUNT_ITEM_PAGE_SIZE,
     productId,
     hasStock: true,
   };
@@ -69,18 +72,6 @@ export function buildAddProductParams(
   }
 
   return params;
-}
-
-/**
- * 创建盘点明细的回退参数（移除位置筛选）
- */
-export function createFallbackParams(
-  params: InventoryQueryParams
-): InventoryQueryParams {
-  return {
-    ...params,
-    location: undefined,
-  };
 }
 
 /**
@@ -152,6 +143,31 @@ export async function handleApiError(
   }
 
   throw new Error(message || defaultMessage);
+}
+
+/**
+ * 按分页拉取全部库存记录，避免只取第一页导致漏盘
+ */
+export async function fetchAllInventoryRecords(
+  params: InventoryQueryParams
+): Promise<InventoryRecord[]> {
+  const inventories: InventoryRecord[] = [];
+  let currentPage = 1;
+  let totalPages = 1;
+
+  do {
+    const response = await getInventories({
+      ...params,
+      page: currentPage,
+      limit: params.limit ?? COUNT_ITEM_PAGE_SIZE,
+    });
+
+    inventories.push(...response.inventories);
+    totalPages = response.pagination?.totalPages ?? 1;
+    currentPage += 1;
+  } while (currentPage <= totalPages);
+
+  return inventories;
 }
 
 /**

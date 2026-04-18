@@ -42,6 +42,18 @@ interface CountListProps {
   filters: InventoryCountQueryParams;
 }
 
+interface CountListItem {
+  id: string;
+  countNumber: string;
+  countName: string;
+  countType: 'full' | 'partial' | 'cycle';
+  status: CountStatus;
+  planDate: string;
+  location?: string;
+  totalItems: number;
+  completedItems: number;
+}
+
 export function CountList({ filters }: CountListProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -62,6 +74,7 @@ export function CountList({ filters }: CountListProps) {
       const params = new URLSearchParams();
       if (filters.page) params.set('page', filters.page.toString());
       if (filters.pageSize) params.set('pageSize', filters.pageSize.toString());
+      if (filters.search) params.set('search', filters.search);
       if (filters.status) params.set('status', filters.status);
       if (filters.countType) params.set('countType', filters.countType);
       if (filters.location) params.set('location', filters.location);
@@ -75,7 +88,7 @@ export function CountList({ filters }: CountListProps) {
         `/api/inventory/counts?${params.toString()}`
       );
       if (!response.ok) {
-        throw new Error('获取盘点计划列表失败');
+        throw new Error('获取盘点单列表失败');
       }
       return response.json();
     },
@@ -101,7 +114,7 @@ export function CountList({ filters }: CountListProps) {
     onSuccess: () => {
       toast({
         title: '删除成功',
-        description: '盘点计划已成功删除',
+        description: '盘点单已成功删除',
       });
 
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户删除盘点计划后立即看到变化
@@ -131,7 +144,7 @@ export function CountList({ filters }: CountListProps) {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || '开始盘点失败');
+        throw new Error(error.error || '开始录入失败');
       }
 
       return response.json();
@@ -139,7 +152,7 @@ export function CountList({ filters }: CountListProps) {
     onSuccess: () => {
       toast({
         title: '开始成功',
-        description: '盘点计划已开始',
+        description: '盘点单已开始，可以继续录入盘点结果',
       });
 
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户开始盘点后立即看到状态变化
@@ -193,10 +206,10 @@ export function CountList({ filters }: CountListProps) {
   if (counts.length === 0) {
     return (
       <div className="text-muted-foreground flex flex-col items-center justify-center gap-3 py-10 text-sm">
-        <span>暂无盘点计划</span>
+        <span>暂无盘点单</span>
         {hasManagePermission && (
           <Button size="sm" asChild>
-            <Link href="/inventory/counts/new">新建盘点计划</Link>
+            <Link href="/inventory/counts/new">新建盘点单</Link>
           </Button>
         )}
       </div>
@@ -207,180 +220,163 @@ export function CountList({ filters }: CountListProps) {
     <>
       {/* 桌面端表格视图 */}
       <div className="hidden overflow-x-auto rounded-md border xl:block">
-        <Table className="min-w-[820px] [&_th]:whitespace-nowrap">
+        <Table className="min-w-[960px] [&_th]:whitespace-nowrap">
           <TableHeader>
             <TableRow>
               <TableHead>盘点编号</TableHead>
-              <TableHead>盘点名称</TableHead>
+              <TableHead>盘点单名称</TableHead>
               <TableHead>盘点类型</TableHead>
               <TableHead>状态</TableHead>
               <TableHead>计划日期</TableHead>
-              <TableHead>进度</TableHead>
+              <TableHead>盘点范围</TableHead>
+              <TableHead>录入进度</TableHead>
               <TableHead className="text-right">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {counts.map(
-              (count: {
-                id: string;
-                countNumber: string;
-                countName: string;
-                countType: 'full' | 'partial' | 'cycle';
-                status: CountStatus;
-                planDate: string;
-                totalItems: number;
-                completedItems: number;
-              }) => (
-                <TableRow key={count.id}>
-                  <TableCell className="font-medium whitespace-nowrap">
-                    {count.countNumber}
-                  </TableCell>
-                  <TableCell className="min-w-[180px]">
-                    <div className="max-w-[220px] truncate">
-                      {count.countName}
-                    </div>
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {COUNT_TYPE_LABELS[count.countType]}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    <Badge variant={getStatusBadgeVariant(count.status)}>
-                      {COUNT_STATUS_LABELS[count.status]}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {formatDate(count.planDate)}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {count.totalItems > 0
-                      ? `${count.completedItems}/${count.totalItems}`
-                      : '-'}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/inventory/counts/${count.id}`}>
-                          <Eye className="h-4 w-4" />
-                        </Link>
-                      </Button>
+            {counts.map((count: CountListItem) => (
+              <TableRow key={count.id}>
+                <TableCell className="font-medium whitespace-nowrap">
+                  {count.countNumber}
+                </TableCell>
+                <TableCell className="min-w-[180px]">
+                  <div className="max-w-[220px] truncate">
+                    {count.countName}
+                  </div>
+                </TableCell>
+                <TableCell className="whitespace-nowrap">
+                  {COUNT_TYPE_LABELS[count.countType]}
+                </TableCell>
+                <TableCell className="whitespace-nowrap">
+                  <Badge variant={getStatusBadgeVariant(count.status)}>
+                    {COUNT_STATUS_LABELS[count.status]}
+                  </Badge>
+                </TableCell>
+                <TableCell className="whitespace-nowrap">
+                  {formatDate(count.planDate)}
+                </TableCell>
+                <TableCell className="whitespace-nowrap">
+                  {count.location || '整仓'}
+                </TableCell>
+                <TableCell className="whitespace-nowrap">
+                  {count.totalItems > 0
+                    ? `${count.completedItems}/${count.totalItems}`
+                    : '-'}
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link href={`/inventory/counts/${count.id}`}>
+                        <Eye className="h-4 w-4" />
+                      </Link>
+                    </Button>
 
-                      {hasManagePermission && count.status === 'draft' && (
-                        <>
-                          <Button variant="ghost" size="sm" asChild>
-                            <Link href={`/inventory/counts/${count.id}/edit`}>
-                              <Pencil className="h-4 w-4" />
-                            </Link>
-                          </Button>
+                    {hasManagePermission && count.status === 'draft' && (
+                      <>
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link href={`/inventory/counts/${count.id}/edit`}>
+                            <Pencil className="h-4 w-4" />
+                          </Link>
+                        </Button>
 
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleStart(count.id)}
-                          >
-                            <Play className="h-4 w-4" />
-                          </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleStart(count.id)}
+                        >
+                          <Play className="h-4 w-4" />
+                        </Button>
 
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(count.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )
-            )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(count.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </div>
 
       {/* 移动端卡片视图 */}
       <div className="space-y-3 xl:hidden">
-        {counts.map(
-          (count: {
-            id: string;
-            countNumber: string;
-            countName: string;
-            countType: 'full' | 'partial' | 'cycle';
-            status: CountStatus;
-            planDate: string;
-            totalItems: number;
-            completedItems: number;
-          }) => (
-            <div
-              key={count.id}
-              className="card-shadow-light rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="text-xs text-[hsl(var(--color-text-secondary))]">
-                    盘点编号
-                  </div>
-                  <div className="font-mono text-sm font-semibold">
-                    {count.countNumber}
-                  </div>
+        {counts.map((count: CountListItem) => (
+          <div
+            key={count.id}
+            className="card-shadow-light rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                  盘点编号
                 </div>
-                <Badge variant={getStatusBadgeVariant(count.status)}>
-                  {COUNT_STATUS_LABELS[count.status]}
-                </Badge>
+                <div className="font-mono text-sm font-semibold">
+                  {count.countNumber}
+                </div>
               </div>
-              <div className="mt-2 text-sm font-medium text-[hsl(var(--color-text-primary))]">
-                {count.countName}
-              </div>
-              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[hsl(var(--color-text-secondary))]">
-                <span>类型：{COUNT_TYPE_LABELS[count.countType]}</span>
-                <span>计划：{formatDate(count.planDate)}</span>
-                <span>
-                  进度：
-                  {count.totalItems > 0
-                    ? `${count.completedItems}/${count.totalItems}`
-                    : '-'}
-                </span>
-              </div>
-              <div className="mt-3 flex justify-end gap-2">
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href={`/inventory/counts/${count.id}`}>
-                    <Eye className="mr-1 h-3 w-3" />
-                    详情
-                  </Link>
-                </Button>
-
-                {hasManagePermission && count.status === 'draft' && (
-                  <>
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link href={`/inventory/counts/${count.id}/edit`}>
-                        <Pencil className="mr-1 h-3 w-3" />
-                        编辑
-                      </Link>
-                    </Button>
-
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleStart(count.id)}
-                    >
-                      <Play className="mr-1 h-3 w-3" />
-                      开始
-                    </Button>
-
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(count.id)}
-                    >
-                      <Trash2 className="mr-1 h-3 w-3" />
-                      删除
-                    </Button>
-                  </>
-                )}
-              </div>
+              <Badge variant={getStatusBadgeVariant(count.status)}>
+                {COUNT_STATUS_LABELS[count.status]}
+              </Badge>
             </div>
-          )
-        )}
+            <div className="mt-2 text-sm font-medium text-[hsl(var(--color-text-primary))]">
+              {count.countName}
+            </div>
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[hsl(var(--color-text-secondary))]">
+              <span>类型：{COUNT_TYPE_LABELS[count.countType]}</span>
+              <span>计划：{formatDate(count.planDate)}</span>
+              <span>范围：{count.location || '整仓'}</span>
+              <span>
+                已录入：
+                {count.totalItems > 0
+                  ? `${count.completedItems}/${count.totalItems}`
+                  : '-'}
+              </span>
+            </div>
+            <div className="mt-3 flex justify-end gap-2">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href={`/inventory/counts/${count.id}`}>
+                  <Eye className="mr-1 h-3 w-3" />
+                  详情
+                </Link>
+              </Button>
+
+              {hasManagePermission && count.status === 'draft' && (
+                <>
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href={`/inventory/counts/${count.id}/edit`}>
+                      <Pencil className="mr-1 h-3 w-3" />
+                      编辑
+                    </Link>
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleStart(count.id)}
+                  >
+                    <Play className="mr-1 h-3 w-3" />
+                    开始录入
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDelete(count.id)}
+                  >
+                    <Trash2 className="mr-1 h-3 w-3" />
+                    删除
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -388,7 +384,7 @@ export function CountList({ filters }: CountListProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除</AlertDialogTitle>
             <AlertDialogDescription>
-              确定要删除此盘点计划吗？此操作不可撤销。
+              确定要删除此盘点单吗？此操作不可撤销。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

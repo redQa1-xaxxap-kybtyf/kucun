@@ -23,7 +23,9 @@ interface CountStatisticsClientProps {
   };
 }
 
-export function CountStatisticsClient({ initialParams }: CountStatisticsClientProps) {
+export function CountStatisticsClient({
+  initialParams,
+}: CountStatisticsClientProps) {
   const router = useRouter();
 
   // 筛选参数状态
@@ -125,7 +127,7 @@ export function CountStatisticsClient({ initialParams }: CountStatisticsClientPr
       {/* 筛选条件 */}
       <Card>
         <CardHeader>
-          <CardTitle>筛选条件</CardTitle>
+          <CardTitle>统计范围</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -139,16 +141,16 @@ export function CountStatisticsClient({ initialParams }: CountStatisticsClientPr
                   handleFilterChange('startDate', startDate ?? '');
                   handleFilterChange('endDate', endDate ?? '');
                 }}
-                label="日期范围"
-                placeholder="选择日期范围"
+                label="统计日期"
+                placeholder="选择统计日期"
                 showPresets
                 showClearButton
                 className="w-full md:w-[240px]"
               />
 
-              {/* 盘点状态 */}
+              {/* 盘点单状态 */}
               <div className="space-y-2">
-                <Label htmlFor="status">盘点状态</Label>
+                <Label htmlFor="status">盘点单状态</Label>
                 <select
                   id="status"
                   value={localFilters.status}
@@ -196,7 +198,7 @@ export function CountStatisticsClient({ initialParams }: CountStatisticsClientPr
       {statistics?.byType && statistics.byType.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>按盘点类型统计</CardTitle>
+            <CardTitle>按盘点类型分布</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -234,4 +236,3 @@ export function CountStatisticsClient({ initialParams }: CountStatisticsClientPr
     </>
   );
 }
-

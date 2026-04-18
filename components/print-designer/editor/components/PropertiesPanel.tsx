@@ -18,10 +18,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { getArrayFieldsForTemplateType } from '@/lib/print-designer/field-registry';
-import {
-  getPaperDimensions,
-  type TableElement,
-} from '@/lib/print-designer/schemas';
+import { getPaperDimensions } from '@/lib/print-designer/schemas';
 
 import {
   useDesignerStore,
@@ -30,7 +27,10 @@ import {
 } from '../stores';
 
 import { DataBindingSection } from './DataBindingSection';
+import { ShapeStyleSection } from './ShapeStyleSection';
+import { TableBehaviorSection } from './TableBehaviorSection';
 import { TableColumnManager } from './TableColumnManager';
+import { TableRecommendationSection } from './TableRecommendationSection';
 import { TableStyleSection } from './TableStyleSection';
 import { TypographySection } from './TypographySection';
 
@@ -40,6 +40,10 @@ export function PropertiesPanel() {
   const templateType = useDesignerStore(s => s.template?.type ?? 'sales-order');
   const updateElement = useDesignerStore(s => s.updateElement);
   const updatePageSettings = useDesignerStore(s => s.updatePageSettings);
+  const tableElement =
+    selectedElement?.type === 'table' ? selectedElement : null;
+  const lineElement = selectedElement?.type === 'line' ? selectedElement : null;
+  const rectElement = selectedElement?.type === 'rect' ? selectedElement : null;
 
   // 未选中元素时显示页面设置
   if (!selectedElement) {
@@ -290,26 +294,25 @@ export function PropertiesPanel() {
   }
 
   // 选中元素时显示元素属性
-  const tableDataSourceOptions =
-    selectedElement.type === 'table'
-      ? (() => {
-          const fields = getArrayFieldsForTemplateType(templateType);
-          const currentDataSource = selectedElement.dataSource;
-          if (fields.some(field => field.path === currentDataSource)) {
-            return fields;
-          }
+  const tableDataSourceOptions = tableElement
+    ? (() => {
+        const fields = getArrayFieldsForTemplateType(templateType);
+        const currentDataSource = tableElement.dataSource;
+        if (fields.some(field => field.path === currentDataSource)) {
+          return fields;
+        }
 
-          return [
-            ...fields,
-            {
-              path: currentDataSource,
-              label: `当前数据源 (${currentDataSource})`,
-              group: '表格数据源',
-              type: 'array' as const,
-            },
-          ];
-        })()
-      : [];
+        return [
+          ...fields,
+          {
+            path: currentDataSource,
+            label: `当前数据源 (${currentDataSource})`,
+            group: '表格数据源',
+            type: 'array' as const,
+          },
+        ];
+      })()
+    : [];
 
   return (
     <aside className="flex w-72 flex-col border-l bg-white">
@@ -320,6 +323,8 @@ export function PropertiesPanel() {
           {selectedElement.type === 'table' && '表格属性'}
           {selectedElement.type === 'image' && '图片属性'}
           {selectedElement.type === 'barcode' && '条码属性'}
+          {selectedElement.type === 'line' && '横线属性'}
+          {selectedElement.type === 'rect' && '边框属性'}
         </h3>
       </div>
 
@@ -450,16 +455,16 @@ export function PropertiesPanel() {
         )}
 
         {/* 表格列管理 (仅表格) */}
-        {selectedElement.type === 'table' && (
+        {tableElement && (
           <>
             <div className="mb-4 space-y-2">
               <Label className="text-muted-foreground text-xs font-semibold">
                 表格数据源
               </Label>
               <Select
-                value={(selectedElement as TableElement).dataSource}
+                value={tableElement.dataSource}
                 onValueChange={dataSource =>
-                  updateElement(selectedElement.id, { dataSource })
+                  updateElement(tableElement.id, { dataSource })
                 }
               >
                 <SelectTrigger className="h-8">
@@ -480,21 +485,50 @@ export function PropertiesPanel() {
 
             <Separator className="my-4" />
 
-            <TableColumnManager
-              templateType={templateType}
-              columns={(selectedElement as TableElement).columns}
-              onChange={columns =>
-                updateElement(selectedElement.id, { columns })
+            <TableRecommendationSection
+              columns={tableElement.columns}
+              onApply={updates =>
+                updateElement(tableElement.id, {
+                  ...updates,
+                  style: {
+                    ...tableElement.style,
+                    ...updates.style,
+                  },
+                })
               }
             />
             <Separator className="my-4" />
 
+            <TableColumnManager
+              templateType={templateType}
+              columns={tableElement.columns}
+              onChange={columns => updateElement(tableElement.id, { columns })}
+            />
+            <Separator className="my-4" />
+
+            <TableBehaviorSection
+              templateType={templateType}
+              columns={tableElement.columns}
+              title={tableElement.title}
+              titleBarStyle={tableElement.titleBarStyle}
+              titleAlign={tableElement.titleAlign}
+              footerNote={tableElement.footerNote}
+              footerNoteStyle={tableElement.footerNoteStyle}
+              rowNumberMode={tableElement.rowNumberMode}
+              summaryLabel={tableElement.summaryLabel}
+              minRows={tableElement.minRows}
+              showSummary={tableElement.showSummary}
+              summaryColumns={tableElement.summaryColumns}
+              onChange={updates => updateElement(tableElement.id, updates)}
+            />
+            <Separator className="my-4" />
+
             <TableStyleSection
-              style={(selectedElement as TableElement).style}
+              style={tableElement.style}
               onChange={styleUpdates =>
-                updateElement(selectedElement.id, {
+                updateElement(tableElement.id, {
                   style: {
-                    ...(selectedElement as TableElement).style,
+                    ...tableElement.style,
                     ...styleUpdates,
                   },
                 })
@@ -511,6 +545,36 @@ export function PropertiesPanel() {
             onChange={styleUpdates =>
               updateElement(selectedElement.id, {
                 style: { ...selectedElement.style, ...styleUpdates },
+              })
+            }
+          />
+        )}
+
+        {lineElement && (
+          <ShapeStyleSection
+            type="line"
+            style={lineElement.style}
+            onChange={styleUpdates =>
+              updateElement(lineElement.id, {
+                style: {
+                  ...lineElement.style,
+                  ...styleUpdates,
+                },
+              })
+            }
+          />
+        )}
+
+        {rectElement && (
+          <ShapeStyleSection
+            type="rect"
+            style={rectElement.style}
+            onChange={styleUpdates =>
+              updateElement(rectElement.id, {
+                style: {
+                  ...rectElement.style,
+                  ...styleUpdates,
+                },
               })
             }
           />

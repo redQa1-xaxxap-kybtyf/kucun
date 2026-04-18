@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/dialog';
 
 /**
- * 删除盘点计划对话框
+ * 删除盘点单对话框
  */
 export function DeleteCountDialog({
   open,
@@ -45,7 +45,7 @@ export function DeleteCountDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>确认删除</AlertDialogTitle>
           <AlertDialogDescription>
-            确定要删除此盘点计划吗？此操作不可撤销。
+            确定要删除此盘点单吗？此操作不可撤销。
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -60,7 +60,7 @@ export function DeleteCountDialog({
 }
 
 /**
- * 添加盘点产品对话框
+ * 添加盘点商品对话框
  */
 export function AddProductDialog({
   open,
@@ -81,24 +81,24 @@ export function AddProductDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>添加盘点产品</DialogTitle>
+          <DialogTitle>添加盘点商品</DialogTitle>
           <DialogDescription className="sr-only">
-            选择一个产品加入当前盘点计划，系统会按现有库存批次自动生成盘点明细。
+            选择一个商品加入当前盘点单，系统会按现有库存批次自动生成盘点商品。
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 pt-2">
           <div>
             <div className="mb-2 text-sm font-medium text-[hsl(var(--color-text-secondary))]">
-              选择产品
+              选择商品
             </div>
             <ProductCombobox
               value={selectedProductId}
               onChange={onProductChange}
-              placeholder="搜索产品名称、编码..."
+              placeholder="搜索商品名称、编号..."
             />
           </div>
           <p className="text-muted-foreground text-xs">
-            将根据所选产品当前的库存记录（按批次号）生成盘点明细。
+            将根据所选商品当前的库存记录按批次自动生成盘点商品。
           </p>
         </div>
         <DialogFooter>
@@ -110,7 +110,7 @@ export function AddProductDialog({
             取消
           </Button>
           <Button onClick={onConfirm} disabled={isAdding}>
-            {isAdding ? '添加中…' : '添加到盘点明细'}
+            {isAdding ? '添加中…' : '加入盘点商品'}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -7,7 +7,11 @@
 import type { Prisma } from '@prisma/client';
 
 import { getBatchCachedInventorySummary } from '@/lib/cache/inventory-cache';
-import type { ProductStatus, ProductUnit } from '@/lib/config/product';
+import {
+  PRODUCT_DEFAULT_SORT,
+  type ProductStatus,
+  type ProductUnit,
+} from '@/lib/config/product';
 import { prisma } from '@/lib/db';
 import { paginationConfig, productConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
@@ -63,8 +67,9 @@ export function parseProductListParams(searchParams: URLSearchParams) {
         searchParams.get('limit') ||
         paginationConfig.defaultPageSize.toString(),
       search: searchParams.get('search') || undefined,
-      sortBy: searchParams.get('sortBy') || 'createdAt',
-      sortOrder: searchParams.get('sortOrder') || 'desc',
+      sortBy: searchParams.get('sortBy') || PRODUCT_DEFAULT_SORT.sortBy,
+      sortOrder:
+        searchParams.get('sortOrder') || PRODUCT_DEFAULT_SORT.sortOrder,
       status: rawStatus && rawStatus !== 'all' ? rawStatus : undefined,
       categoryId: filterUncategorized ? undefined : rawCategoryId || undefined,
     },

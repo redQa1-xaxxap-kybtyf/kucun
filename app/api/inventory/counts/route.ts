@@ -54,6 +54,7 @@ export const GET = withAuth(
     const queryParams = {
       page,
       pageSize,
+      search: searchParams.get('search') || undefined,
       status: searchParams.get('status') || undefined,
       countType: searchParams.get('countType') || undefined,
       location: searchParams.get('location') || undefined,
@@ -117,4 +118,3 @@ export const POST = withAuth(
   },
   { permissions: ['inventory:manage'] }
 );
-

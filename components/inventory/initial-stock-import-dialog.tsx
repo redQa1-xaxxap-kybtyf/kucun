@@ -43,6 +43,7 @@ import {
 } from '@/lib/api/initial-stock';
 import { queryKeys } from '@/lib/queryKeys';
 import { formatCostPrice } from '@/lib/utils/cost-price';
+import { formatDetailedPieceSummary } from '@/lib/utils/piece-calculation';
 import { showError, showSuccess, showWarning } from '@/lib/utils/toast-helper';
 import { validateFileUpload } from '@/lib/validations/upload';
 
@@ -144,11 +145,11 @@ function InitialStockPreviewTable({
               <TableHead>装箱数</TableHead>
               <TableHead>本批次实际每件重量(kg)</TableHead>
               <TableHead>录入数量</TableHead>
-              <TableHead>数量单位</TableHead>
-              <TableHead>入库片数</TableHead>
-              <TableHead>单片成本</TableHead>
+              <TableHead>录入口径</TableHead>
+              <TableHead>入库数量</TableHead>
+              <TableHead>入库单价</TableHead>
               <TableHead>供应商</TableHead>
-              <TableHead>库位</TableHead>
+              <TableHead>库位/存放区域</TableHead>
               <TableHead>匹配方式</TableHead>
             </TableRow>
           </TableHeader>
@@ -189,7 +190,18 @@ function InitialStockPreviewTable({
                     '-'
                   )}
                 </TableCell>
-                <TableCell>{row.inputQuantity}</TableCell>
+                <TableCell>
+                  <div className="space-y-0.5">
+                    <div>{`${row.inputQuantity}${row.quantityUnit}`}</div>
+                    <div className="text-[11px] text-slate-500">
+                      {row.quantityUnit === '件'
+                        ? '按件录入'
+                        : row.quantityUnitSource === 'default'
+                          ? '旧模板兼容，按片处理'
+                          : '按片录入'}
+                    </div>
+                  </div>
+                </TableCell>
                 <TableCell>
                   <div className="space-y-0.5">
                     <div>{row.quantityUnit}</div>
@@ -202,7 +214,15 @@ function InitialStockPreviewTable({
                 </TableCell>
                 <TableCell>
                   <div className="space-y-0.5">
-                    <div>{row.quantity}</div>
+                    <div>
+                      {typeof row.piecesPerUnit === 'number' &&
+                      row.piecesPerUnit > 1
+                        ? formatDetailedPieceSummary(
+                            row.quantity,
+                            row.piecesPerUnit
+                          )
+                        : `${row.quantity}片`}
+                    </div>
                     <div className="text-[11px] text-slate-500">
                       {row.quantityUnit === '件' &&
                       typeof row.piecesPerUnit === 'number'
@@ -212,10 +232,20 @@ function InitialStockPreviewTable({
                   </div>
                 </TableCell>
                 <TableCell>
-                  {formatCostPrice(row.unitCost, { withSymbol: false })}
+                  <div className="space-y-0.5">
+                    <div>
+                      {formatCostPrice(row.unitCost, { withSymbol: false })}
+                    </div>
+                    <div className="text-[11px] text-slate-500">
+                      {row.quantityUnit === '件' &&
+                      typeof row.piecesPerUnit === 'number'
+                        ? '已折算为单片成本'
+                        : '按单片成本入库'}
+                    </div>
+                  </div>
                 </TableCell>
                 <TableCell>{row.supplierName || '-'}</TableCell>
-                <TableCell>{row.location || '-'}</TableCell>
+                <TableCell>{row.location || '未填写'}</TableCell>
                 <TableCell>{row.matchMethod}</TableCell>
               </TableRow>
             ))}
@@ -491,7 +521,9 @@ export function InitialStockImportDialog({
             期初库存批量导入
           </DialogTitle>
           <DialogDescription className="text-sm text-slate-600">
-            正式导入只会导入产品库中已存在且检查通过的产品。建议优先下载产品库模板，直接填写批次、装箱数、本批次实际每件重量、数量、数量单位、单片成本、供应商和库位；数量单位填“件”时会按装箱数自动换算成片，但单片成本始终按“每片”填写；留空只会兼容旧模板按“片”处理。
+            正式导入只会导入产品库中已存在且检查通过的产品。建议优先下载产品库模板，直接填写批次、装箱数、本批次实际每件重量、数量、数量单位、单位成本、供应商和库位；数量单位填“件”时，数量支持最多
+            3
+            位小数，并会按装箱数自动换算成片，单位成本会按件价自动折算成单片成本；旧模板里的“单片成本”列也继续兼容。
           </DialogDescription>
         </DialogHeader>
 
@@ -501,7 +533,9 @@ export function InitialStockImportDialog({
             <AlertDescription className="leading-6">
               推荐流程：先点“导出产品库模板”，系统会自动带出产品编码、名称、规格、色号；上传后先做导入检查，再正式导入。一行只表示一个“产品编码
               + 色号 +
-              批次”组合，同编号多个色号或多个批次请拆成多行。数量单位建议明确填写“件”或“片”，其中“件”会自动按装箱数换算成片；装箱数、本批次实际每件重量不填时默认使用产品管理里的默认值；供应商按名称精确匹配，不填也可导入。遇到重复批次、已有库存或错误行时，系统会自动跳过并给出明细。
+              批次”组合，同编号多个色号或多个批次请拆成多行。数量单位建议明确填写“件”或“片”，其中“件”支持最多
+              3
+              位小数，会自动按装箱数换算成片，并把单位成本按件价折算成单片成本；装箱数、本批次实际每件重量不填时默认使用产品管理里的默认值；供应商按名称精确匹配，不填也可导入。遇到重复批次、已有库存或错误行时，系统会自动跳过并给出明细。
             </AlertDescription>
           </Alert>
 

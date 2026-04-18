@@ -57,6 +57,7 @@ const BASE_TABLE_STYLE: TableStyle = {
   bodyFontSize: 8.5,
   borderColor: '#d1d5db',
   borderWidth: 0.5,
+  borderMode: 'full',
   rowHeight: 8,
   stripedRows: true,
   stripedColor: '#fafafa',

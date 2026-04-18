@@ -18,6 +18,131 @@ export interface FieldDefinition {
   suggestedFormat?: string;
 }
 
+const FIELD_SEARCH_ALIASES: Record<string, string[]> = {
+  'order.orderNumber': [
+    '单号',
+    '编号',
+    '订单号',
+    '单据号',
+    'dingdanhao',
+    'danhao',
+  ],
+  'order.createdAt': ['日期', '创建日期', '制单日期', 'riqi'],
+  'order.transferMode': ['运输方式', '发运方式', '配送方式', 'yunshufangshi'],
+  'order.deliveryDate': ['交货日期', '交付日期', 'jiaohuoriqi'],
+  'order.shipmentDate': ['发货日期', '装车日期', 'fahuoriqi'],
+  'order.estimatedArrival': ['预计到港', '预计到货', 'yujidaogang'],
+  'order.arrivalDate': ['到港日期', '到货日期', 'daohuoriqi'],
+  'order.sourceOrderNumber': ['来源单号', '来源订单号', 'yuanlaidingdan'],
+  'order.reason': ['原因', '事由', 'yuanyin'],
+  'order.location': ['库位', '货位', '位置', 'kuwei'],
+  'order.remark': ['单据备注', '订单备注', 'beizhu'],
+  'order.status': ['状态', 'zhuangtai'],
+  'customer.name': ['客户', '客户名', '客户名称', 'kehu', 'kehumingcheng'],
+  'customer.phone': ['客户电话', '联系电话', 'kehudianhua', 'dianhua'],
+  'customer.address': ['客户地址', '送货地址', 'kehudizhi', 'dizhi'],
+  'customer.contact': ['联系人', '客户联系人', 'lianxiren'],
+  'supplier.name': ['供应商', '供货商', '供应商名称', 'gys', 'gongyingshang'],
+  'supplier.phone': ['供应商电话', '供货商电话', 'gysdianhua'],
+  'supplier.address': ['供应商地址', '供货地址', 'gysdizhi'],
+  'supplier.supplierCode': ['供应商编码', '供货商编码', 'gongyingshangbianma'],
+  'company.name': ['公司', '抬头', '公司名称', 'gongsi', 'taitou'],
+  'company.phone': ['公司电话', 'gongsidianhua'],
+  'company.address': ['公司地址', 'gongsidizhi'],
+  'company.fax': ['传真', '公司传真', 'chuanzhen'],
+  'operator.name': ['制单', '制单人', '操作人', '业务员', 'zhidanren'],
+  printDate: ['打印', '打印日期', '打印时间', 'dayinriqi'],
+  totalAmount: ['金额', '总额', '合计金额', 'jine'],
+  totalAmountCap: ['大写金额', '金额大写', 'daxiejine'],
+  refundAmount: ['退款金额', 'tuikuanjine'],
+  totalQuantity: ['数量', '总数量', '合计数量', 'shuliang'],
+  totalBoxes: ['总件数', '件数', 'jianshu'],
+  totalPieces: ['总片数', '片数', '总数量片', 'pianshu'],
+  totalWeight: ['总重量', '重量', 'zhongliang'],
+  'product.name': ['产品', '品名', '商品', 'mingcheng'],
+  'product.code': ['产品编码', '商品编码', 'bianma'],
+  'product.spec': ['规格', 'guige'],
+  'product.unit': ['单位', 'danwei'],
+  'product.batchNumber': ['批次', '批号', 'pici'],
+  quantity: ['数量', '件数', '片数', 'shuliang'],
+  boxes: ['件数', '箱数', 'jianshu'],
+  pieces: ['片数', '总片数', 'pianshu'],
+  piecesPerUnit: ['每件片数', '片每件', '片/件', 'meijianpianshu'],
+  unitPrice: ['单价', 'danjia'],
+  subtotal: ['小计', '金额', '合计', 'xiaoji'],
+  totalPrice: ['金额', '总价', '合计金额', 'zongjia'],
+  batchNumber: ['批次', '批号', 'pici'],
+  weight: ['重量', 'kg', '毛重', 'zhongliang'],
+  area: ['面积', '平方', 'm2', 'mianji'],
+  warehouseName: ['仓库', '仓库名称', 'cangku'],
+  locationName: ['库位', '货位', '存放区', 'kuwei'],
+  colorNo: ['色号', '颜色', 'sehao'],
+  grade: ['等级', '级别', 'dengji'],
+  remark: ['备注', '说明', 'beizhu'],
+  remarks: ['备注', '说明', 'beizhu'],
+  items: ['明细', '商品明细', '列表', '表格', 'mingxi'],
+  'period.label': ['期间', '周期', '统计周期', 'zhouqi'],
+  'reportMeta.exportDate': ['导出日期', '导出时间', 'daochuriqi'],
+  'summary.totalRevenue': ['收入', '年度收入', 'shouru'],
+  'summary.totalProfit': ['利润', '年度利润', 'lirun'],
+};
+
+const COMMON_TEMPLATE_RECOMMENDED_PATHS = [
+  'order.orderNumber',
+  'customer.name',
+  'supplier.name',
+  'order.createdAt',
+  'printDate',
+  'totalAmount',
+  'totalQuantity',
+  'operator.name',
+  'company.name',
+];
+
+const COMMON_TABLE_RECOMMENDED_PATHS = [
+  'code',
+  'name',
+  'spec',
+  'unit',
+  'quantity',
+  'unitPrice',
+  'subtotal',
+  'batchNumber',
+  'remark',
+];
+
+const TEMPLATE_SPECIFIC_RECOMMENDED_PATHS: Partial<
+  Record<string, { template?: string[]; table?: string[] }>
+> = {
+  'finance-monthly-report': {
+    template: [
+      'period.label',
+      'reportMeta.exportDate',
+      'revenue.salesRevenue',
+      'profit.netProfit',
+      'expenses.totalExpenses',
+    ],
+  },
+  'finance-annual-report': {
+    template: [
+      'period.label',
+      'reportMeta.exportDate',
+      'summary.totalRevenue',
+      'summary.totalProfit',
+      'summary.totalExpenses',
+    ],
+  },
+  'finance-profit-loss-report': {
+    template: [
+      'period.label',
+      'reportMeta.exportDate',
+      'summary.totalRevenue',
+      'summary.totalCost',
+      'summary.netProfit',
+    ],
+  },
+};
+
 // 销售订单字段
 export const salesOrderFields: FieldDefinition[] = [
   // 订单信息
@@ -47,6 +172,12 @@ export const salesOrderFields: FieldDefinition[] = [
     group: '订单',
     type: 'string',
   },
+  {
+    path: 'order.transferMode',
+    label: '运输方式',
+    group: '订单',
+    type: 'string',
+  },
   { path: 'order.remark', label: '订单备注', group: '订单', type: 'string' },
   {
     path: 'order.deliveryDate',
@@ -66,6 +197,32 @@ export const salesOrderFields: FieldDefinition[] = [
     type: 'string',
   },
   { path: 'customer.contact', label: '联系人', group: '客户', type: 'string' },
+
+  // 供应商信息
+  {
+    path: 'supplier.name',
+    label: '供应商名称',
+    group: '供应商',
+    type: 'string',
+  },
+  {
+    path: 'supplier.phone',
+    label: '供应商电话',
+    group: '供应商',
+    type: 'string',
+  },
+  {
+    path: 'supplier.address',
+    label: '供应商地址',
+    group: '供应商',
+    type: 'string',
+  },
+  {
+    path: 'supplier.supplierCode',
+    label: '供应商编码',
+    group: '供应商',
+    type: 'string',
+  },
 
   // 汇总信息
   {
@@ -99,6 +256,13 @@ export const salesOrderFields: FieldDefinition[] = [
   {
     path: 'totalBoxes',
     label: '总件数',
+    group: '汇总',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
+  {
+    path: 'totalPieces',
+    label: '总片数',
     group: '汇总',
     type: 'number',
     suggestedFormat: 'number',
@@ -148,9 +312,49 @@ const commonItemFields: FieldDefinition[] = [
     type: 'number',
     suggestedFormat: 'currency',
   },
+  {
+    path: 'piecesPerUnit',
+    label: '每件片数',
+    group: '明细',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
+  {
+    path: 'boxes',
+    label: '件数',
+    group: '明细',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
+  {
+    path: 'pieces',
+    label: '片数',
+    group: '明细',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
+  {
+    path: 'weight',
+    label: '重量',
+    group: '明细',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
+  {
+    path: 'area',
+    label: '面积',
+    group: '明细',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
   { path: 'batchNumber', label: '批次号', group: '明细', type: 'string' },
+  { path: 'warehouseName', label: '仓库', group: '明细', type: 'string' },
+  { path: 'locationName', label: '库位', group: '明细', type: 'string' },
+  { path: 'colorNo', label: '色号', group: '明细', type: 'string' },
+  { path: 'grade', label: '等级', group: '明细', type: 'string' },
   { path: 'supplierName', label: '供应商', group: '明细', type: 'string' },
   { path: 'remark', label: '备注', group: '明细', type: 'string' },
+  { path: 'remarks', label: '备注', group: '明细', type: 'string' },
 ];
 
 // 兼容字段（旧 key，避免历史模板失效）
@@ -170,6 +374,19 @@ const legacyCommonItemFields: FieldDefinition[] = [
   {
     path: 'specification',
     label: '规格 (兼容)',
+    group: '兼容',
+    type: 'string',
+  },
+  {
+    path: 'totalPrice',
+    label: '金额 (兼容)',
+    group: '兼容',
+    type: 'number',
+    suggestedFormat: 'currency',
+  },
+  {
+    path: 'remarks',
+    label: '备注 (兼容)',
     group: '兼容',
     type: 'string',
   },
@@ -277,6 +494,20 @@ export const purchaseOrderFields: FieldDefinition[] = [
     type: 'number',
     suggestedFormat: 'number',
   },
+  {
+    path: 'totalBoxes',
+    label: '总件数',
+    group: '汇总',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
+  {
+    path: 'totalPieces',
+    label: '总片数',
+    group: '汇总',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
 
   { path: 'operator.name', label: '制单人', group: '制单', type: 'string' },
   {
@@ -373,6 +604,27 @@ export const factoryShipmentFields: FieldDefinition[] = [
     type: 'number',
     suggestedFormat: 'number',
   },
+  {
+    path: 'totalBoxes',
+    label: '总件数',
+    group: '汇总',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
+  {
+    path: 'totalPieces',
+    label: '总片数',
+    group: '汇总',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
+  {
+    path: 'totalWeight',
+    label: '总重量',
+    group: '汇总',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
 
   { path: 'operator.name', label: '制单人', group: '制单', type: 'string' },
   {
@@ -435,6 +687,20 @@ export const deliveryNoteFields: FieldDefinition[] = [
     type: 'number',
     suggestedFormat: 'number',
   },
+  {
+    path: 'totalBoxes',
+    label: '总件数',
+    group: '汇总',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
+  {
+    path: 'totalPieces',
+    label: '总片数',
+    group: '汇总',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
 
   { path: 'operator.name', label: '操作人', group: '制单', type: 'string' },
   {
@@ -488,6 +754,12 @@ export const inboundRecordFields: FieldDefinition[] = [
     group: '供应商',
     type: 'string',
   },
+  {
+    path: 'supplier.supplierCode',
+    label: '供应商编码',
+    group: '供应商',
+    type: 'string',
+  },
 
   { path: 'product.code', label: '产品编码', group: '产品', type: 'string' },
   { path: 'product.name', label: '产品名称', group: '产品', type: 'string' },
@@ -503,6 +775,20 @@ export const inboundRecordFields: FieldDefinition[] = [
   {
     path: 'quantity',
     label: '入库数量',
+    group: '汇总',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
+  {
+    path: 'totalBoxes',
+    label: '总件数',
+    group: '汇总',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
+  {
+    path: 'totalPieces',
+    label: '总片数',
     group: '汇总',
     type: 'number',
     suggestedFormat: 'number',
@@ -575,6 +861,20 @@ export const returnOrderFields: FieldDefinition[] = [
     group: '汇总',
     type: 'number',
     suggestedFormat: 'currency',
+  },
+  {
+    path: 'totalBoxes',
+    label: '总件数',
+    group: '汇总',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
+  {
+    path: 'totalPieces',
+    label: '总片数',
+    group: '汇总',
+    type: 'number',
+    suggestedFormat: 'number',
   },
 
   { path: 'operator.name', label: '制单人', group: '制单', type: 'string' },
@@ -1509,4 +1809,71 @@ export function groupFields(
     groups[f.group].push(f);
   });
   return groups;
+}
+
+function normalizeFieldSearchKeyword(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function splitFieldPath(path: string): string[] {
+  return path
+    .split(/[._]/)
+    .map(segment => normalizeFieldSearchKeyword(segment))
+    .filter(Boolean);
+}
+
+export function getFieldSearchTerms(field: FieldDefinition): string[] {
+  return Array.from(
+    new Set(
+      [
+        field.label,
+        field.group,
+        field.path,
+        ...splitFieldPath(field.path),
+        ...(FIELD_SEARCH_ALIASES[field.path] ?? []),
+      ]
+        .map(normalizeFieldSearchKeyword)
+        .filter(Boolean)
+    )
+  );
+}
+
+export function matchesFieldSearch(
+  field: FieldDefinition,
+  keyword: string
+): boolean {
+  const normalizedKeyword = normalizeFieldSearchKeyword(keyword);
+  if (!normalizedKeyword) {
+    return true;
+  }
+
+  return getFieldSearchTerms(field).some(term =>
+    term.includes(normalizedKeyword)
+  );
+}
+
+export function getRecommendedFieldsForTemplateType(
+  type: string,
+  scope: 'template' | 'table' = 'template'
+): FieldDefinition[] {
+  const fields =
+    scope === 'table'
+      ? getTableFieldsForTemplateType(type)
+      : getFieldsForTemplateType(type);
+  const scopedPaths =
+    TEMPLATE_SPECIFIC_RECOMMENDED_PATHS[type]?.[scope] ??
+    (scope === 'table'
+      ? COMMON_TABLE_RECOMMENDED_PATHS
+      : COMMON_TEMPLATE_RECOMMENDED_PATHS);
+
+  const recommended = scopedPaths
+    .map(path => fields.find(field => field.path === path))
+    .filter((field): field is FieldDefinition => Boolean(field));
+
+  const seenPaths = new Set(recommended.map(field => field.path));
+  const fallback = fields
+    .filter(field => !seenPaths.has(field.path))
+    .slice(0, Math.max(0, 6 - recommended.length));
+
+  return [...recommended, ...fallback];
 }

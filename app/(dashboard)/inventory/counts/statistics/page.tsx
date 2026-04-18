@@ -8,8 +8,8 @@ import { can } from '@/lib/auth/permissions';
 import { CountStatisticsPageClient } from './page-client';
 
 export const metadata: Metadata = {
-  title: '盘点统计 - 库存管理',
-  description: '查看库存盘点统计数据和分析',
+  title: '盘点单统计 - 库存管理',
+  description: '查看盘点单数量、录入进度和差异情况',
 };
 
 // Next.js 15 Route Segment Config

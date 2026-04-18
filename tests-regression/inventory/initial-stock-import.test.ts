@@ -211,7 +211,7 @@ describe('initial-stock import handler', () => {
     });
   });
 
-  test('数量单位为件时，只按当前行填写的装箱数换算成片', async () => {
+  test('数量单位为件时，会把件数换算成片，并把单位成本按件价折算成单片成本', async () => {
     prisma.product.findMany.mockResolvedValue([
       {
         id: 'product-box-convert',
@@ -234,9 +234,9 @@ describe('initial-stock import handler', () => {
         数量: 115,
         数量单位: '件',
         装箱数: 4,
-        单位成本: 18.5,
+        单位成本: 74,
         库位: 'A-01',
-        备注: '115件应换算为460片',
+        备注: '115件应换算为460片，74元/件折算为18.5元/片',
       },
     ]);
 
@@ -248,6 +248,7 @@ describe('initial-stock import handler', () => {
       quantityUnitSource: 'row',
       piecesPerUnit: 4,
       quantity: 460,
+      unitCost: 18.5,
     });
 
     await importInitialStockRows(
@@ -261,9 +262,9 @@ describe('initial-stock import handler', () => {
           数量: 115,
           数量单位: '件',
           装箱数: 4,
-          单位成本: 18.5,
+          单位成本: 74,
           库位: 'A-01',
-          备注: '115件应换算为460片',
+          备注: '115件应换算为460片，74元/件折算为18.5元/片',
         },
       ],
       'user-1'
@@ -277,6 +278,75 @@ describe('initial-stock import handler', () => {
         quantity: 460,
         unitCost: 18.5,
         openingImportBatchId: expect.stringMatching(/^OBI-\d{8}-\d{6}-[A-F0-9]{4}$/),
+      })
+    );
+  });
+
+  test('数量单位为件时，支持小数件数并自动折算件价', async () => {
+    prisma.product.findMany.mockResolvedValue([
+      {
+        id: 'product-decimal-box',
+        code: 'P-DECIMAL',
+        name: '连纹砖',
+        specification: '750x1500mm',
+        piecesPerUnit: 16,
+        weight: 52,
+        variants: [],
+      },
+    ]);
+
+    const previewResult = await validateInitialStockImportRows([
+      {
+        产品编码: 'P-DECIMAL',
+        产品名称: '',
+        规格: '',
+        色号: '',
+        批次号: 'DECIMAL-BOX-01',
+        数量: 100.5,
+        数量单位: '件',
+        装箱数: 16,
+        单位成本: 80,
+        库位: 'B-01',
+        备注: '100.5件应换算为1608片，80元/件折算为5元/片',
+      },
+    ]);
+
+    expect(previewResult.valid).toBe(true);
+    expect(previewResult.previewRows[0]).toMatchObject({
+      productCode: 'P-DECIMAL',
+      inputQuantity: 100.5,
+      quantityUnit: '件',
+      piecesPerUnit: 16,
+      quantity: 1608,
+      unitCost: 5,
+    });
+
+    await importInitialStockRows(
+      [
+        {
+          产品编码: 'P-DECIMAL',
+          产品名称: '',
+          规格: '',
+          色号: '',
+          批次号: 'DECIMAL-BOX-01',
+          数量: 100.5,
+          数量单位: '件',
+          装箱数: 16,
+          单位成本: 80,
+          库位: 'B-01',
+          备注: '100.5件应换算为1608片，80元/件折算为5元/片',
+        },
+      ],
+      'user-1'
+    );
+
+    expect(executeMinimalInboundTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        productId: 'product-decimal-box',
+        batchNumber: 'DECIMAL-BOX-01',
+        piecesPerUnit: 16,
+        quantity: 1608,
+        unitCost: 5,
       })
     );
   });
@@ -428,6 +498,83 @@ describe('initial-stock import handler', () => {
         unitCost: 18.5,
       })
     );
+  });
+
+  test('按片导入时，数量填写小数会直接报错', async () => {
+    prisma.product.findMany.mockResolvedValue([
+      {
+        id: 'product-piece-only',
+        code: 'P-PIECE-ONLY',
+        name: '地砖',
+        specification: '600x600mm',
+        piecesPerUnit: 4,
+        weight: 28,
+        variants: [],
+      },
+    ]);
+
+    const result = await validateInitialStockImportRows([
+      {
+        产品编码: 'P-PIECE-ONLY',
+        产品名称: '',
+        规格: '',
+        色号: '',
+        批次号: 'PIECE-DECIMAL-01',
+        数量: 100.5,
+        数量单位: '片',
+        单位成本: 12.5,
+        库位: '',
+        备注: '',
+      },
+    ]);
+
+    expect(result.valid).toBe(false);
+    expect(result.canImport).toBe(false);
+    expect(result.errorCount).toBe(1);
+    expect(result.errors[0]).toMatchObject({
+      field: '数量',
+      productCode: 'P-PIECE-ONLY',
+      message: '按片导入时，数量必须是整数片数',
+    });
+  });
+
+  test('按件导入时，如果小数件数换算后不是整数片数会报错', async () => {
+    prisma.product.findMany.mockResolvedValue([
+      {
+        id: 'product-invalid-decimal',
+        code: 'P-INVALID-DECIMAL',
+        name: '通体砖',
+        specification: '600x1200mm',
+        piecesPerUnit: 16,
+        weight: 40,
+        variants: [],
+      },
+    ]);
+
+    const result = await validateInitialStockImportRows([
+      {
+        产品编码: 'P-INVALID-DECIMAL',
+        产品名称: '',
+        规格: '',
+        色号: '',
+        批次号: 'INVALID-DECIMAL-01',
+        数量: 100.123,
+        数量单位: '件',
+        装箱数: 16,
+        单位成本: 80,
+        库位: '',
+        备注: '',
+      },
+    ]);
+
+    expect(result.valid).toBe(false);
+    expect(result.canImport).toBe(false);
+    expect(result.errorCount).toBe(1);
+    expect(result.errors[0]).toMatchObject({
+      field: '数量',
+      productCode: 'P-INVALID-DECIMAL',
+      message: '换算后的片数必须是整数，请检查件数和装箱数后重试',
+    });
   });
 
   test('数量单位为件时，如果模板和产品档案都没有装箱数会报错', async () => {

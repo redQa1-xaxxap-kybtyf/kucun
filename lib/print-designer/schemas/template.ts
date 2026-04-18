@@ -9,7 +9,12 @@ import { z } from 'zod';
 import { PlaceholderElementSchema } from './placeholder-element';
 import { TableElementSchema } from './table-element';
 import { TextElementSchema } from './text-element';
-import { BarcodeElementSchema, ImageElementSchema } from './visual-elements';
+import {
+  BarcodeElementSchema,
+  ImageElementSchema,
+  LineElementSchema,
+  RectElementSchema,
+} from './visual-elements';
 
 // ============================================================================
 // 元素联合类型
@@ -21,6 +26,8 @@ export const DesignElementSchema = z.discriminatedUnion('type', [
   TableElementSchema,
   ImageElementSchema,
   BarcodeElementSchema,
+  LineElementSchema,
+  RectElementSchema,
 ]);
 
 export type DesignElement = z.infer<typeof DesignElementSchema>;

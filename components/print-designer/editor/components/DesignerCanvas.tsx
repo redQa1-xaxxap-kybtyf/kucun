@@ -12,6 +12,8 @@ import {
   createDefaultPlaceholderElement,
   createDefaultTableElement,
   createDefaultTextElement,
+  createDefaultLineElement,
+  createDefaultRectElement,
   getPaperDimensions,
   type DesignElement,
 } from '@/lib/print-designer/schemas';
@@ -22,7 +24,11 @@ import {
 import { cn } from '@/lib/utils';
 
 import { mmToPx } from '../../renderer/utils';
-import { useAlignmentGuides, type AlignmentGuide } from '../hooks';
+import {
+  snapToGuides,
+  useAlignmentGuides,
+  type AlignmentGuide,
+} from '../hooks';
 import { useDesignerStore, useElements, usePageSettings } from '../stores';
 
 import { ElementContextMenu } from './ElementContextMenu';
@@ -206,6 +212,12 @@ export function DesignerCanvas() {
             y: posY,
           });
           break;
+        case 'line':
+          newElement = createDefaultLineElement(id, { x: posX, y: posY });
+          break;
+        case 'rect':
+          newElement = createDefaultRectElement(id, { x: posX, y: posY });
+          break;
         default:
           return;
       }
@@ -250,6 +262,7 @@ export function DesignerCanvas() {
     <div className="relative flex flex-1 flex-col overflow-hidden bg-[#ece4d8]">
       <div className="border-b bg-white/80 px-4 py-2 text-xs text-slate-600">
         灰色为纸张，虚线框内为可打印区域。元素会自动限制在可打印区域内，避免实际打印被裁切。
+        拖动元素靠近页边、中心线或其他元素时会自动吸附，排版会顺手很多。
       </div>
 
       {/* 画布区域 */}
@@ -314,6 +327,9 @@ export function DesignerCanvas() {
                 zoom={zoom}
                 isSelected={element.id === selectedElementId}
                 bounds={contentBounds}
+                alignmentGuides={
+                  element.id === draggingElementId ? alignmentGuides : []
+                }
                 onSelect={() => selectElement(element.id)}
                 onUpdate={updates => updateElement(element.id, updates)}
                 onDragStart={() => setDraggingElementId(element.id)}
@@ -376,6 +392,7 @@ interface CanvasElementProps {
   zoom: number;
   isSelected: boolean;
   bounds: { width: number; height: number };
+  alignmentGuides?: AlignmentGuide[];
   onSelect: () => void;
   onUpdate: (updates: Partial<DesignElement>) => void;
   onDragStart?: () => void;
@@ -387,6 +404,7 @@ function CanvasElement({
   zoom,
   isSelected,
   bounds,
+  alignmentGuides = [],
   onSelect,
   onUpdate,
   onDragStart,
@@ -439,9 +457,13 @@ function CanvasElement({
         x: dragRef.current.elemX + deltaX / (96 / 25.4),
         y: dragRef.current.elemY + deltaY / (96 / 25.4),
       };
+      const snappedPosition =
+        alignmentGuides.length > 0
+          ? snapToGuides(nextPosition, element.size, alignmentGuides)
+          : nextPosition;
 
       onUpdate({
-        position: clampElementPosition(nextPosition, element.size, bounds),
+        position: clampElementPosition(snappedPosition, element.size, bounds),
       });
     };
 
@@ -614,6 +636,16 @@ function CanvasElement({
           <div className="flex h-full w-full items-center justify-center bg-slate-50 font-mono text-xs">
             ||||||||
           </div>
+        );
+      case 'line':
+        return (
+          <div className="flex h-full w-full items-center">
+            <div className="w-full border-t border-dashed border-slate-500" />
+          </div>
+        );
+      case 'rect':
+        return (
+          <div className="h-full w-full rounded-[2px] border border-dashed border-slate-500 bg-white/40" />
         );
       default:
         return null;

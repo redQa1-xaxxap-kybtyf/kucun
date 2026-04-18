@@ -9,8 +9,8 @@ import { getInventoryCountById } from '@/lib/services/inventory-count/queries';
 import { CountDetailPageClient } from './page-client';
 
 export const metadata: Metadata = {
-  title: '盘点计划详情 - 库存管理',
-  description: '查看库存盘点计划详细信息',
+  title: '盘点单详情 - 库存管理',
+  description: '查看盘点单详细信息',
 };
 
 // Next.js 15 Route Segment Config

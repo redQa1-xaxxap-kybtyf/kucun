@@ -27,6 +27,26 @@ export const WidthUnitSchema = z.enum(['mm', '%']);
 
 export type WidthUnit = z.infer<typeof WidthUnitSchema>;
 
+/** 序号格式 */
+export const RowNumberModeSchema = z.enum(['numeric', 'zero-pad-2']);
+
+export type RowNumberMode = z.infer<typeof RowNumberModeSchema>;
+
+/** 标题栏样式 */
+export const TitleBarStyleSchema = z.enum(['plain', 'filled', 'outlined']);
+
+export type TitleBarStyle = z.infer<typeof TitleBarStyleSchema>;
+
+/** 表尾备注样式 */
+export const FooterNoteStyleSchema = z.enum(['plain', 'outlined', 'filled']);
+
+export type FooterNoteStyle = z.infer<typeof FooterNoteStyleSchema>;
+
+/** 表格边框风格 */
+export const TableBorderModeSchema = z.enum(['full', 'row', 'outer']);
+
+export type TableBorderMode = z.infer<typeof TableBorderModeSchema>;
+
 /** 表格列定义 */
 export const TableColumnSchema = z.object({
   /** 内部列标识，用于稳定渲染和拖拽排序 */
@@ -127,6 +147,9 @@ export const TableStyleSchema = z.object({
   /** 边框宽度 (px) */
   borderWidth: z.number().min(0).max(3).default(0.5),
 
+  /** 边框风格 */
+  borderMode: TableBorderModeSchema.default('full'),
+
   /** 行高 (mm) */
   rowHeight: z.number().min(3).max(20).default(6),
 
@@ -150,11 +173,32 @@ export const TableElementSchema = BaseElementSchema.extend({
   /** 数据源路径 (通常为 'items') */
   dataSource: z.string().default('items'),
 
+  /** 表格标题 */
+  title: z.string().max(60).optional(),
+
+  /** 标题栏样式 */
+  titleBarStyle: TitleBarStyleSchema.optional(),
+
+  /** 标题对齐 */
+  titleAlign: TextAlignSchema.optional(),
+
+  /** 表尾备注 */
+  footerNote: z.string().max(240).optional(),
+
+  /** 表尾备注样式 */
+  footerNoteStyle: FooterNoteStyleSchema.optional(),
+
   /** 列定义 */
   columns: z.array(TableColumnSchema).min(1),
 
   /** 表格样式 */
   style: TableStyleSchema,
+
+  /** 序号列显示格式 */
+  rowNumberMode: RowNumberModeSchema.optional(),
+
+  /** 合计行文案 */
+  summaryLabel: z.string().max(12).optional(),
 
   /** 是否显示合计行 */
   showSummary: z.boolean().default(false),
@@ -187,6 +231,11 @@ export function createDefaultTableElement(
     locked: false,
     visible: true,
     dataSource: 'items',
+    title: '',
+    titleBarStyle: 'plain',
+    titleAlign: 'center',
+    footerNote: '',
+    footerNoteStyle: 'plain',
     columns: [
       createTableColumn({
         key: 'name',
@@ -222,10 +271,13 @@ export function createDefaultTableElement(
       bodyFontSize: 9,
       borderColor: '#cccccc',
       borderWidth: 0.5,
+      borderMode: 'full',
       rowHeight: 6,
       stripedRows: false,
       stripedColor: '#fafafa',
     },
+    rowNumberMode: 'numeric',
+    summaryLabel: '合计',
     showSummary: false,
   };
 }

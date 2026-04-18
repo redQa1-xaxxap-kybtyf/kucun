@@ -253,6 +253,7 @@ export async function getInventoryCounts(
   const {
     page = 1,
     pageSize = 20,
+    search,
     status,
     countType,
     location,
@@ -270,6 +271,21 @@ export async function getInventoryCounts(
 
   if (status) {
     where.status = status;
+  }
+
+  if (search) {
+    where.OR = [
+      {
+        countNumber: {
+          contains: search,
+        },
+      },
+      {
+        countName: {
+          contains: search,
+        },
+      },
+    ];
   }
 
   if (countType) {
@@ -596,7 +612,10 @@ export async function startCount(
   // 验证盘点计划是否存在
   const existingCount = await prisma.inventoryCount.findUnique({
     where: { id: countId },
-    select: { status: true },
+    select: {
+      status: true,
+      totalItems: true,
+    },
   });
 
   if (!existingCount) {
@@ -606,6 +625,10 @@ export async function startCount(
   // 只有草稿状态可以开始盘点
   if (existingCount.status !== 'draft') {
     throw new Error('只有草稿状态的盘点计划可以开始');
+  }
+
+  if (existingCount.totalItems <= 0) {
+    throw new Error('请先按范围生成盘点商品后再开始盘点');
   }
 
   const count = await prisma.inventoryCount.update({
@@ -889,6 +912,10 @@ export async function completeCount(
     throw new Error('只有进行中状态的盘点计划可以完成');
   }
 
+  if (existingCount.items.length === 0) {
+    throw new Error('盘点单内暂无盘点商品，无法提交盘点结果');
+  }
+
   const allCounted = existingCount.items.every(
     item => item.status === 'counted'
   );
@@ -916,7 +943,11 @@ export async function completeCount(
           // 2.1.2 确定调整原因（盘盈或盘亏）
           const reason = difference > 0 ? 'surplus' : 'deficit';
           const beforeQuantity = item.systemQuantity;
-          const afterQuantity = item.actualQuantity!;
+          const afterQuantity = item.actualQuantity;
+
+          if (afterQuantity === null) {
+            continue;
+          }
 
           // 2.1.3 更新库存数量
           const inventories = await tx.inventory.findMany({

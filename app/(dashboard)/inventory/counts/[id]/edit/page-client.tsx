@@ -12,7 +12,9 @@ import type { InventoryCountDetail } from '@/lib/types/inventory-count';
 
 const CountForm = dynamic(
   () =>
-    import('@/components/inventory/counts/count-form').then(mod => mod.CountForm),
+    import('@/components/inventory/counts/count-form').then(
+      mod => mod.CountForm
+    ),
   {
     ssr: false,
     loading: () => (
@@ -63,12 +65,12 @@ export function EditCountPageClient({
           </Link>
         </Button>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">编辑盘点计划</h1>
+          <h1 className="text-3xl font-bold tracking-tight">编辑盘点单</h1>
           <p className="text-muted-foreground">{initialData.countNumber}</p>
         </div>
       </div>
 
-      {/* 盘点计划表单 */}
+      {/* 盘点单表单 */}
       <CountForm
         mode="edit"
         countId={countId}

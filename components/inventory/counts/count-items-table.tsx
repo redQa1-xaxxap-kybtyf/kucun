@@ -21,8 +21,12 @@ import {
   type InventoryCountItem,
 } from '@/lib/types/inventory-count';
 import { formatCostPrice } from '@/lib/utils/cost-price';
+import {
+  compareInventoryCountItems,
+  getInventoryCountItemPiecesPerUnit,
+  getInventoryCountItemSpecification,
+} from '@/lib/utils/inventory-count-item';
 import { formatPieceSummary } from '@/lib/utils/piece-calculation';
-import { ProductDataUtils } from '@/lib/utils/product-data';
 
 interface CountItemsTableProps {
   items: InventoryCountItem[];
@@ -65,13 +69,18 @@ export function CountItemsTable({
     });
   };
 
+  const sortedItems = React.useMemo(
+    () => [...items].sort(compareInventoryCountItems),
+    [items]
+  );
+
   if (isLoading) {
     return <div className="py-8 text-center">加载中...</div>;
   }
 
   if (items.length === 0) {
     return (
-      <div className="text-muted-foreground py-8 text-center">暂无盘点明细</div>
+      <div className="text-muted-foreground py-8 text-center">暂无盘点商品</div>
     );
   }
 
@@ -82,13 +91,13 @@ export function CountItemsTable({
         <Table className="min-w-[1120px] [&_th]:whitespace-nowrap">
           <TableHeader>
             <TableRow>
-              <TableHead>产品编码</TableHead>
-              <TableHead>产品名称</TableHead>
+              <TableHead>商品编号</TableHead>
+              <TableHead>商品名称</TableHead>
               <TableHead>规格型号</TableHead>
-              <TableHead className="text-right">装箱数</TableHead>
-              <TableHead>批次号</TableHead>
-              <TableHead className="text-right">系统数量</TableHead>
-              <TableHead className="text-right">实际数量</TableHead>
+              <TableHead className="text-right">每件片数</TableHead>
+              <TableHead>批次</TableHead>
+              <TableHead className="text-right">账面数量</TableHead>
+              <TableHead className="text-right">实盘数量</TableHead>
               <TableHead className="text-right">差异数量</TableHead>
               {hasFinancePermission && (
                 <>
@@ -103,7 +112,7 @@ export function CountItemsTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {items.map(item => (
+            {sortedItems.map(item => (
               <TableRow key={item.id}>
                 <TableCell className="font-medium whitespace-nowrap">
                   {item.product?.code || '-'}
@@ -114,24 +123,11 @@ export function CountItemsTable({
                   </div>
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
-                  {(() => {
-                    const variantLabel =
-                      item.variant &&
-                      `${item.variant.colorName || ''} ${item.variant.sku || ''}`.trim();
-
-                    if (variantLabel) {
-                      return variantLabel;
-                    }
-
-                    // 回退到产品规格字段
-                    return ProductDataUtils.formatter.formatSpecification(
-                      item.product?.specification
-                    );
-                  })()}
+                  {getInventoryCountItemSpecification(item)}
                 </TableCell>
                 <TableCell className="text-right whitespace-nowrap">
-                  {item.product?.piecesPerUnit && item.product.piecesPerUnit > 0
-                    ? `${item.product.piecesPerUnit}片/件`
+                  {getInventoryCountItemPiecesPerUnit(item) > 0
+                    ? `${getInventoryCountItemPiecesPerUnit(item)}片/件`
                     : '-'}
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
@@ -139,8 +135,7 @@ export function CountItemsTable({
                 </TableCell>
                 <TableCell className="text-right whitespace-nowrap">
                   {(() => {
-                    const ppu = item.product?.piecesPerUnit ?? 0;
-                    // 仅在每件片数>1时进行“约X件”的换算，避免 1 片/件 时产生误导
+                    const ppu = getInventoryCountItemPiecesPerUnit(item);
                     return ppu > 1
                       ? formatPieceSummary(item.systemQuantity, ppu, {
                           fallbackUnit: '片',
@@ -156,7 +151,7 @@ export function CountItemsTable({
                       item.actualQuantity === undefined
                     )
                       return '—';
-                    const ppu = item.product?.piecesPerUnit ?? 0;
+                    const ppu = getInventoryCountItemPiecesPerUnit(item);
                     return ppu > 1
                       ? formatPieceSummary(item.actualQuantity, ppu, {
                           fallbackUnit: '片',
@@ -180,7 +175,7 @@ export function CountItemsTable({
                       item.difference === undefined
                     )
                       return '-';
-                    const ppu = item.product?.piecesPerUnit ?? 0;
+                    const ppu = getInventoryCountItemPiecesPerUnit(item);
                     const abs = Math.abs(item.difference);
                     const text =
                       ppu > 1
@@ -256,8 +251,8 @@ export function CountItemsTable({
 
       {/* 移动端卡片视图 */}
       <div className="space-y-3 xl:hidden">
-        {items.map(item => {
-          const ppu = item.product?.piecesPerUnit ?? 0;
+        {sortedItems.map(item => {
+          const ppu = getInventoryCountItemPiecesPerUnit(item);
           const systemDisplay =
             ppu > 1
               ? formatPieceSummary(item.systemQuantity, ppu, {
@@ -308,19 +303,7 @@ export function CountItemsTable({
                     {item.product?.name || '-'}
                   </div>
                   <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
-                    {(() => {
-                      const variantLabel =
-                        item.variant &&
-                        `${item.variant.colorName || ''} ${item.variant.sku || ''}`.trim();
-
-                      if (variantLabel) {
-                        return variantLabel;
-                      }
-
-                      return ProductDataUtils.formatter.formatSpecification(
-                        item.product?.specification
-                      );
-                    })()}
+                    {getInventoryCountItemSpecification(item)}
                   </div>
                   <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
                     批次：{item.batchNumber || '-'}
@@ -357,13 +340,13 @@ export function CountItemsTable({
 
               <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-[hsl(var(--color-text-secondary))]">
                 <div>
-                  <div>系统数量</div>
+                  <div>账面数量</div>
                   <div className="mt-0.5 font-medium text-[hsl(var(--color-text-primary))]">
                     {systemDisplay}
                   </div>
                 </div>
                 <div>
-                  <div>实际数量</div>
+                  <div>实盘数量</div>
                   <div className="mt-0.5 font-medium text-[hsl(var(--color-text-primary))]">
                     {actualDisplay}
                   </div>

@@ -17,10 +17,17 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  filterFieldsByQuickFilter,
+  getFieldQuickFilterOptions,
+} from '@/lib/print-designer/field-quick-filters';
+import {
   getFieldsForTemplateType,
+  getRecommendedFieldsForTemplateType,
   groupFields,
+  matchesFieldSearch,
 } from '@/lib/print-designer/field-registry';
 import type { PlaceholderFormat } from '@/lib/print-designer/schemas';
+import { cn } from '@/lib/utils';
 
 interface DataBindingSectionProps {
   templateType: string;
@@ -42,21 +49,45 @@ export function DataBindingSection({
   onFallbackChange,
 }: DataBindingSectionProps) {
   const [search, setSearch] = useState('');
+  const [quickFilter, setQuickFilter] = useState('all');
 
   const availableFields = useMemo(
     () => getFieldsForTemplateType(templateType),
     [templateType]
   );
+  const quickFilterOptions = useMemo(
+    () => getFieldQuickFilterOptions(availableFields, 'template'),
+    [availableFields]
+  );
+  const quickFilteredFields = useMemo(
+    () =>
+      filterFieldsByQuickFilter(
+        availableFields,
+        templateType,
+        'template',
+        quickFilter
+      ),
+    [availableFields, quickFilter, templateType]
+  );
 
   const filteredFields = useMemo(() => {
-    if (!search) return availableFields;
-    const lower = search.toLowerCase();
-    return availableFields.filter(
-      f =>
-        f.label.toLowerCase().includes(lower) ||
-        f.path.toLowerCase().includes(lower)
-    );
-  }, [availableFields, search]);
+    if (!search) return quickFilteredFields;
+    return quickFilteredFields.filter(f => matchesFieldSearch(f, search));
+  }, [quickFilteredFields, search]);
+  const recommendedFields = useMemo(
+    () => getRecommendedFieldsForTemplateType(templateType).slice(0, 6),
+    [templateType]
+  );
+  const visibleRecommendedFields = useMemo(
+    () =>
+      filterFieldsByQuickFilter(
+        recommendedFields,
+        templateType,
+        'template',
+        quickFilter
+      ),
+    [quickFilter, recommendedFields, templateType]
+  );
 
   // 按组分类
   const groupedFields = useMemo(
@@ -91,12 +122,58 @@ export function DataBindingSection({
           <Input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="搜索数据项..."
+            placeholder="搜索数据项、单号、客户..."
             className="h-8 pl-8"
           />
         </div>
+        <div className="flex flex-wrap gap-1.5">
+          {quickFilterOptions.map(option => (
+            <button
+              key={option.key}
+              type="button"
+              className={cn(
+                'rounded-full border px-2.5 py-1 text-[11px] leading-4 transition-colors',
+                quickFilter === option.key
+                  ? 'border-sky-200 bg-sky-50 text-sky-700'
+                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+              )}
+              onClick={() => setQuickFilter(option.key)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
 
         <div className="max-h-48 overflow-auto rounded-xl border bg-white">
+          {!search && visibleRecommendedFields.length > 0 && (
+            <div>
+              <div className="sticky top-0 bg-sky-100 px-3 py-1.5 text-xs font-medium text-sky-700">
+                常用数据项
+              </div>
+              {visibleRecommendedFields.map(recommendedField => (
+                <button
+                  key={`recommended-${recommendedField.path}`}
+                  type="button"
+                  className={`w-full px-3 py-2 text-left hover:bg-sky-50 ${
+                    recommendedField.path === field
+                      ? 'bg-sky-100 text-sky-700'
+                      : ''
+                  }`}
+                  onClick={() =>
+                    onFieldChange(recommendedField.path, recommendedField.label)
+                  }
+                >
+                  <div className="text-sm font-medium">
+                    {recommendedField.label}
+                  </div>
+                  <div className="font-mono text-[11px] text-slate-500">
+                    {recommendedField.path}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
           {Object.entries(groupedFields).map(([group, fields]) => (
             <div key={group}>
               <div className="sticky top-0 bg-stone-100 px-3 py-1.5 text-xs font-medium text-stone-500">
@@ -122,7 +199,7 @@ export function DataBindingSection({
 
           {Object.keys(groupedFields).length === 0 && (
             <div className="p-4 text-center text-sm text-slate-500">
-              没找到匹配的数据项，换个中文关键词试试。
+              当前分类下没有匹配字段，换个分类或中文关键词试试。
             </div>
           )}
         </div>

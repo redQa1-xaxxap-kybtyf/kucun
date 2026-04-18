@@ -112,7 +112,7 @@ function useCountDetail(countId: string, initialData: InventoryCountDetail) {
     queryFn: async () => {
       const response = await fetch(`/api/inventory/counts/${countId}`);
       if (!response.ok) {
-        throw new Error('获取盘点计划详情失败');
+        throw new Error('获取盘点单详情失败');
       }
       return response.json() as Promise<{ data: InventoryCountDetail }>;
     },
@@ -152,9 +152,12 @@ function useCountMutations({
         getCsrfTokenHeader({
           method: 'POST',
         })
-      ).then(handleResponse('开始盘点失败')),
+      ).then(handleResponse('开始录入失败')),
     onSuccess: () => {
-      toast({ title: '开始成功', description: '盘点计划已开始' });
+      toast({
+        title: '开始成功',
+        description: '盘点单已开始，可以继续录入盘点结果',
+      });
       invalidateCount();
       router.push(`/inventory/counts/${countId}/execute`);
     },
@@ -173,9 +176,9 @@ function useCountMutations({
         getCsrfTokenHeader({
           method: 'POST',
         })
-      ).then(handleResponse('完成盘点失败')),
+      ).then(handleResponse('提交盘点结果失败')),
     onSuccess: () => {
-      toast({ title: '完成成功', description: '盘点计划已完成' });
+      toast({ title: '提交成功', description: '盘点结果已提交' });
       invalidateCount();
     },
     onError: error =>
@@ -195,7 +198,7 @@ function useCountMutations({
         })
       ).then(handleResponse('删除失败')),
     onSuccess: () => {
-      toast({ title: '删除成功', description: '盘点计划已成功删除' });
+      toast({ title: '删除成功', description: '盘点单已成功删除' });
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户删除盘点计划后立即看到变化
       queryClient.refetchQueries({
         queryKey: queryKeys.inventory.counts(),
@@ -341,13 +344,13 @@ function CountHeader({
             className="gap-2"
           >
             <Play className="h-4 w-4" />
-            {isStarting ? '开始中…' : '开始盘点'}
+            {isStarting ? '开始中…' : '开始录入'}
           </Button>
           {count.status === 'in_progress' && (
             <Button variant="default" size="sm" asChild className="gap-2">
               <Link href={`/inventory/counts/${countId}/execute`}>
                 <ClipboardCheck className="h-4 w-4" />
-                执行盘点
+                录入盘点结果
               </Link>
             </Button>
           )}
@@ -359,7 +362,7 @@ function CountHeader({
             className="gap-2"
           >
             <CheckCircle className="h-4 w-4" />
-            {isCompleting ? '完成中…' : '完成盘点'}
+            {isCompleting ? '提交中…' : '提交盘点结果'}
           </Button>
           <Button
             variant="destructive"
@@ -384,7 +387,7 @@ function CountInfoSection({ count }: { count: InventoryCountDetail }) {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <InfoItem label="盘点名称" value={count.countName} />
+          <InfoItem label="盘点单名称" value={count.countName} />
           <InfoItem
             label="盘点类型"
             value={COUNT_TYPE_LABELS[count.countType]}
@@ -396,7 +399,7 @@ function CountInfoSection({ count }: { count: InventoryCountDetail }) {
             </Badge>
           </div>
           <InfoItem label="计划日期" value={formatDate(count.planDate)} />
-          <InfoItem label="盘点位置" value={count.location || '-'} />
+          <InfoItem label="库位/存放区域" value={count.location || '整仓'} />
           <InfoItem label="盘点分类" value={count.category?.name || '-'} />
           <InfoItem label="创建人" value={count.creator?.name || '-'} />
           <InfoItem label="创建时间" value={formatDateTime(count.createdAt)} />
@@ -425,7 +428,7 @@ function CountStatisticsSection({ count }: { count: InventoryCountDetail }) {
         value={formatNumber(count.differenceItems)}
       />
       <StatisticCard
-        title="差异总金额"
+        title="差异总量"
         value={formatNumber(count.totalDifference)}
       />
     </div>
@@ -472,7 +475,7 @@ function CountItemsCard({
     <>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <CardTitle>盘点明细</CardTitle>
+          <CardTitle>盘点商品</CardTitle>
           {canEditItems && (
             <div className="flex gap-2">
               <Button

@@ -46,9 +46,13 @@ export {
 // Table element
 export {
   ColumnFormatSchema,
+  FooterNoteStyleSchema,
+  RowNumberModeSchema,
   TableColumnSchema,
+  TableBorderModeSchema,
   TableElementSchema,
   TableStyleSchema,
+  TitleBarStyleSchema,
   WidthUnitSchema,
   createTableColumn,
   createTableColumnId,
@@ -56,9 +60,13 @@ export {
   ensureTableColumnIds,
   getTableColumnReactKey,
   type ColumnFormat,
+  type FooterNoteStyle,
+  type RowNumberMode,
+  type TableBorderMode,
   type TableColumn,
   type TableElement,
   type TableStyle,
+  type TitleBarStyle,
   type WidthUnit,
 } from './table-element';
 
@@ -66,14 +74,26 @@ export {
 export {
   BarcodeElementSchema,
   BarcodeFormatSchema,
+  DashStyleSchema,
   ImageElementSchema,
   ImageFitSchema,
+  LineElementSchema,
+  LineStyleSchema,
+  RectElementSchema,
+  RectStyleSchema,
   createDefaultBarcodeElement,
   createDefaultImageElement,
+  createDefaultLineElement,
+  createDefaultRectElement,
   type BarcodeElement,
   type BarcodeFormat,
+  type DashStyle,
   type ImageElement,
   type ImageFit,
+  type LineElement,
+  type LineStyle,
+  type RectElement,
+  type RectStyle,
 } from './visual-elements';
 
 // Template

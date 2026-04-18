@@ -16,11 +16,18 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import {
+  filterFieldsByQuickFilter,
+  getFieldQuickFilterOptions,
+} from '@/lib/print-designer/field-quick-filters';
+import {
   type FieldDefinition,
   getFieldsForTemplateType,
+  getRecommendedFieldsForTemplateType,
   getTableFieldsForTemplateType,
   groupFields,
+  matchesFieldSearch,
 } from '@/lib/print-designer/field-registry';
+import { cn } from '@/lib/utils';
 
 interface FieldPickerProps {
   templateType: string;
@@ -39,6 +46,7 @@ export function FieldPicker({
 }: FieldPickerProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [quickFilter, setQuickFilter] = useState('all');
 
   const fields = useMemo(
     () =>
@@ -47,16 +55,35 @@ export function FieldPicker({
         : getFieldsForTemplateType(templateType),
     [scope, templateType]
   );
+  const quickFilterOptions = useMemo(
+    () => getFieldQuickFilterOptions(fields, scope),
+    [fields, scope]
+  );
+  const quickFilteredFields = useMemo(
+    () => filterFieldsByQuickFilter(fields, templateType, scope, quickFilter),
+    [fields, quickFilter, scope, templateType]
+  );
 
   const filteredFields = useMemo(() => {
-    if (!search) return fields;
-    const lower = search.toLowerCase();
-    return fields.filter(
-      f =>
-        f.label.toLowerCase().includes(lower) ||
-        f.path.toLowerCase().includes(lower)
-    );
-  }, [fields, search]);
+    if (!search) return quickFilteredFields;
+    return quickFilteredFields.filter(f => matchesFieldSearch(f, search));
+  }, [quickFilteredFields, search]);
+  const recommendedFields = useMemo(
+    () => getRecommendedFieldsForTemplateType(templateType, scope).slice(0, 6),
+    [scope, templateType]
+  );
+  const visibleRecommendedFields = useMemo(
+    () =>
+      recommendedFields.filter(recommendedField =>
+        filterFieldsByQuickFilter(
+          [recommendedField],
+          templateType,
+          scope,
+          quickFilter
+        ).some(field => field.path === recommendedField.path)
+      ),
+    [quickFilter, recommendedFields, scope, templateType]
+  );
 
   const groupedFields = useMemo(
     () => groupFields(filteredFields),
@@ -67,25 +94,77 @@ export function FieldPicker({
     onSelect(field);
     setOpen(false);
     setSearch('');
+    setQuickFilter('all');
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={nextOpen => {
+        setOpen(nextOpen);
+        if (!nextOpen) {
+          setSearch('');
+          setQuickFilter('all');
+        }
+      }}
+    >
       <PopoverTrigger asChild>{children}</PopoverTrigger>
-      <PopoverContent className="w-72 p-0" align="start">
+      <PopoverContent className="w-80 p-0" align="start">
         <div className="border-b p-2">
           <div className="relative">
             <Search className="text-muted-foreground absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2" />
             <Input
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="搜索数据项..."
+              placeholder="搜索数据项、单号、客户..."
               className="h-8 pl-8"
             />
           </div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {quickFilterOptions.map(option => (
+              <button
+                key={option.key}
+                type="button"
+                className={cn(
+                  'rounded-full border px-2.5 py-1 text-[11px] leading-4 transition-colors',
+                  quickFilter === option.key
+                    ? 'border-blue-200 bg-blue-50 text-blue-700'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                )}
+                onClick={() => setQuickFilter(option.key)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="max-h-64 overflow-auto">
+        <div className="max-h-72 overflow-auto">
+          {!search && visibleRecommendedFields.length > 0 && (
+            <div>
+              <div className="sticky top-0 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-600">
+                常用数据项
+              </div>
+              {visibleRecommendedFields.map(field => (
+                <button
+                  key={`recommended-${field.path}`}
+                  type="button"
+                  className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-blue-50 ${
+                    field.path === currentField
+                      ? 'bg-blue-100 text-blue-700'
+                      : ''
+                  }`}
+                  onClick={() => handleSelect(field)}
+                >
+                  <span>{field.label}</span>
+                  <span className="text-muted-foreground font-mono text-xs">
+                    {field.path}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+
           {Object.entries(groupedFields).map(([group, groupFields]) => (
             <div key={group}>
               <div className="sticky top-0 bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-500">
@@ -111,7 +190,7 @@ export function FieldPicker({
 
           {Object.keys(groupedFields).length === 0 && (
             <div className="text-muted-foreground p-4 text-center text-sm">
-              未找到匹配的数据项
+              当前分类下没有匹配字段，换个分类或搜中文关键词试试。
             </div>
           )}
         </div>

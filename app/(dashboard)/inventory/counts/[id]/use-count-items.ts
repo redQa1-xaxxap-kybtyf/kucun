@@ -5,14 +5,13 @@
 import * as React from 'react';
 
 import { useToast } from '@/components/ui/use-toast';
-import { getInventories } from '@/lib/api/inventory';
 import type { InventoryCountDetail } from '@/lib/types/inventory-count';
 
 import {
   addCountItems,
   buildAddProductParams,
   buildGenerateAllParams,
-  createFallbackParams,
+  fetchAllInventoryRecords,
   filterNewRecords,
   getExistingItemKeys,
   handleApiError,
@@ -45,13 +44,7 @@ export function useCountItems({
     setIsGenerateAllLoading(true);
     try {
       const params = buildGenerateAllParams(count);
-      let { inventories } = await getInventories(params);
-
-      // 如果按盘点位置筛选没有任何库存记录，则回退为不按位置筛选
-      if (!inventories.length && count.location) {
-        const fallbackParams = createFallbackParams(params);
-        ({ inventories } = await getInventories(fallbackParams));
-      }
+      const inventories = await fetchAllInventoryRecords(params);
 
       if (!inventories.length) {
         toast({
@@ -66,8 +59,8 @@ export function useCountItems({
 
       if (!newRecords.length) {
         toast({
-          title: '没有新的明细',
-          description: '所有库存记录已经在当前盘点明细中',
+          title: '没有新的盘点商品',
+          description: '所有库存记录已经在当前盘点单中',
         });
         return;
       }
@@ -76,17 +69,17 @@ export function useCountItems({
       const response = await addCountItems(countId, itemsPayload);
 
       if (!response.ok) {
-        await handleApiError(response, '生成盘点明细失败');
+        await handleApiError(response, '生成盘点商品失败');
       }
 
       toast({
         title: '生成成功',
-        description: `已新增 ${newRecords.length} 条盘点明细`,
+        description: `已新增 ${newRecords.length} 条盘点商品`,
       });
       onItemsChanged();
     } catch (error) {
       toast({
-        title: '生成盘点明细失败',
+        title: '生成盘点商品失败',
         description: error instanceof Error ? error.message : '未知错误',
         variant: 'destructive',
       });
@@ -104,8 +97,8 @@ export function useCountItems({
 
       if (!selectedProductId) {
         toast({
-          title: '请选择产品',
-          description: '请选择要添加到盘点明细的产品',
+          title: '请选择商品',
+          description: '请选择要加入当前盘点单的商品',
           variant: 'destructive',
         });
         return;
@@ -114,13 +107,7 @@ export function useCountItems({
       setIsAddingProduct(true);
       try {
         const params = buildAddProductParams(count, selectedProductId);
-        let { inventories } = await getInventories(params);
-
-        // 如果按盘点位置筛选没有任何库存记录，则回退为不按位置筛选
-        if (!inventories.length && count.location) {
-          const fallbackParams = createFallbackParams(params);
-          ({ inventories } = await getInventories(fallbackParams));
-        }
+        const inventories = await fetchAllInventoryRecords(params);
 
         if (!inventories.length) {
           toast({
@@ -135,8 +122,8 @@ export function useCountItems({
 
         if (!newRecords.length) {
           toast({
-            title: '没有新的明细',
-            description: '该产品相关库存记录已全部在盘点明细中',
+            title: '没有新的盘点商品',
+            description: '该商品相关库存记录已全部在当前盘点单中',
           });
           return;
         }
@@ -145,18 +132,18 @@ export function useCountItems({
         const response = await addCountItems(countId, itemsPayload);
 
         if (!response.ok) {
-          await handleApiError(response, '添加盘点明细失败');
+          await handleApiError(response, '添加盘点商品失败');
         }
 
         toast({
           title: '添加成功',
-          description: `已为该产品新增 ${newRecords.length} 条盘点明细`,
+          description: `已为该商品新增 ${newRecords.length} 条盘点商品`,
         });
         onItemsChanged();
         return true; // 成功标志
       } catch (error) {
         toast({
-          title: '添加盘点明细失败',
+          title: '添加盘点商品失败',
           description: error instanceof Error ? error.message : '未知错误',
           variant: 'destructive',
         });

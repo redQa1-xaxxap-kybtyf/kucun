@@ -10,7 +10,9 @@ import { Button } from '@/components/ui/button';
 
 const CountForm = dynamic(
   () =>
-    import('@/components/inventory/counts/count-form').then(mod => mod.CountForm),
+    import('@/components/inventory/counts/count-form').then(
+      mod => mod.CountForm
+    ),
   {
     ssr: false,
     loading: () => (
@@ -38,8 +40,8 @@ export function NewCountPageClient() {
     <div className="space-y-6 p-4 sm:p-6">
       {/* 页面标题 */}
       <PageHeader
-        title="创建盘点计划"
-        description="填写盘点计划信息"
+        title="新建盘点单"
+        description="填写盘点单信息"
         icon={<ClipboardCheck className="h-6 w-6 text-white" />}
         iconBgColor="hsl(var(--color-info))"
         actions={
@@ -52,7 +54,7 @@ export function NewCountPageClient() {
         }
       />
 
-      {/* 盘点计划表单 */}
+      {/* 盘点单表单 */}
       <CountForm
         mode="create"
         onSuccess={handleSuccess}

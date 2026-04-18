@@ -103,7 +103,7 @@ export function CountForm({
     },
   });
 
-  // 创建盘点计划
+  // 创建盘点单
   const createMutation = useMutation({
     mutationFn: async (data: InventoryCountFormData) => {
       const response = await fetch(
@@ -117,7 +117,7 @@ export function CountForm({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || '创建盘点计划失败');
+        throw new Error(error.error || '创建盘点单失败');
       }
 
       return response.json();
@@ -125,7 +125,7 @@ export function CountForm({
     onSuccess: data => {
       toast({
         title: '创建成功',
-        description: '盘点计划已成功创建',
+        description: '盘点单已成功创建',
       });
 
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户创建盘点计划后立即看到新记录
@@ -145,7 +145,7 @@ export function CountForm({
     },
   });
 
-  // 更新盘点计划
+  // 更新盘点单
   const updateMutation = useMutation({
     mutationFn: async (data: InventoryCountFormData) => {
       const response = await fetch(
@@ -159,7 +159,7 @@ export function CountForm({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || '更新盘点计划失败');
+        throw new Error(error.error || '更新盘点单失败');
       }
 
       return response.json();
@@ -167,7 +167,7 @@ export function CountForm({
     onSuccess: () => {
       toast({
         title: '更新成功',
-        description: '盘点计划已成功更新',
+        description: '盘点单已成功更新',
       });
 
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新盘点计划后立即看到变化
@@ -209,7 +209,7 @@ export function CountForm({
   const hasUnsavedChanges = form.formState.isDirty && !isSubmitting;
   const { confirmLeavePage } = useUnsavedChangesGuard({
     enabled: hasUnsavedChanges,
-    message: '当前盘点计划尚未保存，确定要离开吗？',
+    message: '当前盘点单尚未保存，确定要离开吗？',
   });
 
   const handleCancel = () => {
@@ -228,24 +228,22 @@ export function CountForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>
-          {mode === 'create' ? '新增盘点计划' : '编辑盘点计划'}
-        </CardTitle>
+        <CardTitle>{mode === 'create' ? '新建盘点单' : '编辑盘点单'}</CardTitle>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              {/* 盘点名称 */}
+              {/* 盘点单名称 */}
               <FormField
                 control={form.control}
                 name="countName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>盘点名称 *</FormLabel>
+                    <FormLabel>盘点单名称 *</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="请输入盘点名称"
+                        placeholder="请输入盘点单名称"
                         {...field}
                         maxLength={200}
                       />
@@ -330,16 +328,16 @@ export function CountForm({
                 )}
               />
 
-              {/* 盘点位置 */}
+              {/* 库位 / 存放区域 */}
               <FormField
                 control={form.control}
                 name="location"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>盘点位置</FormLabel>
+                    <FormLabel>库位/存放区域</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="请输入盘点位置（可选）"
+                        placeholder="请输入库位或存放区域（选填）"
                         {...field}
                         maxLength={100}
                       />

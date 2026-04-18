@@ -3,6 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { generateBatchNumberOutsideTransaction } from '@/lib/api/batch-number-generator';
 import { executeMinimalInboundTransaction } from '@/lib/api/minimal-inbound-transaction';
 import { prisma } from '@/lib/db';
+import { roundCostPrice } from '@/lib/utils/cost-price';
 import {
   initialStockImportSchema,
   initialStockRowSchema,
@@ -157,6 +158,7 @@ function normalizeInitialStockRowAliases(
     normalizedRow.单片成本 !== undefined
   ) {
     normalizedRow.单位成本 = normalizedRow.单片成本;
+    normalizedRow.unitCostBasis = 'piece';
   }
 
   if (
@@ -164,6 +166,7 @@ function normalizeInitialStockRowAliases(
     normalizedRow['单片成本(元/片)'] !== undefined
   ) {
     normalizedRow.单位成本 = normalizedRow['单片成本(元/片)'];
+    normalizedRow.unitCostBasis = 'piece';
   }
 
   return normalizedRow as InitialStockRowInput;
@@ -630,12 +633,17 @@ function resolveQuantity(
 
   const convertedQuantity =
     inputQuantity * piecesPerUnitResolution.piecesPerUnit;
+  const roundedQuantity = Math.round(convertedQuantity);
 
-  if (!Number.isSafeInteger(convertedQuantity) || convertedQuantity <= 0) {
+  if (
+    !Number.isSafeInteger(roundedQuantity) ||
+    roundedQuantity <= 0 ||
+    Math.abs(convertedQuantity - roundedQuantity) > 1e-8
+  ) {
     return {
       error: createImportError(
         parsedRow.rowNumber,
-        '换算后的片数超出系统支持范围，请检查数量和装箱数后重试',
+        '换算后的片数必须是整数，请检查件数和装箱数后重试',
         '数量',
         productCode
       ),
@@ -646,7 +654,56 @@ function resolveQuantity(
     inputQuantity,
     quantityUnit,
     quantityUnitSource,
-    quantity: convertedQuantity,
+    quantity: roundedQuantity,
+  };
+}
+
+function resolveUnitCost(
+  parsedRow: ParsedInitialStockRow,
+  quantityResolution: {
+    quantityUnit: InitialStockQuantityUnit;
+  },
+  piecesPerUnitResolution: {
+    piecesPerUnit?: number;
+  },
+  productCode: string
+):
+  | {
+      unitCost: number;
+    }
+  | {
+      error: InitialStockImportError;
+    } {
+  const inputUnitCost = parsedRow.row.单位成本;
+  const unitCostBasis = parsedRow.row.unitCostBasis ?? 'entry';
+
+  if (
+    quantityResolution.quantityUnit !== '件' ||
+    unitCostBasis === 'piece'
+  ) {
+    return {
+      unitCost: inputUnitCost,
+    };
+  }
+
+  if (
+    typeof piecesPerUnitResolution.piecesPerUnit !== 'number' ||
+    piecesPerUnitResolution.piecesPerUnit <= 0
+  ) {
+    return {
+      error: createImportError(
+        parsedRow.rowNumber,
+        '数量单位填写“件”时，当前行必须填写装箱数',
+        '装箱数',
+        productCode
+      ),
+    };
+  }
+
+  return {
+    unitCost: roundCostPrice(
+      inputUnitCost / piecesPerUnitResolution.piecesPerUnit
+    ),
   };
 }
 
@@ -1036,6 +1093,18 @@ async function prepareInitialStockImportRows(rows: InitialStockRowInput[]) {
       continue;
     }
 
+    const unitCostResolution = resolveUnitCost(
+      parsedRow,
+      quantityResolution,
+      piecesPerUnitResolution,
+      productResolution.product.code
+    );
+
+    if ('error' in unitCostResolution) {
+      errors.push(unitCostResolution.error);
+      continue;
+    }
+
     preliminaryRows.push({
       rowNumber: parsedRow.rowNumber,
       product: productResolution.product,
@@ -1050,7 +1119,7 @@ async function prepareInitialStockImportRows(rows: InitialStockRowInput[]) {
       weight: weightResolution.weight,
       weightSource: weightResolution.weightSource,
       quantity: quantityResolution.quantity,
-      unitCost: parsedRow.row.单位成本,
+      unitCost: unitCostResolution.unitCost,
       supplierId: supplierResolution.supplierId,
       supplierName: supplierResolution.supplierName,
       location: parsedRow.row.库位 || undefined,
@@ -1070,7 +1139,7 @@ async function prepareInitialStockImportRows(rows: InitialStockRowInput[]) {
         weight: weightResolution.weight,
         weightSource: weightResolution.weightSource,
         quantity: quantityResolution.quantity,
-        unitCost: parsedRow.row.单位成本,
+        unitCost: unitCostResolution.unitCost,
         supplierName: supplierResolution.supplierName,
         location: parsedRow.row.库位 || undefined,
         matchMethod: variantResolution.matchMethod,

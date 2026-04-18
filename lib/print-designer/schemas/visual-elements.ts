@@ -6,7 +6,7 @@
 
 import { z } from 'zod';
 
-import { BaseElementSchema } from './base';
+import { BaseElementSchema, HexColorSchema } from './base';
 
 // ============================================================================
 // 图片元素
@@ -59,6 +59,48 @@ export const BarcodeElementSchema = BaseElementSchema.extend({
 export type BarcodeElement = z.infer<typeof BarcodeElementSchema>;
 
 // ============================================================================
+// 线条 / 边框元素
+// ============================================================================
+
+/** 线条样式 */
+export const DashStyleSchema = z.enum(['solid', 'dashed', 'dotted']);
+
+export type DashStyle = z.infer<typeof DashStyleSchema>;
+
+export const LineStyleSchema = z.object({
+  color: HexColorSchema.default('#64748b'),
+  strokeWidth: z.number().min(0.2).max(6).default(0.6),
+  dashStyle: DashStyleSchema.default('solid'),
+});
+
+export type LineStyle = z.infer<typeof LineStyleSchema>;
+
+export const RectStyleSchema = z.object({
+  borderColor: HexColorSchema.default('#94a3b8'),
+  borderWidth: z.number().min(0.2).max(6).default(0.6),
+  dashStyle: DashStyleSchema.default('solid'),
+  fillColor: HexColorSchema.default('#ffffff'),
+  fillOpacity: z.number().min(0).max(1).default(0),
+  radius: z.number().min(0).max(20).default(0),
+});
+
+export type RectStyle = z.infer<typeof RectStyleSchema>;
+
+export const LineElementSchema = BaseElementSchema.extend({
+  type: z.literal('line'),
+  style: LineStyleSchema,
+});
+
+export type LineElement = z.infer<typeof LineElementSchema>;
+
+export const RectElementSchema = BaseElementSchema.extend({
+  type: z.literal('rect'),
+  style: RectStyleSchema,
+});
+
+export type RectElement = z.infer<typeof RectElementSchema>;
+
+// ============================================================================
 // 工具函数
 // ============================================================================
 
@@ -100,5 +142,52 @@ export function createDefaultBarcodeElement(
     field,
     format: 'CODE128',
     showText: true,
+  };
+}
+
+/** 创建默认横线元素 */
+export function createDefaultLineElement(
+  id: string,
+  position = { x: 10, y: 10 }
+): LineElement {
+  return {
+    id,
+    type: 'line',
+    position,
+    size: { width: 60, height: 2 },
+    rotation: 0,
+    zIndex: 0,
+    locked: false,
+    visible: true,
+    style: {
+      color: '#64748b',
+      strokeWidth: 0.6,
+      dashStyle: 'solid',
+    },
+  };
+}
+
+/** 创建默认边框框元素 */
+export function createDefaultRectElement(
+  id: string,
+  position = { x: 10, y: 10 }
+): RectElement {
+  return {
+    id,
+    type: 'rect',
+    position,
+    size: { width: 40, height: 20 },
+    rotation: 0,
+    zIndex: 0,
+    locked: false,
+    visible: true,
+    style: {
+      borderColor: '#94a3b8',
+      borderWidth: 0.6,
+      dashStyle: 'solid',
+      fillColor: '#ffffff',
+      fillOpacity: 0,
+      radius: 0,
+    },
   };
 }

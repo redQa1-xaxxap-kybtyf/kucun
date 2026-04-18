@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useCallback, useRef, useTransition, useEffect } from 'react';
 
+import { PRODUCT_DEFAULT_SORT } from '@/lib/config/product';
 import { paginationConfig } from '@/lib/env';
 import type { Product, ProductQueryParams } from '@/lib/types/product';
 
@@ -36,8 +37,8 @@ export function useProductListState(initialParams?: ProductQueryParams) {
     search: initialParams?.search || '',
     status: initialParams?.status,
     categoryId: initialParams?.categoryId,
-    sortBy: initialParams?.sortBy || 'createdAt',
-    sortOrder: initialParams?.sortOrder || 'desc',
+    sortBy: initialParams?.sortBy || PRODUCT_DEFAULT_SORT.sortBy,
+    sortOrder: initialParams?.sortOrder || PRODUCT_DEFAULT_SORT.sortOrder,
     page: initialParams?.page || 1,
     limit: initialParams?.limit || paginationConfig.defaultPageSize,
   });
@@ -48,8 +49,8 @@ export function useProductListState(initialParams?: ProductQueryParams) {
       search: initialParams?.search || '',
       status: initialParams?.status,
       categoryId: initialParams?.categoryId,
-      sortBy: initialParams?.sortBy || 'createdAt',
-      sortOrder: initialParams?.sortOrder || 'desc',
+      sortBy: initialParams?.sortBy || PRODUCT_DEFAULT_SORT.sortBy,
+      sortOrder: initialParams?.sortOrder || PRODUCT_DEFAULT_SORT.sortOrder,
       page: initialParams?.page || 1,
       limit: initialParams?.limit || paginationConfig.defaultPageSize,
     };

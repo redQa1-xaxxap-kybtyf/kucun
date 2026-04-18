@@ -8,8 +8,8 @@ import { can } from '@/lib/auth/permissions';
 import { CountsPageClient } from './page-client';
 
 export const metadata: Metadata = {
-  title: '库存盘点 - 库存管理',
-  description: '管理库存盘点计划，跟踪盘点进度',
+  title: '盘点单 - 库存管理',
+  description: '管理盘点单，跟踪录入进度',
 };
 
 // Next.js 15 Route Segment Config
@@ -27,6 +27,7 @@ export default async function CountsPage({
   searchParams: Promise<{
     page?: string;
     pageSize?: string;
+    search?: string;
     status?: string;
     countType?: string;
     location?: string;
@@ -55,6 +56,7 @@ export default async function CountsPage({
   const initialParams = {
     page,
     pageSize,
+    search: params.search,
     status: params.status,
     countType: params.countType,
     location: params.location,

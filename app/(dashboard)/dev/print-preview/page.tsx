@@ -169,6 +169,7 @@ const testTemplate: PrintTemplate = {
         bodyFontSize: 10,
         borderColor: '#000000',
         borderWidth: 1,
+        borderMode: 'full',
         rowHeight: 7,
         stripedRows: true,
         stripedColor: '#fafafa',

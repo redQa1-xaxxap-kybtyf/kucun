@@ -8,6 +8,7 @@ import { categoryQueryKeys } from '@/lib/api/categories';
 import { getCategoriesServer } from '@/lib/api/categories-server';
 import { productQueryKeys } from '@/lib/api/products';
 import { getProductsForServer } from '@/lib/api/products-server';
+import { PRODUCT_DEFAULT_SORT } from '@/lib/config/product';
 import { paginationConfig, productConfig } from '@/lib/env';
 import type { PaginatedResponse } from '@/lib/types/api';
 import type { Product } from '@/lib/types/product';
@@ -42,8 +43,9 @@ export default async function ProductsPage({
   const search = (params.search as string) || '';
   const categoryId = (params.categoryId as string) || '';
   const status = (params.status as 'active' | 'inactive') || undefined;
-  const sortBy = (params.sortBy as string) || 'createdAt';
-  const sortOrder = (params.sortOrder as 'asc' | 'desc') || 'desc';
+  const sortBy = (params.sortBy as string) || PRODUCT_DEFAULT_SORT.sortBy;
+  const sortOrder =
+    (params.sortOrder as 'asc' | 'desc') || PRODUCT_DEFAULT_SORT.sortOrder;
   const includeInventory =
     params.includeInventory === 'true' || productConfig.defaultIncludeInventory;
   const includeStatistics =

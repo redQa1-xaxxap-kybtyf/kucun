@@ -37,15 +37,15 @@ export function CountStatisticsPageClient({
     <div className="space-y-6 p-4 sm:p-6">
       {/* 页面标题 */}
       <PageHeader
-        title="盘点统计"
-        description="查看库存盘点统计数据和分析"
+        title="盘点单统计"
+        description="查看盘点单数量、录入进度和差异情况"
         icon={<BarChart3 className="h-6 w-6 text-white" />}
         iconBgColor="hsl(var(--color-info))"
         actions={
           <Button variant="outline" size="lg" asChild className="h-11 gap-2">
             <Link href="/inventory/counts">
               <ArrowLeft className="h-4 w-4" />
-              返回列表
+              返回盘点单列表
             </Link>
           </Button>
         }

@@ -4,6 +4,8 @@
 
 export { BarcodeRenderer } from './BarcodeRenderer';
 export { ImageRenderer } from './ImageRenderer';
+export { LineRenderer } from './LineRenderer';
 export { PlaceholderRenderer } from './PlaceholderRenderer';
+export { RectRenderer } from './RectRenderer';
 export { TableRenderer } from './TableRenderer';
 export { TextRenderer } from './TextRenderer';
