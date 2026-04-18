@@ -10,12 +10,12 @@ import * as React from 'react';
 import { CopyableText } from '@/components/common/copyable-text';
 import { RelativeTime } from '@/components/common/relative-time';
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
-import { invalidateFinanceCaches } from '@/lib/cache/invalidation-helpers';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
+import { invalidateFinanceCaches } from '@/lib/cache/invalidation-helpers';
 import { queryKeys } from '@/lib/queryKeys';
 import {
   EXPENSE_RELATED_TYPE_LABELS,

@@ -675,19 +675,15 @@ export async function getExpenseRecords(
   const containerMap = await getPurchaseOrderContainerMap(shippingOrderIds);
 
   // 转换为 ExpenseRecord 类型
-  const records: ExpenseRecord[] = expenses.map(expense => {
-    const safeExpenseType = validateExpenseType(expense.expenseType)
-      ? expense.expenseType
-      : 'other';
-
-    return buildExpenseRecord(
+  const records: ExpenseRecord[] = expenses.map(expense =>
+    buildExpenseRecord(
       expense,
       expense.expenseType === 'shipping' &&
         expense.relatedType === 'purchase_order'
         ? containerMap.get(expense.relatedId || '') || undefined
         : undefined
-    );
-  });
+    )
+  );
 
   return {
     records,

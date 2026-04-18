@@ -26,6 +26,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { TableSkeleton } from '@/components/ui/skeleton-compositions';
 import {
   Table,
   TableBody,
@@ -34,7 +35,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { TableSkeleton } from '@/components/ui/skeleton-compositions';
 import { useToast } from '@/components/ui/use-toast';
 import {
   PAYABLE_SOURCE_TYPE_LABELS,
