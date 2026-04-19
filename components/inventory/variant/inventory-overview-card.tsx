@@ -46,6 +46,15 @@ export function InventoryOverviewCard({
   getStockStatusColor,
   getStockStatusText,
 }: InventoryOverviewCardProps) {
+  const piecesPerUnit = variant.product.piecesPerUnit ?? 0;
+  const formatInventoryQuantity = (quantity: number) =>
+    piecesPerUnit > 0
+      ? formatPieceSummary(quantity, piecesPerUnit, {
+          fallbackUnit: '片',
+          zeroDisplay: '0片',
+        })
+      : `${quantity}片`;
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -61,47 +70,26 @@ export function InventoryOverviewCard({
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-[hsl(var(--color-primary))]">
-              {(() => {
-                const ppu = variant.product.piecesPerUnit ?? 0;
-                return ppu > 0
-                  ? formatPieceSummary(inventory.totalQuantity, ppu, {
-                      fallbackUnit: '片',
-                    })
-                  : `${inventory.totalQuantity}片`;
-              })()}
+              {formatInventoryQuantity(inventory.totalQuantity)}
             </div>
             <div className="text-sm text-[hsl(var(--color-text-secondary))]">
-              总库存
+              库存总量
             </div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-[hsl(var(--color-success))]">
-              {(() => {
-                const ppu = variant.product.piecesPerUnit ?? 0;
-                return ppu > 0
-                  ? formatPieceSummary(inventory.availableQuantity, ppu, {
-                      fallbackUnit: '片',
-                    })
-                  : `${inventory.availableQuantity}片`;
-              })()}
+              {formatInventoryQuantity(inventory.availableQuantity)}
             </div>
             <div className="text-sm text-[hsl(var(--color-text-secondary))]">
-              可用库存
+              可用数量
             </div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-[hsl(var(--color-warning))]">
-              {(() => {
-                const ppu = variant.product.piecesPerUnit ?? 0;
-                return ppu > 0
-                  ? formatPieceSummary(inventory.reservedQuantity, ppu, {
-                      fallbackUnit: '片',
-                    })
-                  : `${inventory.reservedQuantity}片`;
-              })()}
+              {formatInventoryQuantity(inventory.reservedQuantity)}
             </div>
             <div className="text-sm text-[hsl(var(--color-text-secondary))]">
-              预留库存
+              预留数量
             </div>
           </div>
           <div className="text-center">
@@ -128,9 +116,9 @@ export function InventoryOverviewCard({
             </Badge>
           </div>
           <Progress value={stockPercentage} className="h-2" />
-          <div className="flex justify-between text-xs text-[hsl(var(--color-text-tertiary))]">
-            <span>可用: {inventory.availableQuantity}</span>
-            <span>总计: {inventory.totalQuantity}</span>
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[hsl(var(--color-text-tertiary))]">
+            <span>可用：{formatInventoryQuantity(inventory.availableQuantity)}</span>
+            <span>库存总量：{formatInventoryQuantity(inventory.totalQuantity)}</span>
           </div>
         </div>
       </CardContent>

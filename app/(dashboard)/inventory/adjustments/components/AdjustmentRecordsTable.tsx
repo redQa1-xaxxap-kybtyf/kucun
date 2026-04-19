@@ -55,11 +55,17 @@ export function AdjustmentRecordsTable({
   };
 
   // 格式化调整数量显示
-  const formatAdjustQuantity = (quantity: number) => {
+  const formatAdjustQuantity = (quantity: number, piecesPerUnit: number) => {
+    const quantityText = formatDetailedPieceSummary(
+      Math.abs(quantity),
+      piecesPerUnit,
+      { zeroDisplay: '0片' }
+    );
+
     if (quantity > 0) {
       return (
         <span className="font-medium text-[hsl(var(--color-success))]">
-          +{quantity}
+          +{quantityText}
         </span>
       );
     }
@@ -67,14 +73,14 @@ export function AdjustmentRecordsTable({
     if (quantity < 0) {
       return (
         <span className="font-medium text-[hsl(var(--color-error))]">
-          {quantity}
+          -{quantityText}
         </span>
       );
     }
 
     return (
       <span className="font-medium text-[hsl(var(--color-text-primary))]">
-        {quantity}
+        {quantityText}
       </span>
     );
   };
@@ -129,10 +135,10 @@ export function AdjustmentRecordsTable({
               <TableHead>产品名称</TableHead>
               <TableHead>规格</TableHead>
               <TableHead>批次号</TableHead>
-              <TableHead>装箱数</TableHead>
-              <TableHead>调整数量</TableHead>
+              <TableHead>包装信息</TableHead>
+              <TableHead className="text-right">调整数量</TableHead>
               <TableHead>调整原因</TableHead>
-              <TableHead>操作时间</TableHead>
+              <TableHead>操作时间/人员</TableHead>
               <TableHead>操作</TableHead>
             </TableRow>
           </TableHeader>
@@ -170,9 +176,12 @@ export function AdjustmentRecordsTable({
                       ? `${getPiecesPerUnit(adjustment)}片/件`
                       : '-'}
                   </TableCell>
-                  <TableCell className="text-xs whitespace-nowrap text-[hsl(var(--color-text-primary))]">
-                    <div className="flex flex-col gap-0.5">
-                      {formatAdjustQuantity(adjustment.adjustQuantity)}
+                  <TableCell className="text-right text-xs whitespace-nowrap text-[hsl(var(--color-text-primary))]">
+                    <div className="flex flex-col items-end gap-0.5">
+                      {formatAdjustQuantity(
+                        adjustment.adjustQuantity,
+                        getPiecesPerUnit(adjustment)
+                      )}
                       <span className="text-xs text-[hsl(var(--color-text-secondary))]">
                         {formatDetailedPieceSummary(
                           adjustment.beforeQuantity,
@@ -192,9 +201,14 @@ export function AdjustmentRecordsTable({
                     </Badge>
                   </TableCell>
                   <TableCell className="text-xs whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
-                    <div className="flex items-center gap-1 text-[hsl(var(--color-text-secondary))]">
-                      <User className="h-3 w-3" />
-                      {formatDate(adjustment.createdAt)}
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1 text-[hsl(var(--color-text-secondary))]">
+                        <User className="h-3 w-3" />
+                        {formatDate(adjustment.createdAt)}
+                      </div>
+                      <div className="text-[11px] text-[hsl(var(--color-text-tertiary))]">
+                        {adjustment.operator?.name || '—'}
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell className="text-xs whitespace-nowrap">
@@ -256,7 +270,7 @@ export function AdjustmentRecordsTable({
                     <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-[hsl(var(--color-text-secondary))]">
                       <span>批次：{adjustment.batchNumber || '-'}</span>
                       <span>
-                        每件：
+                        包装：
                         {ppu > 0 ? `${ppu}片/件` : '-'}
                       </span>
                     </div>
@@ -269,11 +283,18 @@ export function AdjustmentRecordsTable({
                       <User className="h-3 w-3" />
                       {formatDate(adjustment.createdAt)}
                     </div>
+                    <div className="mt-1 text-[11px]">
+                      {adjustment.operator?.name || '—'}
+                    </div>
                   </div>
                 </div>
 
                 <div className="mt-2 text-xs text-[hsl(var(--color-text-secondary))]">
-                  调整数量：{formatAdjustQuantity(adjustment.adjustQuantity)}
+                  调整数量：
+                  {formatAdjustQuantity(
+                    adjustment.adjustQuantity,
+                    getPiecesPerUnit(adjustment)
+                  )}
                   <span className="ml-1 text-[hsl(var(--color-text-secondary))]">
                     {beforeText} → {afterText}
                   </span>

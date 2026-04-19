@@ -70,6 +70,7 @@ export function useRefundsQuery({
       return failureCount < 3;
     },
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30_000),
+    placeholderData: previousData => previousData,
   });
 
   const prefetch = useCallback(

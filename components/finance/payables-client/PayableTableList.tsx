@@ -662,7 +662,7 @@ export function PayableTableList({
               {TABLE_HEADERS.map(header => (
                 <TableHead
                   key={header.key}
-                  className={`h-8 text-xs font-medium${
+                  className={`${
                     header.align === 'right'
                       ? 'text-right'
                       : header.align === 'center'

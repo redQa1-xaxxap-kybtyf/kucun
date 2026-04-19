@@ -95,7 +95,6 @@ function useInventoryRowData(item: Inventory) {
   const quantityDisplay = React.useMemo(
     () =>
       formatPieceSummary(item.quantity, packaging, {
-        prefix: '总计',
         fallbackUnit: unitLabel,
       }),
     [item.quantity, packaging, unitLabel]
@@ -287,7 +286,11 @@ function InventoryRowView({
       <TableCell className="whitespace-nowrap">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 rounded-xl p-0 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600"
+            >
               <span className="sr-only">打开菜单</span>
               <MoreHorizontal className="h-4 w-4" />
             </Button>

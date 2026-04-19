@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { Suspense } from 'react';
-import { useDebouncedCallback } from 'use-debounce';
 
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Button } from '@/components/ui/button';
@@ -14,6 +13,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import { FinanceListSkeleton } from '@/components/ui/skeleton-compositions';
 import { useFinanceExport } from '@/hooks/use-finance-export';
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 import type { PaymentStatus } from '@/lib/types/payment';
 
 const PaymentsClient = dynamic(
@@ -97,6 +97,11 @@ interface PaymentsPageClientProps {
   initialParams: PaymentsQueryParams;
 }
 
+function normalizeSearch(value?: string) {
+  const trimmed = value?.trim() ?? '';
+  return trimmed ? trimmed : undefined;
+}
+
 /**
  * 收款记录页面客户端组件
  * 负责用户交互和状态管理
@@ -106,11 +111,11 @@ export function PaymentsPageClient({
   initialParams,
 }: PaymentsPageClientProps) {
   const router = useRouter();
-  const [, startTransition] = React.useTransition();
   const { exportData, isExporting } = useFinanceExport();
 
-  // 本地状态管理 - 用于即时更新UI
-  const [search, setSearch] = React.useState(initialParams.search || '');
+  const [committedSearch, setCommittedSearch] = React.useState(
+    initialParams.search || ''
+  );
   const [status, setStatus] = React.useState<PaymentStatus | undefined>(
     initialParams.status
   );
@@ -123,6 +128,8 @@ export function PaymentsPageClient({
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>(
     initialParams.sortOrder || 'desc'
   );
+  const [page, setPage] = React.useState(initialParams.page);
+  const [limit, setLimit] = React.useState(initialParams.limit);
   const [startDate, setStartDate] = React.useState<string | undefined>(
     initialParams.startDate
   );
@@ -135,136 +142,162 @@ export function PaymentsPageClient({
   const [includeVoided, setIncludeVoided] = React.useState<boolean>(
     !!initialParams.includeVoided
   );
-  const latestSearchRef = React.useRef(initialParams.search || '');
-
-  const handleExport = React.useCallback(() => {
-    // 导出使用当前筛选条件，但一次性导出最多 50,000 条记录
-    const filters: PaymentsQueryParams = {
-      page: 1,
-      limit: 50000,
-      search: search || undefined,
-      status,
-      paymentMethod,
-      sortBy: sortBy || 'createdAt',
-      sortOrder,
-      startDate,
-      endDate,
-      includeTest: includeTest || undefined,
-      includeVoided: includeVoided || undefined,
-    };
-
-    exportData('/api/finance/payments/export', {
-      format: 'excel',
-      // 导出接口接收通用的 Record<string, unknown>，这里显式转换类型
-      filters: filters as unknown as Record<string, unknown>,
-    });
-  }, [
-    exportData,
-    search,
-    status,
-    paymentMethod,
-    sortBy,
-    sortOrder,
-    startDate,
-    endDate,
-    includeTest,
-    includeVoided,
-  ]);
-
-  // 防抖更新URL - 避免每次输入都触发导航
-  const debouncedUpdateURL = useDebouncedCallback(
-    (searchValue: string, filters: PaymentsQueryParams) => {
-      startTransition(() => {
-        const params = new URLSearchParams();
-        if (searchValue) {
-          params.set('search', searchValue);
-        }
-        if (filters.status) {
-          params.set('status', filters.status);
-        }
-        if (filters.paymentMethod) {
-          params.set('paymentMethod', filters.paymentMethod);
-        }
-        if (filters.sortBy) {
-          params.set('sortBy', filters.sortBy);
-        }
-        if (filters.sortOrder) {
-          params.set('sortOrder', filters.sortOrder);
-        }
-        if (filters.startDate) {
-          params.set('startDate', filters.startDate);
-        }
-        if (filters.endDate) {
-          params.set('endDate', filters.endDate);
-        }
-        if (filters.includeTest) {
-          params.set('includeTest', 'true');
-        }
-        if (filters.includeVoided) {
-          params.set('includeVoided', 'true');
-        }
-        if (filters.page && filters.page > 1) {
-          params.set('page', filters.page.toString());
-        }
-        if (filters.limit) {
-          params.set('limit', filters.limit.toString());
-        }
-
-        router.push(`/finance/payments?${params.toString()}`);
-      });
-    },
-    300
-  );
-
   React.useEffect(() => {
-    latestSearchRef.current = initialParams.search || '';
-  }, [initialParams.search]);
+    setCommittedSearch(initialParams.search || '');
+    setStatus(initialParams.status);
+    setPaymentMethod(initialParams.paymentMethod);
+    setSortBy(initialParams.sortBy || 'createdAt');
+    setSortOrder(initialParams.sortOrder || 'desc');
+    setPage(initialParams.page);
+    setLimit(initialParams.limit);
+    setStartDate(initialParams.startDate);
+    setEndDate(initialParams.endDate);
+    setIncludeTest(!!initialParams.includeTest);
+    setIncludeVoided(!!initialParams.includeVoided);
+  }, [initialParams]);
 
-  React.useEffect(
-    () => () => {
-      debouncedUpdateURL.cancel();
-    },
-    [debouncedUpdateURL]
-  );
-
-  // 搜索处理 - 立即更新本地状态，防抖更新URL
-  const handleSearch = React.useCallback(
-    (value: string) => {
-      latestSearchRef.current = value;
-      setSearch(value);
-      debouncedUpdateURL(value, {
-        ...initialParams,
-        search: value,
-        status,
-        paymentMethod,
-        sortBy,
-        sortOrder,
-        page: 1,
-        startDate,
-        endDate,
-        includeTest: includeTest || undefined,
-        includeVoided: includeVoided || undefined,
-      });
-    },
-    [
-      debouncedUpdateURL,
-      initialParams,
+  const currentParams = React.useMemo(
+    () => ({
+      ...initialParams,
+      search: normalizeSearch(committedSearch),
       status,
       paymentMethod,
       sortBy,
       sortOrder,
+      page,
+      limit,
       startDate,
+      endDate,
+      includeTest: includeTest || undefined,
+      includeVoided: includeVoided || undefined,
+    }),
+    [
+      committedSearch,
       endDate,
       includeTest,
       includeVoided,
+      initialParams,
+      limit,
+      page,
+      paymentMethod,
+      sortBy,
+      sortOrder,
+      startDate,
+      status,
     ]
   );
+
+  const syncUrl = React.useCallback(
+    (filters: PaymentsQueryParams) => {
+      const params = new URLSearchParams();
+      const normalizedSearch = normalizeSearch(filters.search);
+
+      if (normalizedSearch) {
+        params.set('search', normalizedSearch);
+      }
+      if (filters.status) {
+        params.set('status', filters.status);
+      }
+      if (filters.paymentMethod) {
+        params.set('paymentMethod', filters.paymentMethod);
+      }
+      if (filters.sortBy) {
+        params.set('sortBy', filters.sortBy);
+      }
+      if (filters.sortOrder) {
+        params.set('sortOrder', filters.sortOrder);
+      }
+      if (filters.startDate) {
+        params.set('startDate', filters.startDate);
+      }
+      if (filters.endDate) {
+        params.set('endDate', filters.endDate);
+      }
+      if (filters.includeTest) {
+        params.set('includeTest', 'true');
+      }
+      if (filters.includeVoided) {
+        params.set('includeVoided', 'true');
+      }
+      if (filters.page && filters.page > 1) {
+        params.set('page', filters.page.toString());
+      }
+      if (filters.limit) {
+        params.set('limit', filters.limit.toString());
+      }
+
+      const queryString = params.toString();
+      router.replace(
+        queryString ? `/finance/payments?${queryString}` : '/finance/payments',
+        { scroll: false }
+      );
+    },
+    [router]
+  );
+
+  const buildFilters = React.useCallback(
+    (overrides: Partial<PaymentsQueryParams> = {}): PaymentsQueryParams => ({
+      ...initialParams,
+      search: overrides.search ?? normalizeSearch(committedSearch),
+      status: overrides.status ?? status,
+      paymentMethod: overrides.paymentMethod ?? paymentMethod,
+      sortBy: overrides.sortBy ?? sortBy,
+      sortOrder: overrides.sortOrder ?? sortOrder,
+      page: overrides.page ?? page,
+      limit: overrides.limit ?? limit,
+      startDate: overrides.startDate ?? startDate,
+      endDate: overrides.endDate ?? endDate,
+      includeTest: overrides.includeTest ?? (includeTest || undefined),
+      includeVoided: overrides.includeVoided ?? (includeVoided || undefined),
+    }),
+    [
+      committedSearch,
+      endDate,
+      includeTest,
+      includeVoided,
+      initialParams,
+      limit,
+      page,
+      paymentMethod,
+      sortBy,
+      sortOrder,
+      startDate,
+      status,
+    ]
+  );
+
+  const {
+    searchInput,
+    isSearching: isSearchPending,
+    handleSearchChange,
+    cancelPendingCommit,
+    setSearchInput,
+  } = useListSearchController({
+    committedValue: committedSearch,
+    onCommit: search => {
+      const nextSearch = search ?? '';
+      setCommittedSearch(nextSearch);
+      setPage(1);
+      syncUrl(
+        buildFilters({
+          search,
+          page: 1,
+        })
+      );
+    },
+  });
+
+  const syncPendingSearch = React.useCallback(() => {
+    cancelPendingCommit();
+    const nextSearch = normalizeSearch(searchInput);
+    setCommittedSearch(nextSearch ?? '');
+    return nextSearch;
+  }, [cancelPendingCommit, searchInput]);
 
   // 筛选处理
   const handleFilter = React.useCallback(
     (key: string, value: string | undefined) => {
-      debouncedUpdateURL.cancel();
-      const currentSearch = latestSearchRef.current;
+      const nextSearch = syncPendingSearch();
       let nextStatus = status;
       let nextPaymentMethod = paymentMethod;
       let nextSortBy = sortBy;
@@ -293,65 +326,28 @@ export function PaymentsPageClient({
         setIncludeVoided(nextIncludeVoided);
       }
 
-      const nextFilters: PaymentsQueryParams = {
-        ...initialParams,
-        page: 1,
-        status: nextStatus,
-        paymentMethod: nextPaymentMethod,
-        sortBy: nextSortBy,
-        sortOrder: nextSortOrder,
-        startDate,
-        endDate,
-        includeTest: nextIncludeTest || undefined,
-        includeVoided: nextIncludeVoided || undefined,
-      };
-
-      startTransition(() => {
-        const params = new URLSearchParams();
-        if (currentSearch) {
-          params.set('search', currentSearch);
-        }
-        if (nextFilters.status) {
-          params.set('status', nextFilters.status);
-        }
-        if (nextFilters.paymentMethod) {
-          params.set('paymentMethod', nextFilters.paymentMethod);
-        }
-        if (nextFilters.sortBy) {
-          params.set('sortBy', nextFilters.sortBy);
-        }
-        if (nextFilters.sortOrder) {
-          params.set('sortOrder', nextFilters.sortOrder);
-        }
-        if (nextFilters.startDate) {
-          params.set('startDate', nextFilters.startDate);
-        }
-        if (nextFilters.endDate) {
-          params.set('endDate', nextFilters.endDate);
-        }
-        if (nextFilters.includeTest) {
-          params.set('includeTest', 'true');
-        }
-        if (nextFilters.includeVoided) {
-          params.set('includeVoided', 'true');
-        }
-        if (nextFilters.limit) {
-          params.set('limit', nextFilters.limit.toString());
-        }
-
-        router.push(`/finance/payments?${params.toString()}`);
-      });
+      setPage(1);
+      syncUrl(
+        buildFilters({
+          search: nextSearch,
+          status: nextStatus,
+          paymentMethod: nextPaymentMethod,
+          sortBy: nextSortBy,
+          sortOrder: nextSortOrder,
+          includeTest: nextIncludeTest || undefined,
+          includeVoided: nextIncludeVoided || undefined,
+          page: 1,
+        })
+      );
     },
     [
-      debouncedUpdateURL,
-      router,
-      initialParams,
+      buildFilters,
+      syncPendingSearch,
+      syncUrl,
       status,
       paymentMethod,
       sortBy,
       sortOrder,
-      startDate,
-      endDate,
       includeTest,
       includeVoided,
     ]
@@ -360,127 +356,104 @@ export function PaymentsPageClient({
   // 分页处理
   const handlePageChange = React.useCallback(
     (page: number) => {
-      debouncedUpdateURL.cancel();
-      const currentSearch = latestSearchRef.current;
-      startTransition(() => {
-        const params = new URLSearchParams();
-        if (currentSearch) {
-          params.set('search', currentSearch);
-        }
-        if (status) {
-          params.set('status', status);
-        }
-        if (paymentMethod) {
-          params.set('paymentMethod', paymentMethod);
-        }
-        if (sortBy) {
-          params.set('sortBy', sortBy);
-        }
-        if (sortOrder) {
-          params.set('sortOrder', sortOrder);
-        }
-        if (startDate) {
-          params.set('startDate', startDate);
-        }
-        if (endDate) {
-          params.set('endDate', endDate);
-        }
-        if (includeTest) {
-          params.set('includeTest', 'true');
-        }
-        if (includeVoided) {
-          params.set('includeVoided', 'true');
-        }
-        if (page > 1) {
-          params.set('page', page.toString());
-        }
-        if (initialParams.limit) {
-          params.set('limit', initialParams.limit.toString());
-        }
-
-        router.push(`/finance/payments?${params.toString()}`);
-      });
+      const nextSearch = syncPendingSearch();
+      setPage(page);
+      setLimit(initialParams.limit);
+      syncUrl(
+        buildFilters({
+          search: nextSearch,
+          page,
+          limit: initialParams.limit,
+        })
+      );
     },
     [
-      debouncedUpdateURL,
-      router,
-      status,
-      paymentMethod,
-      sortBy,
-      sortOrder,
-      startDate,
-      endDate,
-      includeTest,
-      includeVoided,
+      buildFilters,
       initialParams.limit,
+      syncPendingSearch,
+      syncUrl,
     ]
   );
 
   const handleDateRangeChange = React.useCallback(
     (range: DateRangeValue) => {
-      debouncedUpdateURL.cancel();
-      const currentSearch = latestSearchRef.current;
+      const nextSearch = syncPendingSearch();
       const nextStart = range.startDate || undefined;
       const nextEnd = range.endDate || undefined;
 
       setStartDate(nextStart);
       setEndDate(nextEnd);
-
-      startTransition(() => {
-        const params = new URLSearchParams();
-        if (currentSearch) {
-          params.set('search', currentSearch);
-        }
-        if (status) {
-          params.set('status', status);
-        }
-        if (paymentMethod) {
-          params.set('paymentMethod', paymentMethod);
-        }
-        if (sortBy) {
-          params.set('sortBy', sortBy);
-        }
-        if (sortOrder) {
-          params.set('sortOrder', sortOrder);
-        }
-        if (initialParams.limit) {
-          params.set('limit', initialParams.limit.toString());
-        }
-        if (nextStart) {
-          params.set('startDate', nextStart);
-        }
-        if (nextEnd) {
-          params.set('endDate', nextEnd);
-        }
-        if (includeTest) {
-          params.set('includeTest', 'true');
-        }
-        if (includeVoided) {
-          params.set('includeVoided', 'true');
-        }
-
-        router.push(`/finance/payments?${params.toString()}`);
-      });
+      setPage(1);
+      syncUrl(
+        buildFilters({
+          search: nextSearch,
+          startDate: nextStart,
+          endDate: nextEnd,
+          page: 1,
+          limit: initialParams.limit,
+        })
+      );
     },
     [
-      debouncedUpdateURL,
-      router,
-      status,
-      paymentMethod,
-      sortBy,
-      sortOrder,
-      includeTest,
-      includeVoided,
+      buildFilters,
       initialParams.limit,
+      syncPendingSearch,
+      syncUrl,
     ]
   );
 
+  const handleClearFilters = React.useCallback(() => {
+    cancelPendingCommit();
+    setSearchInput('');
+    setCommittedSearch('');
+    setStatus(undefined);
+    setPaymentMethod(undefined);
+    setSortBy('createdAt');
+    setSortOrder('desc');
+    setPage(1);
+    setStartDate(undefined);
+    setEndDate(undefined);
+    setIncludeTest(false);
+    setIncludeVoided(false);
+    router.replace('/finance/payments', { scroll: false });
+  }, [cancelPendingCommit, router, setSearchInput]);
+
   const handleRefresh = React.useCallback(() => {
-    debouncedUpdateURL.cancel();
-    startTransition(() => {
-      router.refresh();
+    cancelPendingCommit();
+    router.refresh();
+  }, [cancelPendingCommit, router]);
+
+  const handleExport = React.useCallback(() => {
+    const filters: PaymentsQueryParams = {
+      page: 1,
+      limit: 50000,
+      search: normalizeSearch(searchInput),
+      status,
+      paymentMethod,
+      sortBy: sortBy || 'createdAt',
+      sortOrder,
+      startDate,
+      endDate,
+      includeTest: includeTest || undefined,
+      includeVoided: includeVoided || undefined,
+    };
+
+    exportData('/api/finance/payments/export', {
+      format: 'excel',
+      filters: filters as unknown as Record<string, unknown>,
     });
-  }, [debouncedUpdateURL, router]);
+  }, [
+    endDate,
+    exportData,
+    includeTest,
+    includeVoided,
+    paymentMethod,
+    searchInput,
+    sortBy,
+    sortOrder,
+    startDate,
+    status,
+  ]);
 
   return (
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
@@ -532,12 +505,15 @@ export function PaymentsPageClient({
         <Suspense fallback={<FinanceListSkeleton />}>
           <PaymentsClient
             initialData={initialData}
-            initialParams={initialParams}
-            onSearch={handleSearch}
+            initialParams={currentParams}
+            searchValue={searchInput}
+            isSearching={isSearchPending}
+            onSearch={handleSearchChange}
             onFilter={handleFilter}
             onDateRangeChange={handleDateRangeChange}
             onPageChange={handlePageChange}
             onRefresh={handleRefresh}
+            onClearFilters={handleClearFilters}
           />
         </Suspense>
       </div>

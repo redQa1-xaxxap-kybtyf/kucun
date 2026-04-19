@@ -408,19 +408,19 @@ export default function ShippingQueryPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50/50">
-                    <TableHead className="h-auto py-4 text-[11px] font-semibold text-slate-400">
+                    <TableHead>
                       查询时间
                     </TableHead>
-                    <TableHead className="h-auto py-4 text-[11px] font-semibold text-slate-400">
+                    <TableHead>
                       物流站点
                     </TableHead>
-                    <TableHead className="h-auto py-4 text-[11px] font-semibold text-slate-400">
+                    <TableHead>
                       追踪单号
                     </TableHead>
-                    <TableHead className="h-auto py-4 text-[11px] font-semibold text-slate-400">
+                    <TableHead>
                       实时状态
                     </TableHead>
-                    <TableHead className="h-auto py-4 text-right text-[11px] font-semibold text-slate-400">
+                    <TableHead className="text-right">
                       同步结果
                     </TableHead>
                   </TableRow>
@@ -431,7 +431,7 @@ export default function ShippingQueryPage() {
                       key={query.id}
                       className="group transition-colors hover:bg-slate-50/30"
                     >
-                      <TableCell className="py-4 text-xs font-bold text-slate-500">
+                      <TableCell className="text-xs font-bold text-slate-500">
                         {new Date(query.queriedAt).toLocaleString('zh-CN', {
                           month: '2-digit',
                           day: '2-digit',
@@ -439,13 +439,13 @@ export default function ShippingQueryPage() {
                           minute: '2-digit',
                         })}
                       </TableCell>
-                      <TableCell className="py-4 font-semibold text-slate-900">
+                      <TableCell className="font-semibold text-slate-900">
                         {query.site?.name || '-'}
                       </TableCell>
-                      <TableCell className="py-4 font-mono text-xs font-semibold text-slate-900">
+                      <TableCell className="font-mono text-xs font-semibold text-slate-900">
                         {query.trackingNumber}
                       </TableCell>
-                      <TableCell className="py-4">
+                      <TableCell>
                         <div className="flex flex-col">
                           <span className="text-xs font-bold text-slate-900">
                             {query.status || '暂无更新'}
@@ -455,7 +455,7 @@ export default function ShippingQueryPage() {
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell className="py-4 text-right">
+                      <TableCell className="text-right">
                         <span
                           className={cn(
                             'inline-flex items-center rounded-lg px-3 py-1 text-[10px] font-semibold shadow-sm',

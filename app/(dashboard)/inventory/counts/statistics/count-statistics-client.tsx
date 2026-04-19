@@ -127,7 +127,7 @@ export function CountStatisticsClient({
       {/* 筛选条件 */}
       <Card>
         <CardHeader>
-          <CardTitle>统计范围</CardTitle>
+          <CardTitle>筛选条件</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -148,9 +148,9 @@ export function CountStatisticsClient({
                 className="w-full md:w-[240px]"
               />
 
-              {/* 盘点单状态 */}
+              {/* 状态 */}
               <div className="space-y-2">
-                <Label htmlFor="status">盘点单状态</Label>
+                <Label htmlFor="status">状态</Label>
                 <select
                   id="status"
                   value={localFilters.status}
@@ -171,7 +171,7 @@ export function CountStatisticsClient({
             <div className="flex items-center gap-2">
               <Button onClick={handleApplyFilters}>
                 <Search className="mr-2 h-4 w-4" />
-                查询
+                查看统计
               </Button>
               <Button variant="outline" onClick={handleResetFilters}>
                 <X className="mr-2 h-4 w-4" />
@@ -216,7 +216,7 @@ export function CountStatisticsClient({
                           {item.countTypeName}
                         </span>
                         <span className="text-muted-foreground text-sm">
-                          {item.count} 次 ({item.percentage.toFixed(1)}%)
+                          {item.count} 单 ({item.percentage.toFixed(1)}%)
                         </span>
                       </div>
                       <div className="bg-secondary mt-2 h-2 w-full overflow-hidden rounded-full">

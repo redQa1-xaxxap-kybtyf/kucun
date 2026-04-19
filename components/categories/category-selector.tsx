@@ -192,7 +192,7 @@ export function CategorySelector({
   className,
   includeAllOption = true,
   allLabel = '全部产品分类',
-  searchPlaceholder = '搜索分类名称或编码...',
+  searchPlaceholder = '搜索分类...',
 }: CategorySelectorProps) {
   const [open, setOpen] = React.useState(false);
   const [searchValue, setSearchValue] = React.useState('');
@@ -351,6 +351,7 @@ export function CategorySelector({
                 ) : (
                   searchResults.map(category => {
                     const path = pathById.get(category.id) ?? category.name;
+                    const shouldShowPath = path !== category.name;
                     return (
                       <CommandItem
                         key={category.id}
@@ -365,17 +366,14 @@ export function CategorySelector({
                           )}
                         />
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="truncate font-medium">
-                              {category.name}
-                            </span>
-                            <span className="text-muted-foreground truncate text-xs">
-                              {category.code}
-                            </span>
+                          <div className="truncate font-medium">
+                            {category.name}
                           </div>
-                          <div className="text-muted-foreground truncate text-xs">
-                            {path}
-                          </div>
+                          {shouldShowPath ? (
+                            <div className="text-muted-foreground truncate text-xs">
+                              {path}
+                            </div>
+                          ) : null}
                         </div>
                       </CommandItem>
                     );
@@ -429,13 +427,8 @@ export function CategorySelector({
                         className="min-w-0 flex-1"
                         style={{ paddingLeft: `${indent}px` }}
                       >
-                        <div className="flex items-center gap-2">
-                          <span className="truncate font-medium">
-                            {category.name}
-                          </span>
-                          <span className="text-muted-foreground truncate text-xs">
-                            {category.code}
-                          </span>
+                        <div className="truncate font-medium">
+                          {category.name}
                         </div>
                       </div>
                     </CommandItem>

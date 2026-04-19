@@ -27,6 +27,7 @@ export interface StatementsClientProps {
   onFilter?: (key: string, value: string | undefined) => void;
   onDateRangeChange?: (range: DateRangeValue) => void;
   onPageChange?: (page: number) => void;
+  onClearFilters?: () => void;
   /** ✅ 新增：搜索状态指示 */
   isSearching?: boolean;
 }
@@ -39,11 +40,13 @@ export function StatementsClient({
   onFilter,
   onDateRangeChange,
   onPageChange,
+  onClearFilters,
   isSearching = false,
 }: StatementsClientProps) {
   const { statements, summary, pagination } = initialData;
   const effectiveFilters: StatementsFiltersState = {
-    search: filters?.search ?? initialParams?.search ?? '',
+    search:
+      filters?.searchInput ?? filters?.search ?? initialParams?.search ?? '',
     type: filters?.type ?? initialParams?.type ?? 'all',
     sortBy: filters?.sortBy ?? initialParams?.sortBy ?? 'totalAmount',
     sortOrder: filters?.sortOrder ?? initialParams?.sortOrder ?? 'desc',
@@ -69,6 +72,7 @@ export function StatementsClient({
         onFilter={onFilter}
         onDateRangeChange={handleDateRangeChange}
         onPageChange={onPageChange}
+        onClearFilters={onClearFilters}
         // ✅ 新增：搜索状态指示
         isSearching={isSearching}
       />

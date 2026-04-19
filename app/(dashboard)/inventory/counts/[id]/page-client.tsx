@@ -152,7 +152,7 @@ function useCountMutations({
         getCsrfTokenHeader({
           method: 'POST',
         })
-      ).then(handleResponse('开始录入失败')),
+      ).then(handleResponse('开始盘点失败')),
     onSuccess: () => {
       toast({
         title: '开始成功',
@@ -176,9 +176,9 @@ function useCountMutations({
         getCsrfTokenHeader({
           method: 'POST',
         })
-      ).then(handleResponse('提交盘点结果失败')),
+      ).then(handleResponse('完成盘点失败')),
     onSuccess: () => {
-      toast({ title: '提交成功', description: '盘点结果已提交' });
+      toast({ title: '完成成功', description: '盘点单已完成' });
       invalidateCount();
     },
     onError: error =>
@@ -344,7 +344,7 @@ function CountHeader({
             className="gap-2"
           >
             <Play className="h-4 w-4" />
-            {isStarting ? '开始中…' : '开始录入'}
+            {isStarting ? '开始中…' : '开始盘点'}
           </Button>
           {count.status === 'in_progress' && (
             <Button variant="default" size="sm" asChild className="gap-2">
@@ -362,7 +362,7 @@ function CountHeader({
             className="gap-2"
           >
             <CheckCircle className="h-4 w-4" />
-            {isCompleting ? '提交中…' : '提交盘点结果'}
+            {isCompleting ? '完成中…' : '完成盘点'}
           </Button>
           <Button
             variant="destructive"
@@ -399,7 +399,7 @@ function CountInfoSection({ count }: { count: InventoryCountDetail }) {
             </Badge>
           </div>
           <InfoItem label="计划日期" value={formatDate(count.planDate)} />
-          <InfoItem label="库位/存放区域" value={count.location || '整仓'} />
+          <InfoItem label="库位/存放区域" value={count.location || '全部库存'} />
           <InfoItem label="盘点分类" value={count.category?.name || '-'} />
           <InfoItem label="创建人" value={count.creator?.name || '-'} />
           <InfoItem label="创建时间" value={formatDateTime(count.createdAt)} />
@@ -418,9 +418,9 @@ function CountInfoSection({ count }: { count: InventoryCountDetail }) {
 function CountStatisticsSection({ count }: { count: InventoryCountDetail }) {
   return (
     <div className="grid gap-4 md:grid-cols-4">
-      <StatisticCard title="总明细数" value={formatNumber(count.totalItems)} />
+      <StatisticCard title="盘点明细数" value={formatNumber(count.totalItems)} />
       <StatisticCard
-        title="已盘点数"
+        title="已盘明细数"
         value={formatNumber(count.completedItems)}
       />
       <StatisticCard
@@ -428,8 +428,8 @@ function CountStatisticsSection({ count }: { count: InventoryCountDetail }) {
         value={formatNumber(count.differenceItems)}
       />
       <StatisticCard
-        title="差异总量"
-        value={formatNumber(count.totalDifference)}
+        title="差异总片数"
+        value={`${formatNumber(count.totalDifference)}片`}
       />
     </div>
   );
@@ -475,7 +475,7 @@ function CountItemsCard({
     <>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <CardTitle>盘点商品</CardTitle>
+          <CardTitle>盘点明细</CardTitle>
           {canEditItems && (
             <div className="flex gap-2">
               <Button
@@ -483,7 +483,7 @@ function CountItemsCard({
                 size="sm"
                 onClick={() => setAddDialogOpen(true)}
               >
-                手动添加产品
+                添加盘点产品
               </Button>
               <Button
                 variant="outline"
@@ -491,7 +491,7 @@ function CountItemsCard({
                 onClick={handleGenerateAll}
                 disabled={isGenerateAllLoading}
               >
-                {isGenerateAllLoading ? '生成中…' : '整仓生成明细'}
+                {isGenerateAllLoading ? '生成中…' : '按当前范围生成明细'}
               </Button>
             </div>
           )}

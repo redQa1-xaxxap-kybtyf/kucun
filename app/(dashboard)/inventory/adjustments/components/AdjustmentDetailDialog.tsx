@@ -41,13 +41,23 @@ export function AdjustmentDetailDialog({
 
   // 格式化调整数量显示
   const formatAdjustQuantity = (quantity: number) => {
+    const quantityText = formatDetailedPieceSummary(
+      Math.abs(quantity),
+      piecesPerUnit,
+      { zeroDisplay: '0片' }
+    );
+
     if (quantity > 0) {
       return (
-        <span className="text-lg font-medium text-green-600">+{quantity}</span>
+        <span className="text-lg font-medium text-green-600">
+          +{quantityText}
+        </span>
       );
     } else {
       return (
-        <span className="text-lg font-medium text-red-600">{quantity}</span>
+        <span className="text-lg font-medium text-red-600">
+          -{quantityText}
+        </span>
       );
     }
   };
@@ -175,7 +185,7 @@ export function AdjustmentDetailDialog({
               )}
               <div>
                 <Label className="text-muted-foreground text-sm font-medium">
-                  装箱数
+                  包装信息
                 </Label>
                 <p className="mt-1 text-sm">
                   {piecesPerUnit > 0 ? `${piecesPerUnit}片/件` : '—'}

@@ -21,14 +21,7 @@ import {
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useTransition,
-} from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { EmptyState } from '@/components/common/empty-state';
 import { FilterBar } from '@/components/layouts/filter-bar';
@@ -36,6 +29,7 @@ import { PageContainer } from '@/components/layouts/page-container';
 import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
 import { useToast } from '@/components/ui/use-toast';
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 import {
   deleteSupplier,
   getSuppliers,
@@ -59,6 +53,11 @@ interface SuppliersPageClientProps {
   };
 }
 
+function normalizeSearch(value?: string) {
+  const trimmed = value?.trim() ?? '';
+  return trimmed ? trimmed : undefined;
+}
+
 const SupplierRowActions = dynamic(
   () => import('./SupplierRowActions').then(mod => mod.SupplierRowActions),
   {
@@ -78,10 +77,11 @@ export function SuppliersPageClient({
   const router = useRouter();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [_isPending, startTransition] = useTransition();
 
   // 本地状态
-  const [searchInput, setSearchInput] = useState(initialParams.search || '');
+  const [committedSearch, setCommittedSearch] = useState(
+    initialParams.search || ''
+  );
   const [status, setStatus] = useState<Supplier['status'] | undefined>(
     initialParams.status
   );
@@ -89,21 +89,11 @@ export function SuppliersPageClient({
   const [supplierToDelete, setSupplierToDelete] = useState<Supplier | null>(
     null
   );
-  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    setSearchInput(initialParams.search || '');
+    setCommittedSearch(initialParams.search || '');
     setStatus(initialParams.status);
   }, [initialParams]);
-
-  useEffect(
-    () => () => {
-      if (searchDebounceRef.current) {
-        clearTimeout(searchDebounceRef.current);
-      }
-    },
-    []
-  );
 
   const queryParams = useMemo(() => {
     const normalizedSearch =
@@ -143,6 +133,62 @@ export function SuppliersPageClient({
   const suppliers = data?.data ?? [];
   const pagination = data?.pagination;
 
+  const syncUrl = useCallback(
+    ({
+      search,
+      status: nextStatus,
+      page,
+    }: {
+      search?: string;
+      status?: Supplier['status'];
+      page?: number;
+    }) => {
+      const params = new URLSearchParams();
+
+      if (search) {
+        params.set('search', search);
+      }
+      if (nextStatus) {
+        params.set('status', nextStatus);
+      }
+      if (page && page > 1) {
+        params.set('page', String(page));
+      }
+
+      const queryString = params.toString();
+      router.replace(queryString ? `/suppliers?${queryString}` : '/suppliers', {
+        scroll: false,
+      });
+    },
+    [router]
+  );
+
+  const {
+    searchInput,
+    isSearching,
+    handleSearchChange,
+    cancelPendingCommit,
+    setSearchInput,
+  } = useListSearchController({
+    committedValue: committedSearch,
+    onCommit: search => {
+      const nextSearch = search ?? '';
+      setCommittedSearch(nextSearch);
+      syncUrl({
+        search,
+        status,
+      });
+    },
+    debounceMs: SEARCH_CONFIG.DEBOUNCE_DELAY.DEFAULT,
+  });
+
+  const syncPendingSearch = useCallback(() => {
+    cancelPendingCommit();
+    const nextSearch = normalizeSearch(searchInput);
+    setCommittedSearch(nextSearch ?? '');
+    return nextSearch;
+  }, [cancelPendingCommit, searchInput]);
+
   // 删除供应商
   const deleteMutation = useMutation({
     mutationFn: deleteSupplier,
@@ -173,83 +219,27 @@ export function SuppliersPageClient({
   });
 
   // 处理搜索
-  const handleSearch = useCallback(
-    (value: string) => {
-      if (searchDebounceRef.current) {
-        clearTimeout(searchDebounceRef.current);
-      }
-
-      setSearchInput(value);
-
-      searchDebounceRef.current = setTimeout(() => {
-        startTransition(() => {
-          const params = new URLSearchParams();
-          const trimmedValue = value.trim();
-          if (trimmedValue) {
-            params.set('search', trimmedValue);
-          }
-          if (status) {
-            params.set('status', status);
-          }
-          router.push(
-            params.size > 0 ? `/suppliers?${params.toString()}` : '/suppliers'
-          );
-          searchDebounceRef.current = null;
-        });
-      }, SEARCH_CONFIG.DEBOUNCE_DELAY.DEFAULT);
-    },
-    [router, startTransition, status]
-  );
-
-  // 处理状态筛选
   const handleStatusChange = useCallback(
     (value: Supplier['status'] | undefined) => {
-      if (searchDebounceRef.current) {
-        clearTimeout(searchDebounceRef.current);
-        searchDebounceRef.current = null;
-      }
-
       setStatus(value);
-      startTransition(() => {
-        const params = new URLSearchParams();
-        const trimmedSearch = searchInput.trim();
-        if (trimmedSearch) {
-          params.set('search', trimmedSearch);
-        }
-        if (value) {
-          params.set('status', value);
-        }
-        router.push(
-          params.size > 0 ? `/suppliers?${params.toString()}` : '/suppliers'
-        );
+      syncUrl({
+        search: syncPendingSearch(),
+        status: value,
       });
     },
-    [router, searchInput, startTransition]
+    [syncPendingSearch, syncUrl]
   );
 
   // 处理分页
   const handlePageChange = useCallback(
     (page: number) => {
-      const params = new URLSearchParams();
-      params.set('page', String(page));
-      const trimmedSearch = searchInput.trim();
-      if (trimmedSearch) {
-        params.set('search', trimmedSearch);
-      }
-      if (status) {
-        params.set('status', status);
-      }
-
-      if (searchDebounceRef.current) {
-        clearTimeout(searchDebounceRef.current);
-        searchDebounceRef.current = null;
-      }
-
-      startTransition(() => {
-        router.push(`/suppliers?${params.toString()}`);
+      syncUrl({
+        search: syncPendingSearch(),
+        status,
+        page,
       });
     },
-    [router, searchInput, startTransition, status]
+    [status, syncPendingSearch, syncUrl]
   );
 
   // 处理删除
@@ -259,17 +249,12 @@ export function SuppliersPageClient({
   };
 
   const handleClearFilters = useCallback(() => {
-    if (searchDebounceRef.current) {
-      clearTimeout(searchDebounceRef.current);
-      searchDebounceRef.current = null;
-    }
-
+    cancelPendingCommit();
     setSearchInput('');
+    setCommittedSearch('');
     setStatus(undefined);
-    startTransition(() => {
-      router.push('/suppliers');
-    });
-  }, [router, startTransition]);
+    router.replace('/suppliers', { scroll: false });
+  }, [cancelPendingCommit, router, setSearchInput]);
 
   return (
     <PageContainer
@@ -304,8 +289,9 @@ export function SuppliersPageClient({
       banner={
         <FilterBar
           searchValue={searchInput}
-          onSearchChange={handleSearch}
+          onSearchChange={handleSearchChange}
           searchPlaceholder="搜索供应商名称、证照编号或联系人..."
+          isSearching={isSearching}
           filters={[
             {
               key: 'status',

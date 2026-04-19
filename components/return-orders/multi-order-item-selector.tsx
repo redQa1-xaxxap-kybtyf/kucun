@@ -19,6 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 import { useSalesOrderReturnableItems } from '@/lib/api/return-orders';
 import { getSalesOrders, salesOrderQueryKeys } from '@/lib/api/sales-orders';
 import type { ReturnableItem } from '@/lib/services/sales-order-service';
@@ -63,16 +64,18 @@ export function MultiOrderItemSelector({
   selectedItems,
 }: MultiOrderItemSelectorProps) {
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
-  const [globalSearch, setGlobalSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-
-  // 防抖处理搜索词（300ms）
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(globalSearch);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [globalSearch]);
+  const [committedSearch, setCommittedSearch] = useState('');
+  const {
+    searchInput,
+    isSearching: isSearchPending,
+    handleSearchChange,
+    clearSearch: clearSearchInput,
+  } = useListSearchController({
+    committedValue: committedSearch,
+    onCommit: nextValue => {
+      setCommittedSearch(nextValue ?? '');
+    },
+  });
 
   // 使用防抖后的搜索词调用后端API
   const { data: salesOrdersData, isLoading: isLoadingOrders } = useQuery({
@@ -80,29 +83,30 @@ export function MultiOrderItemSelector({
       page: 1,
       limit: 50, // 减少每次加载数量
       customerId,
-      search: debouncedSearch || undefined, // 传递搜索词给后端
+      search: committedSearch || undefined, // 传递搜索词给后端
     }),
     queryFn: () =>
       getSalesOrders({
         page: 1,
         limit: 50,
         customerId,
-        search: debouncedSearch || undefined,
+        search: committedSearch || undefined,
       }),
     enabled: Boolean(customerId),
   });
 
-  const salesOrders = Array.isArray(salesOrdersData?.data)
-    ? salesOrdersData.data
-    : [];
+  const salesOrders = useMemo(
+    () => (Array.isArray(salesOrdersData?.data) ? salesOrdersData.data : []),
+    [salesOrdersData?.data]
+  );
 
   // 生成匹配高亮信息（后端已过滤，这里只做高亮标记）
   const matchingOrderIds = useMemo(() => {
-    if (!debouncedSearch.trim()) {
+    if (!committedSearch.trim()) {
       return new Set<string>();
     }
 
-    const search = debouncedSearch.toLowerCase().trim();
+    const search = committedSearch.toLowerCase().trim();
     const matchingIds = new Set<string>();
 
     salesOrders.forEach(order => {
@@ -131,14 +135,19 @@ export function MultiOrderItemSelector({
     });
 
     return matchingIds;
-  }, [salesOrders, debouncedSearch]);
+  }, [committedSearch, salesOrders]);
 
   // 当搜索结果变化时，自动展开匹配的订单
   useEffect(() => {
-    if (debouncedSearch.trim() && matchingOrderIds.size > 0) {
+    if (!committedSearch.trim()) {
+      setExpandedOrders(new Set());
+      return;
+    }
+
+    if (matchingOrderIds.size > 0) {
       setExpandedOrders(new Set(matchingOrderIds));
     }
-  }, [debouncedSearch, matchingOrderIds]);
+  }, [committedSearch, matchingOrderIds]);
 
   const toggleOrder = (orderId: string) => {
     setExpandedOrders(prev => {
@@ -153,8 +162,8 @@ export function MultiOrderItemSelector({
   };
 
   const clearSearch = () => {
-    setGlobalSearch('');
-    setDebouncedSearch('');
+    setCommittedSearch('');
+    clearSearchInput();
     setExpandedOrders(new Set());
   };
 
@@ -167,7 +176,7 @@ export function MultiOrderItemSelector({
     );
   }
 
-  if (salesOrders.length === 0 && !globalSearch) {
+  if (salesOrders.length === 0 && !searchInput) {
     return (
       <div className="text-muted-foreground py-8 text-center text-xs">
         该客户暂无可退货的销售订单
@@ -182,11 +191,11 @@ export function MultiOrderItemSelector({
         <Search className="text-muted-foreground absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2" />
         <Input
           placeholder="输入产品编码、批次号或名称快速定位..."
-          value={globalSearch}
-          onChange={e => setGlobalSearch(e.target.value)}
+          value={searchInput}
+          onChange={e => handleSearchChange(e.target.value)}
           className="h-9 pr-8 pl-8"
         />
-        {globalSearch && (
+        {searchInput && (
           <Button
             type="button"
             variant="ghost"
@@ -200,9 +209,9 @@ export function MultiOrderItemSelector({
       </div>
 
       {/* 搜索结果提示 */}
-      {globalSearch && (
+      {searchInput && (
         <div className="text-muted-foreground flex items-center gap-2 text-xs">
-          {isLoadingOrders ? (
+          {isLoadingOrders || isSearchPending ? (
             <>
               <div className="border-primary h-3 w-3 animate-spin rounded-full border-2 border-t-transparent" />
               <span>搜索中...</span>
@@ -225,7 +234,7 @@ export function MultiOrderItemSelector({
       <div className="bg-muted/5 max-h-80 space-y-2 overflow-y-auto rounded-md border p-2">
         {salesOrders.length === 0 ? (
           <div className="text-muted-foreground py-8 text-center text-xs">
-            {globalSearch
+            {searchInput
               ? '未找到匹配的销售订单'
               : '该客户暂无可退货的销售订单'}
           </div>
@@ -238,7 +247,7 @@ export function MultiOrderItemSelector({
               onToggle={() => toggleOrder(order.id)}
               onItemSelect={onItemSelect}
               selectedItems={selectedItems}
-              globalSearch={debouncedSearch}
+              globalSearch={committedSearch}
             />
           ))
         )}
@@ -398,11 +407,11 @@ function SalesOrderSection({
               <Table>
                 <TableHeader>
                   <TableRow className="text-xs">
-                    <TableHead className="h-8 px-2">产品</TableHead>
-                    <TableHead className="h-8 px-2">可退数量</TableHead>
-                    <TableHead className="h-8 px-2">退货单价</TableHead>
-                    <TableHead className="h-8 px-2">退货数量</TableHead>
-                    <TableHead className="h-8 px-2 text-center">操作</TableHead>
+                    <TableHead className="px-2">产品</TableHead>
+                    <TableHead className="px-2">可退数量</TableHead>
+                    <TableHead className="px-2">退货单价</TableHead>
+                    <TableHead className="px-2">退货数量</TableHead>
+                    <TableHead className="px-2 text-center">操作</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -505,7 +514,7 @@ function SalesOrderSection({
                             </span>
                           </div>
                         </TableCell>
-                        <TableCell className="h-8 px-2 text-center">
+                        <TableCell className="px-2 py-2.5 text-center">
                           <Button
                             type="button"
                             variant="ghost"

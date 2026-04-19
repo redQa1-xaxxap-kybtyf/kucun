@@ -2,12 +2,11 @@
 
 import { AlertTriangle, Plus, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import * as React from 'react';
-import { useDebouncedCallback } from 'use-debounce';
 
+import { ManualDamageFiltersCard } from '@/app/(dashboard)/inventory/manual-damage/manual-damage-filters-card';
 import { PageHeader } from '@/components/common/page-header';
-import { SearchFilterCard } from '@/components/common/search-filter-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -45,27 +44,10 @@ import {
 } from '@/lib/types/manual-damage-ledger';
 import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 
-type CategoryFilterValue =
-  | NonNullable<ManualDamageLedgerQueryParams['damageCategory']>
-  | 'all';
-type HandlingFilterValue =
-  | NonNullable<ManualDamageLedgerQueryParams['damageHandling']>
-  | 'all';
-type StatusFilterValue = NonNullable<ManualDamageLedgerStatus> | 'all';
-
 interface ManualDamageLedgerPageClientProps {
   initialData: ManualDamageLedger[];
   initialSummary: ManualDamageLedgerSummary;
   initialParams: ManualDamageLedgerQueryParams;
-}
-
-interface FilterSnapshot {
-  search: string;
-  damageCategory: CategoryFilterValue;
-  damageHandling: HandlingFilterValue;
-  status: StatusFilterValue;
-  startDate?: string;
-  endDate?: string;
 }
 
 function formatDateTime(value?: string) {
@@ -102,25 +84,7 @@ export function ManualDamageLedgerPageClient({
   initialParams,
 }: ManualDamageLedgerPageClientProps) {
   const router = useRouter();
-  const pathname = usePathname();
   const { toast } = useToast();
-  const [, startTransition] = React.useTransition();
-
-  const [searchValue, setSearchValue] = React.useState(initialParams.search ?? '');
-  const [damageCategory, setDamageCategory] =
-    React.useState<CategoryFilterValue>(initialParams.damageCategory ?? 'all');
-  const [damageHandling, setDamageHandling] =
-    React.useState<HandlingFilterValue>(initialParams.damageHandling ?? 'all');
-  const [statusFilter, setStatusFilter] = React.useState<StatusFilterValue>(
-    initialParams.status ?? 'all'
-  );
-  const [dateRange, setDateRange] = React.useState<{
-    startDate?: string;
-    endDate?: string;
-  }>({
-    startDate: initialParams.startDate,
-    endDate: initialParams.endDate,
-  });
   const [savingId, setSavingId] = React.useState<string | null>(null);
   const [drafts, setDrafts] = React.useState<
     Record<
@@ -149,116 +113,6 @@ export function ManualDamageLedgerPageClient({
       )
     );
   }, [initialData]);
-
-  const buildSnapshot = React.useCallback(
-    (overrides: Partial<FilterSnapshot> = {}): FilterSnapshot => ({
-      search: overrides.search ?? searchValue,
-      damageCategory: overrides.damageCategory ?? damageCategory,
-      damageHandling: overrides.damageHandling ?? damageHandling,
-      status: overrides.status ?? statusFilter,
-      startDate: overrides.startDate ?? dateRange.startDate,
-      endDate: overrides.endDate ?? dateRange.endDate,
-    }),
-    [
-      damageCategory,
-      damageHandling,
-      dateRange.endDate,
-      dateRange.startDate,
-      searchValue,
-      statusFilter,
-    ]
-  );
-
-  const syncFiltersToURL = useDebouncedCallback((snapshot: FilterSnapshot) => {
-    startTransition(() => {
-      const params = new URLSearchParams();
-      const trimmedSearch = snapshot.search.trim();
-
-      if (trimmedSearch) {
-        params.set('search', trimmedSearch);
-      }
-      if (snapshot.damageCategory !== 'all') {
-        params.set('damageCategory', snapshot.damageCategory);
-      }
-      if (snapshot.damageHandling !== 'all') {
-        params.set('damageHandling', snapshot.damageHandling);
-      }
-      if (snapshot.status !== 'all') {
-        params.set('status', snapshot.status);
-      }
-      if (snapshot.startDate) {
-        params.set('startDate', snapshot.startDate);
-      }
-      if (snapshot.endDate) {
-        params.set('endDate', snapshot.endDate);
-      }
-
-      const queryString = params.toString();
-      router.push(queryString ? `${pathname}?${queryString}` : pathname);
-    });
-  }, 300);
-
-  const handleSearch = React.useCallback(
-    (value: string) => {
-      setSearchValue(value);
-      syncFiltersToURL(buildSnapshot({ search: value }));
-    },
-    [buildSnapshot, syncFiltersToURL]
-  );
-
-  const handleFilterChange = React.useCallback(
-    (key: string, value: string | undefined) => {
-      if (key === 'damageCategory') {
-        const nextValue = (value as CategoryFilterValue | undefined) ?? 'all';
-        setDamageCategory(nextValue);
-        syncFiltersToURL(buildSnapshot({ damageCategory: nextValue }));
-        return;
-      }
-
-      if (key === 'damageHandling') {
-        const nextValue = (value as HandlingFilterValue | undefined) ?? 'all';
-        setDamageHandling(nextValue);
-        syncFiltersToURL(buildSnapshot({ damageHandling: nextValue }));
-        return;
-      }
-
-      if (key === 'status') {
-        const nextValue = (value as StatusFilterValue | undefined) ?? 'all';
-        setStatusFilter(nextValue);
-        syncFiltersToURL(buildSnapshot({ status: nextValue }));
-      }
-    },
-    [buildSnapshot, syncFiltersToURL]
-  );
-
-  const handleDateRangeChange = React.useCallback(
-    (range: { startDate?: string; endDate?: string }) => {
-      setDateRange(range);
-      syncFiltersToURL(
-        buildSnapshot({ startDate: range.startDate, endDate: range.endDate })
-      );
-    },
-    [buildSnapshot, syncFiltersToURL]
-  );
-
-  const handleClearFilters = React.useCallback(() => {
-    setSearchValue('');
-    setDamageCategory('all');
-    setDamageHandling('all');
-    setStatusFilter('all');
-    setDateRange({});
-    startTransition(() => {
-      router.push(pathname);
-    });
-  }, [pathname, router, startTransition]);
-
-  const hasActiveFilters =
-    Boolean(searchValue.trim()) ||
-    damageCategory !== 'all' ||
-    damageHandling !== 'all' ||
-    statusFilter !== 'all' ||
-    Boolean(dateRange.startDate) ||
-    Boolean(dateRange.endDate);
 
   const handleDraftChange = React.useCallback(
     (
@@ -388,48 +242,7 @@ export function ManualDamageLedgerPageClient({
         />
       </div>
 
-      <SearchFilterCard
-        searchValue={searchValue}
-        onSearchChange={handleSearch}
-        searchPlaceholder="搜索台账号、调整单号、产品编码、产品名称、供应商、批次号..."
-        filters={[
-          {
-            key: 'damageCategory',
-            label: '报损类型',
-            options: MANUAL_DAMAGE_CATEGORY_OPTIONS,
-            width: 'w-full sm:w-36',
-          },
-          {
-            key: 'damageHandling',
-            label: '处理方式',
-            options: MANUAL_DAMAGE_HANDLING_OPTIONS,
-            width: 'w-full sm:w-40',
-          },
-          {
-            key: 'status',
-            label: '跟进状态',
-            options: MANUAL_DAMAGE_LEDGER_STATUS_OPTIONS,
-            width: 'w-full sm:w-40',
-          },
-        ]}
-        filterValues={{
-          damageCategory,
-          damageHandling,
-          status: statusFilter,
-        }}
-        onFilterChange={handleFilterChange}
-        dateRangeFilter={{
-          key: 'dateRange',
-          label: '登记日期',
-          value: dateRange,
-          onChange: handleDateRangeChange,
-          placeholder: '开始日期至结束日期',
-        }}
-        onClearFilters={handleClearFilters}
-        hasActiveFilters={hasActiveFilters}
-        variant="pro"
-        compact={true}
-      />
+      <ManualDamageFiltersCard initialParams={initialParams} />
 
       <Table>
         <TableHeader>

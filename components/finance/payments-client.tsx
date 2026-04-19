@@ -95,6 +95,9 @@ interface PaymentsClientProps {
   onDateRangeChange?: (range: DateRangeValue) => void;
   onPageChange?: (page: number) => void;
   onRefresh?: () => void;
+  searchValue?: string;
+  isSearching?: boolean;
+  onClearFilters?: () => void;
 }
 
 /**
@@ -261,11 +264,14 @@ export function PaymentsClient({
   onDateRangeChange: externalOnDateRangeChange,
   onPageChange: externalOnPageChange,
   onRefresh: externalOnRefresh,
+  searchValue: controlledSearchValue,
+  isSearching = false,
+  onClearFilters,
 }: PaymentsClientProps) {
   const { payments, statistics, pagination } = initialData;
   const { toast } = useToast();
   const cancelPaymentMutation = useCancelPayment();
-  const [searchValue, setSearchValue] = React.useState(
+  const [localSearchValue, setLocalSearchValue] = React.useState(
     initialParams?.search ?? ''
   );
   const [confirmingPaymentRecord, setConfirmingPaymentRecord] =
@@ -276,8 +282,10 @@ export function PaymentsClient({
   const [cancellingId, setCancellingId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    setSearchValue(initialParams?.search ?? '');
+    setLocalSearchValue(initialParams?.search ?? '');
   }, [initialParams?.search]);
+
+  const effectiveSearchValue = controlledSearchValue ?? localSearchValue;
 
   const { displayedCollectionRate, collectionRateChangeLabel } =
     useCollectionRateCalculation(statistics);
@@ -299,8 +307,12 @@ export function PaymentsClient({
   });
 
   const handleSearch = React.useCallback(
-    (value: string) => baseHandleSearch(value, setSearchValue),
-    [baseHandleSearch]
+    (value: string) =>
+      baseHandleSearch(
+        value,
+        controlledSearchValue === undefined ? setLocalSearchValue : () => {}
+      ),
+    [baseHandleSearch, controlledSearchValue]
   );
 
   const handleConfirmRequest = React.useCallback(
@@ -395,11 +407,13 @@ export function PaymentsClient({
       {/* 搜索和筛选 */}
       <div className="relative z-10">
         <PaymentFilters
-          searchValue={searchValue}
+          searchValue={effectiveSearchValue}
           initialParams={initialParams}
           onSearch={handleSearch}
           onFilterChange={handleFilterChange}
           onDateRangeChange={handleDateRangeChange}
+          isSearching={isSearching}
+          onClearFilters={onClearFilters}
         />
       </div>
 
@@ -617,6 +631,8 @@ interface PaymentFiltersProps {
   onSearch: (value: string) => void;
   onFilterChange: (key: string, value: string | undefined) => void;
   onDateRangeChange: (range: DateRangeValue) => void;
+  isSearching?: boolean;
+  onClearFilters?: () => void;
 }
 
 function PaymentFilters({
@@ -625,12 +641,15 @@ function PaymentFilters({
   onSearch,
   onFilterChange,
   onDateRangeChange,
+  isSearching = false,
+  onClearFilters,
 }: PaymentFiltersProps) {
   return (
     <SearchFilterCard
       searchValue={searchValue}
       onSearchChange={onSearch}
       searchPlaceholder="搜索收款单号、客户名称或销售单号"
+      isSearching={isSearching}
       // 筛选器配置
       filters={[
         {
@@ -660,6 +679,7 @@ function PaymentFilters({
         onChange: onDateRangeChange,
         placeholder: '选择收款日期范围',
       }}
+      onClearFilters={onClearFilters}
       variant="bordered"
       compact={true}
     />

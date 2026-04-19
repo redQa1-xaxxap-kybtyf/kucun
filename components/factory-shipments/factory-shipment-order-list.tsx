@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import * as React from 'react';
 
 import { useToast } from '@/components/ui/use-toast';
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 import {
   getFactoryShipmentOrders,
   useCancelFactoryShipmentOrder,
@@ -52,6 +53,11 @@ type FactoryShipmentOrdersQueryResult = {
   };
 };
 
+function normalizeSearch(value?: string) {
+  const trimmed = value?.trim() ?? '';
+  return trimmed ? trimmed : undefined;
+}
+
 export function FactoryShipmentOrderList({
   onOrderSelect,
   initialParams,
@@ -89,10 +95,10 @@ export function FactoryShipmentOrderList({
     <>
       <FactoryShipmentOrderListView
         mode={initialParams?.mode}
-        searchValue={filters.searchTerm}
+        searchValue={filters.searchInput}
         statusFilter={filters.statusFilter}
         dateRange={filters.dateRange}
-        isSearching={isFetching && !isLoading}
+        isSearching={filters.isSearching || (isFetching && !isLoading)}
         onSearch={filters.handleSearch}
         onStatusChange={filters.handleStatusChange}
         onDateRangeChange={filters.handleDateRangeChange}
@@ -137,7 +143,7 @@ function useFactoryShipmentFilters({
   onPageChange,
 }: FactoryShipmentFiltersOptions) {
   const mode = initialParams?.mode;
-  const [searchTerm, setSearchTerm] = React.useState(
+  const [committedSearch, setCommittedSearch] = React.useState(
     initialParams?.search ?? ''
   );
   const [statusFilter, setStatusFilter] = React.useState<
@@ -155,69 +161,118 @@ function useFactoryShipmentFilters({
   );
   const pageSize = initialParams?.limit ?? 20;
 
+  React.useEffect(() => {
+    setCommittedSearch(initialParams?.search ?? '');
+    setStatusFilter(initialParams?.status ?? 'all');
+    setDateRange({
+      startDate: toDateInputValue(initialParams?.startDate),
+      endDate: toDateInputValue(initialParams?.endDate),
+    });
+    setCurrentPage(initialParams?.page ?? 1);
+  }, [
+    initialParams?.endDate,
+    initialParams?.page,
+    initialParams?.search,
+    initialParams?.startDate,
+    initialParams?.status,
+  ]);
+
+  const {
+    searchInput,
+    isSearching,
+    handleSearchChange,
+    cancelPendingCommit,
+    setSearchInput,
+  } = useListSearchController({
+    committedValue: committedSearch,
+    onCommit: search => {
+      const nextSearch = search ?? '';
+      setCommittedSearch(nextSearch);
+    },
+  });
+
+  const syncPendingSearch = React.useCallback(() => {
+    cancelPendingCommit();
+    const nextSearch = normalizeSearch(searchInput) ?? '';
+    setCommittedSearch(nextSearch);
+    return nextSearch;
+  }, [cancelPendingCommit, searchInput]);
+
   const handleSearch = React.useCallback(
     (value: string) => {
-      setSearchTerm(value);
       setCurrentPage(1);
       onSearch?.(value);
+      handleSearchChange(value);
     },
-    [onSearch]
+    [handleSearchChange, onSearch]
   );
 
   const handleStatusChange = React.useCallback(
     (value: FactoryShipmentStatus | 'all') => {
       setStatusFilter(value);
       setCurrentPage(1);
+      syncPendingSearch();
       onFilter?.('status', value === 'all' ? undefined : value);
     },
-    [onFilter]
+    [onFilter, syncPendingSearch]
   );
 
   const handleDateRangeChange = React.useCallback(
     (range: { startDate?: string; endDate?: string }) => {
       setDateRange(range);
       setCurrentPage(1);
+      syncPendingSearch();
       onDateRangeChange?.(range);
     },
-    [onDateRangeChange]
+    [onDateRangeChange, syncPendingSearch]
   );
 
   const handleClearFilters = React.useCallback(() => {
     // ✅ 修复：完整清空所有筛选条件
+    cancelPendingCommit();
+    setSearchInput('');
     setStatusFilter('all');
     setDateRange({});
-    setSearchTerm(''); // ✅ 新增：清空搜索词
+    setCommittedSearch('');
     setCurrentPage(1);
 
     // ✅ 通知父组件状态变化
     onFilter?.('status', undefined);
     onDateRangeChange?.({});
     onSearch?.(''); // ✅ 新增：通知父组件搜索词已清空
-  }, [onFilter, onDateRangeChange, onSearch]);
+  }, [
+    cancelPendingCommit,
+    onFilter,
+    onDateRangeChange,
+    onSearch,
+    setSearchInput,
+  ]);
 
   const handlePageChange = React.useCallback(
     (page: number) => {
       setCurrentPage(page);
+      syncPendingSearch();
       onPageChange?.(page);
     },
-    [onPageChange]
+    [onPageChange, syncPendingSearch]
   );
 
   const queryFilters = React.useMemo(
     () =>
       buildQueryFilters({
-        searchTerm,
+        searchTerm: committedSearch,
         statusFilter,
         dateRange,
         currentPage,
         pageSize,
         mode,
       }),
-    [searchTerm, statusFilter, dateRange, currentPage, pageSize, mode]
+    [committedSearch, statusFilter, dateRange, currentPage, pageSize, mode]
   );
 
   return {
-    searchTerm,
+    searchInput,
+    isSearching,
     statusFilter,
     dateRange,
     queryFilters,

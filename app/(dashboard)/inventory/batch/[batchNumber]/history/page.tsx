@@ -313,22 +313,22 @@ function MovementTable({ groups }: { groups: BatchMovementGroup[] }) {
       <Table className="min-w-[860px] [&_th]:whitespace-nowrap">
         <TableHeader className="bg-slate-50/50">
           <TableRow className="border-b border-slate-100">
-            <TableHead className="py-4 pl-6 font-semibold text-slate-500">
+            <TableHead className="pl-6">
               时间
             </TableHead>
-            <TableHead className="py-4 font-semibold text-slate-500">
+            <TableHead>
               类型
             </TableHead>
-            <TableHead className="py-4 font-semibold text-slate-500">
+            <TableHead>
               单据编号
             </TableHead>
-            <TableHead className="py-4 text-right font-semibold text-slate-500">
+            <TableHead className="text-right">
               变动
             </TableHead>
-            <TableHead className="py-4 text-right font-semibold text-slate-500">
+            <TableHead className="text-right">
               余量
             </TableHead>
-            <TableHead className="py-4 pr-6 text-right font-semibold text-slate-500">
+            <TableHead className="pr-6 text-right">
               操作人
             </TableHead>
           </TableRow>
@@ -378,7 +378,7 @@ function MovementRow({ entry }: { entry: InventoryMovementEntry }) {
 
   return (
     <TableRow className="group border-b border-slate-50 transition-colors hover:bg-slate-50/50">
-      <TableCell className="py-4 pl-6 whitespace-nowrap">
+      <TableCell className="pl-6 whitespace-nowrap">
         <div className="flex flex-col gap-0.5">
           <span className="text-xs font-bold text-slate-900">
             {formatDateTimeCN(entry.createdAt).split(' ')[0]}
@@ -388,7 +388,7 @@ function MovementRow({ entry }: { entry: InventoryMovementEntry }) {
           </span>
         </div>
       </TableCell>
-      <TableCell className="py-4 whitespace-nowrap">
+      <TableCell className="whitespace-nowrap">
         <Badge
           variant={meta.badge}
           className="rounded-full px-2.5 py-0.5 text-[9px] font-semibold"
@@ -396,7 +396,7 @@ function MovementRow({ entry }: { entry: InventoryMovementEntry }) {
           {meta.label}
         </Badge>
       </TableCell>
-      <TableCell className="min-w-[140px] py-4">
+      <TableCell className="min-w-[140px]">
         <div className="flex flex-col gap-1">
           <code className="text-[11px] font-semibold tracking-tight text-blue-600">
             {entry.recordNumber}
@@ -409,15 +409,15 @@ function MovementRow({ entry }: { entry: InventoryMovementEntry }) {
         </div>
       </TableCell>
       <TableCell
-        className={`py-4 text-right text-xs font-semibold whitespace-nowrap tabular-nums ${changeColor}`}
+        className={`text-right text-xs font-semibold whitespace-nowrap tabular-nums ${changeColor}`}
       >
         {changePrefix}
         {changeDisplay}
       </TableCell>
-      <TableCell className="py-4 text-right text-[11px] font-bold whitespace-nowrap text-slate-600 tabular-nums">
+      <TableCell className="text-right text-[11px] font-bold whitespace-nowrap text-slate-600 tabular-nums">
         {formatBalance(entry.balanceAfter)}
       </TableCell>
-      <TableCell className="py-4 pr-6 text-right text-xs font-bold whitespace-nowrap text-slate-500">
+      <TableCell className="pr-6 text-right text-xs font-bold whitespace-nowrap text-slate-500">
         {entry.operator?.name || '—'}
       </TableCell>
     </TableRow>

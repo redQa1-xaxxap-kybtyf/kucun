@@ -10,6 +10,7 @@ import * as React from 'react';
 import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
 import { ReturnOrdersSkeleton } from '@/components/ui/skeleton-compositions';
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 import { getReturnOrders } from '@/lib/api/return-orders';
 import { paginationConfig } from '@/lib/config/pagination';
 import { queryKeys } from '@/lib/queryKeys';
@@ -98,132 +99,152 @@ export function ReturnOrdersPageClient({
     refetch();
   }, [refetch]);
 
+  const updateUrlParams = React.useCallback(
+    (updater: (params: URLSearchParams) => void) => {
+      const params = new URLSearchParams(window.location.search);
+      updater(params);
+      const query = params.toString();
+      router.replace(query ? `/return-orders?${query}` : '/return-orders', {
+        scroll: false,
+      });
+    },
+    [router]
+  );
+
+  const { searchInput, isSearching: isSearchPending, handleSearchChange } =
+    useListSearchController({
+      committedValue: initialParams?.search,
+      onCommit: search => {
+        updateUrlParams(params => {
+          if (search) {
+            params.set('search', search);
+          } else {
+            params.delete('search');
+          }
+          params.delete('page');
+        });
+      },
+    });
+
   // 导航相关处理
   const handleSearch = React.useCallback(
     (value: string) => {
-      const params = new URLSearchParams(window.location.search);
-      if (value) {
-        params.set('search', value);
-      } else {
-        params.delete('search');
-      }
-      params.delete('page');
-      router.push(`/return-orders?${params.toString()}`);
+      handleSearchChange(value);
     },
-    [router]
+    [handleSearchChange]
   );
 
   const handleStatusChange = React.useCallback(
     (value: ReturnOrderUiStatus | 'all') => {
-      const params = new URLSearchParams(window.location.search);
-      if (value && value !== 'all') {
-        params.set('uiStatus', value);
-      } else {
-        params.delete('uiStatus');
-      }
-      params.delete('page');
-      router.push(`/return-orders?${params.toString()}`);
+      updateUrlParams(params => {
+        if (value && value !== 'all') {
+          params.set('uiStatus', value);
+        } else {
+          params.delete('uiStatus');
+        }
+        params.delete('page');
+      });
     },
-    [router]
+    [updateUrlParams]
   );
 
   const handleTypeChange = React.useCallback(
     (value: ReturnOrderType | 'all') => {
-      const params = new URLSearchParams(window.location.search);
-      if (value && value !== 'all') {
-        params.set('type', value);
-      } else {
-        params.delete('type');
-      }
-      params.delete('page');
-      router.push(`/return-orders?${params.toString()}`);
+      updateUrlParams(params => {
+        if (value && value !== 'all') {
+          params.set('type', value);
+        } else {
+          params.delete('type');
+        }
+        params.delete('page');
+      });
     },
-    [router]
+    [updateUrlParams]
   );
 
   const handleProcessTypeChange = React.useCallback(
     (value: ReturnProcessType | 'all') => {
-      const params = new URLSearchParams(window.location.search);
-      if (value && value !== 'all') {
-        params.set('processType', value);
-      } else {
-        params.delete('processType');
-      }
-      params.delete('page');
-      router.push(`/return-orders?${params.toString()}`);
+      updateUrlParams(params => {
+        if (value && value !== 'all') {
+          params.set('processType', value);
+        } else {
+          params.delete('processType');
+        }
+        params.delete('page');
+      });
     },
-    [router]
+    [updateUrlParams]
   );
 
   const handleDateRangeChange = React.useCallback(
     (range: { startDate?: string; endDate?: string }) => {
-      const params = new URLSearchParams(window.location.search);
-      if (range.startDate) {
-        params.set('startDate', range.startDate);
-      } else {
-        params.delete('startDate');
-      }
-      if (range.endDate) {
-        params.set('endDate', range.endDate);
-      } else {
-        params.delete('endDate');
-      }
-      params.delete('page');
-      router.push(`/return-orders?${params.toString()}`);
+      updateUrlParams(params => {
+        if (range.startDate) {
+          params.set('startDate', range.startDate);
+        } else {
+          params.delete('startDate');
+        }
+        if (range.endDate) {
+          params.set('endDate', range.endDate);
+        } else {
+          params.delete('endDate');
+        }
+        params.delete('page');
+      });
     },
-    [router]
+    [updateUrlParams]
   );
 
   const handleClearFilters = React.useCallback(() => {
-    const params = new URLSearchParams(window.location.search);
-    params.delete('search');
-    params.delete('uiStatus');
-    params.delete('status');
-    params.delete('type');
-    params.delete('processType');
-    params.delete('startDate');
-    params.delete('endDate');
-    params.delete('includeTest');
-    params.delete('includeVoided');
-    params.delete('page');
-    router.push(`/return-orders?${params.toString()}`);
-  }, [router]);
+    updateUrlParams(params => {
+      params.delete('search');
+      params.delete('uiStatus');
+      params.delete('status');
+      params.delete('type');
+      params.delete('processType');
+      params.delete('startDate');
+      params.delete('endDate');
+      params.delete('includeTest');
+      params.delete('includeVoided');
+      params.delete('page');
+    });
+  }, [updateUrlParams]);
 
   const handleIncludeTestToggle = React.useCallback(() => {
-    const params = new URLSearchParams(window.location.search);
-    const next = params.get('includeTest') !== 'true';
-    if (next) {
-      params.set('includeTest', 'true');
-    } else {
-      params.delete('includeTest');
-    }
-    params.delete('page');
-    router.push(`/return-orders?${params.toString()}`);
-  }, [router]);
+    updateUrlParams(params => {
+      const next = params.get('includeTest') !== 'true';
+      if (next) {
+        params.set('includeTest', 'true');
+      } else {
+        params.delete('includeTest');
+      }
+      params.delete('page');
+    });
+  }, [updateUrlParams]);
 
   const handleIncludeVoidedToggle = React.useCallback(() => {
-    const params = new URLSearchParams(window.location.search);
-    const next = params.get('includeVoided') !== 'true';
-    if (next) {
-      params.set('includeVoided', 'true');
-    } else {
-      params.delete('includeVoided');
-    }
-    params.delete('page');
-    router.push(`/return-orders?${params.toString()}`);
-  }, [router]);
+    updateUrlParams(params => {
+      const next = params.get('includeVoided') !== 'true';
+      if (next) {
+        params.set('includeVoided', 'true');
+      } else {
+        params.delete('includeVoided');
+      }
+      params.delete('page');
+    });
+  }, [updateUrlParams]);
 
   const handlePageChange = React.useCallback(
     (page: number) => {
-      const params = new URLSearchParams(window.location.search);
-      if (page > 1) {
-        params.set('page', page.toString());
-      } else {
-        params.delete('page');
-      }
-      router.push(`/return-orders?${params.toString()}`);
+      updateUrlParams(params => {
+        if (page > 1) {
+          params.set('page', page.toString());
+        } else {
+          params.delete('page');
+        }
+      });
     },
-    [router]
+    [updateUrlParams]
   );
 
   return (
@@ -262,7 +283,7 @@ export function ReturnOrdersPageClient({
         />
 
         <ReturnOrderListView
-          searchValue={initialParams?.search || ''}
+          searchValue={searchInput}
           statusFilter={initialParams?.uiStatus || 'all'}
           typeFilter={initialParams?.type || 'all'}
           processTypeFilter={initialParams?.processType || 'all'}
@@ -272,7 +293,7 @@ export function ReturnOrdersPageClient({
             startDate: initialParams?.startDate,
             endDate: initialParams?.endDate,
           }}
-          isSearching={isLoading}
+          isSearching={isLoading || isSearchPending}
           onSearch={handleSearch}
           onStatusChange={handleStatusChange}
           onTypeChange={handleTypeChange}

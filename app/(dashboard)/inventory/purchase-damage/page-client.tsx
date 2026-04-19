@@ -4,7 +4,6 @@ import { AlertTriangle, ExternalLink, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import * as React from 'react';
-import { useDebouncedCallback } from 'use-debounce';
 
 import { PageHeader } from '@/components/common/page-header';
 import { SearchFilterCard } from '@/components/common/search-filter-card';
@@ -28,6 +27,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 import {
   INBOUND_DAMAGE_HANDLING_LABELS,
   INBOUND_DAMAGE_HANDLING_OPTIONS,
@@ -60,6 +60,11 @@ interface FilterSnapshot {
   status: StatusFilterValue;
   startDate?: string;
   endDate?: string;
+}
+
+function normalizeSearch(value?: string) {
+  const trimmed = value?.trim() ?? '';
+  return trimmed ? trimmed : undefined;
 }
 
 function formatDateTime(value?: string) {
@@ -95,9 +100,10 @@ export function PurchaseDamageLedgerPageClient({
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
-  const [, startTransition] = React.useTransition();
 
-  const [searchValue, setSearchValue] = React.useState(initialParams.search ?? '');
+  const [committedSearch, setCommittedSearch] = React.useState(
+    initialParams.search ?? ''
+  );
   const [damageHandling, setDamageHandling] = React.useState<DamageFilterValue>(
     initialParams.damageHandling ?? 'all'
   );
@@ -130,24 +136,40 @@ export function PurchaseDamageLedgerPageClient({
     );
   }, [initialData]);
 
+  React.useEffect(() => {
+    setCommittedSearch(initialParams.search ?? '');
+    setDamageHandling(initialParams.damageHandling ?? 'all');
+    setStatusFilter(initialParams.status ?? 'all');
+    setDateRange({
+      startDate: initialParams.startDate,
+      endDate: initialParams.endDate,
+    });
+  }, [initialParams]);
+
   const buildSnapshot = React.useCallback(
     (overrides: Partial<FilterSnapshot> = {}): FilterSnapshot => ({
-      search: overrides.search ?? searchValue,
+      search: overrides.search ?? committedSearch,
       damageHandling: overrides.damageHandling ?? damageHandling,
       status: overrides.status ?? statusFilter,
       startDate: overrides.startDate ?? dateRange.startDate,
       endDate: overrides.endDate ?? dateRange.endDate,
     }),
-    [dateRange.endDate, dateRange.startDate, damageHandling, searchValue, statusFilter]
+    [
+      committedSearch,
+      damageHandling,
+      dateRange.endDate,
+      dateRange.startDate,
+      statusFilter,
+    ]
   );
 
-  const syncFiltersToURL = useDebouncedCallback((snapshot: FilterSnapshot) => {
-    startTransition(() => {
+  const syncFiltersToURL = React.useCallback(
+    (snapshot: FilterSnapshot) => {
       const params = new URLSearchParams();
-      const trimmedSearch = snapshot.search.trim();
+      const normalizedSearch = normalizeSearch(snapshot.search);
 
-      if (trimmedSearch) {
-        params.set('search', trimmedSearch);
+      if (normalizedSearch) {
+        params.set('search', normalizedSearch);
       }
       if (snapshot.damageHandling && snapshot.damageHandling !== 'all') {
         params.set('damageHandling', snapshot.damageHandling);
@@ -163,58 +185,103 @@ export function PurchaseDamageLedgerPageClient({
       }
 
       const queryString = params.toString();
-      router.push(queryString ? `${pathname}?${queryString}` : pathname);
-    });
-  }, 300);
+      router.replace(queryString ? `${pathname}?${queryString}` : pathname, {
+        scroll: false,
+      });
+    },
+    [pathname, router]
+  );
+
+  const {
+    searchInput,
+    isSearching,
+    handleSearchChange,
+    cancelPendingCommit,
+    setSearchInput,
+  } = useListSearchController({
+    committedValue: committedSearch,
+    onCommit: search => {
+      const nextSearch = search ?? '';
+      setCommittedSearch(nextSearch);
+      syncFiltersToURL(
+        buildSnapshot({
+          search: nextSearch,
+        })
+      );
+    },
+  });
+
+  const syncPendingSearch = React.useCallback(() => {
+    cancelPendingCommit();
+    const nextSearch = normalizeSearch(searchInput);
+    setCommittedSearch(nextSearch ?? '');
+    return nextSearch ?? '';
+  }, [cancelPendingCommit, searchInput]);
 
   const handleSearch = React.useCallback(
     (value: string) => {
-      setSearchValue(value);
-      syncFiltersToURL(buildSnapshot({ search: value }));
+      handleSearchChange(value);
     },
-    [buildSnapshot, syncFiltersToURL]
+    [handleSearchChange]
   );
 
   const handleFilterChange = React.useCallback(
     (key: string, value: string | undefined) => {
+      const nextSearch = syncPendingSearch();
+
       if (key === 'damageHandling') {
         const nextValue = (value as DamageFilterValue | undefined) ?? 'all';
         setDamageHandling(nextValue);
-        syncFiltersToURL(buildSnapshot({ damageHandling: nextValue }));
+        syncFiltersToURL(
+          buildSnapshot({
+            search: nextSearch,
+            damageHandling: nextValue,
+          })
+        );
         return;
       }
 
       if (key === 'status') {
         const nextValue = (value as StatusFilterValue | undefined) ?? 'all';
         setStatusFilter(nextValue);
-        syncFiltersToURL(buildSnapshot({ status: nextValue }));
+        syncFiltersToURL(
+          buildSnapshot({
+            search: nextSearch,
+            status: nextValue,
+          })
+        );
       }
     },
-    [buildSnapshot, syncFiltersToURL]
+    [buildSnapshot, syncFiltersToURL, syncPendingSearch]
   );
 
   const handleDateRangeChange = React.useCallback(
     (range: { startDate?: string; endDate?: string }) => {
+      const nextSearch = syncPendingSearch();
       setDateRange(range);
       syncFiltersToURL(
-        buildSnapshot({ startDate: range.startDate, endDate: range.endDate })
+        buildSnapshot({
+          search: nextSearch,
+          startDate: range.startDate,
+          endDate: range.endDate,
+        })
       );
     },
-    [buildSnapshot, syncFiltersToURL]
+    [buildSnapshot, syncFiltersToURL, syncPendingSearch]
   );
 
   const handleClearFilters = React.useCallback(() => {
-    setSearchValue('');
+    cancelPendingCommit();
+    setSearchInput('');
+    setCommittedSearch('');
     setDamageHandling('all');
     setStatusFilter('all');
     setDateRange({});
-    startTransition(() => {
-      router.push(pathname);
-    });
-  }, [pathname, router, startTransition]);
+    router.replace(pathname, { scroll: false });
+  }, [cancelPendingCommit, pathname, router, setSearchInput]);
 
   const hasActiveFilters =
-    Boolean(searchValue.trim()) ||
+    Boolean(searchInput.trim()) ||
     damageHandling !== 'all' ||
     statusFilter !== 'all' ||
     Boolean(dateRange.startDate) ||
@@ -311,9 +378,10 @@ export function PurchaseDamageLedgerPageClient({
       </div>
 
       <SearchFilterCard
-        searchValue={searchValue}
+        searchValue={searchInput}
         onSearchChange={handleSearch}
         searchPlaceholder="搜索台账号、入库单号、产品编码、产品名称、供应商、批次号..."
+        isSearching={isSearching}
         filters={[
           {
             key: 'damageHandling',

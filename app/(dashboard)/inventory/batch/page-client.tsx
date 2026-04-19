@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { BatchPageHeader } from '@/components/inventory/batch-page-header';
 import { TableSkeleton } from '@/components/ui/skeleton-compositions';
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 import { useBatchSpecifications } from '@/lib/api/batch-specifications';
 import type {
   BatchSpecification,
@@ -89,6 +90,7 @@ function buildSearchParams(params: ResolvedParams) {
   return searchParams;
 }
 
+// eslint-disable-next-line max-lines-per-function -- This page keeps search, query params, and dialog state in one place for consistent URL sync.
 export function BatchSpecificationPageClient({
   initialParams,
   initialData,
@@ -96,7 +98,6 @@ export function BatchSpecificationPageClient({
   const router = useRouter();
 
   const [queryParams, setQueryParams] = useState<ResolvedParams>(initialParams);
-  const [_searchValue, _setSearchValue] = useState(initialParams.search ?? '');
   const [showForm, setShowForm] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
   const [editingSpec, setEditingSpec] = useState<BatchSpecification | null>(
@@ -143,6 +144,17 @@ export function BatchSpecificationPageClient({
     [queryParams]
   );
 
+  const { searchInput, isSearching, handleSearchChange } =
+    useListSearchController({
+      committedValue: queryParams.search,
+      onCommit: search => {
+        updateParams({
+          search,
+          page: DEFAULT_PAGE,
+        });
+      },
+    });
+
   useEffect(() => {
     const targetUrl = currentQueryString
       ? `/inventory/batch?${currentQueryString}`
@@ -171,7 +183,6 @@ export function BatchSpecificationPageClient({
   };
 
   const handleResetFilters = () => {
-    _setSearchValue('');
     updateParams({
       page: DEFAULT_PAGE,
       search: undefined,
@@ -186,9 +197,6 @@ export function BatchSpecificationPageClient({
   const handleFiltersChange = (
     filters: Partial<BatchSpecificationQueryParams>
   ) => {
-    if (filters.search !== undefined) {
-      _setSearchValue(filters.search || '');
-    }
     updateParams(filters);
   };
 
@@ -240,6 +248,9 @@ export function BatchSpecificationPageClient({
 
         <BatchRecordsFilters
           filters={queryParams}
+          searchValue={searchInput}
+          isSearching={isSearching}
+          onSearchChange={handleSearchChange}
           onFiltersChange={handleFiltersChange}
           onReset={handleResetFilters}
         />

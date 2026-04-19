@@ -263,13 +263,13 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
                       <Table>
                         <TableHeader>
                           <TableRow className="bg-[hsl(var(--color-bg-tertiary))]/50 hover:bg-[hsl(var(--color-bg-tertiary))]/50">
-                            <TableHead className="h-9">付款单号</TableHead>
-                            <TableHead className="h-9">付款方式</TableHead>
-                            <TableHead className="h-9">付款日期</TableHead>
-                            <TableHead className="h-9 text-right">
+                            <TableHead>付款单号</TableHead>
+                            <TableHead>付款方式</TableHead>
+                            <TableHead>付款日期</TableHead>
+                            <TableHead className="text-right">
                               金额
                             </TableHead>
-                            <TableHead className="h-9 w-[50px]"></TableHead>
+                            <TableHead className="w-[50px]"></TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>

@@ -6,20 +6,20 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { Calendar, Package, TrendingUp, User } from 'lucide-react';
-import { useState } from 'react';
+import * as React from 'react';
 
-	import { Button } from '@/components/ui/button';
-	import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-	import { Input } from '@/components/ui/input';
-	import {
-	  Table,
-	  TableBody,
-	  TableCell,
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useDebouncedCallback } from '@/hooks/use-debounced-search';
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 import { useSuppliers } from '@/hooks/use-suppliers';
 import { PRODUCT_UNIT_LABELS } from '@/lib/types/product';
 import type { Supplier } from '@/lib/types/supplier';
@@ -65,13 +65,29 @@ const getUnitLabel = (unit: string | null | undefined) => {
   return PRODUCT_UNIT_LABELS[unit] ?? unit;
 };
 
+function normalizeSearch(value?: string) {
+  const trimmed = value?.trim() ?? '';
+  return trimmed ? trimmed : undefined;
+}
+
 // eslint-disable-next-line max-lines-per-function
 export function TemporaryProductsClient() {
-  const [supplierFilter, setSupplierFilter] = useState<string>('all');
-  const [search, setSearch] = useState('');
-  const [sortBy, setSortBy] = useState('usageCount');
-  const [page, setPage] = useState(1);
+  const [supplierFilter, setSupplierFilter] = React.useState<string>('all');
+  const [search, setSearch] = React.useState('');
+  const [sortBy, setSortBy] = React.useState('usageCount');
+  const [page, setPage] = React.useState(1);
   const limit = 20;
+  const {
+    searchInput,
+    handleSearchChange,
+    cancelPendingCommit,
+  } = useListSearchController({
+    committedValue: search,
+    onCommit: value => {
+      setSearch(value ?? '');
+      setPage(1);
+    },
+  });
 
   // 获取供应商列表
   const { data: suppliersData } = useSuppliers();
@@ -111,16 +127,12 @@ export function TemporaryProductsClient() {
   const products = data?.data.items || [];
   const pagination = data?.data.pagination;
 
-  // 使用防抖处理搜索输入
-  const debouncedSearch = useDebouncedCallback((value: string) => {
-    setSearch(value);
-    setPage(1);
-  }, 300);
-
-  // 处理搜索输入变化
-  const handleSearchChange = (value: string) => {
-    debouncedSearch(value);
-  };
+  const syncPendingSearch = React.useCallback(() => {
+    cancelPendingCommit();
+    const nextSearch = normalizeSearch(searchInput);
+    setSearch(nextSearch ?? '');
+    return nextSearch;
+  }, [cancelPendingCommit, searchInput]);
 
   return (
     <div className="space-y-4">
@@ -130,58 +142,67 @@ export function TemporaryProductsClient() {
           <CardTitle className="text-sm font-medium">筛选和搜索</CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
-	          <div className="grid gap-3 md:grid-cols-4">
-	            {/* 供应商筛选 */}
-	            <div className="space-y-2">
-	              <label
-	                className="text-sm font-medium"
-	                htmlFor="temporary-products-supplier"
-	              >
-	                供应商
-	              </label>
-	              <select
-	                id="temporary-products-supplier"
-	                value={supplierFilter}
-	                onChange={e => setSupplierFilter(e.target.value)}
-	                className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
-	              >
-	                <option value="all">全部供应商</option>
-	                {suppliers.map((supplier: Supplier) => (
-	                  <option key={supplier.id} value={supplier.id}>
-	                    {supplier.name}
-	                    {supplier.supplierCode && ` (${supplier.supplierCode})`}
-	                  </option>
-	                ))}
-	              </select>
-	            </div>
-	
-	            {/* 排序方式 */}
-	            <div className="space-y-2">
-	              <label
-	                className="text-sm font-medium"
-	                htmlFor="temporary-products-sort"
-	              >
-	                排序方式
-	              </label>
-	              <select
-	                id="temporary-products-sort"
-	                value={sortBy}
-	                onChange={e => setSortBy(e.target.value)}
-	                className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
-	              >
-	                <option value="usageCount">使用次数</option>
-	                <option value="lastUsedAt">最后使用时间</option>
-	                <option value="name">产品名称</option>
-	                <option value="code">产品编码</option>
-	                <option value="createdAt">创建时间</option>
-	              </select>
-	            </div>
+          <div className="grid gap-3 md:grid-cols-4">
+            {/* 供应商筛选 */}
+            <div className="space-y-2">
+              <label
+                className="text-sm font-medium"
+                htmlFor="temporary-products-supplier"
+              >
+                供应商
+              </label>
+              <select
+                id="temporary-products-supplier"
+                value={supplierFilter}
+                onChange={e => {
+                  syncPendingSearch();
+                  setSupplierFilter(e.target.value);
+                  setPage(1);
+                }}
+                className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="all">全部供应商</option>
+                {suppliers.map((supplier: Supplier) => (
+                  <option key={supplier.id} value={supplier.id}>
+                    {supplier.name}
+                    {supplier.supplierCode && ` (${supplier.supplierCode})`}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* 排序方式 */}
+            <div className="space-y-2">
+              <label
+                className="text-sm font-medium"
+                htmlFor="temporary-products-sort"
+              >
+                排序方式
+              </label>
+              <select
+                id="temporary-products-sort"
+                value={sortBy}
+                onChange={e => {
+                  syncPendingSearch();
+                  setSortBy(e.target.value);
+                  setPage(1);
+                }}
+                className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="usageCount">使用次数</option>
+                <option value="lastUsedAt">最后使用时间</option>
+                <option value="name">产品名称</option>
+                <option value="code">产品编码</option>
+                <option value="createdAt">创建时间</option>
+              </select>
+            </div>
 
             {/* 搜索框 */}
             <div className="space-y-2 md:col-span-2">
               <label className="text-sm font-medium">搜索</label>
               <div className="flex gap-2">
                 <Input
+                  value={searchInput}
                   placeholder="搜索编码、名称或规格..."
                   onChange={e => handleSearchChange(e.target.value)}
                   className="flex-1"
@@ -278,27 +299,27 @@ export function TemporaryProductsClient() {
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
-                      <TableHead className="h-9 text-xs">供应商</TableHead>
-                      <TableHead className="h-9 text-xs">编码</TableHead>
-                      <TableHead className="h-9 text-xs">名称</TableHead>
-                      <TableHead className="h-9 text-xs">规格</TableHead>
-                      <TableHead className="h-9 text-center text-xs">
+                      <TableHead>供应商</TableHead>
+                      <TableHead>编码</TableHead>
+                      <TableHead>名称</TableHead>
+                      <TableHead>规格</TableHead>
+                      <TableHead className="text-center">
                         单位
                       </TableHead>
-                      <TableHead className="h-9 text-center text-xs">
+                      <TableHead className="text-center">
                         装箱数
                       </TableHead>
-                      <TableHead className="h-9 text-center text-xs">
+                      <TableHead className="text-center">
                         使用次数
                       </TableHead>
-                      <TableHead className="h-9 text-xs">最后使用</TableHead>
-                      <TableHead className="h-9 text-xs">创建人</TableHead>
+                      <TableHead>最后使用</TableHead>
+                      <TableHead>创建人</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {products.map((product: TemporaryProduct) => (
                       <TableRow key={product.id} className="h-12">
-                        <TableCell className="py-2">
+                        <TableCell className="py-3">
                           <div>
                             <div className="text-sm font-medium">
                               {product.supplierName}
@@ -310,22 +331,22 @@ export function TemporaryProductsClient() {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="py-2 font-mono text-sm">
+                        <TableCell className="py-3 font-mono text-sm">
                           {product.code}
                         </TableCell>
-                        <TableCell className="py-2 text-sm">
+                        <TableCell className="py-3 text-sm">
                           {product.name}
                         </TableCell>
-                        <TableCell className="text-muted-foreground py-2 text-sm">
+                        <TableCell className="text-muted-foreground py-3 text-sm">
                           {product.specification || '-'}
                         </TableCell>
-                        <TableCell className="py-2 text-center text-sm">
+                        <TableCell className="py-3 text-center text-sm">
                           {getUnitLabel(product.unit)}
                         </TableCell>
-                        <TableCell className="py-2 text-center text-sm">
+                        <TableCell className="py-3 text-center text-sm">
                           {product.piecesPerUnit}
                         </TableCell>
-                        <TableCell className="py-2 text-center">
+                        <TableCell className="py-3 text-center">
                           <div>
                             <div className="text-sm font-medium">
                               {product.usageCount}
@@ -336,7 +357,7 @@ export function TemporaryProductsClient() {
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="py-2">
+                        <TableCell className="py-3">
                           {product.lastUsedAt ? (
                             <div className="flex items-center gap-1 text-xs">
                               <Calendar className="h-3 w-3" />
@@ -350,7 +371,7 @@ export function TemporaryProductsClient() {
                             </span>
                           )}
                         </TableCell>
-                        <TableCell className="text-muted-foreground py-2 text-sm">
+                        <TableCell className="text-muted-foreground py-3 text-sm">
                           {product.creatorName || '-'}
                         </TableCell>
                       </TableRow>
@@ -436,7 +457,10 @@ export function TemporaryProductsClient() {
                       variant="outline"
                       size="sm"
                       className="h-8 text-xs"
-                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      onClick={() => {
+                        syncPendingSearch();
+                        setPage(p => Math.max(1, p - 1));
+                      }}
                       disabled={page === 1}
                     >
                       上一页
@@ -445,9 +469,10 @@ export function TemporaryProductsClient() {
                       variant="outline"
                       size="sm"
                       className="h-8 text-xs"
-                      onClick={() =>
-                        setPage(p => Math.min(pagination.totalPages, p + 1))
-                      }
+                      onClick={() => {
+                        syncPendingSearch();
+                        setPage(p => Math.min(pagination.totalPages, p + 1));
+                      }}
                       disabled={page === pagination.totalPages}
                     >
                       下一页

@@ -112,28 +112,28 @@ export function OutboundRecordsTable({
         <Table className="min-w-[1120px] [&_th]:whitespace-nowrap">
           <TableHeader className="card-shadow-light">
             <TableRow className="border-b border-slate-200 hover:bg-transparent">
-              <TableHead className="py-4 font-semibold text-slate-700">
+              <TableHead>
                 单据编号
               </TableHead>
-              <TableHead className="py-4 font-semibold text-slate-700">
+              <TableHead>
                 产品编码
               </TableHead>
-              <TableHead className="py-4 font-semibold text-slate-700">
+              <TableHead>
                 产品名称
               </TableHead>
-              <TableHead className="py-4 font-semibold text-slate-700">
+              <TableHead>
                 批次/规格
               </TableHead>
-              <TableHead className="py-4 font-semibold text-slate-700">
+              <TableHead>
                 装箱数
               </TableHead>
-              <TableHead className="py-4 text-right font-semibold text-slate-700">
+              <TableHead className="text-right">
                 出库总量
               </TableHead>
-              <TableHead className="py-4 font-semibold text-slate-700">
+              <TableHead>
                 业务类型
               </TableHead>
-              <TableHead className="py-4 font-semibold text-slate-700">
+              <TableHead>
                 经办时间
               </TableHead>
             </TableRow>

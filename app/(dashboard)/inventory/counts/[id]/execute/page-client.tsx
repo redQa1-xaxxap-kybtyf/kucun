@@ -341,23 +341,23 @@ export function ExecuteCountPageClient({
         const errorData = await response.json();
         const errorMessage = errorData.error || errorData.message || '';
 
-        let userMessage = '提交盘点结果失败';
+        let userMessage = '完成盘点失败';
         if (
           errorMessage.includes('未录入') ||
           errorMessage.includes('pending')
         ) {
-          userMessage = '提交失败：仍有商品未录入实盘数量，请先完成录入';
+          userMessage = '完成失败：仍有明细未录入实盘数量，请先完成录入';
         } else if (errorMessage.includes('权限') || response.status === 403) {
-          userMessage = '提交失败：您没有执行此操作的权限，请联系管理员';
+          userMessage = '完成失败：您没有执行此操作的权限，请联系管理员';
         } else if (
           errorMessage.includes('状态') ||
           errorMessage.includes('status')
         ) {
-          userMessage = '提交失败：盘点单状态已变更，请刷新页面查看最新状态';
+          userMessage = '完成失败：盘点单状态已变更，请刷新页面查看最新状态';
         } else if (errorMessage) {
-          userMessage = `提交失败：${errorMessage}`;
+          userMessage = `完成失败：${errorMessage}`;
         } else {
-          userMessage = '提交失败：服务器暂时无法处理请求，请稍后重试';
+          userMessage = '完成失败：服务器暂时无法处理请求，请稍后重试';
         }
 
         throw new Error(userMessage);
@@ -367,8 +367,8 @@ export function ExecuteCountPageClient({
     },
     onSuccess: () => {
       toast({
-        title: '提交成功',
-        description: '盘点结果已提交',
+        title: '完成成功',
+        description: '盘点单已完成',
       });
 
       queryClient.refetchQueries({
@@ -384,7 +384,7 @@ export function ExecuteCountPageClient({
     },
     onError: (error: Error) => {
       toast({
-        title: '提交失败',
+        title: '完成失败',
         description: error.message,
         variant: 'destructive',
       });
@@ -473,7 +473,7 @@ export function ExecuteCountPageClient({
     if (hasUnsavedChanges) {
       toast({
         title: '请先保存',
-        description: '当前有未保存的实盘数量，请先保存后再提交盘点结果',
+        description: '当前有未保存的实盘数量，请先保存后再完成盘点',
         variant: 'destructive',
       });
       return;
@@ -617,7 +617,7 @@ export function ExecuteCountPageClient({
             className="w-full xl:w-auto"
           >
             <CheckCircle className="mr-2 h-4 w-4" />
-            提交盘点结果
+            完成盘点
           </Button>
         </div>
       </div>
@@ -653,7 +653,7 @@ export function ExecuteCountPageClient({
             <div>
               <div className="text-muted-foreground text-sm">库位/存放区域</div>
               <div className="font-medium">
-                {initialData.location || '整仓'}
+                {initialData.location || '全部库存'}
               </div>
             </div>
           </div>
@@ -664,7 +664,7 @@ export function ExecuteCountPageClient({
         <CardHeader>
           <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <CardTitle>盘点商品</CardTitle>
+              <CardTitle>盘点明细</CardTitle>
               <div className="grid gap-2 sm:grid-cols-2 xl:flex xl:justify-end">
                 <Button
                   variant="outline"
@@ -689,7 +689,7 @@ export function ExecuteCountPageClient({
                 <Input
                   value={keyword}
                   onChange={event => setKeyword(event.target.value)}
-                  placeholder="搜索商品名称、商品编号或批次"
+                  placeholder="搜索产品名称、产品编码或批次号"
                   className="lg:max-w-md"
                 />
                 <div className="flex flex-wrap gap-2">
@@ -707,7 +707,7 @@ export function ExecuteCountPageClient({
                     variant={quickFilter === 'pending' ? 'default' : 'outline'}
                     onClick={() => setQuickFilter('pending')}
                   >
-                    仅看未盘 {pendingCount}
+                    仅看未录入 {pendingCount}
                   </Button>
                   <Button
                     type="button"
@@ -722,7 +722,7 @@ export function ExecuteCountPageClient({
                 </div>
               </div>
               <div className="text-muted-foreground mt-2 text-xs">
-                共 {sortedItems.length} 条盘点商品，当前显示{' '}
+                共 {sortedItems.length} 条盘点明细，当前显示{' '}
                 {filteredItems.length} 条。
               </div>
             </div>
@@ -731,7 +731,7 @@ export function ExecuteCountPageClient({
         <CardContent>
           {filteredItems.length === 0 ? (
             <div className="text-muted-foreground rounded-md border border-dashed py-10 text-center">
-              当前筛选条件下没有找到盘点商品。
+              当前筛选条件下没有找到盘点明细。
             </div>
           ) : (
             <>
@@ -740,16 +740,16 @@ export function ExecuteCountPageClient({
                   <TableHeader>
                     <TableRow>
                       <TableHead className="whitespace-nowrap">
-                        商品编号
+                        产品编码
                       </TableHead>
                       <TableHead className="whitespace-nowrap">
-                        商品名称
+                        产品名称
                       </TableHead>
                       <TableHead className="whitespace-nowrap">
-                        规格型号
+                        规格
                       </TableHead>
-                      <TableHead className="text-right">每件片数</TableHead>
-                      <TableHead className="whitespace-nowrap">批次</TableHead>
+                      <TableHead className="text-right">包装信息</TableHead>
+                      <TableHead className="whitespace-nowrap">批次号</TableHead>
                       <TableHead className="text-right">账面数量</TableHead>
                       <TableHead className="text-right">实盘数量</TableHead>
                       <TableHead className="text-right">差异数量</TableHead>
@@ -859,16 +859,16 @@ export function ExecuteCountPageClient({
                             {item.product?.code || '-'}
                           </div>
                           <div className="mt-0.5 text-sm font-medium text-[hsl(var(--color-text-primary))]">
-                            {item.product?.name || '未知商品'}
+                            {item.product?.name || '未知产品'}
                           </div>
                           <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
                             规格：
                             {getInventoryCountItemSpecification(item) || '-'}
                           </div>
                           <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-[hsl(var(--color-text-secondary))]">
-                            <span>批次：{item.batchNumber || '-'}</span>
+                            <span>批次号：{item.batchNumber || '-'}</span>
                             <span>
-                              每件：
+                              包装：
                               {piecesPerUnit > 0
                                 ? `${piecesPerUnit}片/件`
                                 : '-'}
@@ -882,20 +882,22 @@ export function ExecuteCountPageClient({
                         </div>
                       </div>
 
-                      <div className="mt-2 grid grid-cols-1 gap-2 text-xs text-[hsl(var(--color-text-secondary))]">
-                        <div>
-                          <div>账面数量</div>
-                          <div className="mt-0.5 font-medium text-[hsl(var(--color-text-primary))]">
-                            {formatQuantitySummary(
-                              item.systemQuantity,
-                              piecesPerUnit
-                            )}
+                      <div className="mt-2 rounded-xl bg-[hsl(var(--color-bg-secondary))] p-3">
+                        <div className="grid grid-cols-1 gap-2 text-xs text-[hsl(var(--color-text-secondary))]">
+                          <div>
+                            <div>账面数量</div>
+                            <div className="mt-0.5 font-medium text-[hsl(var(--color-text-primary))]">
+                              {formatQuantitySummary(
+                                item.systemQuantity,
+                                piecesPerUnit
+                              )}
+                            </div>
                           </div>
-                        </div>
-                        <div>
-                          <div>实盘数量</div>
-                          <div className="mt-1">
-                            {renderQuantityEditor(item, true)}
+                          <div>
+                            <div>实盘数量</div>
+                            <div className="mt-1">
+                              {renderQuantityEditor(item, true)}
+                            </div>
                           </div>
                         </div>
                       </div>

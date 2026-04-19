@@ -4,13 +4,13 @@ import { Button } from '@/components/ui/button';
 
 interface SupplierSearchEmptyStateProps {
   searchValue: string;
-  isLoading: boolean;
+  isSearching: boolean;
   onAddSupplier: () => void;
 }
 
 export function SupplierSearchEmptyState({
   searchValue,
-  isLoading,
+  isSearching,
   onAddSupplier,
 }: SupplierSearchEmptyStateProps) {
   const hasQuery = Boolean(searchValue);
@@ -23,8 +23,8 @@ export function SupplierSearchEmptyState({
     <div className="py-6 text-center">
       <div className="space-y-3">
         <div className="text-muted-foreground text-sm">
-          {isLoading ? (
-            '正在加载供应商...'
+          {isSearching ? (
+            '正在搜索供应商...'
           ) : hasQuery ? (
             <span>
               未找到供应商{' '}
@@ -36,7 +36,7 @@ export function SupplierSearchEmptyState({
             '请输入供应商名称或电话进行搜索，或直接创建新供应商'
           )}
         </div>
-        {!isLoading && (
+        {!isSearching && (
           <Button
             variant="outline"
             size="sm"

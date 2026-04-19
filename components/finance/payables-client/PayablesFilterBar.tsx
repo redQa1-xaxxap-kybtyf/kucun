@@ -11,22 +11,38 @@ import {
 
 interface Props {
   query: PayableRecordQuery;
+  searchValue: string;
   onSearch: (value: string) => void;
   onFilterChange: (key: string, value: string | undefined) => void;
   onDateRangeChange: (range: DateRangeValue) => void;
+  isSearching?: boolean;
+  onClearFilters?: () => void;
 }
 
 export function PayablesFilterBar({
   query,
+  searchValue,
   onSearch,
   onFilterChange,
   onDateRangeChange,
+  isSearching = false,
+  onClearFilters,
 }: Props) {
+  const hasActiveFilters =
+    Boolean(searchValue.trim()) ||
+    Boolean(query.status) ||
+    Boolean(query.sourceType) ||
+    Boolean(query.startDate) ||
+    Boolean(query.endDate) ||
+    (query.sortBy ?? 'createdAt') !== 'createdAt' ||
+    (query.sortOrder ?? 'desc') !== 'desc';
+
   return (
     <SearchFilterCard
-      searchValue={query.search || ''}
+      searchValue={searchValue}
       onSearchChange={onSearch}
       searchPlaceholder="搜索应付款单号或供应商名称..."
+      isSearching={isSearching}
       // 筛选器配置
       filters={[
         {
@@ -86,6 +102,8 @@ export function PayablesFilterBar({
         onChange: onDateRangeChange,
         placeholder: '选择单据日期范围',
       }}
+      onClearFilters={onClearFilters}
+      hasActiveFilters={hasActiveFilters}
       variant="pro"
       compact={true}
     />

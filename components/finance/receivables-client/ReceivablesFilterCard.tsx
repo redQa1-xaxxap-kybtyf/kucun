@@ -25,6 +25,7 @@ type ReceivablesFilterCardProps = {
   onFilterChange: (key: string, value: string | undefined) => void;
   onDateRangeChange: (range: DateRangeValue) => void;
   onPageChange: (page: number) => void;
+  onClearFilters: () => void;
   onOpenPaymentDialog: (receivable: ReceivableItem) => void;
   onRetry: () => void;
 };
@@ -41,6 +42,7 @@ export function ReceivablesFilterCard({
   onFilterChange,
   onDateRangeChange,
   onPageChange,
+  onClearFilters,
   onOpenPaymentDialog,
   onRetry,
 }: ReceivablesFilterCardProps) {
@@ -59,6 +61,7 @@ export function ReceivablesFilterCard({
         onSearch={onSearch}
         onFilterChange={onFilterChange}
         onDateRangeChange={onDateRangeChange}
+        onClearFilters={onClearFilters}
       />
 
       <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -84,6 +87,7 @@ type ReceivablesFilterBarProps = {
   onSearch: (value: string) => void;
   onFilterChange: (key: string, value: string | undefined) => void;
   onDateRangeChange: (range: DateRangeValue) => void;
+  onClearFilters: () => void;
 };
 
 function ReceivablesFilterBar({
@@ -93,7 +97,14 @@ function ReceivablesFilterBar({
   onSearch,
   onFilterChange,
   onDateRangeChange,
+  onClearFilters,
 }: ReceivablesFilterBarProps) {
+  const hasActiveFilters =
+    Boolean(searchValue.trim()) ||
+    Boolean(queryParams.paymentStatus) ||
+    Boolean(queryParams.startDate) ||
+    Boolean(queryParams.endDate);
+
   return (
     <SearchFilterCard
       searchValue={searchValue}
@@ -129,6 +140,8 @@ function ReceivablesFilterBar({
         onChange: onDateRangeChange,
         placeholder: '选择订单日期范围',
       }}
+      onClearFilters={onClearFilters}
+      hasActiveFilters={hasActiveFilters}
       variant="pro"
       compact={true}
     />

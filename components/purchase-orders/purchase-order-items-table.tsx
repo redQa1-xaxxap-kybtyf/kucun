@@ -261,44 +261,44 @@ function PurchaseOrderItemsTableView({
           <TableHeader>
             <TableRow className="bg-muted/50">
               {/* 冻结列：序号 */}
-              <TableHead className="bg-muted/50 text-foreground sticky left-0 z-10 h-10 w-[50px] border-r py-2 text-center text-xs font-medium">
+              <TableHead className="bg-muted/50 text-foreground sticky left-0 z-10 w-[50px] border-r text-center">
                 序号
               </TableHead>
               {/* 非冻结列：按用户要求的顺序 */}
-              <TableHead className="text-foreground h-10 w-[160px] border-r py-2 text-xs font-medium">
+              <TableHead className="text-foreground w-[160px] border-r">
                 供应商 <span className="text-destructive">*</span>
               </TableHead>
-              <TableHead className="text-foreground h-10 w-[200px] border-r py-2 text-xs font-medium">
+              <TableHead className="text-foreground w-[200px] border-r">
                 产品编码 <span className="text-destructive">*</span>
               </TableHead>
-              <TableHead className="text-foreground h-10 w-[150px] border-r py-2 text-xs font-medium">
+              <TableHead className="text-foreground w-[150px] border-r">
                 产品名称 <span className="text-destructive">*</span>
               </TableHead>
-              <TableHead className="text-foreground h-10 w-[120px] border-r py-2 text-xs font-medium">
+              <TableHead className="text-foreground w-[120px] border-r">
                 规格
               </TableHead>
-              <TableHead className="text-foreground h-10 w-[120px] border-r py-2 text-xs font-medium">
+              <TableHead className="text-foreground w-[120px] border-r">
                 批次号
               </TableHead>
-              <TableHead className="text-foreground h-10 w-[70px] border-r py-2 text-center text-xs font-medium">
+              <TableHead className="text-foreground w-[70px] border-r text-center">
                 单位
               </TableHead>
-              <TableHead className="text-foreground h-10 w-[100px] border-r py-2 text-right text-xs font-medium">
+              <TableHead className="text-foreground w-[100px] border-r text-right">
                 数量 <span className="text-destructive">*</span>
               </TableHead>
-              <TableHead className="text-foreground h-10 w-[90px] border-r py-2 text-right text-xs font-medium">
+              <TableHead className="text-foreground w-[90px] border-r text-right">
                 装箱数
               </TableHead>
-              <TableHead className="text-foreground h-10 w-[120px] border-r py-2 text-right text-xs font-medium">
+              <TableHead className="text-foreground w-[120px] border-r text-right">
                 采购单价 <span className="text-destructive">*</span>
               </TableHead>
-              <TableHead className="text-foreground h-10 w-[120px] border-r py-2 text-right text-xs font-medium">
+              <TableHead className="text-foreground w-[120px] border-r text-right">
                 总价
               </TableHead>
-              <TableHead className="text-foreground h-10 w-[180px] max-w-[180px] border-r py-2 text-xs font-medium">
+              <TableHead className="text-foreground w-[180px] max-w-[180px] border-r">
                 备注
               </TableHead>
-              <TableHead className="text-foreground h-10 w-[80px] py-2 text-center text-xs font-medium">
+              <TableHead className="text-foreground w-[80px] text-center">
                 操作
               </TableHead>
             </TableRow>

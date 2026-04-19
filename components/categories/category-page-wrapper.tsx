@@ -1,6 +1,7 @@
 'use client';
 
 import { CategoryPageContent } from '@/components/categories/category-page-content';
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 import { useCategories } from '@/hooks/use-categories';
 import { useCategoryActions } from '@/hooks/use-category-actions';
 import type { CategoryQueryParams } from '@/lib/api/categories';
@@ -50,6 +51,14 @@ export function CategoryPageWrapper({
     deleteMutation,
   });
 
+  const { searchInput, isSearching, handleSearchChange } =
+    useListSearchController({
+      committedValue: queryParams.search,
+      onCommit: search => {
+        handleSearch(search ?? '');
+      },
+    });
+
   return (
     <CategoryPageContent
       isLoading={isLoading}
@@ -61,6 +70,9 @@ export function CategoryPageWrapper({
       updatingStatusId={updatingStatusId}
       deleteMutation={deleteMutation}
       setDeleteDialog={setDeleteDialog}
+      searchValue={searchInput}
+      isSearching={isSearching}
+      onSearchChange={handleSearchChange}
       handleSearch={handleSearch}
       handleFilter={handleFilter}
       handlePageChange={handlePageChange}

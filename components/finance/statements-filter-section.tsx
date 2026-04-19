@@ -20,6 +20,7 @@ interface StatementsFilterSectionProps {
   onFilter?: (key: string, value: string | undefined) => void;
   onDateRangeChange?: (range: DateRangeValue) => void;
   onPageChange?: (page: number) => void;
+  onClearFilters?: () => void;
   /** ✅ 新增：搜索状态指示 */
   isSearching?: boolean;
 }
@@ -32,6 +33,7 @@ export function StatementsFilterSection({
   onFilter,
   onDateRangeChange,
   onPageChange,
+  onClearFilters,
   isSearching = false,
 }: StatementsFilterSectionProps) {
   return (
@@ -41,6 +43,7 @@ export function StatementsFilterSection({
         onSearch={onSearch}
         onFilter={onFilter}
         onDateRangeChange={onDateRangeChange}
+        onClearFilters={onClearFilters}
         isSearching={isSearching}
       />
       <StatementsList
@@ -57,15 +60,17 @@ function FilterControls({
   onSearch,
   onFilter,
   onDateRangeChange,
+  onClearFilters,
   isSearching = false,
 }: {
   filters: StatementsFiltersState;
   onSearch?: (value: string) => void;
   onFilter?: (key: string, value: string | undefined) => void;
   onDateRangeChange?: (range: DateRangeValue) => void;
+  onClearFilters?: () => void;
   isSearching?: boolean;
 }) {
-  const handleClearFilters = () => {
+  const fallbackClearFilters = () => {
     onSearch?.('');
     onFilter?.('type', undefined);
     onFilter?.('sortBy', 'totalAmount');
@@ -145,7 +150,7 @@ function FilterControls({
           placeholder: '选择日期范围',
           showPresets: true,
         }}
-        onClearFilters={handleClearFilters}
+        onClearFilters={onClearFilters ?? fallbackClearFilters}
         hasActiveFilters={hasActiveFilters}
         compact
         variant="bordered"

@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useCallback, useRef, useTransition, useEffect } from 'react';
 
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 import { PRODUCT_DEFAULT_SORT } from '@/lib/config/product';
 import { paginationConfig } from '@/lib/env';
 import type { Product, ProductQueryParams } from '@/lib/types/product';
@@ -28,6 +29,7 @@ type LatestQueryState = {
   limit?: number;
 };
 
+// eslint-disable-next-line max-lines-per-function -- URL sync, selection state, and debounced search are intentionally managed together in this shared hook.
 export function useProductListState(initialParams?: ProductQueryParams) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -102,6 +104,19 @@ export function useProductListState(initialParams?: ProductQueryParams) {
     [router]
   );
 
+  const { searchInput, isSearching, handleSearchChange } =
+    useListSearchController({
+      committedValue: initialParams?.search,
+      onCommit: search => {
+        const overrides: Partial<LatestQueryState> = {
+          search: search ?? '',
+          page: 1,
+        };
+        latestParamsRef.current = { ...latestParamsRef.current, ...overrides };
+        replaceURL(overrides);
+      },
+    });
+
   // 删除确认对话框状态
   const [deleteDialog, setDeleteDialog] = useState<DeleteDialogState>({
     open: false,
@@ -118,16 +133,6 @@ export function useProductListState(initialParams?: ProductQueryParams) {
       open: false,
       products: [],
     });
-
-  // 搜索处理
-  const handleSearch = useCallback(
-    (value: string) => {
-      const overrides: Partial<LatestQueryState> = { search: value, page: 1 };
-      latestParamsRef.current = { ...latestParamsRef.current, ...overrides };
-      replaceURL(overrides);
-    },
-    [replaceURL]
-  );
 
   // 筛选处理
   const handleFilter = useCallback(
@@ -206,6 +211,8 @@ export function useProductListState(initialParams?: ProductQueryParams) {
     deleteDialog,
     selectedProductIds,
     batchDeleteDialog,
+    searchInput,
+    isSearching,
 
     // 状态更新函数
     setDeleteDialog,
@@ -213,7 +220,7 @@ export function useProductListState(initialParams?: ProductQueryParams) {
     setBatchDeleteDialog,
 
     // 事件处理函数
-    handleSearch,
+    handleSearch: handleSearchChange,
     handleFilter,
     handlePageChange,
     handleDeleteProduct,

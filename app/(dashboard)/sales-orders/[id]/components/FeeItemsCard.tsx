@@ -39,14 +39,26 @@ export function FeeItemsCard({
       <CardContent className="bg-white p-0">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="border-b border-slate-100 bg-slate-50/80 text-[10px] font-bold text-slate-500 backdrop-blur-md">
-              <tr className="text-xs font-semibold text-slate-500">
-                <th className="px-4 py-3 text-center font-medium">#</th>
-                <th className="px-4 py-3 text-left font-medium">费项类别</th>
-                <th className="px-4 py-3 text-left font-medium">内容说明</th>
-                <th className="px-4 py-3 text-right font-medium">核算金额</th>
-                <th className="px-4 py-3 text-center font-medium">支出方</th>
-                <th className="px-4 py-3 text-left font-medium">业务备注</th>
+            <thead className="border-b border-slate-100 bg-slate-50/80 text-table-header backdrop-blur-md">
+              <tr>
+                <th className="h-11 px-4 py-3 text-center align-middle font-semibold leading-none">
+                  #
+                </th>
+                <th className="h-11 px-4 py-3 text-left align-middle font-semibold leading-none">
+                  费项类别
+                </th>
+                <th className="h-11 px-4 py-3 text-left align-middle font-semibold leading-none">
+                  内容说明
+                </th>
+                <th className="h-11 px-4 py-3 text-right align-middle font-semibold leading-none">
+                  核算金额
+                </th>
+                <th className="h-11 px-4 py-3 text-center align-middle font-semibold leading-none">
+                  支出方
+                </th>
+                <th className="h-11 px-4 py-3 text-left align-middle font-semibold leading-none">
+                  业务备注
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">

@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 import { useProductSearch } from '@/lib/api/inbound';
 import type { ProductOption } from '@/lib/types/inbound';
+import { logger } from '@/lib/utils/console-logger';
 
 export function useProductSelector(
   value: string,
@@ -14,7 +16,18 @@ export function useProductSelector(
   const [selectedProduct, setSelectedProduct] = useState<ProductOption | null>(
     null
   );
-  const searchTimeoutRef = useRef<NodeJS.Timeout>();
+  const {
+    searchInput,
+    isSearching,
+    handleSearchChange: handleDebouncedSearchChange,
+    cancelPendingCommit,
+    clearSearch,
+  } = useListSearchController({
+    committedValue: searchQuery,
+    onCommit: query => {
+      setSearchQuery(query ?? '');
+    },
+  });
 
   // 搜索产品
   const {
@@ -30,45 +43,54 @@ export function useProductSelector(
       if (product) {
         setSelectedProduct(product);
       }
+    } else if (!value) {
+      setSelectedProduct(null);
     }
   }, [value, products]);
 
   // 处理搜索输入
-  const handleSearchChange = (query: string) => {
-    // 清除之前的定时器
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    // 设置新的定时器，防抖处理
-    searchTimeoutRef.current = setTimeout(() => {
-      setSearchQuery(query);
-    }, 300);
-  };
+  const handleSearchChange = useCallback(
+    (query: string) => {
+      if (query.trim().length > 0) {
+        setOpen(true);
+      }
+      handleDebouncedSearchChange(query);
+    },
+    [handleDebouncedSearchChange]
+  );
 
   // 处理产品选择
-  const handleSelect = (product: ProductOption) => {
+  const handleSelect = useCallback((product: ProductOption) => {
+    cancelPendingCommit();
     setSelectedProduct(product);
 
     // 确保 onChange 被调用
     try {
       onChange(product.value, product);
     } catch (error) {
-      console.error('[useProductSelector] 产品选择回调执行失败', error);
+      logger.error(
+        'hooks:use-product-selector',
+        '产品选择回调执行失败',
+        error
+      );
     }
 
     setOpen(false);
-  };
+    setSearchQuery('');
+    clearSearch();
+  }, [cancelPendingCommit, clearSearch, onChange]);
 
   // 清除选择
-  const handleClear = () => {
+  const handleClear = useCallback(() => {
+    cancelPendingCommit();
     setSelectedProduct(null);
     onChange('', undefined);
     setSearchQuery('');
-  };
+    clearSearch();
+  }, [cancelPendingCommit, clearSearch, onChange]);
 
   // 处理命令项选择
-  const handleCommandSelect = (commandValue: string) => {
+  const handleCommandSelect = useCallback((commandValue: string) => {
     // 直接根据commandValue查找产品
     // CommandItem的value格式为: `${product.code}-${product.value}`
     // 由于产品编码可能包含'-',不能简单split,应该直接从products列表中查找
@@ -79,31 +101,23 @@ export function useProductSelector(
     if (selectedProductItem) {
       handleSelect(selectedProductItem);
     } else {
-      console.warn(
-        '[useProductSelector] 未找到匹配的产品',
+      logger.warn(
+        'hooks:use-product-selector',
+        '未找到匹配的产品',
         commandValue,
         products
       );
     }
-  };
-
-  // 组件卸载时清理搜索定时器，避免内存泄漏
-  useEffect(
-    () => () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    },
-    []
-  );
+  }, [handleSelect, products]);
 
   return {
     open,
     setOpen,
+    searchInput,
     searchQuery,
     selectedProduct,
     products,
-    isLoading,
+    isLoading: isLoading || isSearching,
     error,
     handleSearchChange,
     handleSelect,

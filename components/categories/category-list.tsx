@@ -359,6 +359,18 @@ function getCategoryStatusMeta(
   };
 }
 
+function CategoryCodeBadge({ code }: { code?: string }) {
+  if (!code) {
+    return null;
+  }
+
+  return (
+    <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+      编码 {code}
+    </span>
+  );
+}
+
 interface CategoryMobileCardProps {
   category: CategoryWithLevel;
   updatingStatusId: string | null;
@@ -410,7 +422,11 @@ function CategoryMobileCard({
 
           <div className="mt-2 space-y-1 text-sm text-slate-500">
             <div className="break-all">路径：{category.fullPath}</div>
-            <div>编码：{category.code}</div>
+            {category.code ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <CategoryCodeBadge code={category.code} />
+              </div>
+            ) : null}
             {category.description ? (
               <div className="line-clamp-2">说明：{category.description}</div>
             ) : null}
@@ -617,7 +633,7 @@ function CategoryNameCell({
           className={`space-y-0.5 text-xs ${category.level > 0 ? 'pl-7' : ''}`}
         >
           <div className="text-gray-500">路径：{category.fullPath}</div>
-          <div className="text-gray-400">编码：{category.code}</div>
+          {category.code ? <CategoryCodeBadge code={category.code} /> : null}
           {category.description && (
             <div className="line-clamp-1 text-gray-400">
               说明：{category.description}

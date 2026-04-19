@@ -60,7 +60,7 @@ export function DeleteCountDialog({
 }
 
 /**
- * 添加盘点商品对话框
+ * 添加盘点产品对话框
  */
 export function AddProductDialog({
   open,
@@ -81,24 +81,24 @@ export function AddProductDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>添加盘点商品</DialogTitle>
+          <DialogTitle>添加盘点产品</DialogTitle>
           <DialogDescription className="sr-only">
-            选择一个商品加入当前盘点单，系统会按现有库存批次自动生成盘点商品。
+            选择一个产品加入当前盘点单，系统会按现有库存批次自动生成盘点明细。
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 pt-2">
           <div>
             <div className="mb-2 text-sm font-medium text-[hsl(var(--color-text-secondary))]">
-              选择商品
+              选择产品
             </div>
             <ProductCombobox
               value={selectedProductId}
               onChange={onProductChange}
-              placeholder="搜索商品名称、编号..."
+              placeholder="搜索产品名称、编码..."
             />
           </div>
           <p className="text-muted-foreground text-xs">
-            将根据所选商品当前的库存记录按批次自动生成盘点商品。
+            将根据所选产品当前的库存记录按批次自动生成盘点明细。
           </p>
         </div>
         <DialogFooter>
@@ -110,7 +110,7 @@ export function AddProductDialog({
             取消
           </Button>
           <Button onClick={onConfirm} disabled={isAdding}>
-            {isAdding ? '添加中…' : '加入盘点商品'}
+            {isAdding ? '添加中…' : '加入盘点单'}
           </Button>
         </DialogFooter>
       </DialogContent>

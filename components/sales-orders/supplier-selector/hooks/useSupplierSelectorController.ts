@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import type { Supplier } from '@/lib/types/supplier';
 import {
@@ -28,10 +35,12 @@ export function useSupplierSelectorController(
   const [searchValue, setSearchValue] = useState('');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const wasOpenRef = useRef(false);
+  const deferredSearchValue = useDeferredValue(searchValue);
 
   const [pinyinUtils, setPinyinUtils] = useState<PinyinUtils | null>(null);
+  const isSearching = searchValue !== deferredSearchValue;
 
-  const shouldLoadPinyin = open && isPinyinSearchQuery(searchValue);
+  const shouldLoadPinyin = open && isPinyinSearchQuery(deferredSearchValue);
 
   useEffect(() => {
     if (!shouldLoadPinyin || pinyinUtils) {
@@ -57,8 +66,9 @@ export function useSupplierSelectorController(
   }, [pinyinUtils, shouldLoadPinyin]);
 
   const filteredSuppliers = useMemo(
-    () => filterSuppliers(suppliers, searchValue, pinyinUtils ?? undefined),
-    [suppliers, searchValue, pinyinUtils]
+    () =>
+      filterSuppliers(suppliers, deferredSearchValue, pinyinUtils ?? undefined),
+    [deferredSearchValue, pinyinUtils, suppliers]
   );
 
   const selectedSupplier = useMemo(
@@ -105,6 +115,7 @@ export function useSupplierSelectorController(
     open,
     setOpen,
     searchValue,
+    isSearching,
     handleSearchValueChange,
     filteredSuppliers,
     selectedSupplier,

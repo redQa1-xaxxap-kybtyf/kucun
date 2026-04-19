@@ -69,6 +69,22 @@ export function FactoryShipmentsPageClient({
   const [startDate, setStartDate] = React.useState(initialParams.startDate);
   const [endDate, setEndDate] = React.useState(initialParams.endDate);
 
+  React.useEffect(() => {
+    setSearch(initialParams.search || '');
+    setStatus(initialParams.status);
+    setSortBy(initialParams.sortBy || 'createdAt');
+    setSortOrder(initialParams.sortOrder || 'desc');
+    setStartDate(initialParams.startDate);
+    setEndDate(initialParams.endDate);
+  }, [
+    initialParams.endDate,
+    initialParams.search,
+    initialParams.sortBy,
+    initialParams.sortOrder,
+    initialParams.startDate,
+    initialParams.status,
+  ]);
+
   // 防抖更新URL - 避免每次输入都触发导航
   const debouncedUpdateURL = useDebouncedCallback(
     (searchValue: string, filters: FactoryShipmentQueryParams) => {
@@ -105,7 +121,9 @@ export function FactoryShipmentsPageClient({
           params.set('limit', filters.limit.toString());
         }
 
-        router.push(`/factory-shipments?${params.toString()}`);
+        router.replace(`/factory-shipments?${params.toString()}`, {
+          scroll: false,
+        });
       });
     },
     300
@@ -179,7 +197,9 @@ export function FactoryShipmentsPageClient({
           params.set('limit', newFilters.limit.toString());
         }
 
-        router.push(`/factory-shipments?${params.toString()}`);
+        router.replace(`/factory-shipments?${params.toString()}`, {
+          scroll: false,
+        });
       });
     },
     [router, search, initialParams, startDate, endDate, mode]
@@ -224,7 +244,9 @@ export function FactoryShipmentsPageClient({
           params.set('limit', initialParams.limit.toString());
         }
 
-        router.push(`/factory-shipments?${params.toString()}`);
+        router.replace(`/factory-shipments?${params.toString()}`, {
+          scroll: false,
+        });
       });
     },
     [router, search, status, sortBy, sortOrder, initialParams.limit, mode]
@@ -263,7 +285,9 @@ export function FactoryShipmentsPageClient({
           params.set('limit', initialParams.limit.toString());
         }
 
-        router.push(`/factory-shipments?${params.toString()}`);
+        router.replace(`/factory-shipments?${params.toString()}`, {
+          scroll: false,
+        });
       });
     },
     [

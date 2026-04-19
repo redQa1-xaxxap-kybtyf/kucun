@@ -26,7 +26,7 @@ const TableHeader = React.forwardRef<
   <thead
     ref={ref}
     className={cn(
-      'bg-[hsl(var(--color-bg-table-header))] [&_tr]:border-b [&_tr]:border-[hsl(var(--color-border-secondary))]',
+      'bg-[hsl(var(--color-bg-table-header))] [&_tr]:border-b [&_tr]:border-[hsl(var(--color-border-secondary))] [&_th]:align-middle',
       className
     )}
     {...props}
@@ -83,7 +83,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      'text-table-header h-12 bg-[hsl(var(--color-bg-table-header))] px-4 text-left align-middle [&:has([role=checkbox])]:pr-0',
+      'text-table-header h-11 whitespace-nowrap bg-[hsl(var(--color-bg-table-header))] px-4 py-3 text-left align-middle font-semibold leading-none [&:has([role=checkbox])]:pr-0 [&_button]:inline-flex [&_button]:h-auto [&_button]:items-center [&_button]:justify-start [&_button]:gap-1.5 [&_button]:rounded-none [&_button]:border-0 [&_button]:bg-transparent [&_button]:p-0 [&_button]:font-inherit [&_button]:leading-none [&_button]:text-inherit [&_button]:shadow-none [&_button]:hover:bg-transparent [&_button]:hover:text-[hsl(var(--color-text-primary))] [&_button_svg]:h-3.5 [&_button_svg]:w-3.5 [&_button_svg]:shrink-0',
       className
     )}
     {...props}
@@ -98,7 +98,7 @@ const TableCell = React.forwardRef<
   <td
     ref={ref}
     className={cn(
-      'text-table-cell p-4 align-middle [&:has([role=checkbox])]:pr-0',
+      'text-table-cell px-4 py-3.5 align-middle leading-normal [&:has([role=checkbox])]:pr-0 [&_button]:inline-flex [&_button]:items-center [&_button]:justify-center',
       className
     )}
     {...props}

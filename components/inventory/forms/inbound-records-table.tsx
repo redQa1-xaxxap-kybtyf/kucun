@@ -363,35 +363,35 @@ function RecordsTable({
     <Table className="min-w-[1220px] [&_th]:whitespace-nowrap">
       <TableHeader className="bg-slate-50">
         <TableRow className="border-b border-slate-200 hover:bg-transparent">
-          <TableHead className="py-4 font-semibold text-slate-700">
+          <TableHead>
             单据编号
           </TableHead>
-          <TableHead className="py-4 font-semibold text-slate-700">
+          <TableHead>
             产品编码/名称
           </TableHead>
-          <TableHead className="py-4 font-semibold text-slate-700">
+          <TableHead>
             产品批次
           </TableHead>
-          <TableHead className="py-4 font-semibold text-slate-700">
+          <TableHead>
             规格型号
           </TableHead>
-          <TableHead className="py-4 font-semibold text-slate-700">
+          <TableHead>
             装箱数
           </TableHead>
-          <TableHead className="py-4 text-right font-semibold text-slate-700">
+          <TableHead className="text-right">
             合格入库 / 到货
           </TableHead>
-          <TableHead className="py-4 font-semibold text-slate-700">
+          <TableHead>
             业务类型
           </TableHead>
-          <TableHead className="py-4 font-semibold text-slate-700">
+          <TableHead>
             记账时间
           </TableHead>
-          <TableHead className="py-4 font-semibold text-slate-700">
+          <TableHead>
             备注说明
           </TableHead>
           {canManageOpeningBalance ? (
-            <TableHead className="py-4 font-semibold text-slate-700">
+            <TableHead>
               期初纠错
             </TableHead>
           ) : null}

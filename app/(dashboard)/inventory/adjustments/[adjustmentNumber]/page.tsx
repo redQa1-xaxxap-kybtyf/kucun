@@ -249,7 +249,7 @@ function ProductInfoCard({
         />
         <DetailRow label="批次号" value={adjustment.batchNumber || '—'} />
         <DetailRow
-          label="装箱数"
+          label="包装信息"
           value={
             getAdjustmentPiecesPerUnit(adjustment) > 0
               ? `${getAdjustmentPiecesPerUnit(adjustment)}片/件`

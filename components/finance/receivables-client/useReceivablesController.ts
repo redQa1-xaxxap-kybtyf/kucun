@@ -5,6 +5,7 @@ import * as React from 'react';
 
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import { useUrlSearchParams } from '@/hooks/url-search-params';
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 import { FINANCE_RECEIVABLES_STALE_TIME_MS } from '@/lib/constants/cache';
 import { queryKeys } from '@/lib/queryKeys';
 import { receivablesParamsConfig } from '@/lib/schemas/receivables-params-config';
@@ -34,12 +35,18 @@ export type ReceivablesControllerResult = {
   handleFilterChange: (key: string, value: string | undefined) => void;
   handleDateRangeChange: (range: DateRangeValue) => void;
   handlePageChange: (page: number) => void;
+  handleClearFilters: () => void;
   handleOpenPaymentDialog: (receivable: ReceivableItem) => void;
   isPaymentDialogOpen: boolean;
   setIsPaymentDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   selectedReceivable: ReceivableItem | null;
   retryQuery: () => void;
 };
+
+function normalizeSearch(value: string) {
+  const normalized = value.trim().replace(/\s+/g, ' ');
+  return normalized ? normalized : undefined;
+}
 
 /**
  * 应收账款控制器 Hook
@@ -55,7 +62,7 @@ export function useReceivablesController({
   initialParams?: ReceivablesQueryParams;
 }): ReceivablesControllerResult {
   // ✅ 使用统一的URL参数管理Hook
-  const { params: queryParams, updateParams } = useUrlSearchParams(
+  const { params: queryParams, updateParams, resetParams } = useUrlSearchParams(
     receivablesParamsConfig,
     {
       basePath: '/finance/receivables',
@@ -65,65 +72,46 @@ export function useReceivablesController({
     }
   );
 
-  const [searchInput, setSearchInput] = React.useState(
-    queryParams.search ?? ''
-  );
-  const searchTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(
-    null
-  );
-  const [isSearching, setIsSearching] = React.useState(false);
-
-  React.useEffect(() => {
-    setSearchInput(queryParams.search ?? '');
-  }, [queryParams.search]);
-
   const { data, isLoading, isFetching, error, refetch } =
     useReceivablesQuery(queryParams);
   const paymentDialogState = usePaymentDialogState();
-  const { handleFilterChange, handleDateRangeChange, handlePageChange } =
-    useReceivablesHandlers(updateParams);
-
-  React.useEffect(() => {
-    if (!isSearching) {
-      return;
-    }
-    if (!isLoading && !isFetching) {
-      setIsSearching(false);
-    }
-  }, [isSearching, isLoading, isFetching]);
-
-  React.useEffect(
-    () => () => {
-      if (searchTimerRef.current) {
-        clearTimeout(searchTimerRef.current);
-      }
+  const {
+    searchInput,
+    isSearching,
+    handleSearchChange,
+    cancelPendingCommit,
+    setSearchInput,
+  } = useListSearchController({
+    committedValue: queryParams.search ?? '',
+    normalize: normalizeSearch,
+    onCommit: search => {
+      updateParams({ search, page: 1 });
     },
-    []
-  );
+  });
+
+  const syncPendingSearch = React.useCallback(() => {
+    cancelPendingCommit();
+    return normalizeSearch(searchInput);
+  }, [cancelPendingCommit, searchInput]);
+
+  const {
+    handleFilterChange,
+    handleDateRangeChange,
+    handlePageChange,
+    handleClearFilters,
+  } = useReceivablesHandlers({
+    updateParams,
+    resetParams,
+    syncPendingSearch,
+    cancelPendingCommit,
+    setSearchInput,
+  });
 
   const handleSearch = React.useCallback(
     (value: string) => {
-      const normalized = value.trim().replace(/\s+/g, ' ');
-      setSearchInput(normalized);
-
-      if (searchTimerRef.current) {
-        clearTimeout(searchTimerRef.current);
-      }
-
-      if (normalized === '') {
-        setIsSearching(false);
-        updateParams({ search: undefined, page: 1 });
-        return;
-      }
-
-      setIsSearching(true);
-
-      searchTimerRef.current = setTimeout(() => {
-        updateParams({ search: normalized, page: 1 });
-        searchTimerRef.current = null;
-      }, 300);
+      handleSearchChange(value);
     },
-    [updateParams]
+    [handleSearchChange]
   );
 
   // 如果有服务端传入的 initialData，则首屏不展示加载骨架，而是直接使用 initialData。
@@ -146,6 +134,7 @@ export function useReceivablesController({
     handleFilterChange,
     handleDateRangeChange,
     handlePageChange,
+    handleClearFilters,
     handleOpenPaymentDialog: paymentDialogState.openPaymentDialog,
     isPaymentDialogOpen: paymentDialogState.isPaymentDialogOpen,
     setIsPaymentDialogOpen: paymentDialogState.setIsPaymentDialogOpen,
@@ -219,54 +208,83 @@ function usePaymentDialogState() {
  * ✅ 重构：使用 updateParams 简化事件处理
  */
 function useReceivablesHandlers(
-  updateParams: (updates: Partial<ReceivablesQueryParams>) => void
+  args: {
+    updateParams: (updates: Partial<ReceivablesQueryParams>) => void;
+    resetParams: () => void;
+    syncPendingSearch: () => string | undefined;
+    cancelPendingCommit: () => void;
+    setSearchInput: React.Dispatch<React.SetStateAction<string>>;
+  }
 ) {
+  const {
+    updateParams,
+    resetParams,
+    syncPendingSearch,
+    cancelPendingCommit,
+    setSearchInput,
+  } = args;
+
   const handleFilterChange = React.useCallback(
     (key: string, value: string | undefined) => {
+      const nextSearch = syncPendingSearch();
+
       if (key === 'paymentStatus') {
         updateParams({
+          search: nextSearch,
           paymentStatus:
             !value || value === 'all' ? undefined : (value as PaymentStatus),
           page: 1,
         });
       } else if (key === 'sortBy') {
         updateParams({
+          search: nextSearch,
           sortBy: (value || 'orderDate') as ReceivablesQueryParams['sortBy'],
           page: 1,
         });
       } else if (key === 'sortOrder') {
         updateParams({
+          search: nextSearch,
           sortOrder: ((value as SortOrder) || 'desc') as SortOrder,
           page: 1,
         });
       }
     },
-    [updateParams]
+    [syncPendingSearch, updateParams]
   );
 
   const handleDateRangeChange = React.useCallback(
     (range: DateRangeValue) => {
+      const nextSearch = syncPendingSearch();
       updateParams({
+        search: nextSearch,
         startDate: range.startDate,
         endDate: range.endDate,
         page: 1,
       });
     },
-    [updateParams]
+    [syncPendingSearch, updateParams]
   );
 
   const handlePageChange = React.useCallback(
     (page: number) => {
-      updateParams({ page });
+      const nextSearch = syncPendingSearch();
+      updateParams({ search: nextSearch, page });
       window.scrollTo({ top: 0, behavior: 'smooth' });
     },
-    [updateParams]
+    [syncPendingSearch, updateParams]
   );
+
+  const handleClearFilters = React.useCallback(() => {
+    cancelPendingCommit();
+    setSearchInput('');
+    resetParams();
+  }, [cancelPendingCommit, resetParams, setSearchInput]);
 
   return {
     handleFilterChange,
     handleDateRangeChange,
     handlePageChange,
+    handleClearFilters,
   };
 }
 

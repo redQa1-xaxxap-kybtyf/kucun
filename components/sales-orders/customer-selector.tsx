@@ -21,6 +21,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 import {
   customerQueryKeys,
   getCustomer,
@@ -28,6 +29,7 @@ import {
 } from '@/lib/api/customers';
 import type { Customer, CustomerExtendedInfo } from '@/lib/types/customer';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/utils/console-logger';
 import {
   isPinyinSearchQuery,
   loadPinyinUtils,
@@ -73,6 +75,10 @@ function extractCustomerEmail(customer: Customer): string | undefined {
   }
 }
 
+function normalizeCustomerSearchInput(value: string) {
+  return value.trim() ? value : undefined;
+}
+
 export function CustomerSelector({
   value,
   onValueChange,
@@ -86,8 +92,7 @@ export function CustomerSelector({
   onBlur,
 }: CustomerSelectorProps) {
   const [open, setOpen] = React.useState(false);
-  const [searchValue, setSearchValue] = React.useState('');
-  const [debouncedSearch, setDebouncedSearch] = React.useState('');
+  const [committedSearch, setCommittedSearch] = React.useState('');
   const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
   const [pinyinUtils, setPinyinUtils] = React.useState<PinyinUtils | null>(
     null
@@ -95,6 +100,17 @@ export function CustomerSelector({
   const [selectedCustomer, setSelectedCustomer] = React.useState<
     Customer | undefined
   >(initialCustomer as Customer | undefined); // ✅ 类型断言
+  const {
+    searchInput,
+    isSearching: isSearchPending,
+    handleSearchChange,
+  } = useListSearchController({
+    committedValue: committedSearch,
+    onCommit: nextValue => {
+      setCommittedSearch(nextValue ?? '');
+    },
+    normalize: normalizeCustomerSearchInput,
+  });
 
   const notifyBlur = React.useCallback(() => {
     if (!onBlur) {
@@ -106,7 +122,7 @@ export function CustomerSelector({
         // 表单校验失败时，react-hook-form 会抛出 ZodError，这里吞掉避免打断交互
         return;
       }
-      console.error('customer-selector:onBlur failed', error);
+      logger.error('components:sales-orders:customer-selector', 'onBlur failed', error);
     };
 
     try {
@@ -116,20 +132,13 @@ export function CustomerSelector({
     }
   }, [onBlur]);
 
-  // 防抖搜索：用户停止输入 300ms 后才发起搜索
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchValue);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [searchValue]);
-
-  const normalizedSearch = debouncedSearch.trim().toLowerCase();
+  const normalizedInputSearch = searchInput.trim().toLowerCase();
+  const normalizedSearch = committedSearch.trim().toLowerCase();
   // 允许1个字符开始搜索，支持中文单字搜索（如"张"、"李"等）
   const shouldSearch = normalizedSearch.length >= 1;
+  const hasSearchInput = normalizedInputSearch.length >= 1;
 
-  const shouldLoadPinyin = open && isPinyinSearchQuery(searchValue);
+  const shouldLoadPinyin = open && isPinyinSearchQuery(searchInput);
 
   React.useEffect(() => {
     if (!shouldLoadPinyin || pinyinUtils) {
@@ -181,18 +190,19 @@ export function CustomerSelector({
     () => (searchResults ?? []) as Customer[], // ✅ 类型断言
     [searchResults]
   );
+  const isSearchingCustomers = isSearching || isSearchPending;
 
   // 前端过滤：服务端已做基础搜索，这里只做展示前的轻量过滤
   const filteredCustomers = React.useMemo(() => {
-    if (!shouldSearch) {
+    if (!hasSearchInput) {
       return [];
     }
 
     const collapseSpaces = (value: string) => value.replace(/\s+/g, '');
-    const normalizedQueryNoSpaces = collapseSpaces(normalizedSearch);
+    const normalizedQueryNoSpaces = collapseSpaces(normalizedInputSearch);
 
     const shouldUsePinyin = Boolean(
-      pinyinUtils && isPinyinSearchQuery(normalizedSearch)
+      pinyinUtils && isPinyinSearchQuery(normalizedInputSearch)
     );
 
     return customers.filter((customer: Customer) => {
@@ -201,10 +211,10 @@ export function CustomerSelector({
 
       // 基础匹配（服务端已处理）
       if (
-        nameLower.includes(normalizedSearch) ||
-        (customer.phone && customer.phone.includes(normalizedSearch)) ||
+        nameLower.includes(normalizedInputSearch) ||
+        (customer.phone && customer.phone.includes(normalizedInputSearch)) ||
         (customer.address &&
-          customer.address.toLowerCase().includes(normalizedSearch))
+          customer.address.toLowerCase().includes(normalizedInputSearch))
       ) {
         return true;
       }
@@ -227,7 +237,7 @@ export function CustomerSelector({
 
       return false;
     });
-  }, [customers, normalizedSearch, pinyinUtils, shouldSearch]);
+  }, [customers, hasSearchInput, normalizedInputSearch, pinyinUtils]);
 
   // 处理客户选择
   const handleSelect = (customer: Customer) => {
@@ -371,21 +381,21 @@ export function CustomerSelector({
           className="w-[min(400px,calc(100vw-2rem))] p-0"
           align="start"
         >
-          <Command>
+          <Command shouldFilter={false}>
             <CommandInput
               placeholder="搜索客户名称或手机号..."
-              value={searchValue}
-              onValueChange={setSearchValue}
+              value={searchInput}
+              onValueChange={handleSearchChange}
             />
             <CommandList>
               <CommandEmpty>
-                {isSearching ? (
+                {isSearchingCustomers ? (
                   <div className="py-6 text-center">
                     <div className="text-muted-foreground text-sm">
                       搜索中...
                     </div>
                   </div>
-                ) : !shouldSearch ? (
+                ) : !hasSearchInput ? (
                   <div className="py-6 text-center">
                     <div className="text-muted-foreground mb-3 text-sm">
                       输入关键词开始搜索客户
@@ -482,7 +492,7 @@ export function CustomerSelector({
           open={createDialogOpen}
           onOpenChange={setCreateDialogOpen}
           onCustomerCreated={handleCustomerCreated}
-          initialName={searchValue}
+          initialName={searchInput}
         />
       )}
     </>

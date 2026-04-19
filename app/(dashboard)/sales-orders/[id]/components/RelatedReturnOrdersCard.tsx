@@ -56,12 +56,20 @@ export function RelatedReturnOrdersCard({
       <CardContent className="bg-white p-0">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="border-b border-slate-100 bg-slate-50/80 text-[10px] font-bold text-slate-500 backdrop-blur-md">
+            <thead className="border-b border-slate-100 bg-slate-50/80 text-table-header backdrop-blur-md">
               <tr>
-                <th className="px-4 py-3 text-left font-medium">退货单号</th>
-                <th className="px-4 py-3 text-left font-medium">状态</th>
-                <th className="px-4 py-3 text-left font-medium">创建时间</th>
-                <th className="px-4 py-3 text-center font-medium">操作</th>
+                <th className="h-11 px-4 py-3 text-left align-middle font-semibold leading-none">
+                  退货单号
+                </th>
+                <th className="h-11 px-4 py-3 text-left align-middle font-semibold leading-none">
+                  状态
+                </th>
+                <th className="h-11 px-4 py-3 text-left align-middle font-semibold leading-none">
+                  创建时间
+                </th>
+                <th className="h-11 px-4 py-3 text-center align-middle font-semibold leading-none">
+                  操作
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">

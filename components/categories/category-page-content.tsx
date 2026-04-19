@@ -58,6 +58,9 @@ interface CategoryPageContentProps {
     isPending: boolean;
   };
   setDeleteDialog: React.Dispatch<React.SetStateAction<DeleteDialogState>>;
+  searchValue?: string;
+  isSearching?: boolean;
+  onSearchChange?: (value: string) => void;
   handleSearch: (value: string) => void;
   handleFilter: <K extends keyof CategoryQueryParams>(
     key: K,
@@ -79,6 +82,9 @@ export function CategoryPageContent({
   updatingStatusId,
   deleteMutation,
   setDeleteDialog,
+  searchValue,
+  isSearching = false,
+  onSearchChange,
   handleSearch,
   handleFilter,
   handlePageChange,
@@ -117,6 +123,9 @@ export function CategoryPageContent({
 
         <CategorySearchFilters
           queryParams={queryParams}
+          searchValue={searchValue}
+          isSearching={isSearching}
+          onSearchChange={onSearchChange}
           onSearch={handleSearch}
           onFilter={handleFilter}
         />

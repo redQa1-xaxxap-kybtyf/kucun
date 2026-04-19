@@ -32,6 +32,7 @@ export function ReceivablesClient({
     handleFilterChange,
     handleDateRangeChange,
     handlePageChange,
+    handleClearFilters,
     handleOpenPaymentDialog,
     isPaymentDialogOpen,
     setIsPaymentDialogOpen,
@@ -55,6 +56,7 @@ export function ReceivablesClient({
         onFilterChange={handleFilterChange}
         onDateRangeChange={handleDateRangeChange}
         onPageChange={handlePageChange}
+        onClearFilters={handleClearFilters}
         onOpenPaymentDialog={handleOpenPaymentDialog}
         onRetry={retryQuery}
       />

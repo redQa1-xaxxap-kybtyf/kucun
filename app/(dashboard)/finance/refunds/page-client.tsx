@@ -5,12 +5,12 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
-import { useDebouncedCallback } from 'use-debounce';
 
 import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import { FinanceListSkeleton } from '@/components/ui/skeleton-compositions';
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 import { useRefundsQuery } from '@/hooks/use-refunds-query';
 import type {
   RefundListData,
@@ -20,6 +20,11 @@ import type {
 import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
 type RefundsQueryParams = RefundListQueryParams;
+
+function normalizeSearch(value?: string) {
+  const trimmed = value?.trim() ?? '';
+  return trimmed ? trimmed : undefined;
+}
 
 const RefundsClient = dynamic(
   () =>
@@ -42,10 +47,11 @@ interface RefundsPageClientProps {
  */
 export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
   const router = useRouter();
-  const [, startTransition] = React.useTransition();
 
   // 本地状态管理 - 用于即时更新UI
-  const [search, setSearch] = React.useState(initialParams.search || '');
+  const [committedSearch, setCommittedSearch] = React.useState(
+    initialParams.search || ''
+  );
   const [status, setStatus] = React.useState(initialParams.status);
   const [includeTest, setIncludeTest] = React.useState<boolean>(
     !!initialParams.includeTest
@@ -59,22 +65,24 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>(
     initialParams.sortOrder || 'desc'
   );
+  const [page, setPage] = React.useState(initialParams.page);
+  const [limit, setLimit] = React.useState(initialParams.limit);
   const [startDate, setStartDate] = React.useState<string | undefined>(
     initialParams.startDate
   );
   const [endDate, setEndDate] = React.useState<string | undefined>(
     initialParams.endDate
   );
-  const latestSearchRef = React.useRef(initialParams.search || '');
 
   React.useEffect(() => {
-    latestSearchRef.current = initialParams.search || '';
-    setSearch(initialParams.search || '');
+    setCommittedSearch(initialParams.search || '');
     setStatus(initialParams.status);
     setIncludeTest(!!initialParams.includeTest);
     setIncludeVoided(!!initialParams.includeVoided);
     setSortBy(initialParams.sortBy || 'refundDate');
     setSortOrder(initialParams.sortOrder || 'desc');
+    setPage(initialParams.page);
+    setLimit(initialParams.limit);
     setStartDate(initialParams.startDate);
     setEndDate(initialParams.endDate);
   }, [initialParams]);
@@ -82,12 +90,14 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
   const { data, isLoading, error } = useRefundsQuery({
     params: {
       ...initialParams,
-      search,
+      search: normalizeSearch(committedSearch),
       status,
       includeTest: includeTest || undefined,
       includeVoided: includeVoided || undefined,
       sortBy,
       sortOrder,
+      page,
+      limit,
       startDate,
       endDate,
     },
@@ -96,23 +106,27 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
   const currentParams = React.useMemo(
     () => ({
       ...initialParams,
-      search,
+      search: normalizeSearch(committedSearch),
       status,
       includeTest: includeTest || undefined,
       includeVoided: includeVoided || undefined,
       sortBy,
       sortOrder,
+      page,
+      limit,
       startDate,
       endDate,
     }),
     [
+      committedSearch,
       initialParams,
-      search,
       status,
       includeTest,
       includeVoided,
       sortBy,
       sortOrder,
+      page,
+      limit,
       startDate,
       endDate,
     ]
@@ -144,91 +158,112 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
     ? getFriendlyErrorMessage(error, '退款暂时无法加载，请稍后重试')
     : null;
 
-  // 防抖更新URL - 避免每次输入都触发导航
-  const debouncedUpdateURL = useDebouncedCallback(
-    (searchValue: string, filters: RefundsQueryParams) => {
-      startTransition(() => {
-        const params = new URLSearchParams();
-        if (searchValue) {
-          params.set('search', searchValue);
-        }
-        if (filters.status) {
-          params.set('status', filters.status);
-        }
-        if (filters.sortBy) {
-          params.set('sortBy', filters.sortBy);
-        }
-        if (filters.sortOrder) {
-          params.set('sortOrder', filters.sortOrder);
-        }
-        if (filters.startDate) {
-          params.set('startDate', filters.startDate);
-        }
-        if (filters.endDate) {
-          params.set('endDate', filters.endDate);
-        }
-        if (filters.includeTest) {
-          params.set('includeTest', 'true');
-        }
-        if (filters.includeVoided) {
-          params.set('includeVoided', 'true');
-        }
-        if (filters.page && filters.page > 1) {
-          params.set('page', filters.page.toString());
-        }
-        if (filters.limit) {
-          params.set('limit', filters.limit.toString());
-        }
+  const syncUrl = React.useCallback(
+    (filters: RefundsQueryParams) => {
+      const params = new URLSearchParams();
+      const normalizedSearch = normalizeSearch(filters.search);
 
-        router.push(`/finance/refunds?${params.toString()}`);
-      });
+      if (normalizedSearch) {
+        params.set('search', normalizedSearch);
+      }
+      if (filters.status) {
+        params.set('status', filters.status);
+      }
+      if (filters.sortBy) {
+        params.set('sortBy', filters.sortBy);
+      }
+      if (filters.sortOrder) {
+        params.set('sortOrder', filters.sortOrder);
+      }
+      if (filters.startDate) {
+        params.set('startDate', filters.startDate);
+      }
+      if (filters.endDate) {
+        params.set('endDate', filters.endDate);
+      }
+      if (filters.includeTest) {
+        params.set('includeTest', 'true');
+      }
+      if (filters.includeVoided) {
+        params.set('includeVoided', 'true');
+      }
+      if (filters.page && filters.page > 1) {
+        params.set('page', filters.page.toString());
+      }
+      if (filters.limit) {
+        params.set('limit', filters.limit.toString());
+      }
+
+      const queryString = params.toString();
+      router.replace(
+        queryString ? `/finance/refunds?${queryString}` : '/finance/refunds',
+        { scroll: false }
+      );
     },
-    300
+    [router]
   );
 
-  React.useEffect(
-    () => () => {
-      debouncedUpdateURL.cancel();
-    },
-    [debouncedUpdateURL]
-  );
-
-  // 搜索处理 - 立即更新本地状态，防抖更新URL
-  const handleSearch = React.useCallback(
-    (value: string) => {
-      latestSearchRef.current = value;
-      setSearch(value);
-      debouncedUpdateURL(value, {
-        ...initialParams,
-        search: value,
-        status,
-        includeTest: includeTest || undefined,
-        includeVoided: includeVoided || undefined,
-        sortBy,
-        sortOrder,
-        startDate,
-        endDate,
-        page: 1,
-      });
-    },
+  const buildFilters = React.useCallback(
+    (overrides: Partial<RefundsQueryParams> = {}): RefundsQueryParams => ({
+      ...initialParams,
+      search: overrides.search ?? normalizeSearch(committedSearch),
+      status: overrides.status ?? status,
+      includeTest: overrides.includeTest ?? (includeTest || undefined),
+      includeVoided: overrides.includeVoided ?? (includeVoided || undefined),
+      sortBy: overrides.sortBy ?? sortBy,
+      sortOrder: overrides.sortOrder ?? sortOrder,
+      startDate: overrides.startDate ?? startDate,
+      endDate: overrides.endDate ?? endDate,
+      page: overrides.page ?? page,
+      limit: overrides.limit ?? limit,
+    }),
     [
-      debouncedUpdateURL,
-      initialParams,
-      status,
+      committedSearch,
+      endDate,
       includeTest,
       includeVoided,
+      initialParams,
+      limit,
+      page,
       sortBy,
       sortOrder,
       startDate,
-      endDate,
+      status,
     ]
   );
+
+  const {
+    searchInput,
+    isSearching: isSearchPending,
+    handleSearchChange,
+    cancelPendingCommit,
+    setSearchInput,
+  } = useListSearchController({
+    committedValue: committedSearch,
+    onCommit: search => {
+      const nextSearch = search ?? '';
+      setCommittedSearch(nextSearch);
+      setPage(1);
+      syncUrl(
+        buildFilters({
+          search,
+          page: 1,
+        })
+      );
+    },
+  });
+
+  const syncPendingSearch = React.useCallback(() => {
+    cancelPendingCommit();
+    const nextSearch = normalizeSearch(searchInput);
+    setCommittedSearch(nextSearch ?? '');
+    return nextSearch;
+  }, [cancelPendingCommit, searchInput]);
 
   // 筛选处理
   const handleFilter = React.useCallback(
     (key: string, value: string | undefined) => {
-      debouncedUpdateURL.cancel();
-      const currentSearch = latestSearchRef.current;
+      const nextSearch = syncPendingSearch();
       let nextStatus = status;
       let nextSortBy = sortBy;
       let nextSortOrder = sortOrder;
@@ -252,159 +287,82 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
         setIncludeVoided(nextIncludeVoided);
       }
 
-      startTransition(() => {
-        const params = new URLSearchParams();
-        if (currentSearch) {
-          params.set('search', currentSearch);
-        }
-        if (nextStatus) {
-          params.set('status', nextStatus);
-        }
-        if (nextSortBy) {
-          params.set('sortBy', nextSortBy);
-        }
-        if (nextSortOrder) {
-          params.set('sortOrder', nextSortOrder);
-        }
-        if (startDate) {
-          params.set('startDate', startDate);
-        }
-        if (endDate) {
-          params.set('endDate', endDate);
-        }
-        if (nextIncludeTest) {
-          params.set('includeTest', 'true');
-        }
-        if (nextIncludeVoided) {
-          params.set('includeVoided', 'true');
-        }
-        if (initialParams.limit) {
-          params.set('limit', initialParams.limit.toString());
-        }
-
-        router.push(`/finance/refunds?${params.toString()}`);
-      });
+      setPage(1);
+      syncUrl(
+        buildFilters({
+          search: nextSearch,
+          status: nextStatus,
+          sortBy: nextSortBy,
+          sortOrder: nextSortOrder,
+          includeTest: nextIncludeTest || undefined,
+          includeVoided: nextIncludeVoided || undefined,
+          page: 1,
+        })
+      );
     },
     [
-      debouncedUpdateURL,
-      router,
-      status,
+      buildFilters,
       includeTest,
       includeVoided,
       sortBy,
       sortOrder,
-      initialParams.limit,
-      startDate,
-      endDate,
+      status,
+      syncPendingSearch,
+      syncUrl,
     ]
   );
 
   // 分页处理
   const handlePageChange = React.useCallback(
     (page: number) => {
-      debouncedUpdateURL.cancel();
-      const currentSearch = latestSearchRef.current;
-      startTransition(() => {
-        const params = new URLSearchParams();
-        if (currentSearch) {
-          params.set('search', currentSearch);
-        }
-        if (status) {
-          params.set('status', status);
-        }
-        if (sortBy) {
-          params.set('sortBy', sortBy);
-        }
-        if (sortOrder) {
-          params.set('sortOrder', sortOrder);
-        }
-        if (startDate) {
-          params.set('startDate', startDate);
-        }
-        if (endDate) {
-          params.set('endDate', endDate);
-        }
-        if (includeTest) {
-          params.set('includeTest', 'true');
-        }
-        if (includeVoided) {
-          params.set('includeVoided', 'true');
-        }
-        if (page > 1) {
-          params.set('page', page.toString());
-        }
-        if (pagination.limit) {
-          params.set('limit', pagination.limit.toString());
-        }
-
-        router.push(`/finance/refunds?${params.toString()}`);
-      });
+      const nextSearch = syncPendingSearch();
+      setPage(page);
+      setLimit(pagination.limit);
+      syncUrl(
+        buildFilters({
+          search: nextSearch,
+          page,
+          limit: pagination.limit,
+        })
+      );
     },
-    [
-      debouncedUpdateURL,
-      router,
-      status,
-      includeTest,
-      includeVoided,
-      sortBy,
-      sortOrder,
-      startDate,
-      endDate,
-      pagination.limit,
-    ]
+    [buildFilters, pagination.limit, syncPendingSearch, syncUrl]
   );
 
   const handleDateRangeChange = React.useCallback(
     (range: DateRangeValue) => {
-      debouncedUpdateURL.cancel();
-      const currentSearch = latestSearchRef.current;
+      const nextSearch = syncPendingSearch();
       setStartDate(range.startDate);
       setEndDate(range.endDate);
+      setPage(1);
 
-      startTransition(() => {
-        const params = new URLSearchParams();
-        if (currentSearch) {
-          params.set('search', currentSearch);
-        }
-        if (status) {
-          params.set('status', status);
-        }
-        if (sortBy) {
-          params.set('sortBy', sortBy);
-        }
-        if (sortOrder) {
-          params.set('sortOrder', sortOrder);
-        }
-        if (range.startDate) {
-          params.set('startDate', range.startDate);
-        }
-        if (range.endDate) {
-          params.set('endDate', range.endDate);
-        }
-        if (includeTest) {
-          params.set('includeTest', 'true');
-        }
-        if (includeVoided) {
-          params.set('includeVoided', 'true');
-        }
-        if (pagination.limit) {
-          params.set('limit', pagination.limit.toString());
-        }
-
-        router.push(`/finance/refunds?${params.toString()}`);
-      });
+      syncUrl(
+        buildFilters({
+          search: nextSearch,
+          startDate: range.startDate,
+          endDate: range.endDate,
+          page: 1,
+          limit: pagination.limit,
+        })
+      );
     },
-    [
-      debouncedUpdateURL,
-      router,
-      pagination.limit,
-      status,
-      includeTest,
-      includeVoided,
-      sortBy,
-      sortOrder,
-    ]
+    [buildFilters, pagination.limit, syncPendingSearch, syncUrl]
   );
+
+  const handleClearFilters = React.useCallback(() => {
+    cancelPendingCommit();
+    setSearchInput('');
+    setCommittedSearch('');
+    setStatus(undefined);
+    setIncludeTest(false);
+    setIncludeVoided(false);
+    setSortBy('refundDate');
+    setSortOrder('desc');
+    setPage(1);
+    setStartDate(undefined);
+    setEndDate(undefined);
+    router.replace('/finance/refunds', { scroll: false });
+  }, [cancelPendingCommit, router, setSearchInput]);
 
   return (
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
@@ -446,11 +404,14 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
           data={resolvedData}
           initialParams={currentParams}
           isLoading={isLoading}
+          searchValue={searchInput}
+          isSearching={isSearchPending || isLoading}
           errorMessage={loadError}
-          onSearch={handleSearch}
+          onSearch={handleSearchChange}
           onFilter={handleFilter}
           onDateRangeChange={handleDateRangeChange}
           onPageChange={handlePageChange}
+          onClearFilters={handleClearFilters}
         />
       </div>
     </div>

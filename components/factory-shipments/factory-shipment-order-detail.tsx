@@ -485,40 +485,40 @@ export function FactoryShipmentOrderDetail({
               <Table>
                 <TableHeader className="bg-[hsl(var(--color-bg-table-header))]">
                   <TableRow className="border-b border-[hsl(var(--color-border-primary))]">
-                    <TableHead className="w-[50px] py-2 text-xs font-semibold">
+                    <TableHead className="w-[50px]">
                       序号
                     </TableHead>
-                    <TableHead className="min-w-[180px] py-2 text-xs font-semibold">
+                    <TableHead className="min-w-[180px]">
                       产品名称
                     </TableHead>
-                    <TableHead className="min-w-[120px] py-2 text-xs font-semibold">
+                    <TableHead className="min-w-[120px]">
                       供应商
                     </TableHead>
-                    <TableHead className="min-w-[120px] py-2 text-xs font-semibold">
+                    <TableHead className="min-w-[120px]">
                       规格
                     </TableHead>
-                    <TableHead className="min-w-[120px] py-2 text-xs font-semibold">
+                    <TableHead className="min-w-[120px]">
                       批次
                     </TableHead>
-                    <TableHead className="w-[120px] px-4 py-2 text-left text-xs font-semibold">
+                    <TableHead className="w-[120px]">
                       数量
                     </TableHead>
-                    <TableHead className="w-[80px] py-2 text-xs font-semibold">
+                    <TableHead className="w-[80px]">
                       单位
                     </TableHead>
-                    <TableHead className="w-[110px] py-2 text-right text-xs font-semibold">
+                    <TableHead className="w-[110px] text-right">
                       装箱数
                     </TableHead>
-                    <TableHead className="w-[110px] py-2 text-right text-xs font-semibold">
+                    <TableHead className="w-[110px] text-right">
                       进货价
                     </TableHead>
-                    <TableHead className="w-[110px] py-2 text-right text-xs font-semibold">
+                    <TableHead className="w-[110px] text-right">
                       销售价
                     </TableHead>
-                    <TableHead className="w-[120px] py-2 text-right text-xs font-semibold">
+                    <TableHead className="w-[120px] text-right">
                       小计
                     </TableHead>
-                    <TableHead className="w-[120px] py-2 text-right text-xs font-semibold">
+                    <TableHead className="w-[120px] text-right">
                       利润
                     </TableHead>
                   </TableRow>
@@ -529,22 +529,22 @@ export function FactoryShipmentOrderDetail({
                       key={item.id ?? index}
                       className="border-b border-[hsl(var(--color-border-primary))] transition-colors hover:bg-[hsl(var(--color-primary-light))/50]"
                     >
-                      <TableCell className="py-2 text-center text-sm text-[hsl(var(--color-text-tertiary))]">
+                      <TableCell className="py-3 text-center text-sm text-[hsl(var(--color-text-tertiary))]">
                         {index + 1}
                       </TableCell>
-                      <TableCell className="py-2 text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                      <TableCell className="py-3 text-sm font-medium text-[hsl(var(--color-text-primary))]">
                         {item.displayName}
                       </TableCell>
-                      <TableCell className="py-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                      <TableCell className="py-3 text-sm text-[hsl(var(--color-text-secondary))]">
                         {item.supplier?.name || '-'}
                       </TableCell>
-                      <TableCell className="py-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                      <TableCell className="py-3 text-sm text-[hsl(var(--color-text-secondary))]">
                         {item.specification || '-'}
                       </TableCell>
-                      <TableCell className="py-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                      <TableCell className="py-3 text-sm text-[hsl(var(--color-text-secondary))]">
                         {item.batchNumber || '-'}
                       </TableCell>
-                      <TableCell className="px-4 py-2 text-left text-sm font-medium whitespace-nowrap text-[hsl(var(--color-text-primary))]">
+                      <TableCell className="py-3 text-left text-sm font-medium whitespace-nowrap text-[hsl(var(--color-text-primary))]">
                         {(() => {
                           const qty = Math.floor(item.quantity || 0);
                           const unit = toPieceOrSheetLabel(item.unit);
@@ -568,19 +568,19 @@ export function FactoryShipmentOrderDetail({
                           return `${qty}${unit}`;
                         })()}
                       </TableCell>
-                      <TableCell className="py-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                      <TableCell className="py-3 text-sm text-[hsl(var(--color-text-secondary))]">
                         {toPieceOrSheetLabel(item.unit)}
                       </TableCell>
-                      <TableCell className="py-2 text-right text-sm text-[hsl(var(--color-text-secondary))]">
+                      <TableCell className="py-3 text-right text-sm text-[hsl(var(--color-text-secondary))]">
                         {item.piecesPerUnit ?? '-'}
                       </TableCell>
-                      <TableCell className="py-2 text-right text-sm text-[hsl(var(--color-text-secondary))]">
+                      <TableCell className="py-3 text-right text-sm text-[hsl(var(--color-text-secondary))]">
                         {formatCostPrice(item.unitCost || 0)}
                       </TableCell>
-                      <TableCell className="py-2 text-right text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                      <TableCell className="py-3 text-right text-sm font-medium text-[hsl(var(--color-text-primary))]">
                         {formatAmount(item.unitPrice)}
                       </TableCell>
-                      <TableCell className="py-2 text-right text-sm font-semibold text-[hsl(var(--color-text-primary))]">
+                      <TableCell className="py-3 text-right text-sm font-semibold text-[hsl(var(--color-text-primary))]">
                         {formatAmount(item.quantity * item.unitPrice)}
                       </TableCell>
                       <TableCell

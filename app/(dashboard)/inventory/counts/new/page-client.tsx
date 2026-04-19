@@ -41,7 +41,7 @@ export function NewCountPageClient() {
       {/* 页面标题 */}
       <PageHeader
         title="新建盘点单"
-        description="填写盘点单信息"
+        description="填写基本信息和盘点范围"
         icon={<ClipboardCheck className="h-6 w-6 text-white" />}
         iconBgColor="hsl(var(--color-info))"
         actions={

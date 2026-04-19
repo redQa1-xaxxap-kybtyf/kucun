@@ -10,6 +10,9 @@ import type { CategoryQueryParams } from '@/lib/api/categories';
 
 interface CategorySearchFiltersProps {
   queryParams: CategoryQueryParams;
+  searchValue?: string;
+  isSearching?: boolean;
+  onSearchChange?: (value: string) => void;
   onSearch: (value: string) => void;
   onFilter: <K extends keyof CategoryQueryParams>(
     key: K,
@@ -19,6 +22,9 @@ interface CategorySearchFiltersProps {
 
 export function CategorySearchFilters({
   queryParams,
+  searchValue,
+  isSearching = false,
+  onSearchChange,
   onSearch,
   onFilter,
 }: CategorySearchFiltersProps) {
@@ -31,9 +37,10 @@ export function CategorySearchFilters({
 
   return (
     <SearchFilterCard
-      searchValue={queryParams.search || ''}
-      onSearchChange={onSearch}
-      searchPlaceholder="搜索分类名称或编码..."
+      searchValue={searchValue ?? (queryParams.search || '')}
+      onSearchChange={onSearchChange ?? onSearch}
+      searchPlaceholder="搜索分类..."
+      isSearching={isSearching}
       // 筛选器配置
       filters={[
         {

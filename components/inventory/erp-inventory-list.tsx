@@ -234,12 +234,12 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
     const totalPages = data.pagination?.totalPages ?? 1;
     const currentPage = data.pagination?.page ?? 1;
     const resultHeadline = hasActiveFilters
-      ? `当前匹配 ${totalGroups} 个产品编码`
-      : `当前共 ${totalGroups} 个产品编码`;
+      ? `当前匹配 ${totalGroups} 个产品`
+      : `当前共 ${totalGroups} 个产品`;
     const resultDescription =
       totalPages > 1
-        ? `第 ${currentPage} / ${totalPages} 页，按产品编码分组展示，${INVENTORY_SEARCH_HINT}`
-        : `按产品编码分组展示，${INVENTORY_SEARCH_HINT}`;
+        ? `第 ${currentPage} / ${totalPages} 页，按产品归并展示，不同批次分开展示，${INVENTORY_SEARCH_HINT}`
+        : `按产品归并展示，不同批次分开展示，${INVENTORY_SEARCH_HINT}`;
 
     return (
       <div className="space-y-4">

@@ -58,31 +58,31 @@ export function BatchSpecificationsTable({
             <Table>
               <TableHeader className="card-shadow-light">
                 <TableRow className="border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50">
-                  <TableHead className="py-4 font-semibold text-slate-500 first:pl-6">
+                  <TableHead className="first:pl-6">
                     产品编码
                   </TableHead>
-                  <TableHead className="py-4 font-semibold text-slate-500">
+                  <TableHead>
                     产品名称
                   </TableHead>
-                  <TableHead className="py-4 font-semibold text-slate-500">
+                  <TableHead>
                     色号
                   </TableHead>
-                  <TableHead className="py-4 font-semibold text-slate-500">
+                  <TableHead>
                     批次号
                   </TableHead>
-                  <TableHead className="py-4 font-semibold text-slate-500">
+                  <TableHead>
                     规格
                   </TableHead>
-                  <TableHead className="py-4 text-right font-semibold text-slate-500">
+                  <TableHead className="text-right">
                     装箱数
                   </TableHead>
-                  <TableHead className="py-4 text-right font-semibold text-slate-500">
+                  <TableHead className="text-right">
                     本批次实际每件重量 (kg)
                   </TableHead>
-                  <TableHead className="py-4 font-semibold text-slate-500">
+                  <TableHead>
                     创建时间
                   </TableHead>
-                  <TableHead className="py-4 pr-6 text-right font-semibold text-slate-500">
+                  <TableHead className="pr-6 text-right">
                     操作
                   </TableHead>
                 </TableRow>
@@ -125,38 +125,38 @@ export function BatchSpecificationsTable({
                         key={spec.id}
                         className="group border-b border-slate-50 transition-colors hover:bg-blue-50/30"
                       >
-                        <TableCell className="py-4 pl-6 text-sm font-semibold tracking-tight text-slate-900 group-hover:text-blue-600">
+                        <TableCell className="pl-6 text-sm font-semibold tracking-tight text-slate-900 group-hover:text-blue-600">
                           {spec.product?.code || '-'}
                         </TableCell>
-                        <TableCell className="py-4 text-xs font-bold text-slate-600">
+                        <TableCell className="text-xs font-bold text-slate-600">
                           {spec.product?.name || '-'}
                         </TableCell>
-                        <TableCell className="py-4 text-xs font-semibold text-slate-500">
+                        <TableCell className="text-xs font-semibold text-slate-500">
                           {spec.variant?.colorCode || '通用'}
                         </TableCell>
-                        <TableCell className="py-4">
+                        <TableCell>
                           <span className="rounded-md border border-amber-100 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-600">
                             {spec.batchNumber}
                           </span>
                         </TableCell>
-                        <TableCell className="py-4 text-xs font-medium text-slate-400">
+                        <TableCell className="text-xs font-medium text-slate-400">
                           {spec.product?.specification || '-'}
                         </TableCell>
-                        <TableCell className="py-4 text-right text-xs font-bold text-slate-700 tabular-nums">
+                        <TableCell className="text-right text-xs font-bold text-slate-700 tabular-nums">
                           {formatNumber(spec.piecesPerUnit)}
                         </TableCell>
-                        <TableCell className="py-4 text-right text-xs font-bold text-slate-700 tabular-nums">
+                        <TableCell className="text-right text-xs font-bold text-slate-700 tabular-nums">
                           {spec.weight
                             ? `${formatNumber(spec.weight, 2)} kg`
                             : '-'}
                         </TableCell>
-                        <TableCell className="py-4 text-xs font-medium text-slate-400">
+                        <TableCell className="text-xs font-medium text-slate-400">
                           <div className="flex items-center gap-1.5">
                             <Calendar className="h-3 w-3 text-slate-300" />
                             {formatDate(spec.createdAt)}
                           </div>
                         </TableCell>
-                        <TableCell className="py-4 pr-6 text-right">
+                        <TableCell className="pr-6 text-right">
                           <div className="flex justify-end gap-2">
                             <Button
                               variant="ghost"

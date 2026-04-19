@@ -8,12 +8,18 @@ import {
 
 interface CountRecordsFiltersProps {
   filters: InventoryCountQueryParams;
+  searchValue?: string;
+  isSearching?: boolean;
+  onSearchChange?: (value: string) => void;
   onFiltersChange: (filters: Partial<InventoryCountQueryParams>) => void;
   onReset: () => void;
 }
 
 export function CountRecordsFilters({
   filters,
+  searchValue,
+  isSearching = false,
+  onSearchChange,
   onFiltersChange,
   onReset,
 }: CountRecordsFiltersProps) {
@@ -35,9 +41,12 @@ export function CountRecordsFilters({
 
   return (
     <SearchFilterCard
-      searchValue={filters.search || ''}
-      onSearchChange={val => onFiltersChange({ search: val })}
-      searchPlaceholder="搜索盘点单名称或编号..."
+      searchValue={searchValue ?? (filters.search || '')}
+      onSearchChange={val =>
+        onSearchChange ? onSearchChange(val) : onFiltersChange({ search: val })
+      }
+      searchPlaceholder="搜索盘点单名称或盘点编号..."
+      isSearching={isSearching}
       // 筛选器配置
       filters={[
         {
@@ -67,7 +76,7 @@ export function CountRecordsFilters({
               location: event.target.value || undefined,
             })
           }
-          placeholder="库位/存放区域"
+          placeholder="输入库位/存放区域"
           className="h-14 w-full rounded-2xl border-white bg-white/40 font-bold shadow-sm backdrop-blur-md hover:bg-white sm:w-48"
         />
       }

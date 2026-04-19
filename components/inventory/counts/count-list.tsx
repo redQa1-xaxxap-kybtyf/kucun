@@ -144,7 +144,7 @@ export function CountList({ filters }: CountListProps) {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || '开始录入失败');
+        throw new Error(error.error || '开始盘点失败');
       }
 
       return response.json();
@@ -182,6 +182,15 @@ export function CountList({ filters }: CountListProps) {
 
   const handleStart = (id: string) => {
     startMutation.mutate(id);
+  };
+
+  const formatProgress = (completedItems: number, totalItems: number) => {
+    if (totalItems <= 0) {
+      return '-';
+    }
+
+    const percent = Math.round((completedItems / totalItems) * 100);
+    return `${completedItems}/${totalItems} · ${percent}%`;
   };
 
   const getStatusBadgeVariant = (status: CountStatus) => {
@@ -228,8 +237,8 @@ export function CountList({ filters }: CountListProps) {
               <TableHead>盘点类型</TableHead>
               <TableHead>状态</TableHead>
               <TableHead>计划日期</TableHead>
-              <TableHead>盘点范围</TableHead>
-              <TableHead>录入进度</TableHead>
+              <TableHead>库位/存放区域</TableHead>
+              <TableHead>盘点进度</TableHead>
               <TableHead className="text-right">操作</TableHead>
             </TableRow>
           </TableHeader>
@@ -256,12 +265,10 @@ export function CountList({ filters }: CountListProps) {
                   {formatDate(count.planDate)}
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
-                  {count.location || '整仓'}
+                  {count.location || '全部库存'}
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
-                  {count.totalItems > 0
-                    ? `${count.completedItems}/${count.totalItems}`
-                    : '-'}
+                  {formatProgress(count.completedItems, count.totalItems)}
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
@@ -330,13 +337,8 @@ export function CountList({ filters }: CountListProps) {
             <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[hsl(var(--color-text-secondary))]">
               <span>类型：{COUNT_TYPE_LABELS[count.countType]}</span>
               <span>计划：{formatDate(count.planDate)}</span>
-              <span>范围：{count.location || '整仓'}</span>
-              <span>
-                已录入：
-                {count.totalItems > 0
-                  ? `${count.completedItems}/${count.totalItems}`
-                  : '-'}
-              </span>
+              <span>库位/区域：{count.location || '全部库存'}</span>
+              <span>盘点进度：{formatProgress(count.completedItems, count.totalItems)}</span>
             </div>
             <div className="mt-3 flex justify-end gap-2">
               <Button variant="ghost" size="sm" asChild>
@@ -361,7 +363,7 @@ export function CountList({ filters }: CountListProps) {
                     onClick={() => handleStart(count.id)}
                   >
                     <Play className="mr-1 h-3 w-3" />
-                    开始录入
+                    开始盘点
                   </Button>
 
                   <Button

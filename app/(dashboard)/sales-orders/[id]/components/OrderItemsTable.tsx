@@ -120,64 +120,64 @@ export function OrderItemsTable({
         {/* 桌面端：表格视图 */}
         <div className="hidden overflow-x-auto md:block">
           <table className="w-full text-sm text-slate-600">
-            <thead className="sticky top-0 z-10 border-b border-slate-100 bg-slate-50/80 text-[11px] font-semibold text-slate-500 backdrop-blur-md">
+            <thead className="sticky top-0 z-10 border-b border-slate-100 bg-slate-50/80 text-table-header backdrop-blur-md">
               <tr>
-                <th className="px-3 py-2.5 text-left font-medium whitespace-nowrap">
+                <th className="h-11 px-3 py-3 text-left align-middle font-semibold leading-none whitespace-nowrap">
                   产品编码
                 </th>
-                <th className="px-3 py-2.5 text-left font-medium whitespace-nowrap">
+                <th className="h-11 px-3 py-3 text-left align-middle font-semibold leading-none whitespace-nowrap">
                   产品名称
                 </th>
-                <th className="px-3 py-2.5 text-left font-medium whitespace-nowrap">
+                <th className="h-11 px-3 py-3 text-left align-middle font-semibold leading-none whitespace-nowrap">
                   规格
                 </th>
                 {order.orderType !== 'TRANSFER' && (
-                  <th className="px-3 py-2.5 text-center font-medium whitespace-nowrap">
+                  <th className="h-11 px-3 py-3 text-center align-middle font-semibold leading-none whitespace-nowrap">
                     批次/日期
                   </th>
                 )}
-                <th className="min-w-[90px] px-3 py-2.5 text-center font-medium whitespace-nowrap">
+                <th className="h-11 min-w-[90px] px-3 py-3 text-center align-middle font-semibold leading-none whitespace-nowrap">
                   装箱数
                 </th>
-                <th className="px-3 py-2.5 text-center font-medium whitespace-nowrap">
+                <th className="h-11 px-3 py-3 text-center align-middle font-semibold leading-none whitespace-nowrap">
                   单位
                 </th>
-                <th className="px-3 py-2.5 text-right font-medium whitespace-nowrap">
+                <th className="h-11 px-3 py-3 text-right align-middle font-semibold leading-none whitespace-nowrap">
                   数量
                 </th>
-                <th className="px-3 py-2.5 text-right font-medium whitespace-nowrap">
+                <th className="h-11 px-3 py-3 text-right align-middle font-semibold leading-none whitespace-nowrap">
                   重量(kg)
                 </th>
                 {order.orderType === 'TRANSFER' && (
                   <>
-                    <th className="px-3 py-2.5 text-right font-medium whitespace-nowrap">
+                    <th className="h-11 px-3 py-3 text-right align-middle font-semibold leading-none whitespace-nowrap">
                       本地发货
                     </th>
-                    <th className="px-3 py-2.5 text-right font-medium whitespace-nowrap">
+                    <th className="h-11 px-3 py-3 text-right align-middle font-semibold leading-none whitespace-nowrap">
                       调货发货
                     </th>
                   </>
                 )}
-                <th className="px-3 py-2.5 text-right font-medium whitespace-nowrap">
+                <th className="h-11 px-3 py-3 text-right align-middle font-semibold leading-none whitespace-nowrap">
                   单价
                 </th>
-                <th className="px-3 py-2.5 text-right font-medium whitespace-nowrap">
+                <th className="h-11 px-3 py-3 text-right align-middle font-semibold leading-none whitespace-nowrap">
                   小计
                 </th>
                 {order.orderType === 'TRANSFER' && (
                   <>
-                    <th className="px-3 py-2.5 text-right font-medium whitespace-nowrap">
+                    <th className="h-11 px-3 py-3 text-right align-middle font-semibold leading-none whitespace-nowrap">
                       单位成本
                     </th>
-                    <th className="px-3 py-2.5 text-right font-medium whitespace-nowrap">
+                    <th className="h-11 px-3 py-3 text-right align-middle font-semibold leading-none whitespace-nowrap">
                       成本小计
                     </th>
-                    <th className="px-3 py-2.5 text-right font-medium whitespace-nowrap">
+                    <th className="h-11 px-3 py-3 text-right align-middle font-semibold leading-none whitespace-nowrap">
                       毛利
                     </th>
                   </>
                 )}
-                <th className="min-w-[120px] px-3 py-2.5 text-left font-medium whitespace-nowrap">
+                <th className="h-11 min-w-[120px] px-3 py-3 text-left align-middle font-semibold leading-none whitespace-nowrap">
                   备注说明
                 </th>
               </tr>
@@ -219,7 +219,7 @@ export function OrderItemsTable({
                     key={item.id}
                     className="group transition-colors duration-150 hover:bg-blue-50/50"
                   >
-                    <td className="px-3 py-2.5 align-top whitespace-nowrap">
+                    <td className="px-3 py-3.5 align-top whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
                         <div className="flex h-5 w-5 items-center justify-center rounded bg-gray-100 text-xs font-medium text-gray-600 group-hover:bg-blue-100 group-hover:text-blue-700">
                           {index + 1}
@@ -234,12 +234,12 @@ export function OrderItemsTable({
                         )}
                       </div>
                     </td>
-                    <td className="px-3 py-2.5 align-top whitespace-nowrap">
+                    <td className="px-3 py-3.5 align-top whitespace-nowrap">
                       <span className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
                         {displayProductName}
                       </span>
                     </td>
-                    <td className="px-3 py-2.5 align-top whitespace-nowrap">
+                    <td className="px-3 py-3.5 align-top whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm text-gray-600">
                           {specificationText}
@@ -253,7 +253,7 @@ export function OrderItemsTable({
                       </div>
                     </td>
                     {order.orderType !== 'TRANSFER' && (
-                      <td className="px-3 py-4 text-center align-middle whitespace-nowrap">
+                      <td className="px-3 py-3.5 text-center align-middle whitespace-nowrap">
                         <div className="inline-flex flex-col items-center gap-1">
                           <span className="rounded bg-slate-100/50 px-1.5 py-0.5 font-mono text-[10px] font-bold text-slate-500">
                             {item.batchNumber || '-'}
@@ -266,69 +266,69 @@ export function OrderItemsTable({
                         </div>
                       </td>
                     )}
-                    <td className="px-3 py-2.5 text-center align-top whitespace-nowrap">
+                    <td className="px-3 py-3.5 text-center align-top whitespace-nowrap">
                       <span className="text-sm text-gray-600">
                         {typeof piecesPerUnitDisplay === 'number'
                           ? formatDecimal(piecesPerUnitDisplay)
                           : '-'}
                       </span>
                     </td>
-                    <td className="px-3 py-2.5 text-center align-top whitespace-nowrap">
+                    <td className="px-3 py-3.5 text-center align-top whitespace-nowrap">
                       <span className="text-sm text-gray-600">
                         {unitLabel || '-'}
                       </span>
                     </td>
-                    <td className="px-3 py-2.5 text-right align-top whitespace-nowrap">
+                    <td className="px-3 py-3.5 text-right align-top whitespace-nowrap">
                       <span className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
                         {quantityDisplay}
                       </span>
                     </td>
-                    <td className="px-3 py-2.5 text-right align-top whitespace-nowrap">
+                    <td className="px-3 py-3.5 text-right align-top whitespace-nowrap">
                       <span className="text-sm text-gray-700">
                         {formatItemWeightKg(itemWeightKg)}
                       </span>
                     </td>
                     {order.orderType === 'TRANSFER' && (
                       <>
-                        <td className="px-3 py-2.5 text-right align-top whitespace-nowrap">
+                        <td className="px-3 py-3.5 text-right align-top whitespace-nowrap">
                           <span className="text-sm text-gray-600">
                             {localQuantityDisplay}
                           </span>
                         </td>
-                        <td className="px-3 py-2.5 text-right align-top whitespace-nowrap">
+                        <td className="px-3 py-3.5 text-right align-top whitespace-nowrap">
                           <span className="text-sm text-gray-600">
                             {transferQuantityDisplay}
                           </span>
                         </td>
                       </>
                     )}
-                    <td className="px-3 py-2.5 text-right align-top whitespace-nowrap">
+                    <td className="px-3 py-3.5 text-right align-top whitespace-nowrap">
                       <span className="text-sm text-gray-700">
                         {formatCurrency(resolveDisplayUnitPrice(item))}
                       </span>
                     </td>
-                    <td className="px-3 py-2.5 text-right align-top whitespace-nowrap">
+                    <td className="px-3 py-3.5 text-right align-top whitespace-nowrap">
                       <span className="text-sm font-bold text-[hsl(var(--color-text-primary))]">
                         {formatCurrency(item.subtotal)}
                       </span>
                     </td>
                     {order.orderType === 'TRANSFER' && (
                       <>
-                        <td className="px-3 py-2.5 text-right align-top whitespace-nowrap">
+                        <td className="px-3 py-3.5 text-right align-top whitespace-nowrap">
                           <span className="text-sm text-gray-600">
                             {item.unitCost !== null && item.unitCost !== undefined
                               ? formatCostPrice(item.unitCost)
                               : '-'}
                           </span>
                         </td>
-                        <td className="px-3 py-2.5 text-right align-top whitespace-nowrap">
+                        <td className="px-3 py-3.5 text-right align-top whitespace-nowrap">
                           <span className="text-sm text-gray-700">
                             {item.costSubtotal
                               ? formatCurrency(item.costSubtotal)
                               : '-'}
                           </span>
                         </td>
-                        <td className="px-3 py-2.5 text-right align-top whitespace-nowrap">
+                        <td className="px-3 py-3.5 text-right align-top whitespace-nowrap">
                           <span className="text-sm font-bold text-[hsl(var(--color-success))]">
                             {item.profitAmount
                               ? formatCurrency(item.profitAmount)
@@ -337,7 +337,7 @@ export function OrderItemsTable({
                         </td>
                       </>
                     )}
-                    <td className="px-3 py-2.5 align-top whitespace-nowrap">
+                    <td className="px-3 py-3.5 align-top whitespace-nowrap">
                       <div className="flex h-full min-w-[100px] items-center text-xs text-gray-500">
                         {remarkText !== '-' ? (
                           <div className="inline-flex rounded border border-blue-100 bg-blue-50/50 px-2 py-0.5 font-bold tracking-tight whitespace-nowrap text-blue-600">
@@ -356,28 +356,28 @@ export function OrderItemsTable({
               <tr className="font-bold">
                 <td
                   colSpan={order.orderType === 'TRANSFER' ? 3 : 4}
-                  className="px-4 py-5 text-right text-slate-500"
+                  className="px-4 py-4 text-right text-slate-500"
                 >
                   <span className="text-[10px] font-semibold tracking-[0.2em]">
                     合计统计
                   </span>
                 </td>
-                <td className="px-3 py-5 text-center whitespace-nowrap">
+                <td className="px-3 py-4 text-center whitespace-nowrap">
                   <span className="text-[10px] font-bold text-slate-300">
                     -
                   </span>
                 </td>
-                <td className="px-3 py-5 text-center whitespace-nowrap">
+                <td className="px-3 py-4 text-center whitespace-nowrap">
                   <span className="text-[10px] font-bold text-slate-300">
                     -
                   </span>
                 </td>
-                <td className="px-3 py-5 text-right whitespace-nowrap">
+                <td className="px-3 py-4 text-right whitespace-nowrap">
                   <span className="font-mono text-base font-semibold text-slate-900">
                     {formatTotalQuantitySummary(orderItems, totalDisplayQuantity)}
                   </span>
                 </td>
-                <td className="px-3 py-5 text-right whitespace-nowrap">
+                <td className="px-3 py-4 text-right whitespace-nowrap">
                   <span className="font-mono text-sm font-bold text-slate-600">
                     {totalWeightKg > 0
                       ? `${formatDecimal(totalWeightKg)}kg`
@@ -386,48 +386,48 @@ export function OrderItemsTable({
                 </td>
                 {order.orderType === 'TRANSFER' && (
                   <>
-                    <td className="px-3 py-5 text-right whitespace-nowrap">
+                    <td className="px-3 py-4 text-right whitespace-nowrap">
                       <span className="font-mono text-sm font-medium text-slate-600">
                         {formatDecimal(totalLocalQuantity)}
                       </span>
                     </td>
-                    <td className="px-3 py-5 text-right whitespace-nowrap">
+                    <td className="px-3 py-4 text-right whitespace-nowrap">
                       <span className="font-mono text-sm font-medium text-slate-600">
                         {formatDecimal(totalTransferQuantity)}
                       </span>
                     </td>
                   </>
                 )}
-                <td className="px-3 py-5 text-right whitespace-nowrap">
+                <td className="px-3 py-4 text-right whitespace-nowrap">
                   <span className="text-[10px] font-bold text-slate-300">
                     -
                   </span>
                 </td>
-                <td className="px-3 py-5 text-right whitespace-nowrap">
+                <td className="px-3 py-4 text-right whitespace-nowrap">
                   <span className="font-mono text-xl font-semibold text-blue-700">
                     {formatCurrency(productSubtotal)}
                   </span>
                 </td>
                 {order.orderType === 'TRANSFER' && (
                   <>
-                    <td className="px-3 py-5 text-right whitespace-nowrap">
+                    <td className="px-3 py-4 text-right whitespace-nowrap">
                       <span className="text-[10px] font-bold text-slate-300">
                         -
                       </span>
                     </td>
-                    <td className="px-3 py-5 text-right whitespace-nowrap">
+                    <td className="px-3 py-4 text-right whitespace-nowrap">
                       <span className="font-mono text-sm font-semibold text-slate-700">
                         {formatCurrency(order.costAmount)}
                       </span>
                     </td>
-                    <td className="px-3 py-5 text-right whitespace-nowrap">
+                    <td className="px-3 py-4 text-right whitespace-nowrap">
                       <span className="font-mono text-lg font-semibold text-emerald-600">
                         {formatCurrency(order.profitAmount)}
                       </span>
                     </td>
                   </>
                 )}
-                <td className="px-3 py-5">
+                <td className="px-3 py-4">
                   <span className="text-[10px] font-bold text-slate-200">
                     #
                   </span>

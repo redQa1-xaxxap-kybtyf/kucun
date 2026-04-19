@@ -323,41 +323,41 @@ export function ExpenseList({
                 <Table>
                   <TableHeader>
                     <TableRow className="border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50/50">
-                      <TableHead className="h-auto py-4 text-[11px] font-semibold text-slate-400">
+                      <TableHead>
                         单号
                       </TableHead>
-                      <TableHead className="h-auto py-4 text-center text-[11px] font-semibold text-slate-400">
+                      <TableHead className="text-center">
                         分类/状态
                       </TableHead>
-                      <TableHead className="h-auto py-4 text-[11px] font-semibold text-slate-400">
+                      <TableHead>
                         费用事宜
                       </TableHead>
-                      <TableHead className="h-auto py-4 text-right text-[11px] font-semibold text-slate-400">
+                      <TableHead className="text-right">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleSort('expenseAmount')}
-                          className="h-auto p-0 text-[11px] font-semibold text-slate-400 hover:bg-transparent"
+                          className="text-inherit"
                         >
                           收支金额
                           <ArrowUpDown className="ml-1 h-3 w-3" />
                         </Button>
                       </TableHead>
-                      <TableHead className="h-auto py-4 text-center text-[11px] font-semibold text-slate-400">
+                      <TableHead className="text-center">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleSort('expenseDate')}
-                          className="h-auto p-0 text-[11px] font-semibold text-slate-400 hover:bg-transparent"
+                          className="text-inherit"
                         >
                           发生日期
                           <ArrowUpDown className="ml-1 h-3 w-3" />
                         </Button>
                       </TableHead>
-                      <TableHead className="h-auto py-4 text-[11px] font-semibold text-slate-400">
+                      <TableHead>
                         关联业务
                       </TableHead>
-                      <TableHead className="h-auto py-4 text-right text-[11px] font-semibold text-slate-400">
+                      <TableHead className="text-right">
                         操作
                       </TableHead>
                     </TableRow>
@@ -368,12 +368,12 @@ export function ExpenseList({
                         key={expense.id}
                         className="group transition-colors hover:bg-slate-50/30"
                       >
-                        <TableCell className="py-4">
+                        <TableCell>
                           <div className="font-mono text-xs font-semibold text-slate-900">
                             <CopyableText text={expense.expenseNumber} />
                           </div>
                         </TableCell>
-                        <TableCell className="py-4 text-center">
+                        <TableCell className="text-center">
                           <div className="flex flex-col items-center gap-1.5">
                             <Badge
                               variant="outline"
@@ -391,7 +391,7 @@ export function ExpenseList({
                             </span>
                           </div>
                         </TableCell>
-                        <TableCell className="py-4">
+                        <TableCell>
                           <div className="flex flex-col">
                             <span className="mb-1 text-sm leading-tight font-semibold text-slate-900">
                               {expense.expenseName}
@@ -403,17 +403,17 @@ export function ExpenseList({
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="py-4 text-right">
+                        <TableCell className="text-right">
                           <span className="font-mono text-base font-semibold text-slate-900">
                             {formatCurrency(expense.expenseAmount)}
                           </span>
                         </TableCell>
-                        <TableCell className="py-4 text-center">
+                        <TableCell className="text-center">
                           <span className="text-xs font-bold text-slate-600">
                             <RelativeTime date={expense.expenseDate} />
                           </span>
                         </TableCell>
-                        <TableCell className="py-4">
+                        <TableCell>
                           {expense.relatedType && expense.relatedNumber ? (
                             <div className="flex flex-col gap-1">
                               <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-900">
@@ -434,7 +434,7 @@ export function ExpenseList({
                             </span>
                           )}
                         </TableCell>
-                        <TableCell className="py-4 text-right">
+                        <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                             <Link href={`/finance/expenses/${expense.id}`}>
                               <Button

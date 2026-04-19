@@ -482,27 +482,27 @@ export function ReturnOrderDetailPageClient({
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead className="bg-[hsl(var(--color-bg-tertiary))]">
+                    <thead className="bg-[hsl(var(--color-bg-tertiary))] text-table-header">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                        <th className="h-11 px-4 py-3 text-left align-middle font-semibold leading-none text-[hsl(var(--color-text-tertiary))]">
                           产品信息
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                        <th className="h-11 px-4 py-3 text-left align-middle font-semibold leading-none text-[hsl(var(--color-text-tertiary))]">
                           规格/色号
                         </th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                        <th className="h-11 px-4 py-3 text-center align-middle font-semibold leading-none text-[hsl(var(--color-text-tertiary))]">
                           原始数量
                         </th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                        <th className="h-11 px-4 py-3 text-center align-middle font-semibold leading-none text-[hsl(var(--color-text-tertiary))]">
                           退货数量
                         </th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                        <th className="h-11 px-4 py-3 text-center align-middle font-semibold leading-none text-[hsl(var(--color-text-tertiary))]">
                           破损数量
                         </th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                        <th className="h-11 px-4 py-3 text-center align-middle font-semibold leading-none text-[hsl(var(--color-text-tertiary))]">
                           单价
                         </th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                        <th className="h-11 px-4 py-3 text-right align-middle font-semibold leading-none text-[hsl(var(--color-text-tertiary))]">
                           小计
                         </th>
                       </tr>

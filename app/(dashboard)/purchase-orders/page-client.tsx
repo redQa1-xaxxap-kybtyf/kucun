@@ -5,11 +5,11 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
-import { useDebouncedCallback } from 'use-debounce';
 
 import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
 import { TableSkeleton } from '@/components/ui/skeleton-compositions';
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 import type { PurchaseOrderStatus } from '@/lib/types/purchase-order';
 
 const PurchaseOrderSearchToolbar = dynamic(
@@ -55,22 +55,28 @@ interface PurchaseOrdersPageClientProps {
 }
 
 interface FilterSnapshot {
-  search: string;
+  search?: string;
   status: PurchaseOrderStatus | 'all';
   supplierId?: string;
   startDate?: string;
   endDate?: string;
+  page?: number;
+}
+
+function normalizeSearch(value?: string) {
+  const trimmed = value?.trim() ?? '';
+  return trimmed ? trimmed : undefined;
 }
 
 export function PurchaseOrdersPageClient({
   initialParams,
 }: PurchaseOrdersPageClientProps) {
   const router = useRouter();
-  const [, startTransition] = React.useTransition();
+  const initialSearch = initialParams.containerNumber || '';
+  const initialStartDate = initialParams.startDate?.toISOString().split('T')[0];
+  const initialEndDate = initialParams.endDate?.toISOString().split('T')[0];
 
-  const [searchValue, setSearchValue] = React.useState(
-    initialParams.containerNumber || ''
-  );
+  const [committedSearch, setCommittedSearch] = React.useState(initialSearch);
   const [statusFilter, setStatusFilter] = React.useState<
     PurchaseOrderStatus | 'all'
   >(initialParams.status ?? 'all');
@@ -81,30 +87,48 @@ export function PurchaseOrdersPageClient({
     startDate?: string;
     endDate?: string;
   }>({
-    startDate: initialParams.startDate?.toISOString().split('T')[0],
-    endDate: initialParams.endDate?.toISOString().split('T')[0],
+    startDate: initialStartDate,
+    endDate: initialEndDate,
   });
   const sortBy = initialParams.sortBy || 'createdAt';
   const sortOrder = initialParams.sortOrder || 'desc';
 
+  React.useEffect(() => {
+    setCommittedSearch(initialSearch);
+  }, [initialSearch]);
+
+  React.useEffect(() => {
+    setStatusFilter(initialParams.status ?? 'all');
+    setSupplierFilter(initialParams.supplierId);
+    setDateRange({
+      startDate: initialStartDate,
+      endDate: initialEndDate,
+    });
+  }, [
+    initialEndDate,
+    initialParams.status,
+    initialParams.supplierId,
+    initialStartDate,
+  ]);
+
   const buildSnapshot = React.useCallback(
     (overrides: Partial<FilterSnapshot> = {}): FilterSnapshot => ({
-      search: overrides.search ?? searchValue,
+      search: overrides.search ?? normalizeSearch(committedSearch),
       status: overrides.status ?? statusFilter,
       supplierId: overrides.supplierId ?? supplierFilter,
       startDate: overrides.startDate ?? dateRange.startDate,
       endDate: overrides.endDate ?? dateRange.endDate,
+      page: overrides.page,
     }),
-    [searchValue, statusFilter, supplierFilter, dateRange]
+    [committedSearch, statusFilter, supplierFilter, dateRange]
   );
 
-  const syncFiltersToURL = useDebouncedCallback((snapshot: FilterSnapshot) => {
-    startTransition(() => {
+  const syncFiltersToURL = React.useCallback(
+    (snapshot: FilterSnapshot) => {
       const params = new URLSearchParams();
-      const trimmedSearch = snapshot.search.trim();
 
-      if (trimmedSearch) {
-        params.set('search', trimmedSearch);
+      if (snapshot.search) {
+        params.set('search', snapshot.search);
       }
       if (snapshot.status !== 'all') {
         params.set('status', snapshot.status);
@@ -124,111 +148,93 @@ export function PurchaseOrdersPageClient({
       if (sortOrder && sortOrder !== 'desc') {
         params.set('sortOrder', sortOrder);
       }
+      if (snapshot.page && snapshot.page > 1) {
+        params.set('page', snapshot.page.toString());
+      }
       if (initialParams.limit) {
         params.set('limit', initialParams.limit.toString());
       }
 
       const queryString = params.toString();
-      router.push(
-        queryString ? `/purchase-orders?${queryString}` : '/purchase-orders'
+      router.replace(
+        queryString ? `/purchase-orders?${queryString}` : '/purchase-orders',
+        { scroll: false }
       );
-    });
-  }, 300);
-
-  const handleSearch = React.useCallback(
-    (value: string) => {
-      setSearchValue(value);
-      syncFiltersToURL(buildSnapshot({ search: value }));
     },
-    [buildSnapshot, syncFiltersToURL]
+    [initialParams.limit, router, sortBy, sortOrder]
   );
+
+  const {
+    searchInput,
+    isSearching,
+    handleSearchChange,
+    cancelPendingCommit,
+    setSearchInput,
+  } = useListSearchController({
+    committedValue: committedSearch,
+    onCommit: search => {
+      const nextSearch = search ?? '';
+      setCommittedSearch(nextSearch);
+      syncFiltersToURL(buildSnapshot({ search }));
+    },
+  });
+
+  const syncPendingSearch = React.useCallback(() => {
+    cancelPendingCommit();
+    const nextSearch = normalizeSearch(searchInput);
+    setCommittedSearch(nextSearch ?? '');
+    return nextSearch;
+  }, [cancelPendingCommit, searchInput]);
 
   const handleStatusChange = React.useCallback(
     (value: PurchaseOrderStatus | 'all') => {
       setStatusFilter(value);
-      syncFiltersToURL(buildSnapshot({ status: value }));
+      const nextSearch = syncPendingSearch();
+      syncFiltersToURL(buildSnapshot({ search: nextSearch, status: value }));
     },
-    [buildSnapshot, syncFiltersToURL]
+    [buildSnapshot, syncFiltersToURL, syncPendingSearch]
   );
 
   const handleSupplierChange = React.useCallback(
     (value: string | undefined) => {
       setSupplierFilter(value);
-      syncFiltersToURL(buildSnapshot({ supplierId: value }));
+      const nextSearch = syncPendingSearch();
+      syncFiltersToURL(buildSnapshot({ search: nextSearch, supplierId: value }));
     },
-    [buildSnapshot, syncFiltersToURL]
+    [buildSnapshot, syncFiltersToURL, syncPendingSearch]
   );
 
   const handleDateRangeChange = React.useCallback(
     (range: { startDate?: string; endDate?: string }) => {
       setDateRange(range);
+      const nextSearch = syncPendingSearch();
       syncFiltersToURL(
-        buildSnapshot({ startDate: range.startDate, endDate: range.endDate })
+        buildSnapshot({
+          search: nextSearch,
+          startDate: range.startDate,
+          endDate: range.endDate,
+        })
       );
     },
-    [buildSnapshot, syncFiltersToURL]
+    [buildSnapshot, syncFiltersToURL, syncPendingSearch]
   );
 
   const handleClearFilters = React.useCallback(() => {
-    setSearchValue('');
+    cancelPendingCommit();
+    setSearchInput('');
+    setCommittedSearch('');
     setStatusFilter('all');
     setSupplierFilter(undefined);
     setDateRange({});
-    startTransition(() => {
-      router.push('/purchase-orders');
-    });
-  }, [router, startTransition]);
+    router.replace('/purchase-orders', { scroll: false });
+  }, [cancelPendingCommit, router, setSearchInput]);
 
   const handlePageChange = React.useCallback(
     (page: number) => {
-      startTransition(() => {
-        const params = new URLSearchParams();
-        const trimmedSearch = searchValue.trim();
-
-        if (trimmedSearch) {
-          params.set('search', trimmedSearch);
-        }
-        if (statusFilter !== 'all') {
-          params.set('status', statusFilter);
-        }
-        if (supplierFilter) {
-          params.set('supplierId', supplierFilter);
-        }
-        if (dateRange.startDate) {
-          params.set('startDate', dateRange.startDate);
-        }
-        if (dateRange.endDate) {
-          params.set('endDate', dateRange.endDate);
-        }
-        if (sortBy && sortBy !== 'createdAt') {
-          params.set('sortBy', sortBy);
-        }
-        if (sortOrder && sortOrder !== 'desc') {
-          params.set('sortOrder', sortOrder);
-        }
-        if (page > 1) {
-          params.set('page', page.toString());
-        }
-        if (initialParams.limit) {
-          params.set('limit', initialParams.limit.toString());
-        }
-
-        const queryString = params.toString();
-        router.push(
-          queryString ? `/purchase-orders?${queryString}` : '/purchase-orders'
-        );
-      });
+      const nextSearch = syncPendingSearch();
+      syncFiltersToURL(buildSnapshot({ search: nextSearch, page }));
     },
-    [
-      router,
-      searchValue,
-      statusFilter,
-      supplierFilter,
-      dateRange,
-      sortBy,
-      sortOrder,
-      initialParams.limit,
-    ]
+    [buildSnapshot, syncFiltersToURL, syncPendingSearch]
   );
 
   return (
@@ -256,12 +262,12 @@ export function PurchaseOrdersPageClient({
 
       <div className="flex-1 space-y-4">
         <PurchaseOrderSearchToolbar
-          searchValue={searchValue}
+          searchValue={searchInput}
           statusFilter={statusFilter}
           supplierId={supplierFilter}
           dateRange={dateRange}
-          isSearching={false}
-          onSearch={handleSearch}
+          isSearching={isSearching}
+          onSearch={handleSearchChange}
           onStatusChange={handleStatusChange}
           onSupplierChange={handleSupplierChange}
           onDateRangeChange={handleDateRangeChange}
@@ -271,7 +277,7 @@ export function PurchaseOrdersPageClient({
         <PurchaseOrderList
           page={initialParams.page}
           limit={initialParams.limit}
-          search={searchValue}
+          search={normalizeSearch(committedSearch)}
           status={statusFilter === 'all' ? undefined : statusFilter}
           supplierId={supplierFilter}
           startDate={

@@ -3,20 +3,31 @@ import type { BatchSpecificationQueryParams } from '@/lib/types/batch-specificat
 
 interface BatchRecordsFiltersProps {
   filters: BatchSpecificationQueryParams;
+  searchValue?: string;
+  isSearching?: boolean;
+  onSearchChange?: (value: string) => void;
   onFiltersChange: (filters: Partial<BatchSpecificationQueryParams>) => void;
   onReset: () => void;
 }
 
 export function BatchRecordsFilters({
   filters,
+  searchValue,
+  isSearching = false,
+  onSearchChange,
   onFiltersChange,
   onReset,
 }: BatchRecordsFiltersProps) {
   return (
     <SearchFilterCard
-      searchValue={filters.search || ''}
-      onSearchChange={val => onFiltersChange({ search: val, page: 1 })}
+      searchValue={searchValue ?? (filters.search || '')}
+      onSearchChange={val =>
+        onSearchChange
+          ? onSearchChange(val)
+          : onFiltersChange({ search: val, page: 1 })
+      }
       searchPlaceholder="搜索批次号、产品名称、编码..."
+      isSearching={isSearching}
       // 日期范围筛选
       dateRangeFilter={{
         key: 'dateRange',

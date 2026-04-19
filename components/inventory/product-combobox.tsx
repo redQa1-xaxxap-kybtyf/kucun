@@ -12,6 +12,7 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import { Popover } from '@/components/ui/popover';
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 import { useProductSearch } from '@/lib/api/inbound';
 import type { ProductOption } from '@/lib/types/inbound';
 import { cn } from '@/lib/utils';
@@ -40,7 +41,18 @@ export function ProductCombobox({
   const [searchQuery, setSearchQuery] = React.useState('');
   const [selectedProduct, setSelectedProduct] =
     React.useState<ProductOption | null>(null);
-  const searchTimeoutRef = React.useRef<NodeJS.Timeout>();
+  const {
+    searchInput,
+    isSearching,
+    handleSearchChange: handleDebouncedSearchChange,
+    cancelPendingCommit,
+    clearSearch,
+  } = useListSearchController({
+    committedValue: searchQuery,
+    onCommit: query => {
+      setSearchQuery(query ?? '');
+    },
+  });
 
   // 搜索产品
   const { data: products = [], isLoading } = useProductSearch(searchQuery);
@@ -57,46 +69,40 @@ export function ProductCombobox({
     }
   }, [value, products]);
 
-  // 处理搜索输入（防抖）
   const handleSearchChange = React.useCallback(
     (query: string) => {
-      // 清除之前的定时器
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
+      if (query.trim().length > 0) {
+        setOpen(true);
       }
-
-      // 设置新的定时器，防抖处理
-      searchTimeoutRef.current = setTimeout(() => {
-        setSearchQuery(query);
-        // 输入时自动打开下拉，避免需要额外再点一次
-        if (query && query.trim().length > 0) {
-          setOpen(true);
-        }
-      }, 300);
+      handleDebouncedSearchChange(query);
     },
-    [setOpen]
+    [handleDebouncedSearchChange]
   );
 
   // 处理产品选择
   const handleSelect = React.useCallback(
     (product: ProductOption) => {
+      cancelPendingCommit();
       setSelectedProduct(product);
       onChange(product.value, product);
       setOpen(false);
       setSearchQuery('');
+      clearSearch();
     },
-    [onChange]
+    [cancelPendingCommit, clearSearch, onChange]
   );
 
   // 清除选择
   const handleClear = React.useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
+      cancelPendingCommit();
       setSelectedProduct(null);
       onChange('', undefined);
       setSearchQuery('');
+      clearSearch();
     },
-    [onChange]
+    [cancelPendingCommit, clearSearch, onChange]
   );
 
   // 处理命令项选择
@@ -113,16 +119,6 @@ export function ProductCombobox({
       }
     },
     [products, handleSelect]
-  );
-
-  // 组件卸载时清理搜索定时器
-  React.useEffect(
-    () => () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    },
-    []
   );
 
   return (
@@ -151,10 +147,11 @@ export function ProductCombobox({
                 </div>
               )}
               <CommandInput
+                value={searchInput}
                 placeholder={selectedProduct ? '' : placeholder}
                 onValueChange={handleSearchChange}
                 onFocus={() => {
-                  if (searchQuery.length > 0 || products.length > 0) {
+                  if (searchInput.length > 0 || products.length > 0) {
                     setOpen(true);
                   }
                 }}
@@ -164,12 +161,10 @@ export function ProductCombobox({
             </div>
           </div>
           <div className="relative mt-1">
-            {open && (searchQuery.length > 0 || products.length > 0) && (
+            {open && (searchInput.length > 0 || products.length > 0) && (
               <div className="bg-popover text-popover-foreground animate-in absolute top-0 z-10 w-full rounded-md border shadow-md outline-hidden">
                 <CommandList>
-                  <CommandEmpty>
-                    {isLoading ? '搜索中...' : '未找到相关产品'}
-                  </CommandEmpty>
+                  <CommandEmpty>{isLoading || isSearching ? '搜索中...' : '未找到相关产品'}</CommandEmpty>
                   <CommandGroup>
                     {products.map(product => (
                       <CommandItem

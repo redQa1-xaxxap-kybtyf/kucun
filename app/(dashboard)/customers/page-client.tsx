@@ -5,13 +5,13 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
-import { useDebouncedCallback } from 'use-debounce';
 
 import { FilterBar } from '@/components/layouts/filter-bar';
 import { PageContainer } from '@/components/layouts/page-container';
 import { Button } from '@/components/ui/button';
 import { TableSkeleton } from '@/components/ui/skeleton-compositions';
 import { useCustomersQuery } from '@/hooks/use-customers-query';
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 import {
   CUSTOMER_SORT_OPTIONS,
   type Customer,
@@ -21,6 +21,11 @@ import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
 interface CustomersPageClientProps {
   initialParams: CustomerQueryParams;
+}
+
+function normalizeSearch(value?: string) {
+  const trimmed = value?.trim() ?? '';
+  return trimmed ? trimmed : undefined;
 }
 
 const ERPCustomerList = dynamic(
@@ -55,10 +60,11 @@ export function CustomersPageClient({
   initialParams,
 }: CustomersPageClientProps) {
   const router = useRouter();
-  const [, startTransition] = React.useTransition();
 
   // 本地状态管理
-  const [search, setSearch] = React.useState(initialParams.search || '');
+  const [committedSearch, setCommittedSearch] = React.useState(
+    initialParams.search || ''
+  );
   type SortField = NonNullable<CustomerQueryParams['sortBy']>;
   const isSortField = React.useCallback(
     (value: string): value is SortField =>
@@ -78,7 +84,7 @@ export function CustomersPageClient({
     React.useState<Customer | null>(null);
 
   React.useEffect(() => {
-    setSearch(initialParams.search || '');
+    setCommittedSearch(initialParams.search || '');
     if (initialParams.sortBy && isSortField(initialParams.sortBy)) {
       setSortBy(initialParams.sortBy);
     } else {
@@ -87,35 +93,39 @@ export function CustomersPageClient({
     setSortOrder(initialParams.sortOrder === 'asc' ? 'asc' : 'desc');
   }, [initialParams, isSortField]);
 
-  const queryParams = React.useMemo(() => {
-    const normalizedSearch =
-      typeof initialParams.search === 'string' && initialParams.search.trim()
-        ? initialParams.search.trim()
-        : undefined;
-
-    return {
+  const queryParams = React.useMemo(
+    () => ({
       page: initialParams.page ?? 1,
       limit: initialParams.limit ?? 10,
-      search: normalizedSearch,
-      sortBy: initialParams.sortBy ?? 'createdAt',
-      sortOrder: initialParams.sortOrder ?? 'desc',
+      search: normalizeSearch(committedSearch),
+      sortBy,
+      sortOrder,
       parentCustomerId: initialParams.parentCustomerId,
       region: initialParams.region,
-    } satisfies CustomerQueryParams;
-  }, [initialParams]);
+    }) satisfies CustomerQueryParams,
+    [committedSearch, initialParams, sortBy, sortOrder]
+  );
 
   const { data, isLoading, isError, error } = useCustomersQuery(queryParams);
 
   const customers = data?.data ?? [];
   const pagination = data?.pagination;
 
-  // 防抖更新URL - 避免每次输入都触发导航
-  // 参考Next.js官方最佳实践: https://nextjs.org/learn/dashboard-app/adding-search-and-pagination
-  const debouncedUpdateURL = useDebouncedCallback((value: string) => {
-    startTransition(() => {
+  const syncUrl = React.useCallback(
+    ({
+      search,
+      sortBy,
+      sortOrder,
+      page,
+    }: {
+      search?: string;
+      sortBy: SortField;
+      sortOrder: 'asc' | 'desc';
+      page?: number;
+    }) => {
       const params = new URLSearchParams();
-      if (value) {
-        params.set('search', value);
+      if (search) {
+        params.set('search', search);
       }
       if (sortBy) {
         params.set('sortBy', sortBy);
@@ -123,15 +133,42 @@ export function CustomersPageClient({
       if (sortOrder) {
         params.set('sortOrder', sortOrder);
       }
-      router.push(`/customers?${params.toString()}`);
-    });
-  }, 300); // 300ms防抖延迟，用户停止输入后才更新URL
+      if (page && page > 1) {
+        params.set('page', page.toString());
+      }
+      const queryString = params.toString();
+      router.replace(queryString ? `/customers?${queryString}` : '/customers', {
+        scroll: false,
+      });
+    },
+    [router]
+  );
 
-  // 处理搜索 - 立即更新本地状态，防抖更新URL
-  const handleSearch = (value: string) => {
-    setSearch(value); // 立即更新，保持输入框响应流畅
-    debouncedUpdateURL(value); // 防抖更新URL和服务器数据
-  };
+  const {
+    searchInput,
+    isSearching,
+    handleSearchChange,
+    cancelPendingCommit,
+    setSearchInput,
+  } = useListSearchController({
+    committedValue: committedSearch,
+    onCommit: search => {
+      const nextSearch = search ?? '';
+      setCommittedSearch(nextSearch);
+      syncUrl({
+        search,
+        sortBy,
+        sortOrder,
+      });
+    },
+  });
+
+  const syncPendingSearch = React.useCallback(() => {
+    cancelPendingCommit();
+    const nextSearch = normalizeSearch(searchInput);
+    setCommittedSearch(nextSearch ?? '');
+    return nextSearch;
+  }, [cancelPendingCommit, searchInput]);
 
   // 处理排序 - 更新URL参数触发服务器端重新获取数据
   const handleSortChange = (
@@ -139,36 +176,24 @@ export function CustomersPageClient({
     newSortOrder: 'asc' | 'desc'
   ) => {
     const nextSortBy = isSortField(newSortBy) ? newSortBy : 'createdAt';
+    const nextSearch = syncPendingSearch();
     setSortBy(nextSortBy);
     setSortOrder(newSortOrder);
-    startTransition(() => {
-      const params = new URLSearchParams();
-      if (search) {
-        params.set('search', search);
-      }
-      params.set('sortBy', nextSortBy);
-      params.set('sortOrder', newSortOrder);
-      router.push(`/customers?${params.toString()}`);
+    syncUrl({
+      search: nextSearch,
+      sortBy: nextSortBy,
+      sortOrder: newSortOrder,
     });
   };
 
   // 处理分页 - 更新URL参数触发服务器端重新获取数据
   const handlePageChange = (page: number) => {
-    startTransition(() => {
-      const params = new URLSearchParams();
-      if (search) {
-        params.set('search', search);
-      }
-      if (sortBy) {
-        params.set('sortBy', sortBy);
-      }
-      if (sortOrder) {
-        params.set('sortOrder', sortOrder);
-      }
-      if (page > 1) {
-        params.set('page', page.toString());
-      }
-      router.push(`/customers?${params.toString()}`);
+    const nextSearch = syncPendingSearch();
+    syncUrl({
+      search: nextSearch,
+      sortBy,
+      sortOrder,
+      page,
     });
   };
 
@@ -183,13 +208,12 @@ export function CustomersPageClient({
   };
 
   const handleClearFilters = () => {
-    debouncedUpdateURL.cancel();
-    setSearch('');
+    cancelPendingCommit();
+    setSearchInput('');
+    setCommittedSearch('');
     setSortBy('createdAt');
     setSortOrder('desc');
-    startTransition(() => {
-      router.push('/customers');
-    });
+    router.replace('/customers', { scroll: false });
   };
 
   return (
@@ -224,9 +248,10 @@ export function CustomersPageClient({
       }
       banner={
         <FilterBar
-          searchValue={search}
-          onSearchChange={handleSearch}
+          searchValue={searchInput}
+          onSearchChange={handleSearchChange}
           searchPlaceholder="搜索客户名称、电话或地址..."
+          isSearching={isSearching}
           filters={[
             {
               key: 'sortBy',

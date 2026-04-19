@@ -53,7 +53,6 @@ export function InventoryAdjustTable({
     const totalDisplay =
       packaging > 0
         ? formatPieceSummary(record.quantity, packaging, {
-            prefix: '总计',
             fallbackUnit: unitLabel,
           })
         : `${record.quantity}${unitLabel}`;
@@ -69,15 +68,15 @@ export function InventoryAdjustTable({
         : '0';
 
     return (
-      <div className="flex flex-col">
+      <div className="flex flex-col gap-1">
         <div className="flex items-center space-x-2">
-          <span className="font-medium">{totalDisplay}</span>
+          <span className="font-medium">库存总量 {totalDisplay}</span>
           <Badge variant={stockData.statusColor} className="text-xs">
             {stockData.statusLabel}
           </Badge>
         </div>
         <div className="text-muted-foreground text-sm">
-          可用: {availableDisplay}
+          可用数量 {availableDisplay}
         </div>
       </div>
     );
@@ -102,7 +101,7 @@ export function InventoryAdjustTable({
             <TableRow>
               <TableHead className="whitespace-nowrap">产品信息</TableHead>
               <TableHead className="whitespace-nowrap">批次号</TableHead>
-              <TableHead className="whitespace-nowrap">当前库存</TableHead>
+              <TableHead className="whitespace-nowrap">库存总量</TableHead>
               <TableHead className="whitespace-nowrap">最后更新</TableHead>
             </TableRow>
           </TableHeader>
@@ -121,7 +120,7 @@ export function InventoryAdjustTable({
                     )}
                     {record.product?.specification && (
                       <span className="text-muted-foreground text-sm">
-                        规格:{' '}
+                        规格：
                         {(() => {
                           const spec = record.product.specification;
                           // 如果是JSON字符串，尝试解析并提取关键信息
@@ -152,7 +151,7 @@ export function InventoryAdjustTable({
                     )}
                     {record.variant?.sku && (
                       <span className="text-muted-foreground text-sm">
-                        产品编码：{record.variant.sku}
+                        SKU：{record.variant.sku}
                       </span>
                     )}
                   </div>
@@ -217,11 +216,23 @@ export function InventoryAdjustTable({
                 )}
                 {record.variant?.sku && (
                   <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
-                    产品编码：{record.variant.sku}
+                    SKU：{record.variant.sku}
                   </div>
                 )}
-                <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
-                  批次：{record.batchNumber || '无批次'}
+                <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-[hsl(var(--color-text-secondary))]">
+                  <span>批次号：{record.batchNumber || '无批次'}</span>
+                  <span>
+                    包装：
+                    {(
+                      record.batchPiecesPerUnit ?? record.product?.piecesPerUnit ?? 0
+                    ) > 0
+                      ? `${
+                          record.batchPiecesPerUnit ??
+                          record.product?.piecesPerUnit ??
+                          0
+                        }片/件`
+                      : '-'}
+                  </span>
                 </div>
               </div>
               <div className="shrink-0 text-right text-xs text-[hsl(var(--color-text-secondary))]">
@@ -231,8 +242,8 @@ export function InventoryAdjustTable({
               </div>
             </div>
 
-            <div className="mt-2 text-xs text-[hsl(var(--color-text-secondary))]">
-              当前库存：{renderStockDisplay(record)}
+            <div className="mt-2 rounded-xl bg-[hsl(var(--color-bg-secondary))] p-3 text-xs text-[hsl(var(--color-text-secondary))]">
+              {renderStockDisplay(record)}
             </div>
           </div>
         ))}

@@ -17,6 +17,7 @@ export interface SupplierSelectorController {
   open: boolean;
   setOpen: (open: boolean) => void;
   searchValue: string;
+  isSearching: boolean;
   handleSearchValueChange: (value: string) => void;
   filteredSuppliers: Supplier[];
   selectedSupplier: Supplier | null;

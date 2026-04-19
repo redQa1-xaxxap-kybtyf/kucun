@@ -225,7 +225,9 @@ export function useCategoryActions({
       }
 
       const search = params.toString();
-      router.push(search ? `/categories?${search}` : '/categories');
+      router.replace(search ? `/categories?${search}` : '/categories', {
+        scroll: false,
+      });
     },
     [queryParams, router, setQueryParams]
   );

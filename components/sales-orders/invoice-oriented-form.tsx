@@ -454,25 +454,25 @@ export function SalesOrderForm({
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50 hover:bg-muted/50">
-                      <TableHead className="h-8 border-r text-xs font-medium">
+                      <TableHead className="border-r">
                         产品编码
                       </TableHead>
-                      <TableHead className="h-8 border-r text-xs font-medium">
+                      <TableHead className="border-r">
                         产品名称
                       </TableHead>
-                      <TableHead className="h-8 border-r text-xs font-medium">
+                      <TableHead className="border-r">
                         规格
                       </TableHead>
-                      <TableHead className="h-8 border-r text-xs font-medium">
+                      <TableHead className="border-r">
                         数量
                       </TableHead>
-                      <TableHead className="h-8 border-r text-xs font-medium">
+                      <TableHead className="border-r">
                         销售单价
                       </TableHead>
-                      <TableHead className="h-8 border-r text-xs font-medium">
+                      <TableHead className="border-r">
                         金额
                       </TableHead>
-                      <TableHead className="h-8 text-xs font-medium">
+                      <TableHead>
                         操作
                       </TableHead>
                     </TableRow>

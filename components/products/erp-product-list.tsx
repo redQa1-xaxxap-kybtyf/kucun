@@ -43,6 +43,8 @@ type ConfirmDeleteProduct = ReturnType<
 interface ERPProductListFiltersProps {
   categories: Category[];
   initialParams?: ProductQueryParams;
+  searchValue: string;
+  isSearching: boolean;
   handleSearch: ProductListState['handleSearch'];
   handleFilter: ProductListState['handleFilter'];
 }
@@ -50,14 +52,17 @@ interface ERPProductListFiltersProps {
 function ERPProductListFilters({
   categories,
   initialParams,
+  searchValue,
+  isSearching,
   handleSearch,
   handleFilter,
 }: ERPProductListFiltersProps) {
   return (
     <SearchFilterCard
-      searchValue={initialParams?.search || ''}
+      searchValue={searchValue}
       onSearchChange={handleSearch}
       searchPlaceholder="搜索产品编码、名称或规格..."
+      isSearching={isSearching}
       filters={[
         {
           key: 'status',
@@ -197,6 +202,8 @@ export function ERPProductList({
   const {
     deleteDialog,
     setDeleteDialog,
+    searchInput,
+    isSearching,
     handleSearch,
     handleFilter,
     handlePageChange,
@@ -251,6 +258,8 @@ export function ERPProductList({
       <ERPProductListFilters
         categories={categories}
         initialParams={initialParams}
+        searchValue={searchInput}
+        isSearching={isSearching}
         handleSearch={handleSearch}
         handleFilter={handleFilter}
       />

@@ -25,6 +25,9 @@ interface PayablesClientProps {
   onFilter?: (key: string, value: string | undefined) => void;
   onDateRangeChange?: (range: DateRangeValue) => void;
   onPageChange?: (page: number) => void;
+  searchValue?: string;
+  isSearching?: boolean;
+  onClearFilters?: () => void;
 }
 
 export function PayablesClient({
@@ -34,6 +37,9 @@ export function PayablesClient({
   onFilter: externalOnFilter,
   onDateRangeChange: externalOnDateRangeChange,
   onPageChange: externalOnPageChange,
+  searchValue,
+  isSearching = false,
+  onClearFilters,
 }: PayablesClientProps) {
   const router = useRouter();
 
@@ -52,7 +58,10 @@ export function PayablesClient({
     onFilter: externalOnFilter,
     onDateRangeChange: externalOnDateRangeChange,
     onPageChange: externalOnPageChange,
+    isSearchControlled: searchValue !== undefined,
   });
+
+  const effectiveSearchValue = searchValue ?? query.search ?? initialParams?.search ?? '';
 
   return (
     <div className="space-y-6">
@@ -63,9 +72,12 @@ export function PayablesClient({
         <CardContent className="pt-6">
           <PayablesFilterBar
             query={query}
+            searchValue={effectiveSearchValue}
+            isSearching={isSearching}
             onSearch={handleSearch}
             onFilterChange={handleFilterChange}
             onDateRangeChange={handleDateRangeChange}
+            onClearFilters={onClearFilters}
           />
 
           <div className="mt-6">

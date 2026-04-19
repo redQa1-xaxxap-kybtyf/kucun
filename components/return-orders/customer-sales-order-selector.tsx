@@ -17,6 +17,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 import {
   RETURN_ALLOWED_SALES_ORDER_STATUSES,
   SALES_ORDER_STATUS_LABELS,
@@ -94,29 +95,29 @@ export function CustomerSalesOrderSelector({
   isLoadingSalesOrders = false,
 }: CustomerSalesOrderSelectorProps) {
   const [open, setOpen] = React.useState(false);
-  const [searchValue, setSearchValue] = React.useState('');
-  const [debouncedSearch, setDebouncedSearch] = React.useState('');
+  const [committedSearch, setCommittedSearch] = React.useState('');
   const [internalCustomerId, setInternalCustomerId] = React.useState<string>(
     selectedCustomerId || ''
   );
-
-  // 防抖处理搜索词（300ms）
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchValue);
-      // 当选择了客户后，通知父组件搜索词变化
+  const {
+    searchInput,
+    handleSearchChange,
+    cancelPendingCommit,
+    clearSearch,
+  } = useListSearchController({
+    committedValue: committedSearch,
+    onCommit: search => {
+      const nextSearch = search ?? '';
+      setCommittedSearch(nextSearch);
       if (internalCustomerId && onSearchChange) {
-        onSearchChange(searchValue);
+        onSearchChange(nextSearch);
       }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchValue, internalCustomerId, onSearchChange]);
+    },
+  });
 
   // ✅ 修复：监听 selectedCustomerId 变化，同步更新 internalCustomerId
   React.useEffect(() => {
-    if (selectedCustomerId) {
-      setInternalCustomerId(selectedCustomerId);
-    }
+    setInternalCustomerId(selectedCustomerId || '');
   }, [selectedCustomerId]);
 
   // 当前选中的客户
@@ -132,17 +133,17 @@ export function CustomerSalesOrderSelector({
     if (internalCustomerId) {
       return [];
     }
-    if (!searchValue) {
+    if (!searchInput) {
       return customers;
     }
 
-    const search = searchValue.toLowerCase();
+    const search = searchInput.toLowerCase();
     return customers.filter(
       customer =>
         customer.name.toLowerCase().includes(search) ||
         (customer.phone && customer.phone.includes(search))
     );
-  }, [customers, searchValue, internalCustomerId]);
+  }, [customers, searchInput, internalCustomerId]);
 
   // 处理销售订单列表（已选择客户后）
   // 后端已经根据搜索词过滤，前端只需要：
@@ -165,7 +166,7 @@ export function CustomerSalesOrderSelector({
     );
 
     // 如果没有搜索词，直接返回
-    if (!debouncedSearch) {
+    if (!committedSearch) {
       return {
         filteredSalesOrders: returnableOrders,
         matchedProductsByOrder: new Map<string, MatchedInfo>(),
@@ -173,7 +174,7 @@ export function CustomerSalesOrderSelector({
     }
 
     // 生成匹配高亮信息（不过滤，因为后端已过滤）
-    const search = debouncedSearch.toLowerCase();
+    const search = committedSearch.toLowerCase();
     const matchedProducts = new Map<string, MatchedInfo>();
 
     returnableOrders.forEach(order => {
@@ -207,7 +208,7 @@ export function CustomerSalesOrderSelector({
       filteredSalesOrders: returnableOrders,
       matchedProductsByOrder: matchedProducts,
     };
-  }, [salesOrders, internalCustomerId, debouncedSearch]);
+  }, [salesOrders, internalCustomerId, committedSearch]);
 
   // 获取订单的产品摘要（前3个产品编码和批次号）
   const getProductSummary = (order: SalesOrder): string => {
@@ -242,22 +243,29 @@ export function CustomerSalesOrderSelector({
 
   // 处理客户选择
   const handleSelectCustomer = (customerId: string) => {
+    cancelPendingCommit();
     setInternalCustomerId(customerId);
     onCustomerChange?.(customerId);
-    setSearchValue('');
+    setCommittedSearch('');
+    clearSearch();
   };
 
   // 处理销售订单选择
   const handleSelectOrder = (order: SalesOrder) => {
     onValueChange(order.id, order);
     setOpen(false);
-    setSearchValue('');
+    cancelPendingCommit();
+    setCommittedSearch('');
+    clearSearch();
   };
 
   // 返回客户列表
   const handleBackToCustomers = () => {
+    cancelPendingCommit();
     setInternalCustomerId('');
-    setSearchValue('');
+    setCommittedSearch('');
+    clearSearch();
+    onSearchChange?.('');
   };
 
   // 格式化金额
@@ -310,8 +318,8 @@ export function CustomerSalesOrderSelector({
                 ? '搜索订单号、产品编码、批次号...'
                 : '搜索客户名称或手机号...'
             }
-            value={searchValue}
-            onValueChange={setSearchValue}
+            value={searchInput}
+            onValueChange={handleSearchChange}
           />
           <CommandList>
             {/* 显示客户列表 */}
@@ -383,7 +391,7 @@ export function CustomerSalesOrderSelector({
                   <div className="flex flex-col items-center gap-2 py-6">
                     <Package className="text-muted-foreground h-8 w-8" />
                     <p className="text-muted-foreground text-sm">
-                      {searchValue
+                      {searchInput
                         ? '未找到匹配的销售订单或产品'
                         : '该客户暂无可选的销售订单'}
                     </p>

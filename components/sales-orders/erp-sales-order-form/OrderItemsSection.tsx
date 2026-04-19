@@ -298,47 +298,47 @@ export function OrderItemsSection({
               >
                 <TableHeader>
                   <TableRow className="bg-muted/40">
-                    <TableHead className="min-w-[200px] border-r border-[hsl(var(--color-border-primary))] px-3 py-2 text-xs font-medium whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
+                    <TableHead className="min-w-[200px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
                       产品编码
                     </TableHead>
-                    <TableHead className="min-w-[140px] border-r border-[hsl(var(--color-border-primary))] px-3 py-2 text-xs font-medium whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
+                    <TableHead className="min-w-[140px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
                       产品名称
                     </TableHead>
-                    <TableHead className="min-w-[90px] border-r border-[hsl(var(--color-border-primary))] px-3 py-2 text-xs font-medium whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
+                    <TableHead className="min-w-[90px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
                       装箱数
                     </TableHead>
-                    <TableHead className="min-w-[180px] border-r border-[hsl(var(--color-border-primary))] px-3 py-2 text-xs font-medium whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
+                    <TableHead className="min-w-[180px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
                       批次号
                     </TableHead>
-                    <TableHead className="min-w-[150px] border-r border-[hsl(var(--color-border-primary))] px-3 py-2 text-xs font-medium whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
+                    <TableHead className="min-w-[150px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
                       规格
                     </TableHead>
-                    <TableHead className="min-w-[80px] border-r border-[hsl(var(--color-border-primary))] px-3 py-2 text-xs font-medium whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
+                    <TableHead className="min-w-[80px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
                       单位
                     </TableHead>
-                    <TableHead className="min-w-[100px] border-r border-[hsl(var(--color-border-primary))] px-3 py-2 text-xs font-medium whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
+                    <TableHead className="min-w-[100px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
                       数量
                     </TableHead>
-                    <TableHead className="min-w-[100px] border-r border-[hsl(var(--color-border-primary))] px-3 py-2 text-xs font-medium whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
+                    <TableHead className="min-w-[100px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
                       销售单价
                     </TableHead>
                     {orderType === 'TRANSFER' && (
                       <>
-                        <TableHead className="min-w-[100px] border-r border-[hsl(var(--color-border-primary))] px-3 py-2 text-xs font-medium whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
+                        <TableHead className="min-w-[100px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
                           成本单价
                         </TableHead>
-                        <TableHead className="min-w-[120px] border-r border-[hsl(var(--color-border-primary))] px-3 py-2 text-xs font-medium whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
+                        <TableHead className="min-w-[120px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
                           调货信息
                         </TableHead>
                       </>
                     )}
-                    <TableHead className="min-w-[100px] border-r border-[hsl(var(--color-border-primary))] px-3 py-2 text-xs font-medium whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
+                    <TableHead className="min-w-[100px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
                       金额
                     </TableHead>
-                    <TableHead className="min-w-[150px] border-r border-[hsl(var(--color-border-primary))] px-3 py-2 text-xs font-medium whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
+                    <TableHead className="min-w-[150px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
                       备注
                     </TableHead>
-                    <TableHead className="min-w-[80px] px-3 py-2 text-center text-xs font-medium whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
+                    <TableHead className="min-w-[80px] px-3 text-center text-[hsl(var(--color-text-secondary))]">
                       操作
                     </TableHead>
                   </TableRow>

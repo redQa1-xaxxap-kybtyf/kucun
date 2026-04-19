@@ -9,6 +9,7 @@ import * as React from 'react';
 import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
 import { TableSkeleton } from '@/components/ui/skeleton-compositions';
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 import type {
   CountStatus,
   CountType,
@@ -45,6 +46,7 @@ const CountList = dynamic(
   }
 );
 
+// eslint-disable-next-line max-lines-per-function -- Search input, filters, and URL sync stay together to keep the page behavior predictable.
 export function CountsPageClient({
   initialParams,
   hasManagePermission,
@@ -106,26 +108,49 @@ export function CountsPageClient({
       }
 
       const queryString = params.toString();
-      router.push(`/inventory/counts${queryString ? `?${queryString}` : ''}`, {
-        scroll: false,
-      });
+      router.replace(
+        `/inventory/counts${queryString ? `?${queryString}` : ''}`,
+        {
+          scroll: false,
+        }
+      );
     },
     [router]
   );
 
+  const applyFilters = React.useCallback(
+    (
+      newFilters: Partial<InventoryCountQueryParams>,
+      options?: { resetPage?: boolean }
+    ) => {
+      setFilters(prev => {
+        const nextFilters = {
+          ...prev,
+          ...newFilters,
+          page: options?.resetPage === false ? prev.page : 1,
+        };
+
+        updateURL(nextFilters);
+        return nextFilters;
+      });
+    },
+    [updateURL]
+  );
+
+  const { searchInput, isSearching, handleSearchChange } =
+    useListSearchController({
+      committedValue: filters.search,
+      onCommit: search => {
+        applyFilters({ search }, { resetPage: true });
+      },
+    });
+
   // 处理筛选变化
   const handleFilterChange = React.useCallback(
     (newFilters: Partial<InventoryCountQueryParams>) => {
-      const updatedFilters = {
-        ...filters,
-        ...newFilters,
-        page: 1, // 重置到第一页
-      };
-
-      setFilters(updatedFilters);
-      updateURL(updatedFilters);
+      applyFilters(newFilters, { resetPage: true });
     },
-    [filters, updateURL]
+    [applyFilters]
   );
 
   // 重置筛选条件
@@ -148,7 +173,7 @@ export function CountsPageClient({
         {/* 页面标题 */}
         <PageHeader
           title="盘点单"
-          description="管理盘点单，查看录入进度"
+          description="管理盘点单，查看盘点进度"
           icon={<ClipboardCheck className="h-6 w-6 text-white" />}
           iconBgColor="hsl(var(--color-info))"
           actions={
@@ -170,6 +195,9 @@ export function CountsPageClient({
         {/* 筛选条件 */}
         <CountRecordsFilters
           filters={filters}
+          searchValue={searchInput}
+          isSearching={isSearching}
+          onSearchChange={handleSearchChange}
           onFiltersChange={handleFilterChange}
           onReset={handleResetFilters}
         />

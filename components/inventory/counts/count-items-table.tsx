@@ -80,7 +80,7 @@ export function CountItemsTable({
 
   if (items.length === 0) {
     return (
-      <div className="text-muted-foreground py-8 text-center">暂无盘点商品</div>
+      <div className="text-muted-foreground py-8 text-center">暂无盘点明细</div>
     );
   }
 
@@ -91,11 +91,11 @@ export function CountItemsTable({
         <Table className="min-w-[1120px] [&_th]:whitespace-nowrap">
           <TableHeader>
             <TableRow>
-              <TableHead>商品编号</TableHead>
-              <TableHead>商品名称</TableHead>
-              <TableHead>规格型号</TableHead>
-              <TableHead className="text-right">每件片数</TableHead>
-              <TableHead>批次</TableHead>
+              <TableHead>产品编码</TableHead>
+              <TableHead>产品名称</TableHead>
+              <TableHead>规格</TableHead>
+              <TableHead className="text-right">包装信息</TableHead>
+              <TableHead>批次号</TableHead>
               <TableHead className="text-right">账面数量</TableHead>
               <TableHead className="text-right">实盘数量</TableHead>
               <TableHead className="text-right">差异数量</TableHead>
@@ -305,8 +305,12 @@ export function CountItemsTable({
                   <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
                     {getInventoryCountItemSpecification(item)}
                   </div>
-                  <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
-                    批次：{item.batchNumber || '-'}
+                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-[hsl(var(--color-text-secondary))]">
+                    <span>批次号：{item.batchNumber || '-'}</span>
+                    <span>
+                      包装：
+                      {ppu > 0 ? `${ppu}片/件` : '-'}
+                    </span>
                   </div>
                 </div>
                 <div className="shrink-0 text-right">
@@ -338,23 +342,25 @@ export function CountItemsTable({
                 </div>
               </div>
 
-              <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-[hsl(var(--color-text-secondary))]">
-                <div>
-                  <div>账面数量</div>
-                  <div className="mt-0.5 font-medium text-[hsl(var(--color-text-primary))]">
-                    {systemDisplay}
+              <div className="mt-3 rounded-xl bg-[hsl(var(--color-bg-secondary))] p-3">
+                <div className="grid grid-cols-3 gap-2 text-xs text-[hsl(var(--color-text-secondary))]">
+                  <div>
+                    <div>账面数量</div>
+                    <div className="mt-0.5 font-medium text-[hsl(var(--color-text-primary))]">
+                      {systemDisplay}
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <div>实盘数量</div>
-                  <div className="mt-0.5 font-medium text-[hsl(var(--color-text-primary))]">
-                    {actualDisplay}
+                  <div>
+                    <div>实盘数量</div>
+                    <div className="mt-0.5 font-medium text-[hsl(var(--color-text-primary))]">
+                      {actualDisplay}
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <div>差异数量</div>
-                  <div className={`mt-0.5 font-medium ${diffClass}`}>
-                    {diffText}
+                  <div>
+                    <div>差异数量</div>
+                    <div className={`mt-0.5 font-medium ${diffClass}`}>
+                      {diffText}
+                    </div>
                   </div>
                 </div>
               </div>

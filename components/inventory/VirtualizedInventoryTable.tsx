@@ -49,21 +49,21 @@ const TableHeaderComponent = React.memo<{ hasFinancePermission: boolean }>(
   ({ hasFinancePermission }) => (
     <TableHeader className="sticky top-0 z-20 bg-[hsl(var(--color-bg-card))] shadow-sm">
       <TableRow>
-        <TableHead className="w-12 whitespace-nowrap">缩略图</TableHead>
+        <TableHead className="w-12 whitespace-nowrap">预览图</TableHead>
         <TableHead className="whitespace-nowrap">产品编码</TableHead>
         <TableHead className="whitespace-nowrap">产品名称</TableHead>
         <TableHead className="whitespace-nowrap">规格</TableHead>
         <TableHead className="whitespace-nowrap">包装信息</TableHead>
         <TableHead className="whitespace-nowrap">批次号</TableHead>
-        <TableHead className="text-right whitespace-nowrap">库存数量</TableHead>
-        <TableHead className="text-right whitespace-nowrap">预留数量</TableHead>
-        <TableHead className="text-right whitespace-nowrap">可用数量</TableHead>
+        <TableHead className="text-right whitespace-nowrap">库存总量</TableHead>
+        <TableHead className="text-right whitespace-nowrap">预留</TableHead>
+        <TableHead className="text-right whitespace-nowrap">可用</TableHead>
         {hasFinancePermission && (
           <TableHead className="text-right whitespace-nowrap">
-            成本（单价/总价）
+            单位成本/货值评估
           </TableHead>
         )}
-        <TableHead className="whitespace-nowrap">库存状态</TableHead>
+        <TableHead className="whitespace-nowrap">健康度</TableHead>
         <TableHead className="whitespace-nowrap">最后更新</TableHead>
         <TableHead className="w-20 text-right whitespace-nowrap">
           操作

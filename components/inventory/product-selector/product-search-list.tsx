@@ -16,6 +16,7 @@ import type { ProductOption } from '@/lib/types/inbound';
 
 interface ProductSearchListProps {
   products: ProductOption[];
+  searchValue: string;
   selectedProduct: ProductOption | null;
   isLoading: boolean;
   error: Error | null;
@@ -41,6 +42,7 @@ function ErrorState({ error }: { error: Error }) {
 
 export function ProductSearchList({
   products,
+  searchValue,
   selectedProduct,
   isLoading,
   error,
@@ -52,8 +54,9 @@ export function ProductSearchList({
   }
 
   return (
-    <Command>
+    <Command shouldFilter={false}>
       <CommandInput
+        value={searchValue}
         placeholder="搜索产品名称或编码..."
         onValueChange={onSearchChange}
       />

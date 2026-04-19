@@ -97,9 +97,7 @@ export function CategoryQuickCreateDialog({
     }
 
     const fullPath = parent.fullPath ?? parent.name;
-    return parent.code
-      ? `父级分类：${fullPath} · 编码 ${parent.code}`
-      : `父级分类：${fullPath}`;
+    return `父级分类：${fullPath}`;
   }, [parent]);
 
   const handleSubmit = React.useCallback(

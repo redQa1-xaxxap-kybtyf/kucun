@@ -81,22 +81,22 @@ export function FeeItemsSection({ feeItems }: FeeItemsSectionProps) {
           <Table>
             <TableHeader className="bg-[hsl(var(--color-bg-table-header))]">
               <TableRow className="border-b border-[hsl(var(--color-border-primary))]">
-                <TableHead className="w-[50px] py-2 text-xs font-semibold">
+                <TableHead className="w-[50px]">
                   序号
                 </TableHead>
-                <TableHead className="min-w-[120px] py-2 text-xs font-semibold">
+                <TableHead className="min-w-[120px]">
                   费用类型
                 </TableHead>
-                <TableHead className="min-w-[180px] py-2 text-xs font-semibold">
+                <TableHead className="min-w-[180px]">
                   费用名称
                 </TableHead>
-                <TableHead className="w-[140px] py-2 text-right text-xs font-semibold">
+                <TableHead className="w-[140px] text-right">
                   费用金额
                 </TableHead>
-                <TableHead className="w-[120px] py-2 text-xs font-semibold">
+                <TableHead className="w-[120px]">
                   承担方
                 </TableHead>
-                <TableHead className="min-w-[200px] py-2 text-xs font-semibold">
+                <TableHead className="min-w-[200px]">
                   备注
                 </TableHead>
               </TableRow>
@@ -107,19 +107,19 @@ export function FeeItemsSection({ feeItems }: FeeItemsSectionProps) {
                   key={fee.id}
                   className="border-b border-[hsl(var(--color-border-primary))] hover:bg-[hsl(var(--color-bg-hover))]"
                 >
-                  <TableCell className="py-2 text-center text-sm text-[hsl(var(--color-text-secondary))]">
+                  <TableCell className="py-3 text-center text-sm text-[hsl(var(--color-text-secondary))]">
                     {index + 1}
                   </TableCell>
-                  <TableCell className="py-2 text-sm text-[hsl(var(--color-text-primary))]">
+                  <TableCell className="py-3 text-sm text-[hsl(var(--color-text-primary))]">
                     {FACTORY_SHIPMENT_FEE_TYPE_LABELS[fee.feeType]}
                   </TableCell>
-                  <TableCell className="py-2 text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                  <TableCell className="py-3 text-sm font-medium text-[hsl(var(--color-text-primary))]">
                     {fee.feeName}
                   </TableCell>
-                  <TableCell className="py-2 text-right text-sm font-semibold text-[hsl(var(--color-text-primary))]">
+                  <TableCell className="py-3 text-right text-sm font-semibold text-[hsl(var(--color-text-primary))]">
                     {formatAmount(fee.feeAmount)}
                   </TableCell>
-                  <TableCell className="py-2">
+                  <TableCell className="py-3">
                     <Badge
                       variant={
                         fee.paidBy === 'customer' ? 'default' : 'secondary'
@@ -129,7 +129,7 @@ export function FeeItemsSection({ feeItems }: FeeItemsSectionProps) {
                       {fee.paidBy === 'customer' ? '客户承担' : '公司承担'}
                     </Badge>
                   </TableCell>
-                  <TableCell className="py-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                  <TableCell className="py-3 text-sm text-[hsl(var(--color-text-secondary))]">
                     {fee.remarks || '-'}
                   </TableCell>
                 </TableRow>

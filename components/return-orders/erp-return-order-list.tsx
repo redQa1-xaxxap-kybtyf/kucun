@@ -47,6 +47,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 import {
   getReturnOrders,
   useUpdateReturnOrderStatus,
@@ -80,6 +81,11 @@ interface ERPReturnOrderListProps {
   onEdit?: (returnOrder: ReturnOrder) => void;
   onDelete?: (returnOrder: ReturnOrder) => void;
   onClearFilters?: () => void;
+}
+
+function normalizeSearch(value?: string) {
+  const trimmed = value?.trim() ?? '';
+  return trimmed ? trimmed : undefined;
 }
 
 /**
@@ -149,15 +155,47 @@ export function ERPReturnOrderList({
     includeVoided: initialParams?.includeVoided,
   };
 
-  const [searchInput, setSearchInput] = React.useState(
-    queryParams.search ?? ''
-  );
-  const searchTimerRef = React.useRef<NodeJS.Timeout | null>(null);
-  const [isSearching, setIsSearching] = React.useState(false);
+  const updateQueryStringParams = React.useCallback(
+    (updates: Partial<ReturnOrderQueryParams>) => {
+      if (typeof window === 'undefined') {
+        return;
+      }
 
-  React.useEffect(() => {
-    setSearchInput(queryParams.search ?? '');
-  }, [queryParams.search]);
+      const params = new URLSearchParams(window.location.search);
+      Object.entries(updates).forEach(([key, value]) => {
+        if (value === undefined || value === null || value === '') {
+          params.delete(key);
+        } else {
+          params.set(key, String(value));
+        }
+      });
+
+      const query = params.toString();
+      router.replace(query ? `?${query}` : '?', { scroll: false });
+    },
+    [router]
+  );
+
+  const {
+    searchInput,
+    isSearching,
+    handleSearchChange,
+    cancelPendingCommit,
+    setSearchInput,
+  } = useListSearchController({
+    committedValue: queryParams.search,
+    onCommit: search => {
+      if (onSearch) {
+        onSearch(search ?? '');
+        return;
+      }
+
+      updateQueryStringParams({
+        search,
+        page: 1,
+      });
+    },
+  });
 
   // ✅ 获取退货订单列表数据 - 从 HydrationBoundary 自动获取服务端预取的数据
   const {
@@ -180,7 +218,6 @@ export function ERPReturnOrderList({
   // ✅ 直接使用 queryData，不再使用 mock 数据回退
   const displayData = queryData;
 
-  const searchValue = searchInput;
   const statusFilter: ReturnOrderUiStatus | 'all' =
     queryParams.uiStatus ?? 'all';
   const typeFilter: ReturnOrderType | 'all' = queryParams.type ?? 'all';
@@ -209,22 +246,6 @@ export function ERPReturnOrderList({
       }
 
       return null;
-    },
-    []
-  );
-
-  React.useEffect(() => {
-    if (!isSearching) return;
-    if (!isLoading && !isFetching) {
-      setIsSearching(false);
-    }
-  }, [isSearching, isLoading, isFetching]);
-
-  React.useEffect(
-    () => () => {
-      if (searchTimerRef.current) {
-        clearTimeout(searchTimerRef.current);
-      }
     },
     []
   );
@@ -286,172 +307,180 @@ export function ERPReturnOrderList({
     }
   }, [orderToCancel, cancelMutation]);
 
-  const updateQueryStringParams = React.useCallback(
-    (updates: Partial<ReturnOrderQueryParams>) => {
-      if (typeof window === 'undefined') {
+  const getPendingSearch = React.useCallback(() => {
+    cancelPendingCommit();
+    return normalizeSearch(searchInput);
+  }, [cancelPendingCommit, searchInput]);
+
+  const syncExternalSearch = React.useCallback(
+    (search?: string) => {
+      if (!onSearch || search === normalizeSearch(queryParams.search)) {
         return;
       }
 
-      const params = new URLSearchParams(window.location.search);
-      Object.entries(updates).forEach(([key, value]) => {
-        if (value === undefined || value === null || value === '') {
-          params.delete(key);
-        } else {
-          params.set(key, String(value));
-        }
-      });
-
-      const query = params.toString();
-      router.push(query ? `?${query}` : '?', { scroll: false });
+      onSearch(search ?? '');
     },
-    [router]
+    [onSearch, queryParams.search]
   );
 
   // 处理搜索
   const handleSearch = React.useCallback(
     (value: string) => {
-      const trimmed = value.trimStart();
-      setSearchInput(trimmed);
-
-      if (searchTimerRef.current) {
-        clearTimeout(searchTimerRef.current);
-        searchTimerRef.current = null;
-      }
-
-      if (onSearch) {
-        onSearch(trimmed);
-        return;
-      }
-
-      if (trimmed === '') {
-        setIsSearching(false);
-        updateQueryStringParams({
-          search: undefined,
-          page: 1,
-        });
-        return;
-      }
-
-      if (trimmed === (queryParams.search ?? '')) {
-        return;
-      }
-
-      setIsSearching(true);
-
-      searchTimerRef.current = setTimeout(() => {
-        updateQueryStringParams({
-          search: trimmed,
-          page: 1,
-        });
-        searchTimerRef.current = null;
-      }, 300); // ✅ 与库存搜索保持一致的防抖延迟
+      handleSearchChange(value);
     },
-    [onSearch, queryParams.search, updateQueryStringParams]
+    [handleSearchChange]
   );
 
   const handleStatusChange = React.useCallback(
     (status: ReturnOrderUiStatus | 'all') => {
+      const nextSearch = getPendingSearch();
       if (onFilter) {
+        syncExternalSearch(nextSearch);
         onFilter('uiStatus', status === 'all' ? undefined : status);
       } else {
         updateQueryStringParams({
+          search: nextSearch,
           uiStatus: status === 'all' ? undefined : status,
           page: 1,
         });
       }
     },
-    [onFilter, updateQueryStringParams]
+    [getPendingSearch, onFilter, syncExternalSearch, updateQueryStringParams]
   );
 
   const handleTypeChange = React.useCallback(
     (typeValue: ReturnOrderType | 'all') => {
+      const nextSearch = getPendingSearch();
       if (onFilter) {
+        syncExternalSearch(nextSearch);
         onFilter('type', typeValue === 'all' ? undefined : typeValue);
       } else {
         updateQueryStringParams({
+          search: nextSearch,
           type: typeValue === 'all' ? undefined : typeValue,
           page: 1,
         });
       }
     },
-    [onFilter, updateQueryStringParams]
+    [getPendingSearch, onFilter, syncExternalSearch, updateQueryStringParams]
   );
 
   const handleProcessTypeChange = React.useCallback(
     (processTypeValue: ReturnProcessType | 'all') => {
+      const nextSearch = getPendingSearch();
       if (onFilter) {
+        syncExternalSearch(nextSearch);
         onFilter(
           'processType',
           processTypeValue === 'all' ? undefined : processTypeValue
         );
       } else {
         updateQueryStringParams({
+          search: nextSearch,
           processType:
             processTypeValue === 'all' ? undefined : processTypeValue,
           page: 1,
         });
       }
     },
-    [onFilter, updateQueryStringParams]
+    [getPendingSearch, onFilter, syncExternalSearch, updateQueryStringParams]
   );
 
   const handleIncludeTestToggle = React.useCallback(() => {
+    const nextSearch = getPendingSearch();
     const nextValue = !(queryParams.includeTest === true);
     if (onFilter) {
+      syncExternalSearch(nextSearch);
       onFilter('includeTest', nextValue ? 'true' : undefined);
     } else {
       updateQueryStringParams({
+        search: nextSearch,
         includeTest: nextValue ? true : undefined,
         page: 1,
       });
     }
-  }, [onFilter, queryParams.includeTest, updateQueryStringParams]);
+  }, [
+    getPendingSearch,
+    onFilter,
+    queryParams.includeTest,
+    syncExternalSearch,
+    updateQueryStringParams,
+  ]);
 
   const handleIncludeVoidedToggle = React.useCallback(() => {
+    const nextSearch = getPendingSearch();
     const nextValue = !(queryParams.includeVoided === true);
     if (onFilter) {
+      syncExternalSearch(nextSearch);
       onFilter('includeVoided', nextValue ? 'true' : undefined);
     } else {
       updateQueryStringParams({
+        search: nextSearch,
         includeVoided: nextValue ? true : undefined,
         page: 1,
       });
     }
-  }, [onFilter, queryParams.includeVoided, updateQueryStringParams]);
+  }, [
+    getPendingSearch,
+    onFilter,
+    queryParams.includeVoided,
+    syncExternalSearch,
+    updateQueryStringParams,
+  ]);
 
   const handleDateRangeChange = React.useCallback(
     (range: DateRangeValue) => {
+      const nextSearch = getPendingSearch();
       if (onDateRangeChange) {
+        syncExternalSearch(nextSearch);
         onDateRangeChange(range);
       } else {
         updateQueryStringParams({
+          search: nextSearch,
           startDate: range.startDate || undefined,
           endDate: range.endDate || undefined,
           page: 1,
         });
       }
     },
-    [onDateRangeChange, updateQueryStringParams]
+    [
+      getPendingSearch,
+      onDateRangeChange,
+      syncExternalSearch,
+      updateQueryStringParams,
+    ]
   );
 
   const handleClearFilters = React.useCallback(() => {
+    cancelPendingCommit();
+    setSearchInput('');
+
     if (onClearFilters) {
       onClearFilters();
       return;
     }
 
+    onSearch?.('');
+
     if (onFilter) {
-      onFilter('status', undefined);
+      onFilter('uiStatus', undefined);
       onFilter('type', undefined);
       onFilter('processType', undefined);
       onFilter('includeTest', undefined);
       onFilter('includeVoided', undefined);
-    } else {
-        updateQueryStringParams({
-          uiStatus: undefined,
-          status: undefined,
-          type: undefined,
-          processType: undefined,
+    }
+
+    if (onDateRangeChange) {
+      onDateRangeChange({});
+    }
+
+    if (!onFilter && !onDateRangeChange) {
+      updateQueryStringParams({
+        search: undefined,
+        uiStatus: undefined,
+        status: undefined,
+        type: undefined,
+        processType: undefined,
         startDate: undefined,
         endDate: undefined,
         includeTest: undefined,
@@ -459,10 +488,33 @@ export function ERPReturnOrderList({
         page: 1,
       });
     }
-    if (onDateRangeChange) {
-      onDateRangeChange({});
-    }
-  }, [onClearFilters, onFilter, onDateRangeChange, updateQueryStringParams]);
+  }, [
+    cancelPendingCommit,
+    onClearFilters,
+    onDateRangeChange,
+    onFilter,
+    onSearch,
+    setSearchInput,
+    updateQueryStringParams,
+  ]);
+
+  const handlePageChange = React.useCallback(
+    (page: number) => {
+      const nextSearch = getPendingSearch();
+
+      if (onPageChange) {
+        syncExternalSearch(nextSearch);
+        onPageChange(page);
+        return;
+      }
+
+      updateQueryStringParams({
+        search: nextSearch,
+        page: page > 1 ? page : undefined,
+      });
+    },
+    [getPendingSearch, onPageChange, syncExternalSearch, updateQueryStringParams]
+  );
 
   // 处理新建
   const handleCreateNew = () => {
@@ -530,7 +582,7 @@ export function ERPReturnOrderList({
     <div className="space-y-4">
       {/* 搜索和筛选 */}
       <ReturnOrderSearchToolbar
-        searchValue={searchValue}
+        searchValue={searchInput}
         statusFilter={statusFilter}
         typeFilter={typeFilter}
         processTypeFilter={processTypeFilter}
@@ -764,7 +816,7 @@ export function ERPReturnOrderList({
             <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
               <Pagination
                 pagination={displayData.data.pagination}
-                onPageChange={onPageChange || (() => {})}
+                onPageChange={handlePageChange}
                 showRange
                 showTotal
               />

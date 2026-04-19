@@ -20,23 +20,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 import { getProduct, getProducts, productQueryKeys } from '@/lib/api/products';
 import type { Product } from '@/lib/types/product';
 import { cn } from '@/lib/utils';
 
 const SEARCH_DEBOUNCE_MS = 250;
 const MAX_DISPLAY_PRODUCTS = 10; // 最多显示10个产品
-
-function useDebouncedValue<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = React.useState(value);
-
-  React.useEffect(() => {
-    const timer = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(timer);
-  }, [value, delay]);
-
-  return debounced;
-}
 
 type ProductStatusFilter = 'active' | 'inactive' | 'all';
 
@@ -182,18 +172,31 @@ export function ProductSelector({
   onProductChange,
 }: ProductSelectorProps) {
   const [open, setOpen] = React.useState(false);
-  const [searchValue, setSearchValue] = React.useState('');
+  const [committedSearch, setCommittedSearch] = React.useState('');
   const [showQuickCreate, setShowQuickCreate] = React.useState(false);
-  const debouncedSearch = useDebouncedValue(searchValue, SEARCH_DEBOUNCE_MS);
+  const {
+    searchInput,
+    isSearching: isSearchPending,
+    handleSearchChange,
+    cancelPendingCommit,
+    clearSearch,
+    setSearchInput,
+  } = useListSearchController({
+    committedValue: committedSearch,
+    onCommit: nextValue => {
+      setCommittedSearch(nextValue ?? '');
+    },
+    debounceMs: SEARCH_DEBOUNCE_MS,
+  });
 
   const queryInput = React.useMemo(
     () =>
       buildProductSelectorQuery(
-        debouncedSearch,
+        committedSearch,
         filterStatus,
         MAX_DISPLAY_PRODUCTS
       ),
-    [debouncedSearch, filterStatus]
+    [committedSearch, filterStatus]
   );
 
   const { data: productsResponse, isFetching } = useQuery({
@@ -230,28 +233,31 @@ export function ProductSelector({
     (product: Product) => {
       onValueChange(product.id);
       onProductChange?.(product);
-      setSearchValue('');
+      cancelPendingCommit();
+      setCommittedSearch('');
+      clearSearch();
       setOpen(false);
     },
-    [onProductChange, onValueChange]
+    [cancelPendingCommit, clearSearch, onProductChange, onValueChange]
   );
-
-  const handleSearchChange = React.useCallback((search: string) => {
-    setSearchValue(search);
-  }, []);
 
   const handleOpenChange = React.useCallback(
     (nextOpen: boolean) => {
       setOpen(nextOpen);
       if (nextOpen && selectedProduct) {
         // 打开时，如果有已选产品，自动填充搜索框以便用户快速定位（优先使用编码）
-        setSearchValue(selectedProduct.code || selectedProduct.name || '');
+        const nextSearchValue = selectedProduct.code || selectedProduct.name || '';
+        cancelPendingCommit();
+        setCommittedSearch(nextSearchValue.trim());
+        setSearchInput(nextSearchValue);
       } else if (!nextOpen) {
         // 关闭时清空搜索框
-        setSearchValue('');
+        cancelPendingCommit();
+        setCommittedSearch('');
+        setSearchInput('');
       }
     },
-    [selectedProduct]
+    [cancelPendingCommit, selectedProduct, setSearchInput]
   );
 
   const handleQuickCreateSuccess = React.useCallback(
@@ -261,9 +267,11 @@ export function ProductSelector({
       onProductChange?.(product);
       // 关闭选择器
       setOpen(false);
-      setSearchValue('');
+      cancelPendingCommit();
+      setCommittedSearch('');
+      clearSearch();
     },
-    [onProductChange, onValueChange]
+    [cancelPendingCommit, clearSearch, onProductChange, onValueChange]
   );
 
   const handleOpenQuickCreate = React.useCallback(() => {
@@ -307,12 +315,12 @@ export function ProductSelector({
             <Command shouldFilter={false}>
               <CommandInput
                 placeholder="搜索产品..."
-                value={searchValue}
+                value={searchInput}
                 onValueChange={handleSearchChange}
               />
               <CommandList>
                 <CommandEmpty>
-                  {isFetching ? (
+                  {isFetching || isSearchPending ? (
                     '加载中...'
                   ) : (
                     <div className="flex flex-col items-center gap-2 py-6">
@@ -368,7 +376,7 @@ export function ProductSelector({
         open={showQuickCreate}
         onOpenChange={setShowQuickCreate}
         onSuccess={handleQuickCreateSuccess}
-        defaultCode={searchValue}
+        defaultCode={searchInput}
       />
     </>
   );
@@ -400,12 +408,25 @@ export function MultiProductSelector({
   maxItems,
 }: MultiProductSelectorProps) {
   const [open, setOpen] = React.useState(false);
-  const [searchValue, setSearchValue] = React.useState('');
-  const debouncedSearch = useDebouncedValue(searchValue, SEARCH_DEBOUNCE_MS);
+  const [committedSearch, setCommittedSearch] = React.useState('');
+  const {
+    searchInput,
+    isSearching: isSearchPending,
+    handleSearchChange,
+    cancelPendingCommit,
+    clearSearch,
+    setSearchInput,
+  } = useListSearchController({
+    committedValue: committedSearch,
+    onCommit: nextValue => {
+      setCommittedSearch(nextValue ?? '');
+    },
+    debounceMs: SEARCH_DEBOUNCE_MS,
+  });
 
   const queryInput = React.useMemo(
-    () => buildProductSelectorQuery(debouncedSearch, filterStatus, 50),
-    [debouncedSearch, filterStatus]
+    () => buildProductSelectorQuery(committedSearch, filterStatus, 50),
+    [committedSearch, filterStatus]
   );
 
   const { data: productsResponse, isFetching } = useQuery({
@@ -472,9 +493,11 @@ export function MultiProductSelector({
       }
 
       onValueChange(nextValue);
-      setSearchValue('');
+      cancelPendingCommit();
+      setCommittedSearch('');
+      clearSearch();
     },
-    [maxItems, onValueChange, value]
+    [cancelPendingCommit, clearSearch, maxItems, onValueChange, value]
   );
 
   const handleRemove = React.useCallback(
@@ -509,7 +532,17 @@ export function MultiProductSelector({
         </div>
       )}
 
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover
+        open={open}
+        onOpenChange={nextOpen => {
+          setOpen(nextOpen);
+          if (!nextOpen) {
+            cancelPendingCommit();
+            setCommittedSearch('');
+            setSearchInput('');
+          }
+        }}
+      >
         <PopoverTrigger asChild>
           <Button
             variant="outline"
@@ -526,12 +559,12 @@ export function MultiProductSelector({
           <Command shouldFilter={false}>
             <CommandInput
               placeholder="搜索产品..."
-              value={searchValue}
-              onValueChange={setSearchValue}
+              value={searchInput}
+              onValueChange={handleSearchChange}
             />
             <CommandList>
               <CommandEmpty>
-                {isFetching ? '加载中...' : '未找到产品'}
+                {isFetching || isSearchPending ? '加载中...' : '未找到产品'}
               </CommandEmpty>
               <CommandGroup>
                 {products.map(product => (

@@ -36,6 +36,7 @@ export interface UsePayablesControllerOptions {
   onFilter?: (key: string, value: string | undefined) => void;
   onDateRangeChange?: (range: DateRangeValue) => void;
   onPageChange?: (page: number) => void;
+  isSearchControlled?: boolean;
 }
 
 function useDerivedPayablesQuery(
@@ -107,22 +108,25 @@ function useDerivedPayablesQuery(
 
 function useHandleSearch(
   onSearch: UsePayablesControllerOptions['onSearch'],
-  setQuery: React.Dispatch<React.SetStateAction<PayableRecordQuery>>
+  setQuery: React.Dispatch<React.SetStateAction<PayableRecordQuery>>,
+  isSearchControlled: boolean
 ) {
   return React.useCallback(
     (search: string) => {
       const trimmed = search.trim();
-      setQuery(prev => {
-        const next: PayableRecordQuery = {
-          ...prev,
-          search: trimmed ? trimmed : undefined,
-          page: 1,
-        };
-        return areQueriesEqual(prev, next) ? prev : next;
-      });
+      if (!isSearchControlled) {
+        setQuery(prev => {
+          const next: PayableRecordQuery = {
+            ...prev,
+            search: trimmed ? trimmed : undefined,
+            page: 1,
+          };
+          return areQueriesEqual(prev, next) ? prev : next;
+        });
+      }
       onSearch?.(search);
     },
-    [onSearch, setQuery]
+    [isSearchControlled, onSearch, setQuery]
   );
 }
 
@@ -229,8 +233,14 @@ function useHandlePageChange(
 }
 
 export function usePayablesController(options: UsePayablesControllerOptions) {
-  const { initialParams, onSearch, onFilter, onDateRangeChange, onPageChange } =
-    options;
+  const {
+    initialParams,
+    onSearch,
+    onFilter,
+    onDateRangeChange,
+    onPageChange,
+    isSearchControlled = false,
+  } = options;
   const searchParams = useSearchParams();
 
   const derivedQuery = useDerivedPayablesQuery(initialParams, searchParams);
@@ -248,7 +258,7 @@ export function usePayablesController(options: UsePayablesControllerOptions) {
   const pagination = payablesData?.pagination;
 
   // Handlers
-  const handleSearch = useHandleSearch(onSearch, setQuery);
+  const handleSearch = useHandleSearch(onSearch, setQuery, isSearchControlled);
 
   const handleFilterChange = useHandleFilterChange(onFilter, setQuery);
 

@@ -116,7 +116,7 @@ function CategoryFormGuidance() {
           <ul className="mt-1 ml-4 list-disc space-y-1 text-xs">
             <li>支持最多3级分类（例如：抛光砖 → 系列A → 款式1）</li>
             <li>不同父分类下可以创建相同名称的子分类</li>
-            <li>编码会自动生成，并可在列表或编辑页直接查看</li>
+            <li>保存后可在列表查看完整分类信息</li>
           </ul>
         </div>
       </div>
@@ -213,7 +213,7 @@ function CategoryCurrentInfoPanel({
   }
 
   return (
-    <div className="grid gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-2">
+    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
       <div className="space-y-1">
         <div className="text-xs font-medium tracking-wide text-slate-500">
           当前分类路径
@@ -222,14 +222,14 @@ function CategoryCurrentInfoPanel({
           {currentCategoryInfo.fullPath ?? '-'}
         </div>
       </div>
-      <div className="space-y-1">
-        <div className="text-xs font-medium tracking-wide text-slate-500">
-          当前分类编码
+      {currentCategoryInfo.code ? (
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+          <span>分类编码</span>
+          <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2 py-0.5 font-medium text-slate-600">
+            {currentCategoryInfo.code}
+          </span>
         </div>
-        <div className="text-sm font-medium text-slate-900">
-          {currentCategoryInfo.code ?? '-'}
-        </div>
-      </div>
+      ) : null}
     </div>
   );
 }
@@ -343,7 +343,7 @@ function CategoryParentField({
                 type="search"
                 value={parentSearchTerm}
                 onChange={event => onParentSearchChange(event.target.value)}
-                placeholder="输入分类名称或编码搜索父级分类"
+                placeholder="搜索父级分类"
                 autoComplete="off"
                 aria-label="搜索父级分类"
               />
@@ -410,11 +410,6 @@ function CategoryParentField({
                               <span className="truncate font-medium">
                                 {category.name}
                               </span>
-                              {category.code && (
-                                <span className="truncate text-xs text-gray-400">
-                                  {category.code}
-                                </span>
-                              )}
                             </div>
                             <div className="truncate text-xs text-gray-500">
                               {category.fullPath ?? category.name}
@@ -429,7 +424,7 @@ function CategoryParentField({
             <FormDescription>
               选择父级分类以创建层级结构（最多支持3级），系统会显示完整路径，避免同名分类选错
               <span className="mt-1 block text-xs text-[hsl(var(--color-info))]">
-                提示：可输入分类名称或编码搜索，编码自动生成并可在列表或当前页面查看
+                提示：输入关键词即可查找，选择时优先显示分类名称和路径
               </span>
             </FormDescription>
             <FormMessage />

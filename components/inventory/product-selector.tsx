@@ -53,6 +53,7 @@ export const ProductSelector = React.forwardRef<
     const {
       open,
       setOpen,
+      searchInput,
       selectedProduct,
       products,
       isLoading,
@@ -98,6 +99,7 @@ export const ProductSelector = React.forwardRef<
           <PopoverContent className="w-[500px] p-0" align="start">
             <ProductSearchList
               products={products}
+              searchValue={searchInput}
               selectedProduct={selectedProduct}
               isLoading={isLoading}
               error={selectorError}

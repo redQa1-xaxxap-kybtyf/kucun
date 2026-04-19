@@ -54,6 +54,7 @@ export interface StatementsPagination {
 
 export interface StatementsFilters {
   search?: string;
+  searchInput?: string;
   type?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';

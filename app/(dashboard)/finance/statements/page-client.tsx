@@ -124,6 +124,7 @@ export function StatementsPageClient({
           onFilter={handlers.handleFilter}
           onDateRangeChange={handlers.handleDateRangeChange}
           onPageChange={handlers.handlePageChange}
+          onClearFilters={handlers.handleClearFilters}
           isSearching={filters.isSearching}
         />
       </div>

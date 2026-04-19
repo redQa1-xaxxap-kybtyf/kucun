@@ -6,13 +6,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { Suspense } from 'react';
-import { useDebouncedCallback, type DebouncedState } from 'use-debounce';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import { FinanceListSkeleton } from '@/components/ui/skeleton-compositions';
 import { useFinanceExport } from '@/hooks/use-finance-export';
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 import {
   PAYABLE_SORT_OPTIONS,
   type PayableSourceType,
@@ -78,6 +78,11 @@ interface PayablesPageClientProps {
   };
 }
 
+function normalizeSearch(value?: string) {
+  const trimmed = value?.trim() ?? '';
+  return trimmed ? trimmed : undefined;
+}
+
 function isPayableStatus(value?: string): value is PayableStatus {
   return !!value && PAYABLE_STATUS_VALUES.includes(value as PayableStatus);
 }
@@ -133,10 +138,6 @@ type FilterOverrides = Partial<
   >
 >;
 
-type DebouncedUpdateFn = DebouncedState<
-  (nextSearch: string, overrides: FilterOverrides) => void
->;
-
 function usePayablesQueryState(initialParams: PayablesQueryParams) {
   const normalizedInitialParams = React.useMemo(
     () => normalizeInitialParams(initialParams),
@@ -158,6 +159,8 @@ function usePayablesQueryState(initialParams: PayablesQueryParams) {
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>(
     normalizedInitialParams.sortOrder ?? 'desc'
   );
+  const [page, setPage] = React.useState(normalizedInitialParams.page);
+  const [limit, setLimit] = React.useState(normalizedInitialParams.limit);
   const [startDate, setStartDate] = React.useState<string | undefined>(
     normalizedInitialParams.startDate
   );
@@ -171,6 +174,8 @@ function usePayablesQueryState(initialParams: PayablesQueryParams) {
     setSourceType(normalizedInitialParams.sourceType);
     setSortBy(normalizedInitialParams.sortBy ?? 'createdAt');
     setSortOrder(normalizedInitialParams.sortOrder ?? 'desc');
+    setPage(normalizedInitialParams.page);
+    setLimit(normalizedInitialParams.limit);
     setStartDate(normalizedInitialParams.startDate);
     setEndDate(normalizedInitialParams.endDate);
   }, [normalizedInitialParams]);
@@ -187,6 +192,10 @@ function usePayablesQueryState(initialParams: PayablesQueryParams) {
     setSortBy,
     sortOrder,
     setSortOrder,
+    page,
+    setPage,
+    limit,
+    setLimit,
     startDate,
     setStartDate,
     endDate,
@@ -194,104 +203,59 @@ function usePayablesQueryState(initialParams: PayablesQueryParams) {
   };
 }
 
-function usePayablesUrlUpdater(
-  router: ReturnType<typeof useRouter>,
-  normalizedInitialParams: PayablesQueryParams,
-  status: PayableStatus | undefined,
-  sourceType: PayableSourceType | undefined,
-  sortBy: PayableSortField,
-  sortOrder: 'asc' | 'desc',
-  startDate: string | undefined,
-  endDate: string | undefined
-): DebouncedUpdateFn {
-  const [, startTransition] = React.useTransition();
-
-  return useDebouncedCallback(
-    (nextSearch: string, overrides: FilterOverrides) => {
-      const nextParams: PayablesQueryParams = {
-        ...normalizedInitialParams,
-        search: nextSearch || '',
-        status,
-        sourceType,
-        sortBy,
-        sortOrder,
-        startDate,
-        endDate,
-        ...overrides,
-      };
-
-      const searchParams = new URLSearchParams();
-      searchParams.set('page', String(nextParams.page));
-      searchParams.set('limit', String(nextParams.limit));
-      if (nextParams.search) {
-        searchParams.set('search', nextParams.search);
-      }
-      if (nextParams.status) {
-        searchParams.set('status', nextParams.status);
-      }
-      if (nextParams.sourceType) {
-        searchParams.set('sourceType', nextParams.sourceType);
-      }
-      searchParams.set('sortBy', nextParams.sortBy ?? 'createdAt');
-      searchParams.set('sortOrder', nextParams.sortOrder ?? 'desc');
-      if (nextParams.startDate) {
-        searchParams.set('startDate', nextParams.startDate);
-      }
-      if (nextParams.endDate) {
-        searchParams.set('endDate', nextParams.endDate);
-      }
-
-      startTransition(() => {
-        router.push(`/finance/payables?${searchParams.toString()}`);
-      });
-    },
-    300
-  );
-}
-
-function usePayablesSearchHandler(args: {
-  debouncedUpdateURL: DebouncedUpdateFn;
-  normalizedInitialParams: PayablesQueryParams;
-  status: PayableStatus | undefined;
-  sourceType: PayableSourceType | undefined;
-  sortBy: PayableSortField;
-  sortOrder: 'asc' | 'desc';
-  setSearch: React.Dispatch<React.SetStateAction<string>>;
-  startDate: string | undefined;
-  endDate: string | undefined;
-}) {
+/**
+ * 应付款页面客户端组件
+ * 负责用户交互和状态管理
+ */
+export function PayablesPageClient({
+  initialParams,
+  initialStatistics,
+}: PayablesPageClientProps) {
+  const router = useRouter();
   const {
-    debouncedUpdateURL,
     normalizedInitialParams,
-    setSearch,
-    sortBy,
-    sortOrder,
-    sourceType,
+    search: committedSearch,
+    setSearch: setCommittedSearch,
     status,
+    setStatus,
+    sourceType,
+    setSourceType,
+    sortBy,
+    setSortBy,
+    sortOrder,
+    setSortOrder,
+    page,
+    setPage,
+    limit,
+    setLimit,
     startDate,
+    setStartDate,
     endDate,
-  } = args;
+    setEndDate,
+  } = usePayablesQueryState(initialParams);
 
-  return React.useCallback(
-    (nextSearch: string) => {
-      setSearch(nextSearch);
-      debouncedUpdateURL(nextSearch, {
-        page: 1,
-        limit: normalizedInitialParams.limit,
-        search: nextSearch || undefined,
+  const { exportData, isExporting } = useFinanceExport();
+
+  const currentParams = React.useMemo(
+    () =>
+      ({
+        ...normalizedInitialParams,
+        search: normalizeSearch(committedSearch),
         status,
         sourceType,
         sortBy,
         sortOrder,
+        page,
+        limit,
         startDate,
         endDate,
-      });
-    },
+      }) satisfies PayablesQueryParams,
     [
-      debouncedUpdateURL,
+      committedSearch,
       endDate,
-      normalizedInitialParams.limit,
-      setSearch,
+      limit,
+      normalizedInitialParams,
+      page,
       sortBy,
       sortOrder,
       sourceType,
@@ -299,48 +263,112 @@ function usePayablesSearchHandler(args: {
       status,
     ]
   );
-}
 
-function usePayablesFilterHandler(args: {
-  debouncedUpdateURL: DebouncedUpdateFn;
-  normalizedInitialParams: PayablesQueryParams;
-  search: string;
-  status: PayableStatus | undefined;
-  setStatus: React.Dispatch<React.SetStateAction<PayableStatus | undefined>>;
-  sourceType: PayableSourceType | undefined;
-  setSourceType: React.Dispatch<
-    React.SetStateAction<PayableSourceType | undefined>
-  >;
-  sortBy: PayableSortField;
-  setSortBy: React.Dispatch<React.SetStateAction<PayableSortField>>;
-  sortOrder: 'asc' | 'desc';
-  setSortOrder: React.Dispatch<React.SetStateAction<'asc' | 'desc'>>;
-  startDate: string | undefined;
-  endDate: string | undefined;
-}) {
+  const syncUrl = React.useCallback(
+    (params: PayablesQueryParams) => {
+      const searchParams = new URLSearchParams();
+      const normalizedSearch = normalizeSearch(params.search);
+
+      if (params.page && params.page > 1) {
+        searchParams.set('page', String(params.page));
+      }
+      if (params.limit) {
+        searchParams.set('limit', String(params.limit));
+      }
+      if (normalizedSearch) {
+        searchParams.set('search', normalizedSearch);
+      }
+      if (params.status) {
+        searchParams.set('status', params.status);
+      }
+      if (params.sourceType) {
+        searchParams.set('sourceType', params.sourceType);
+      }
+      if (params.sortBy) {
+        searchParams.set('sortBy', params.sortBy);
+      }
+      if (params.sortOrder) {
+        searchParams.set('sortOrder', params.sortOrder);
+      }
+      if (params.startDate) {
+        searchParams.set('startDate', params.startDate);
+      }
+      if (params.endDate) {
+        searchParams.set('endDate', params.endDate);
+      }
+
+      const queryString = searchParams.toString();
+      router.replace(
+        queryString ? `/finance/payables?${queryString}` : '/finance/payables',
+        { scroll: false }
+      );
+    },
+    [router]
+  );
+
+  const buildFilters = React.useCallback(
+    (overrides: FilterOverrides = {}): PayablesQueryParams => ({
+      ...normalizedInitialParams,
+      search: overrides.search ?? normalizeSearch(committedSearch),
+      status: overrides.status ?? status,
+      sourceType: overrides.sourceType ?? sourceType,
+      sortBy: overrides.sortBy ?? sortBy,
+      sortOrder: overrides.sortOrder ?? sortOrder,
+      page: overrides.page ?? page,
+      limit: overrides.limit ?? limit,
+      startDate: overrides.startDate ?? startDate,
+      endDate: overrides.endDate ?? endDate,
+    }),
+    [
+      committedSearch,
+      endDate,
+      limit,
+      normalizedInitialParams,
+      page,
+      sortBy,
+      sortOrder,
+      sourceType,
+      startDate,
+      status,
+    ]
+  );
+
   const {
-    debouncedUpdateURL,
-    normalizedInitialParams,
-    search,
-    setSortBy,
-    setSortOrder,
-    setSourceType,
-    setStatus,
-    sortBy,
-    sortOrder,
-    sourceType,
-    status,
-    startDate,
-    endDate,
-  } = args;
+    searchInput,
+    isSearching: isSearchPending,
+    handleSearchChange,
+    cancelPendingCommit,
+    setSearchInput,
+  } = useListSearchController({
+    committedValue: committedSearch,
+    onCommit: search => {
+      const nextSearch = search ?? '';
+      setCommittedSearch(nextSearch);
+      setPage(1);
+      syncUrl(
+        buildFilters({
+          search,
+          page: 1,
+        })
+      );
+    },
+  });
 
-  return React.useCallback(
+  const syncPendingSearch = React.useCallback(() => {
+    cancelPendingCommit();
+    const nextSearch = normalizeSearch(searchInput);
+    setCommittedSearch(nextSearch ?? '');
+    return nextSearch;
+  }, [cancelPendingCommit, searchInput, setCommittedSearch]);
+
+  const handleFilter = React.useCallback(
     (key: string, value?: string) => {
+      const nextSearch = syncPendingSearch();
       let nextStatus = status;
       let nextSourceType = sourceType;
       let nextSortBy = sortBy;
       let nextSortOrder = sortOrder;
-      let nextLimit = normalizedInitialParams.limit;
+      let nextLimit = limit;
 
       if (key === 'status') {
         nextStatus = isPayableStatus(value) ? value : undefined;
@@ -358,26 +386,28 @@ function usePayablesFilterHandler(args: {
         const parsed = value ? Number.parseInt(value, 10) : nextLimit;
         if (Number.isFinite(parsed) && parsed > 0) {
           nextLimit = parsed;
+          setLimit(parsed);
         }
       }
 
-      debouncedUpdateURL(search, {
-        page: 1,
-        limit: nextLimit,
-        search: search || undefined,
-        status: nextStatus,
-        sourceType: nextSourceType,
-        sortBy: nextSortBy,
-        sortOrder: nextSortOrder,
-        startDate,
-        endDate,
-      });
+      setPage(1);
+      syncUrl(
+        buildFilters({
+          search: nextSearch,
+          status: nextStatus,
+          sourceType: nextSourceType,
+          sortBy: nextSortBy,
+          sortOrder: nextSortOrder,
+          limit: nextLimit,
+          page: 1,
+        })
+      );
     },
     [
-      endDate,
-      debouncedUpdateURL,
-      normalizedInitialParams.limit,
-      search,
+      buildFilters,
+      limit,
+      setLimit,
+      setPage,
       setSortBy,
       setSortOrder,
       setSourceType,
@@ -385,201 +415,96 @@ function usePayablesFilterHandler(args: {
       sortBy,
       sortOrder,
       sourceType,
-      startDate,
       status,
+      syncPendingSearch,
+      syncUrl,
     ]
   );
-}
 
-function usePayablesPageHandler(args: {
-  debouncedUpdateURL: DebouncedUpdateFn;
-  normalizedInitialParams: PayablesQueryParams;
-  search: string;
-  status: PayableStatus | undefined;
-  sourceType: PayableSourceType | undefined;
-  sortBy: PayableSortField;
-  sortOrder: 'asc' | 'desc';
-  startDate: string | undefined;
-  endDate: string | undefined;
-}) {
-  const {
-    debouncedUpdateURL,
-    normalizedInitialParams,
-    search,
-    sortBy,
-    sortOrder,
-    sourceType,
-    status,
-    startDate,
-    endDate,
-  } = args;
-
-  return React.useCallback(
-    (page: number) => {
-      debouncedUpdateURL(search, {
-        page,
-        limit: normalizedInitialParams.limit,
-        search: search || undefined,
-        status,
-        sourceType,
-        sortBy,
-        sortOrder,
-        startDate,
-        endDate,
-      });
+  const handlePageChange = React.useCallback(
+    (nextPage: number) => {
+      const nextSearch = syncPendingSearch();
+      setPage(nextPage);
+      syncUrl(
+        buildFilters({
+          search: nextSearch,
+          page: nextPage,
+          limit,
+        })
+      );
     },
-    [
-      debouncedUpdateURL,
-      endDate,
-      normalizedInitialParams.limit,
-      search,
-      sortBy,
-      sortOrder,
-      sourceType,
-      startDate,
-      status,
-    ]
+    [buildFilters, limit, setPage, syncPendingSearch, syncUrl]
   );
-}
-
-function usePayablesFilters(
-  router: ReturnType<typeof useRouter>,
-  initialParams: PayablesQueryParams
-) {
-  const {
-    normalizedInitialParams,
-    search,
-    setSearch,
-    status,
-    setStatus,
-    sourceType,
-    setSourceType,
-    sortBy,
-    setSortBy,
-    sortOrder,
-    setSortOrder,
-    startDate,
-    setStartDate,
-    endDate,
-    setEndDate,
-  } = usePayablesQueryState(initialParams);
-
-  const debouncedUpdateURL = usePayablesUrlUpdater(
-    router,
-    normalizedInitialParams,
-    status,
-    sourceType,
-    sortBy,
-    sortOrder,
-    startDate,
-    endDate
-  );
-
-  const handleSearch = usePayablesSearchHandler({
-    debouncedUpdateURL,
-    normalizedInitialParams,
-    status,
-    sourceType,
-    sortBy,
-    sortOrder,
-    setSearch,
-    startDate,
-    endDate,
-  });
-
-  const handleFilter = usePayablesFilterHandler({
-    debouncedUpdateURL,
-    normalizedInitialParams,
-    search,
-    status,
-    setStatus,
-    sourceType,
-    setSourceType,
-    sortBy,
-    setSortBy,
-    sortOrder,
-    setSortOrder,
-    startDate,
-    endDate,
-  });
-
-  const handlePageChange = usePayablesPageHandler({
-    debouncedUpdateURL,
-    normalizedInitialParams,
-    search,
-    status,
-    sourceType,
-    sortBy,
-    sortOrder,
-    startDate,
-    endDate,
-  });
 
   const handleDateRangeChange = React.useCallback(
     (range: DateRangeValue) => {
-      setStartDate(range.startDate);
-      setEndDate(range.endDate);
+      const nextSearch = syncPendingSearch();
+      const nextStartDate = range.startDate || undefined;
+      const nextEndDate = range.endDate || undefined;
 
-      debouncedUpdateURL(search, {
-        page: 1,
-        limit: normalizedInitialParams.limit,
-        search: search || undefined,
-        status,
-        sourceType,
-        sortBy,
-        sortOrder,
-        startDate: range.startDate,
-        endDate: range.endDate,
-      });
+      setStartDate(nextStartDate);
+      setEndDate(nextEndDate);
+      setPage(1);
+      syncUrl(
+        buildFilters({
+          search: nextSearch,
+          startDate: nextStartDate,
+          endDate: nextEndDate,
+          page: 1,
+          limit,
+        })
+      );
     },
     [
-      debouncedUpdateURL,
-      normalizedInitialParams.limit,
-      search,
+      buildFilters,
+      limit,
       setEndDate,
+      setPage,
       setStartDate,
-      sortBy,
-      sortOrder,
-      sourceType,
-      status,
+      syncPendingSearch,
+      syncUrl,
     ]
   );
 
-  return {
-    normalizedInitialParams,
-    handleSearch,
-    handleFilter,
-    handlePageChange,
-    handleDateRangeChange,
-  };
-}
-
-/**
- * 应付款页面客户端组件
- * 负责用户交互和状态管理
- */
-export function PayablesPageClient({
-  initialParams,
-  initialStatistics,
-}: PayablesPageClientProps) {
-  const router = useRouter();
-  const {
-    normalizedInitialParams,
-    handleSearch,
-    handleFilter,
-    handlePageChange,
-    handleDateRangeChange,
-  } = usePayablesFilters(router, initialParams);
-
-  const { exportData, isExporting } = useFinanceExport();
+  const handleClearFilters = React.useCallback(() => {
+    cancelPendingCommit();
+    setSearchInput('');
+    setCommittedSearch('');
+    setStatus(undefined);
+    setSourceType(undefined);
+    setSortBy('createdAt');
+    setSortOrder('desc');
+    setPage(1);
+    setLimit(normalizedInitialParams.limit);
+    setStartDate(undefined);
+    setEndDate(undefined);
+    router.replace('/finance/payables', { scroll: false });
+  }, [
+    cancelPendingCommit,
+    normalizedInitialParams.limit,
+    router,
+    setCommittedSearch,
+    setEndDate,
+    setLimit,
+    setPage,
+    setSearchInput,
+    setSortBy,
+    setSortOrder,
+    setSourceType,
+    setStartDate,
+    setStatus,
+  ]);
 
   const handleExport = React.useCallback(() => {
     exportData('/api/finance/payables/export', {
       format: 'excel',
       // 导出接口期望通用的 Record<string, unknown>，这里将查询参数对象显式转换
-      filters: normalizedInitialParams as unknown as Record<string, unknown>,
+      filters: {
+        ...currentParams,
+        search: normalizeSearch(searchInput),
+      } as unknown as Record<string, unknown>,
     });
-  }, [exportData, normalizedInitialParams]);
+  }, [currentParams, exportData, searchInput]);
 
   return (
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
@@ -631,11 +556,14 @@ export function PayablesPageClient({
         <Suspense fallback={<FinanceListSkeleton />}>
           <PayablesClient
             initialStatistics={initialStatistics}
-            initialParams={normalizedInitialParams}
-            onSearch={handleSearch}
+            initialParams={currentParams}
+            searchValue={searchInput}
+            isSearching={isSearchPending}
+            onSearch={handleSearchChange}
             onFilter={handleFilter}
             onDateRangeChange={handleDateRangeChange}
             onPageChange={handlePageChange}
+            onClearFilters={handleClearFilters}
           />
         </Suspense>
       </div>

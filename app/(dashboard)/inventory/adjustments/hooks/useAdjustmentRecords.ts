@@ -6,6 +6,7 @@
 import { useQuery } from '@tanstack/react-query';
 import React from 'react';
 
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 import { getAdjustmentQueryOptions } from '@/lib/api/adjustments';
 import type {
   AdjustmentQueryParams,
@@ -75,6 +76,7 @@ function sanitizePartialParams(
   return sanitized as Partial<AdjustmentQueryParams>;
 }
 
+// eslint-disable-next-line max-lines-per-function -- Query state, debounced search, and detail dialog state are intentionally colocated in this hook.
 export function useAdjustmentRecords(
   initialParams: AdjustmentQueryParams = DEFAULT_QUERY_PARAMS
 ) {
@@ -97,6 +99,28 @@ export function useAdjustmentRecords(
     setQueryParams(next);
   }, [mergedInitial]);
 
+  const updateQueryParams = React.useCallback(
+    (newParams: Partial<AdjustmentQueryParams>) => {
+      const sanitized = sanitizePartialParams(newParams);
+
+      setQueryParams(prev =>
+        normalizeQueryParams({
+          ...prev,
+          ...sanitized,
+        })
+      );
+    },
+    []
+  );
+
+  const { searchInput, isSearching, handleSearchChange } =
+    useListSearchController({
+      committedValue: queryParams.search,
+      onCommit: search => {
+        updateQueryParams({ search, page: 1 });
+      },
+    });
+
   const { data, isLoading, error, refetch } = useQuery(
     getAdjustmentQueryOptions(queryParams)
   );
@@ -118,17 +142,6 @@ export function useAdjustmentRecords(
     limit: fallbackLimit,
     total: 0,
     totalPages: 0,
-  };
-
-  const updateQueryParams = (newParams: Partial<AdjustmentQueryParams>) => {
-    const sanitized = sanitizePartialParams(newParams);
-
-    setQueryParams(prev =>
-      normalizeQueryParams({
-        ...prev,
-        ...sanitized,
-      })
-    );
   };
 
   const resetFilters = () => {
@@ -164,10 +177,13 @@ export function useAdjustmentRecords(
     adjustments,
     pagination,
     isLoading,
+    isSearching,
     error,
     queryParams,
+    searchInput,
     selectedAdjustment,
     showDetailDialog,
+    handleSearchChange,
     updateQueryParams,
     resetFilters,
     handlePageChange,

@@ -57,7 +57,7 @@ export function CountStatisticsCards({
     },
     {
       id: 'completedCounts',
-      title: '已提交',
+      title: '已完成',
       icon: CheckCircle,
       value: formatNumber(statistics.completedCounts),
       description: getRatioText(
@@ -67,17 +67,17 @@ export function CountStatisticsCards({
     },
     {
       id: 'differenceItems',
-      title: '有差异商品数',
+      title: '有差异明细数',
       icon: Package,
       value: formatNumber(statistics.differenceItems),
-      description: `盘点商品 ${formatNumber(statistics.totalItems)} 条`,
+      description: `盘点明细 ${formatNumber(statistics.totalItems)} 条`,
     },
     {
       id: 'totalDifferenceCost',
       title: '差异金额',
       icon: TrendingDown,
       value: `￥${formatCurrency(statistics.totalDifferenceCost)}`,
-      description: `差异总量 ${formatNumber(statistics.totalDifference)}`,
+      description: `差异总片数 ${formatNumber(statistics.totalDifference)}片`,
     },
   ];
 

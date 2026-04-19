@@ -55,6 +55,7 @@ interface AdjustmentRecordsPageClientProps {
   initialParams: AdjustmentQueryParams;
 }
 
+// eslint-disable-next-line max-lines-per-function -- The page intentionally keeps layout, filters, and dialogs together for easier maintenance.
 export function AdjustmentRecordsPageClient({
   initialParams,
 }: AdjustmentRecordsPageClientProps) {
@@ -65,10 +66,13 @@ export function AdjustmentRecordsPageClient({
     adjustments,
     pagination,
     isLoading,
+    isSearching,
     error,
     queryParams,
+    searchInput,
     selectedAdjustment,
     showDetailDialog,
+    handleSearchChange,
     updateQueryParams,
     resetFilters,
     handlePageChange,
@@ -170,6 +174,9 @@ export function AdjustmentRecordsPageClient({
         {/* 筛选条件 */}
         <AdjustmentRecordsFilters
           filters={queryParams}
+          searchValue={searchInput}
+          isSearching={isSearching}
+          onSearchChange={handleSearchChange}
           onFiltersChange={updateQueryParams}
           onReset={resetFilters}
         />

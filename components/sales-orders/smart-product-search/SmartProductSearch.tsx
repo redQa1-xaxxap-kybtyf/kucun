@@ -19,6 +19,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/utils/console-logger';
 
 import { ProductSearchEmptyState } from './components/ProductSearchEmptyState';
 import { ProductSearchLoadingIndicator } from './components/ProductSearchLoadingIndicator';
@@ -43,6 +44,7 @@ export function SmartProductSearch(props: SmartProductSearchProps) {
     showAddDialog,
     setShowAddDialog,
     filteredProducts,
+    isSearchPending,
     selectedProduct,
     selectedSpecification,
     handleProductSelect,
@@ -62,6 +64,7 @@ export function SmartProductSearch(props: SmartProductSearchProps) {
     onBlur,
   } = props;
 
+  const isSearchingResults = isSearching || isSearchPending;
   const displaySearchValue = searchValue.trim();
   const hasResults = Boolean(displaySearchValue && filteredProducts.length > 0);
 
@@ -74,7 +77,7 @@ export function SmartProductSearch(props: SmartProductSearchProps) {
       if (error instanceof ZodError) {
         return;
       }
-      console.error('smart-product-search:onBlur failed', error);
+      logger.error('components:sales-orders:smart-product-search', 'onBlur failed', error);
     };
 
     try {
@@ -153,7 +156,7 @@ export function SmartProductSearch(props: SmartProductSearchProps) {
               className="h-10"
             />
             <CommandList className="max-h-[400px]">
-              {isSearching && <ProductSearchLoadingIndicator />}
+              {isSearchingResults && <ProductSearchLoadingIndicator />}
               {hasResults ? (
                 <ProductSearchResults
                   products={filteredProducts}
@@ -166,7 +169,7 @@ export function SmartProductSearch(props: SmartProductSearchProps) {
                 <CommandEmpty>
                   <ProductSearchEmptyState
                     searchValue={displaySearchValue}
-                    isSearching={isSearching}
+                    isSearching={isSearchingResults}
                     allowTemporaryProducts={allowTemporaryProducts}
                     onAddTemporaryProduct={handleAddTemporaryProduct}
                   />

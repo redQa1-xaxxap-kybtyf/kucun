@@ -134,7 +134,7 @@ function InventoryMobileList({
             ? item.quantity - (item.reservedQuantity ?? 0)
             : 0;
 
-        const hasReserved = (item.reservedQuantity ?? 0) > 0;
+        const reservedQuantity = item.reservedQuantity ?? 0;
 
         return (
           <div
@@ -221,38 +221,37 @@ function InventoryMobileList({
               </div>
             </div>
 
-            <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-[hsl(var(--color-text-secondary))]">
-              <div>
-                <div>可用库存</div>
-                <div className="mt-0.5 font-semibold text-[hsl(var(--color-primary))]">
-                  {formatPieceSummary(available, packaging, {
-                    fallbackUnit: unitLabel,
-                    zeroDisplay: `0${unitLabel}`,
-                  })}
-                </div>
-              </div>
-              <div>
-                <div>总库存</div>
-                <div className="mt-0.5 font-semibold text-[hsl(var(--color-success))]">
-                  {formatPieceSummary(item.quantity, packaging, {
-                    prefix: '总计',
-                    fallbackUnit: unitLabel,
-                  })}
-                </div>
-              </div>
-              {hasReserved && (
-                <div className="col-span-2 text-xs">
-                  <span className="text-[hsl(var(--color-text-secondary))]">
-                    预留：
-                  </span>
-                  <span className="ml-1 font-medium text-[hsl(var(--color-warning))]">
-                    {formatPieceSummary(item.reservedQuantity ?? 0, packaging, {
+            <div className="mt-3 rounded-xl bg-[hsl(var(--color-bg-secondary))] p-3">
+              <div className="grid grid-cols-2 gap-3 text-xs text-[hsl(var(--color-text-secondary))]">
+                <div>
+                  <div>可用数量</div>
+                  <div className="mt-0.5 font-semibold text-[hsl(var(--color-primary))]">
+                    {formatPieceSummary(available, packaging, {
                       fallbackUnit: unitLabel,
                       zeroDisplay: `0${unitLabel}`,
                     })}
-                  </span>
+                  </div>
                 </div>
-              )}
+                <div>
+                  <div>库存总量</div>
+                  <div className="mt-0.5 font-semibold text-[hsl(var(--color-success))]">
+                    {formatPieceSummary(item.quantity, packaging, {
+                      fallbackUnit: unitLabel,
+                    })}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-3 border-t border-[hsl(var(--color-border-primary))] pt-3 text-xs">
+                <span className="text-[hsl(var(--color-text-secondary))]">
+                  预留数量：
+                </span>
+                <span className="ml-1 font-medium text-[hsl(var(--color-warning))]">
+                  {formatPieceSummary(reservedQuantity, packaging, {
+                    fallbackUnit: unitLabel,
+                    zeroDisplay: `0${unitLabel}`,
+                  })}
+                </span>
+              </div>
             </div>
 
             <div className="mt-3 flex justify-end gap-2">

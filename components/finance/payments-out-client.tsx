@@ -90,6 +90,9 @@ interface PaymentsOutClientProps {
   onFilter?: (key: string, value: string | undefined) => void;
   onDateRangeChange?: (range: DateRangeValue) => void;
   onPageChange?: (page: number) => void;
+  searchValue?: string;
+  isSearching?: boolean;
+  onClearFilters?: () => void;
 }
 
 function useConfirmedAmountChange(statistics: {
@@ -391,12 +394,16 @@ function PaymentsOutFilters({
   onSearchChange,
   onFilterChange,
   onDateRangeChange,
+  isSearching = false,
+  onClearFilters,
 }: {
   searchValue: string;
   initialParams?: PaymentsOutClientProps['initialParams'];
   onSearchChange: (value: string) => void;
   onFilterChange?: (key: string, value: string | undefined) => void;
   onDateRangeChange?: (range: DateRangeValue) => void;
+  isSearching?: boolean;
+  onClearFilters?: () => void;
 }) {
   return (
     <div className="relative z-10">
@@ -404,6 +411,7 @@ function PaymentsOutFilters({
         searchValue={searchValue}
         onSearchChange={onSearchChange}
         searchPlaceholder="搜索付款单号、供应商名称或联系人"
+        isSearching={isSearching}
         variant="bordered"
         compact={true}
         filters={[
@@ -450,6 +458,7 @@ function PaymentsOutFilters({
               }
             : undefined
         }
+        onClearFilters={onClearFilters}
       />
     </div>
   );
@@ -563,14 +572,18 @@ export function PaymentsOutClient({
   onFilter: _onFilter,
   onDateRangeChange: _onDateRangeChange,
   onPageChange,
+  searchValue: controlledSearchValue,
+  isSearching = false,
+  onClearFilters,
 }: PaymentsOutClientProps) {
-  const [searchValue, setSearchValue] = React.useState(
+  const [localSearchValue, setLocalSearchValue] = React.useState(
     initialParams?.search ?? ''
   );
 
   React.useEffect(() => {
-    setSearchValue(initialParams?.search ?? '');
+    setLocalSearchValue(initialParams?.search ?? '');
   }, [initialParams?.search]);
+  const effectiveSearchValue = controlledSearchValue ?? localSearchValue;
   const { payments, statistics, pagination } = initialData;
   const { displayedConfirmedAmount, confirmedAmountChangeLabel } =
     useConfirmedAmountChange(statistics);
@@ -600,11 +613,18 @@ export function PaymentsOutClient({
       />
 
       <PaymentsOutFilters
-        searchValue={searchValue}
+        searchValue={effectiveSearchValue}
         initialParams={initialParams}
-        onSearchChange={value => handleSearchChange(value, setSearchValue)}
+        onSearchChange={value =>
+          handleSearchChange(
+            value,
+            controlledSearchValue === undefined ? setLocalSearchValue : () => {}
+          )
+        }
         onFilterChange={_onFilter}
         onDateRangeChange={_onDateRangeChange}
+        isSearching={isSearching}
+        onClearFilters={onClearFilters}
       />
 
       {/* 付款记录列表 */}

@@ -1,10 +1,10 @@
-/**
- * 往来账单筛选状态管理Hook
- * 职责：管理搜索、筛选、排序和分页状态
- */
+'use client';
 
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
+
+import type { DateRangeValue } from '@/components/ui/date-range-picker';
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 
 interface StatementsQueryParams {
   page: number;
@@ -21,22 +21,36 @@ interface UseStatementsFiltersProps {
   initialParams: StatementsQueryParams;
 }
 
-/**
- * 构建往来账单URL查询参数
- */
-function buildStatementsURLParams(params: {
-  search?: string;
-  type?: string;
-  sortBy?: string;
-  sortOrder?: string;
-  page?: number;
-  limit?: number;
+interface StatementsLocalState {
+  committedSearch: string;
+  setCommittedSearch: React.Dispatch<React.SetStateAction<string>>;
+  type: string;
+  setType: React.Dispatch<React.SetStateAction<string>>;
+  sortBy: string;
+  setSortBy: React.Dispatch<React.SetStateAction<string>>;
+  sortOrder: 'asc' | 'desc';
+  setSortOrder: React.Dispatch<React.SetStateAction<'asc' | 'desc'>>;
   startDate?: string;
+  setStartDate: React.Dispatch<React.SetStateAction<string | undefined>>;
   endDate?: string;
-}) {
+  setEndDate: React.Dispatch<React.SetStateAction<string | undefined>>;
+}
+
+type BuildParams = (
+  overrides?: Partial<StatementsQueryParams>
+) => StatementsQueryParams;
+
+function normalizeSearch(value?: string) {
+  const trimmed = value?.trim() ?? '';
+  return trimmed ? trimmed : undefined;
+}
+
+function buildStatementsURLParams(params: StatementsQueryParams) {
   const urlParams = new URLSearchParams();
-  if (params.search) {
-    urlParams.set('search', params.search);
+  const normalizedSearch = normalizeSearch(params.search);
+
+  if (normalizedSearch) {
+    urlParams.set('search', normalizedSearch);
   }
   if (params.type && params.type !== 'all') {
     urlParams.set('type', params.type);
@@ -59,134 +73,49 @@ function buildStatementsURLParams(params: {
   if (params.endDate) {
     urlParams.set('endDate', params.endDate);
   }
+
   return urlParams;
 }
 
-export function useStatementsFilters({
-  initialParams,
-}: UseStatementsFiltersProps) {
-  const router = useRouter();
-  const [, startTransition] = React.useTransition();
-  const s = useStatementsLocalState(initialParams);
-  const searchTimerRef = s.searchTimerRef;
-  // ✅ 搜索处理:立即更新UI,300ms后更新URL和查询
-  const handleSearch = React.useMemo(
-    () =>
-      createHandleSearch({
-        setSearchInput: s.setSearchInput,
-        searchTimerRef: s.searchTimerRef,
-        setIsSearching: s.setIsSearching,
-        setSearch: s.setSearch,
-        state: {
-          type: s.type,
-          sortBy: s.sortBy,
-          sortOrder: s.sortOrder,
-          startDate: s.startDate,
-          endDate: s.endDate,
-        },
-        ctx: {
-          buildURLParams: buildStatementsURLParams,
-          limit: initialParams.limit,
-          router,
-          startTransition,
-        },
-      }),
-    [
-      s.setSearchInput,
-      s.searchTimerRef,
-      s.setIsSearching,
-      s.setSearch,
-      s.type,
-      s.sortBy,
-      s.sortOrder,
-      s.startDate,
-      s.endDate,
-      initialParams.limit,
-      router,
-      startTransition,
-    ]
-  );
-
-  // ✅ 清理定时器
-  React.useEffect(() => {
-    const timerRef = searchTimerRef;
-    return () => {
-      const timer = timerRef.current;
-      if (timer) {
-        clearTimeout(timer);
-      }
-    };
-  }, [searchTimerRef]);
-
-  // 组合其余处理器，减少主Hook体积
-  const { handleFilter, handlePageChange, handleDateRangeChange } =
-    React.useMemo(
-      () =>
-        createStatementsHandlers({
-          type: s.type,
-          sortBy: s.sortBy,
-          sortOrder: s.sortOrder,
-          startDate: s.startDate,
-          endDate: s.endDate,
-          search: s.search,
-          setType: s.setType,
-          setSortBy: s.setSortBy,
-          setSortOrder: s.setSortOrder,
-          setStartDate: s.setStartDate,
-          setEndDate: s.setEndDate,
-          ctx: {
-            buildURLParams: buildStatementsURLParams,
-            router,
-            startTransition,
-          },
-          limit: initialParams.limit,
-        }),
-      [
-        s.type,
-        s.sortBy,
-        s.sortOrder,
-        s.startDate,
-        s.endDate,
-        s.search,
-        s.setType,
-        s.setSortBy,
-        s.setSortOrder,
-        s.setStartDate,
-        s.setEndDate,
-        router,
-        startTransition,
-        initialParams.limit,
-      ]
-    );
+function buildStatementsParams(args: {
+  initialParams: StatementsQueryParams;
+  committedSearch: string;
+  type: string;
+  sortBy: string;
+  sortOrder: 'asc' | 'desc';
+  startDate?: string;
+  endDate?: string;
+  overrides?: Partial<StatementsQueryParams>;
+}): StatementsQueryParams {
+  const {
+    initialParams,
+    committedSearch,
+    type,
+    sortBy,
+    sortOrder,
+    startDate,
+    endDate,
+    overrides = {},
+  } = args;
 
   return {
-    filters: {
-      search: s.search,
-      searchInput: s.searchInput,
-      isSearching: s.isSearching,
-      type: s.type,
-      sortBy: s.sortBy,
-      sortOrder: s.sortOrder,
-      startDate: s.startDate,
-      endDate: s.endDate,
-    },
-    handlers: {
-      handleSearch,
-      handleFilter,
-      handlePageChange,
-      handleDateRangeChange,
-    },
+    page: overrides.page ?? initialParams.page,
+    limit: overrides.limit ?? initialParams.limit,
+    search: overrides.search ?? normalizeSearch(committedSearch),
+    type: overrides.type ?? type,
+    sortBy: overrides.sortBy ?? sortBy,
+    sortOrder: overrides.sortOrder ?? sortOrder,
+    startDate: overrides.startDate ?? startDate,
+    endDate: overrides.endDate ?? endDate,
   };
 }
 
-// 本地状态封装，减少主Hook体积
-function useStatementsLocalState(initialParams: StatementsQueryParams) {
-  const [searchInput, setSearchInput] = React.useState(
+function useStatementsLocalState(
+  initialParams: StatementsQueryParams
+): StatementsLocalState {
+  const [committedSearch, setCommittedSearch] = React.useState(
     initialParams.search || ''
   );
-  const searchTimerRef = React.useRef<NodeJS.Timeout | null>(null);
-  const [isSearching, setIsSearching] = React.useState(false);
-  const [search, setSearch] = React.useState(initialParams.search || '');
   const [type, setType] = React.useState(initialParams.type || 'all');
   const [sortBy, setSortBy] = React.useState(
     initialParams.sortBy || 'totalAmount'
@@ -202,25 +131,17 @@ function useStatementsLocalState(initialParams: StatementsQueryParams) {
   );
 
   React.useEffect(() => {
-    setSearchInput(initialParams.search || '');
-    setSearch(initialParams.search || '');
-  }, [initialParams.search]);
-
-  React.useEffect(
-    () => () => {
-      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-    },
-    []
-  );
+    setCommittedSearch(initialParams.search || '');
+    setType(initialParams.type || 'all');
+    setSortBy(initialParams.sortBy || 'totalAmount');
+    setSortOrder(initialParams.sortOrder || 'desc');
+    setStartDate(initialParams.startDate);
+    setEndDate(initialParams.endDate);
+  }, [initialParams]);
 
   return {
-    searchInput,
-    setSearchInput,
-    searchTimerRef,
-    isSearching,
-    setIsSearching,
-    search,
-    setSearch,
+    committedSearch,
+    setCommittedSearch,
     type,
     setType,
     sortBy,
@@ -231,268 +152,260 @@ function useStatementsLocalState(initialParams: StatementsQueryParams) {
     setStartDate,
     endDate,
     setEndDate,
-  } as const;
+  };
 }
 
-// 辅助：统一 push 逻辑，减少重复代码
-function pushWithParams(args: {
-  buildURLParams: typeof buildStatementsURLParams;
-  router: ReturnType<typeof useRouter>;
-  startTransition: React.TransitionStartFunction;
-  params: Parameters<typeof buildStatementsURLParams>[0];
-}) {
-  const { buildURLParams, router, startTransition, params } = args;
-  startTransition(() => {
-    const sp = buildURLParams(params);
-    router.push(`/finance/statements?${sp.toString()}`);
-  });
+function useStatementsSyncUrl() {
+  const router = useRouter();
+
+  const syncUrl = React.useCallback(
+    (params: StatementsQueryParams) => {
+      const queryString = buildStatementsURLParams(params).toString();
+
+      router.replace(
+        queryString
+          ? `/finance/statements?${queryString}`
+          : '/finance/statements',
+        { scroll: false }
+      );
+    },
+    [router]
+  );
+
+  return { router, syncUrl };
 }
 
-// 辅助：创建搜索处理器
-function createHandleSearch(args: {
-  setSearchInput: (v: string) => void;
-  searchTimerRef: React.MutableRefObject<NodeJS.Timeout | null>;
-  setIsSearching: (v: boolean) => void;
-  setSearch: (v: string) => void;
-  state: {
-    type: string;
-    sortBy: string;
-    sortOrder: 'asc' | 'desc';
-    startDate?: string;
-    endDate?: string;
-  };
-  ctx: {
-    buildURLParams: typeof buildStatementsURLParams;
-    limit?: number;
-    router: ReturnType<typeof useRouter>;
-    startTransition: React.TransitionStartFunction;
-  };
+function useStatementsSearch(args: {
+  initialParams: StatementsQueryParams;
+  state: StatementsLocalState;
+  syncUrl: (params: StatementsQueryParams) => void;
 }) {
+  const { initialParams, state, syncUrl } = args;
+  const { committedSearch, setCommittedSearch, type, sortBy, sortOrder, startDate, endDate } =
+    state;
+
+  const buildParams = React.useCallback<BuildParams>(
+    (overrides = {}) =>
+      buildStatementsParams({
+        initialParams,
+        committedSearch,
+        type,
+        sortBy,
+        sortOrder,
+        startDate,
+        endDate,
+        overrides,
+      }),
+    [
+      committedSearch,
+      endDate,
+      initialParams,
+      sortBy,
+      sortOrder,
+      startDate,
+      type,
+    ]
+  );
+
   const {
+    searchInput,
+    isSearching,
+    handleSearchChange,
+    cancelPendingCommit,
     setSearchInput,
-    searchTimerRef,
-    setIsSearching,
-    setSearch,
-    state,
-    ctx,
-  } = args;
-  return (value: string) => {
-    const trimmed = value.trimStart();
-    setSearchInput(trimmed);
-    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-
-    if (trimmed === '') {
-      setIsSearching(false);
-      setSearch('');
-      pushWithParams({
-        buildURLParams: ctx.buildURLParams,
-        router: ctx.router,
-        startTransition: ctx.startTransition,
-        params: {
-          search: '',
-          type: state.type === 'all' ? undefined : state.type,
-          sortBy: state.sortBy,
-          sortOrder: state.sortOrder,
-          page: 1,
-          limit: ctx.limit,
-          startDate: state.startDate,
-          endDate: state.endDate,
-        },
-      });
-      return;
-    }
-
-    setIsSearching(true);
-    searchTimerRef.current = setTimeout(() => {
-      setSearch(trimmed);
-      pushWithParams({
-        buildURLParams: ctx.buildURLParams,
-        router: ctx.router,
-        startTransition: ctx.startTransition,
-        params: {
-          search: trimmed,
-          type: state.type === 'all' ? undefined : state.type,
-          sortBy: state.sortBy,
-          sortOrder: state.sortOrder,
-          page: 1,
-          limit: ctx.limit,
-          startDate: state.startDate,
-          endDate: state.endDate,
-        },
-      });
-      setIsSearching(false);
-    }, 300);
-  };
-}
-
-// 辅助：筛选项变更并推送 URL
-function applyFilterAndPush(args: {
-  key: string;
-  value: string | undefined;
-  state: {
-    type: string;
-    sortBy: string;
-    sortOrder: 'asc' | 'desc';
-    startDate?: string;
-    endDate?: string;
-    search: string;
-  };
-  setState: {
-    setType: (v: string) => void;
-    setSortBy: (v: string) => void;
-    setSortOrder: (v: 'asc' | 'desc') => void;
-  };
-  ctx: {
-    buildURLParams: typeof buildStatementsURLParams;
-    limit?: number;
-    router: ReturnType<typeof useRouter>;
-    startTransition: React.TransitionStartFunction;
-  };
-}) {
-  const { key, value, state, setState, ctx } = args;
-  const nextType = key === 'type' ? value || 'all' : state.type;
-  const nextSortBy = key === 'sortBy' ? value || 'totalAmount' : state.sortBy;
-  const nextSortOrder =
-    key === 'sortOrder' ? (value as 'asc' | 'desc') || 'desc' : state.sortOrder;
-
-  setState.setType(nextType);
-  setState.setSortBy(nextSortBy);
-  setState.setSortOrder(nextSortOrder);
-
-  pushWithParams({
-    buildURLParams: ctx.buildURLParams,
-    router: ctx.router,
-    startTransition: ctx.startTransition,
-    params: {
-      search: state.search,
-      type: nextType,
-      sortBy: nextSortBy,
-      sortOrder: nextSortOrder,
-      limit: ctx.limit,
-      startDate: state.startDate,
-      endDate: state.endDate,
+  } = useListSearchController({
+    committedValue: committedSearch,
+    onCommit: search => {
+      setCommittedSearch(search ?? '');
+      syncUrl(buildParams({ search, page: 1 }));
     },
   });
+
+  const syncPendingSearch = React.useCallback(() => {
+    cancelPendingCommit();
+    const nextSearch = normalizeSearch(searchInput);
+    setCommittedSearch(nextSearch ?? '');
+    return nextSearch;
+  }, [cancelPendingCommit, searchInput, setCommittedSearch]);
+
+  return {
+    buildParams,
+    searchInput,
+    isSearching,
+    handleSearchChange,
+    cancelPendingCommit,
+    setSearchInput,
+    syncPendingSearch,
+  };
 }
 
-// 辅助：日期范围变更并推送 URL
-function updateDateRangeAndPush(args: {
-  range: { startDate?: string; endDate?: string };
-  state: {
-    search: string;
-    type: string;
-    sortBy: string;
-    sortOrder: 'asc' | 'desc';
-  };
-  setDate: {
-    setStartDate: (v: string | undefined) => void;
-    setEndDate: (v: string | undefined) => void;
-  };
-  ctx: {
-    buildURLParams: typeof buildStatementsURLParams;
-    limit?: number;
-    router: ReturnType<typeof useRouter>;
-    startTransition: React.TransitionStartFunction;
-  };
+function useStatementsHandlers(args: {
+  state: StatementsLocalState;
+  buildParams: BuildParams;
+  syncUrl: (params: StatementsQueryParams) => void;
+  syncPendingSearch: () => string | undefined;
+  handleSearchChange: (value: string) => void;
+  handleClearFilters: () => void;
 }) {
-  const { range, state, setDate, ctx } = args;
-  const nextStart = range.startDate || undefined;
-  const nextEnd = range.endDate || undefined;
+  const {
+    state,
+    buildParams,
+    syncUrl,
+    syncPendingSearch,
+    handleSearchChange,
+    handleClearFilters,
+  } = args;
+  const {
+    type,
+    sortBy,
+    sortOrder,
+    setType,
+    setSortBy,
+    setSortOrder,
+    setStartDate,
+    setEndDate,
+  } = state;
 
-  setDate.setStartDate(nextStart);
-  setDate.setEndDate(nextEnd);
+  const handleFilter = React.useCallback(
+    (key: string, value: string | undefined) => {
+      const nextSearch = syncPendingSearch();
+      const nextType = key === 'type' ? value || 'all' : type;
+      const nextSortBy = key === 'sortBy' ? value || 'totalAmount' : sortBy;
+      const nextSortOrder =
+        key === 'sortOrder' ? (value as 'asc' | 'desc') || 'desc' : sortOrder;
 
-  pushWithParams({
-    buildURLParams: ctx.buildURLParams,
-    router: ctx.router,
-    startTransition: ctx.startTransition,
-    params: {
-      search: state.search,
+      setType(nextType);
+      setSortBy(nextSortBy);
+      setSortOrder(nextSortOrder);
+      syncUrl(
+        buildParams({
+          search: nextSearch,
+          type: nextType,
+          sortBy: nextSortBy,
+          sortOrder: nextSortOrder,
+          page: 1,
+        })
+      );
+    },
+    [
+      buildParams,
+      setSortBy,
+      setSortOrder,
+      setType,
+      sortBy,
+      sortOrder,
+      syncPendingSearch,
+      syncUrl,
+      type,
+    ]
+  );
+
+  const handleDateRangeChange = React.useCallback(
+    (range: DateRangeValue) => {
+      const nextSearch = syncPendingSearch();
+      const nextStartDate = range.startDate || undefined;
+      const nextEndDate = range.endDate || undefined;
+
+      setStartDate(nextStartDate);
+      setEndDate(nextEndDate);
+      syncUrl(
+        buildParams({
+          search: nextSearch,
+          startDate: nextStartDate,
+          endDate: nextEndDate,
+          page: 1,
+        })
+      );
+    },
+    [buildParams, setEndDate, setStartDate, syncPendingSearch, syncUrl]
+  );
+
+  const handlePageChange = React.useCallback(
+    (page: number) => {
+      const nextSearch = syncPendingSearch();
+      syncUrl(buildParams({ search: nextSearch, page }));
+    },
+    [buildParams, syncPendingSearch, syncUrl]
+  );
+
+  return {
+    handleSearch: handleSearchChange,
+    handleFilter,
+    handleDateRangeChange,
+    handlePageChange,
+    handleClearFilters,
+  };
+}
+
+function useStatementsClearHandler(args: {
+  state: StatementsLocalState;
+  router: ReturnType<typeof useRouter>;
+  cancelPendingCommit: () => void;
+  setSearchInput: React.Dispatch<React.SetStateAction<string>>;
+}) {
+  const { state, router, cancelPendingCommit, setSearchInput } = args;
+  const { setCommittedSearch, setEndDate, setSortBy, setSortOrder, setStartDate, setType } =
+    state;
+
+  return React.useCallback(() => {
+    cancelPendingCommit();
+    setSearchInput('');
+    setCommittedSearch('');
+    setType('all');
+    setSortBy('totalAmount');
+    setSortOrder('desc');
+    setStartDate(undefined);
+    setEndDate(undefined);
+    router.replace('/finance/statements', { scroll: false });
+  }, [
+    cancelPendingCommit,
+    router,
+    setCommittedSearch,
+    setEndDate,
+    setSearchInput,
+    setSortBy,
+    setSortOrder,
+    setStartDate,
+    setType,
+  ]);
+}
+
+export function useStatementsFilters({
+  initialParams,
+}: UseStatementsFiltersProps) {
+  const state = useStatementsLocalState(initialParams);
+  const { router, syncUrl } = useStatementsSyncUrl();
+  const search = useStatementsSearch({
+    initialParams,
+    state,
+    syncUrl,
+  });
+  const handleClearFilters = useStatementsClearHandler({
+    state,
+    router,
+    cancelPendingCommit: search.cancelPendingCommit,
+    setSearchInput: search.setSearchInput,
+  });
+  const handlers = useStatementsHandlers({
+    state,
+    buildParams: search.buildParams,
+    syncUrl,
+    syncPendingSearch: search.syncPendingSearch,
+    handleSearchChange: search.handleSearchChange,
+    handleClearFilters,
+  });
+
+  return {
+    filters: {
+      search: state.committedSearch,
+      searchInput: search.searchInput,
+      isSearching: search.isSearching,
       type: state.type,
       sortBy: state.sortBy,
       sortOrder: state.sortOrder,
-      page: 1,
-      limit: ctx.limit,
-      startDate: nextStart,
-      endDate: nextEnd,
+      startDate: state.startDate,
+      endDate: state.endDate,
     },
-  });
-}
-
-// 辅助：创建其余处理器
-function createStatementsHandlers(args: {
-  type: string;
-  sortBy: string;
-  sortOrder: 'asc' | 'desc';
-  startDate?: string;
-  endDate?: string;
-  search: string;
-  setType: (v: string) => void;
-  setSortBy: (v: string) => void;
-  setSortOrder: (v: 'asc' | 'desc') => void;
-  setStartDate: (v: string | undefined) => void;
-  setEndDate: (v: string | undefined) => void;
-  ctx: {
-    buildURLParams: typeof buildStatementsURLParams;
-    router: ReturnType<typeof useRouter>;
-    startTransition: React.TransitionStartFunction;
+    handlers,
   };
-  limit?: number;
-}) {
-  const { ctx, limit } = args;
-
-  const handleFilter = (key: string, value: string | undefined) =>
-    applyFilterAndPush({
-      key,
-      value,
-      state: {
-        type: args.type,
-        sortBy: args.sortBy,
-        sortOrder: args.sortOrder,
-        startDate: args.startDate,
-        endDate: args.endDate,
-        search: args.search,
-      },
-      setState: {
-        setType: args.setType,
-        setSortBy: args.setSortBy,
-        setSortOrder: args.setSortOrder,
-      },
-      ctx,
-    });
-
-  const handlePageChange = (page: number) =>
-    pushWithParams({
-      buildURLParams: ctx.buildURLParams,
-      router: ctx.router,
-      startTransition: ctx.startTransition,
-      params: {
-        search: args.search,
-        type: args.type,
-        sortBy: args.sortBy,
-        sortOrder: args.sortOrder,
-        page,
-        limit,
-        startDate: args.startDate,
-        endDate: args.endDate,
-      },
-    });
-
-  const handleDateRangeChange = (range: {
-    startDate?: string;
-    endDate?: string;
-  }) =>
-    updateDateRangeAndPush({
-      range,
-      state: {
-        search: args.search,
-        type: args.type,
-        sortBy: args.sortBy,
-        sortOrder: args.sortOrder,
-      },
-      setDate: { setStartDate: args.setStartDate, setEndDate: args.setEndDate },
-      ctx,
-    });
-
-  return { handleFilter, handlePageChange, handleDateRangeChange } as const;
 }

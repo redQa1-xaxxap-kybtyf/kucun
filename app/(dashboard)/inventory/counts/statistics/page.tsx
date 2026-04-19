@@ -9,7 +9,7 @@ import { CountStatisticsPageClient } from './page-client';
 
 export const metadata: Metadata = {
   title: '盘点单统计 - 库存管理',
-  description: '查看盘点单数量、录入进度和差异情况',
+  description: '查看盘点单数量、盘点进度和差异情况',
 };
 
 // Next.js 15 Route Segment Config

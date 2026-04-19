@@ -15,6 +15,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { logger } from '@/lib/utils/console-logger';
 
 import { SupplierSearchEmptyState } from './components/SupplierSearchEmptyState';
 import { SupplierSearchLoadingIndicator } from './components/SupplierSearchLoadingIndicator';
@@ -36,6 +37,7 @@ export function SupplierSelector(props: SupplierSelectorProps) {
     open,
     setOpen: setPopoverOpen,
     searchValue,
+    isSearching,
     handleSearchValueChange,
     filteredSuppliers,
     selectedSupplier,
@@ -56,6 +58,7 @@ export function SupplierSelector(props: SupplierSelectorProps) {
 
   const trimmedSearchValue = searchValue.trim();
   const hasResults = filteredSuppliers.length > 0;
+  const isSearchingSuppliers = isLoading || isSearching;
 
   const notifyBlur = React.useCallback(() => {
     if (!onBlur) {
@@ -66,7 +69,7 @@ export function SupplierSelector(props: SupplierSelectorProps) {
       if (error instanceof ZodError) {
         return;
       }
-      console.error('supplier-selector:onBlur failed', error);
+      logger.error('components:sales-orders:supplier-selector', 'onBlur failed', error);
     };
 
     try {
@@ -124,7 +127,7 @@ export function SupplierSelector(props: SupplierSelectorProps) {
               onValueChange={handleSearchValueChange}
             />
             <CommandList>
-              {isLoading && <SupplierSearchLoadingIndicator />}
+              {isSearchingSuppliers && <SupplierSearchLoadingIndicator />}
               {hasResults ? (
                 <SupplierSearchResults
                   suppliers={filteredSuppliers}
@@ -135,7 +138,7 @@ export function SupplierSelector(props: SupplierSelectorProps) {
                 <CommandEmpty>
                   <SupplierSearchEmptyState
                     searchValue={trimmedSearchValue}
-                    isLoading={isLoading}
+                    isSearching={isSearchingSuppliers}
                     onAddSupplier={handleOpenCreateDialog}
                   />
                 </CommandEmpty>

@@ -59,7 +59,7 @@ export function useCountItems({
 
       if (!newRecords.length) {
         toast({
-          title: '没有新的盘点商品',
+          title: '没有新的盘点明细',
           description: '所有库存记录已经在当前盘点单中',
         });
         return;
@@ -69,17 +69,17 @@ export function useCountItems({
       const response = await addCountItems(countId, itemsPayload);
 
       if (!response.ok) {
-        await handleApiError(response, '生成盘点商品失败');
+        await handleApiError(response, '生成盘点明细失败');
       }
 
       toast({
         title: '生成成功',
-        description: `已新增 ${newRecords.length} 条盘点商品`,
+        description: `已新增 ${newRecords.length} 条盘点明细`,
       });
       onItemsChanged();
     } catch (error) {
       toast({
-        title: '生成盘点商品失败',
+        title: '生成盘点明细失败',
         description: error instanceof Error ? error.message : '未知错误',
         variant: 'destructive',
       });
@@ -97,8 +97,8 @@ export function useCountItems({
 
       if (!selectedProductId) {
         toast({
-          title: '请选择商品',
-          description: '请选择要加入当前盘点单的商品',
+          title: '请选择产品',
+          description: '请选择要加入当前盘点单的产品',
           variant: 'destructive',
         });
         return;
@@ -122,8 +122,8 @@ export function useCountItems({
 
         if (!newRecords.length) {
           toast({
-            title: '没有新的盘点商品',
-            description: '该商品相关库存记录已全部在当前盘点单中',
+            title: '没有新的盘点明细',
+            description: '该产品相关库存记录已全部在当前盘点单中',
           });
           return;
         }
@@ -132,18 +132,18 @@ export function useCountItems({
         const response = await addCountItems(countId, itemsPayload);
 
         if (!response.ok) {
-          await handleApiError(response, '添加盘点商品失败');
+          await handleApiError(response, '添加盘点明细失败');
         }
 
         toast({
           title: '添加成功',
-          description: `已为该商品新增 ${newRecords.length} 条盘点商品`,
+          description: `已为该产品新增 ${newRecords.length} 条盘点明细`,
         });
         onItemsChanged();
         return true; // 成功标志
       } catch (error) {
         toast({
-          title: '添加盘点商品失败',
+          title: '添加盘点明细失败',
           description: error instanceof Error ? error.message : '未知错误',
           variant: 'destructive',
         });

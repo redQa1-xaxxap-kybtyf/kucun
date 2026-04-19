@@ -85,31 +85,31 @@ export function StatementTransactions({
         <Table>
           <TableHeader className="bg-slate-50/50">
             <TableRow className="border-b border-slate-200 hover:bg-transparent">
-              <TableHead className="py-4 font-semibold text-slate-700">
+              <TableHead>
                 业务类型
               </TableHead>
-              <TableHead className="py-4 font-semibold text-slate-700">
+              <TableHead>
                 单据编号
               </TableHead>
-              <TableHead className="py-4 font-semibold text-slate-700">
+              <TableHead>
                 科目摘要
               </TableHead>
-              <TableHead className="py-4 text-right font-semibold text-slate-700">
+              <TableHead className="text-right">
                 借方 (应收+)
               </TableHead>
-              <TableHead className="py-4 text-right font-semibold text-slate-700">
+              <TableHead className="text-right">
                 贷方 (应收-)
               </TableHead>
-              <TableHead className="py-4 text-right font-semibold text-slate-700">
+              <TableHead className="text-right">
                 余额 (元)
               </TableHead>
-              <TableHead className="py-4 font-semibold text-slate-700">
+              <TableHead>
                 记账时间
               </TableHead>
-              <TableHead className="py-4 font-semibold text-slate-700">
+              <TableHead>
                 处理状态
               </TableHead>
-              <TableHead className="py-4 text-right font-semibold text-slate-700">
+              <TableHead className="text-right">
                 操作
               </TableHead>
             </TableRow>
@@ -125,16 +125,16 @@ export function StatementTransactions({
                   key={transaction.id}
                   className="group transition-colors hover:bg-blue-50/30"
                 >
-                  <TableCell className="py-4">
+                  <TableCell>
                     {getTransactionTypeBadge(transaction.transactionType)}
                   </TableCell>
-                  <TableCell className="py-4 font-mono text-xs font-semibold tracking-tighter text-slate-400 group-hover:text-slate-900">
+                  <TableCell className="font-mono text-xs font-semibold tracking-tighter text-slate-400 group-hover:text-slate-900">
                     {transaction.referenceNumber || '-'}
                   </TableCell>
-                  <TableCell className="max-w-[200px] truncate py-4 text-xs font-bold text-slate-500">
+                  <TableCell className="max-w-[200px] truncate text-xs font-bold text-slate-500">
                     {transaction.description}
                   </TableCell>
-                  <TableCell className="py-4 text-right">
+                  <TableCell className="text-right">
                     {debit > 0 ? (
                       <span className="font-mono text-sm font-semibold tracking-tight text-rose-500">
                         + {formatCurrency(debit).replace('¥', '')}
@@ -143,7 +143,7 @@ export function StatementTransactions({
                       <span className="text-slate-200">-</span>
                     )}
                   </TableCell>
-                  <TableCell className="py-4 text-right">
+                  <TableCell className="text-right">
                     {credit > 0 ? (
                       <span className="font-mono text-sm font-semibold tracking-tight text-emerald-500">
                         - {formatCurrency(credit).replace('¥', '')}
@@ -152,7 +152,7 @@ export function StatementTransactions({
                       <span className="text-slate-200">-</span>
                     )}
                   </TableCell>
-                  <TableCell className="py-4 text-right">
+                  <TableCell className="text-right">
                     <span
                       className={cn(
                         'font-mono text-sm font-semibold tracking-tight',
@@ -164,13 +164,13 @@ export function StatementTransactions({
                       ).replace('¥', '')}
                     </span>
                   </TableCell>
-                  <TableCell className="py-4 text-[10px] font-bold text-slate-400">
+                  <TableCell className="text-[10px] font-bold text-slate-400">
                     {formatDateTime(transaction.transactionDate)}
                   </TableCell>
-                  <TableCell className="py-4">
+                  <TableCell>
                     {getTransactionStatusBadge(transaction.status)}
                   </TableCell>
-                  <TableCell className="py-4 text-right">
+                  <TableCell className="text-right">
                     <Button
                       variant="ghost"
                       size="sm"

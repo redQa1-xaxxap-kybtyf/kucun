@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { Suspense } from 'react';
-import { useDebouncedCallback } from 'use-debounce';
 
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Button } from '@/components/ui/button';
@@ -14,6 +13,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import { FinanceListSkeleton } from '@/components/ui/skeleton-compositions';
 import { useFinanceExport } from '@/hooks/use-finance-export';
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 import {
   PAYMENT_OUT_SORT_OPTIONS,
   type PaymentOutMethod,
@@ -98,12 +98,16 @@ interface PaymentsOutPageClientProps {
   initialParams: PaymentsOutQueryParams;
 }
 
+function normalizeSearch(value?: string) {
+  const trimmed = value?.trim() ?? '';
+  return trimmed ? trimmed : undefined;
+}
+
 export function PaymentsOutPageClient({
   initialData,
   initialParams,
 }: PaymentsOutPageClientProps) {
   const router = useRouter();
-  const [, startTransition] = React.useTransition();
   const { exportData, isExporting } = useFinanceExport();
 
   const PAYMENT_STATUS_VALUES = React.useMemo<PaymentOutStatus[]>(
@@ -223,7 +227,7 @@ export function PaymentsOutPageClient({
     };
   }, [initialData]);
 
-  const [search, setSearch] = React.useState(
+  const [committedSearch, setCommittedSearch] = React.useState(
     normalizedInitialParams.search || ''
   );
   const [status, setStatus] = React.useState<PaymentOutStatus | undefined>(
@@ -238,6 +242,8 @@ export function PaymentsOutPageClient({
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>(
     normalizedInitialParams.sortOrder || 'desc'
   );
+  const [page, setPage] = React.useState(normalizedInitialParams.page);
+  const [limit, setLimit] = React.useState(normalizedInitialParams.limit);
   const [startDate, setStartDate] = React.useState<string | undefined>(
     normalizedInitialParams.startDate
   );
@@ -245,73 +251,149 @@ export function PaymentsOutPageClient({
     normalizedInitialParams.endDate
   );
 
-  const debouncedUpdateURL = useDebouncedCallback(
-    (searchValue: string, filters: PaymentsOutQueryParams) => {
-      startTransition(() => {
-        const params = new URLSearchParams();
-        if (searchValue) {
-          params.set('search', searchValue);
-        }
-        if (filters.status) {
-          params.set('status', filters.status);
-        }
-        if (filters.paymentMethod) {
-          params.set('paymentMethod', filters.paymentMethod);
-        }
-        if (filters.sortBy) {
-          params.set('sortBy', filters.sortBy);
-        }
-        if (filters.sortOrder) {
-          params.set('sortOrder', filters.sortOrder);
-        }
-        if (filters.startDate) {
-          params.set('startDate', filters.startDate);
-        }
-        if (filters.endDate) {
-          params.set('endDate', filters.endDate);
-        }
-        if (filters.page && filters.page > 1) {
-          params.set('page', filters.page.toString());
-        }
-        if (filters.limit) {
-          params.set('limit', filters.limit.toString());
-        }
+  React.useEffect(() => {
+    setCommittedSearch(normalizedInitialParams.search || '');
+    setStatus(normalizedInitialParams.status);
+    setPaymentMethod(normalizedInitialParams.paymentMethod);
+    setSortBy(normalizedInitialParams.sortBy || 'createdAt');
+    setSortOrder(normalizedInitialParams.sortOrder || 'desc');
+    setPage(normalizedInitialParams.page);
+    setLimit(normalizedInitialParams.limit);
+    setStartDate(normalizedInitialParams.startDate);
+    setEndDate(normalizedInitialParams.endDate);
+  }, [normalizedInitialParams]);
 
-        router.push(`/finance/payments-out?${params.toString()}`);
-      });
-    },
-    300
-  );
-
-  const handleSearch = React.useCallback(
-    (value: string) => {
-      setSearch(value);
-      debouncedUpdateURL(value, {
-        page: 1,
-        limit: normalizedInitialParams.limit,
-        search: value || undefined,
-        status,
-        paymentMethod,
-        sortBy,
-        sortOrder,
-        startDate,
-        endDate,
-      });
-    },
-    [
-      debouncedUpdateURL,
-      normalizedInitialParams.limit,
+  const currentParams = React.useMemo(
+    () => ({
+      ...normalizedInitialParams,
+      search: normalizeSearch(committedSearch),
       status,
       paymentMethod,
       sortBy,
       sortOrder,
+      page,
+      limit,
       startDate,
       endDate,
+    }),
+    [
+      committedSearch,
+      endDate,
+      limit,
+      normalizedInitialParams,
+      page,
+      paymentMethod,
+      sortBy,
+      sortOrder,
+      startDate,
+      status,
     ]
   );
 
+  const syncUrl = React.useCallback(
+    (filters: PaymentsOutQueryParams) => {
+      const params = new URLSearchParams();
+      const normalizedSearch = normalizeSearch(filters.search);
+
+      if (normalizedSearch) {
+        params.set('search', normalizedSearch);
+      }
+      if (filters.status) {
+        params.set('status', filters.status);
+      }
+      if (filters.paymentMethod) {
+        params.set('paymentMethod', filters.paymentMethod);
+      }
+      if (filters.sortBy) {
+        params.set('sortBy', filters.sortBy);
+      }
+      if (filters.sortOrder) {
+        params.set('sortOrder', filters.sortOrder);
+      }
+      if (filters.startDate) {
+        params.set('startDate', filters.startDate);
+      }
+      if (filters.endDate) {
+        params.set('endDate', filters.endDate);
+      }
+      if (filters.page && filters.page > 1) {
+        params.set('page', filters.page.toString());
+      }
+      if (filters.limit) {
+        params.set('limit', filters.limit.toString());
+      }
+
+      const queryString = params.toString();
+      router.replace(
+        queryString
+          ? `/finance/payments-out?${queryString}`
+          : '/finance/payments-out',
+        { scroll: false }
+      );
+    },
+    [router]
+  );
+
+  const buildFilters = React.useCallback(
+    (
+      overrides: Partial<PaymentsOutQueryParams> = {}
+    ): PaymentsOutQueryParams => ({
+      ...normalizedInitialParams,
+      search: overrides.search ?? normalizeSearch(committedSearch),
+      status: overrides.status ?? status,
+      paymentMethod: overrides.paymentMethod ?? paymentMethod,
+      sortBy: overrides.sortBy ?? sortBy,
+      sortOrder: overrides.sortOrder ?? sortOrder,
+      page: overrides.page ?? page,
+      limit: overrides.limit ?? limit,
+      startDate: overrides.startDate ?? startDate,
+      endDate: overrides.endDate ?? endDate,
+    }),
+    [
+      committedSearch,
+      endDate,
+      limit,
+      normalizedInitialParams,
+      page,
+      paymentMethod,
+      sortBy,
+      sortOrder,
+      startDate,
+      status,
+    ]
+  );
+
+  const {
+    searchInput,
+    isSearching: isSearchPending,
+    handleSearchChange,
+    cancelPendingCommit,
+    setSearchInput,
+  } = useListSearchController({
+    committedValue: committedSearch,
+    onCommit: search => {
+      const nextSearch = search ?? '';
+      setCommittedSearch(nextSearch);
+      setPage(1);
+      syncUrl(
+        buildFilters({
+          search,
+          page: 1,
+        })
+      );
+    },
+  });
+
+  const syncPendingSearch = React.useCallback(() => {
+    cancelPendingCommit();
+    const nextSearch = normalizeSearch(searchInput);
+    setCommittedSearch(nextSearch ?? '');
+    return nextSearch;
+  }, [cancelPendingCommit, searchInput]);
+
   const handleFilter = React.useCallback(
     (key: string, value: string | undefined) => {
+      const nextSearch = syncPendingSearch();
       let nextStatus = status;
       let nextPaymentMethod = paymentMethod;
       let nextSortBy = sortBy;
@@ -337,160 +419,96 @@ export function PaymentsOutPageClient({
         }
       }
 
-      debouncedUpdateURL(search, {
-        page: 1,
-        limit: nextLimit,
-        search: search || undefined,
-        status: nextStatus,
-        paymentMethod: nextPaymentMethod,
-        sortBy: nextSortBy,
-        sortOrder: nextSortOrder,
-        startDate,
-        endDate,
-      });
+      setPage(1);
+      setLimit(nextLimit);
+      syncUrl(
+        buildFilters({
+          search: nextSearch,
+          page: 1,
+          limit: nextLimit,
+          status: nextStatus,
+          paymentMethod: nextPaymentMethod,
+          sortBy: nextSortBy,
+          sortOrder: nextSortOrder,
+        })
+      );
     },
     [
-      debouncedUpdateURL,
+      buildFilters,
       isPaymentMethod,
       isPaymentSortField,
       isPaymentStatus,
       normalizedInitialParams.limit,
       paymentMethod,
-      search,
       sortBy,
       sortOrder,
       status,
-      startDate,
-      endDate,
+      syncPendingSearch,
+      syncUrl,
     ]
   );
 
   const handlePageChange = React.useCallback(
     (page: number) => {
-      startTransition(() => {
-        const params = new URLSearchParams();
-        if (search) {
-          params.set('search', search);
-        }
-        if (status) {
-          params.set('status', status);
-        }
-        if (paymentMethod) {
-          params.set('paymentMethod', paymentMethod);
-        }
-        if (sortBy) {
-          params.set('sortBy', sortBy);
-        }
-        if (sortOrder) {
-          params.set('sortOrder', sortOrder);
-        }
-        if (startDate) {
-          params.set('startDate', startDate);
-        }
-        if (endDate) {
-          params.set('endDate', endDate);
-        }
-        if (page > 1) {
-          params.set('page', page.toString());
-        }
-        if (normalizedInitialParams.limit) {
-          params.set('limit', normalizedInitialParams.limit.toString());
-        }
-
-        router.push(`/finance/payments-out?${params.toString()}`);
-      });
+      const nextSearch = syncPendingSearch();
+      setPage(page);
+      syncUrl(
+        buildFilters({
+          search: nextSearch,
+          page,
+        })
+      );
     },
-    [
-      router,
-      search,
-      status,
-      paymentMethod,
-      sortBy,
-      sortOrder,
-      normalizedInitialParams.limit,
-      startDate,
-      endDate,
-    ]
+    [buildFilters, syncPendingSearch, syncUrl]
   );
 
   const handleDateRangeChange = React.useCallback(
     (range: DateRangeValue) => {
+      const nextSearch = syncPendingSearch();
       const nextStart = range.startDate || undefined;
       const nextEnd = range.endDate || undefined;
 
       setStartDate(nextStart);
       setEndDate(nextEnd);
-
-      startTransition(() => {
-        const params = new URLSearchParams();
-        if (search) {
-          params.set('search', search);
-        }
-        if (status) {
-          params.set('status', status);
-        }
-        if (paymentMethod) {
-          params.set('paymentMethod', paymentMethod);
-        }
-        if (sortBy) {
-          params.set('sortBy', sortBy);
-        }
-        if (sortOrder) {
-          params.set('sortOrder', sortOrder);
-        }
-        if (normalizedInitialParams.limit) {
-          params.set('limit', normalizedInitialParams.limit.toString());
-        }
-        if (nextStart) {
-          params.set('startDate', nextStart);
-        }
-        if (nextEnd) {
-          params.set('endDate', nextEnd);
-        }
-
-        router.push(`/finance/payments-out?${params.toString()}`);
-      });
+      setPage(1);
+      syncUrl(
+        buildFilters({
+          search: nextSearch,
+          page: 1,
+          startDate: nextStart,
+          endDate: nextEnd,
+        })
+      );
     },
-    [
-      router,
-      search,
-      status,
-      paymentMethod,
-      sortBy,
-      sortOrder,
-      normalizedInitialParams.limit,
-    ]
+    [buildFilters, syncPendingSearch, syncUrl]
   );
 
-  const currentParams = React.useMemo(
-    () => ({
-      ...normalizedInitialParams,
-      search,
-      status,
-      paymentMethod,
-      sortBy,
-      sortOrder,
-      startDate,
-      endDate,
-    }),
-    [
-      normalizedInitialParams,
-      search,
-      status,
-      paymentMethod,
-      sortBy,
-      sortOrder,
-      startDate,
-      endDate,
-    ]
-  );
+  const handleClearFilters = React.useCallback(() => {
+    cancelPendingCommit();
+    setSearchInput('');
+    setCommittedSearch('');
+    setStatus(undefined);
+    setPaymentMethod(undefined);
+    setSortBy('createdAt');
+    setSortOrder('desc');
+    setPage(1);
+    setLimit(normalizedInitialParams.limit);
+    setStartDate(undefined);
+    setEndDate(undefined);
+    router.replace('/finance/payments-out', { scroll: false });
+  }, [
+    cancelPendingCommit,
+    normalizedInitialParams.limit,
+    router,
+    setSearchInput,
+  ]);
 
   const handleExport = React.useCallback(() => {
     // 导出使用当前筛选条件，一次性导出最多 50,000 条记录
     const filters: PaymentsOutQueryParams = {
       page: 1,
       limit: 50000,
-      search: search || undefined,
+      search: normalizeSearch(searchInput),
       status,
       paymentMethod,
       sortBy: sortBy || 'createdAt',
@@ -506,7 +524,7 @@ export function PaymentsOutPageClient({
     });
   }, [
     exportData,
-    search,
+    searchInput,
     status,
     paymentMethod,
     sortBy,
@@ -566,10 +584,13 @@ export function PaymentsOutPageClient({
           <PaymentsOutClient
             initialData={normalizedInitialData}
             initialParams={currentParams}
-            onSearch={handleSearch}
+            searchValue={searchInput}
+            isSearching={isSearchPending}
+            onSearch={handleSearchChange}
             onFilter={handleFilter}
             onDateRangeChange={handleDateRangeChange}
             onPageChange={handlePageChange}
+            onClearFilters={handleClearFilters}
           />
         </Suspense>
       </div>

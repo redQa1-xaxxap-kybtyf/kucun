@@ -7,6 +7,7 @@ import * as React from 'react';
 import { SalesOrderPageHeader } from '@/components/sales-orders/sales-order-page-header';
 import { SalesOrdersSkeleton } from '@/components/ui/skeleton-compositions';
 import { useUrlSearchParams } from '@/hooks/url-search-params';
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 import { salesOrderParamsConfig } from '@/lib/schemas/sales-order-params-config';
 import type { SalesOrderQueryParams } from '@/lib/types/sales-order';
 import { logger } from '@/lib/utils/console-logger';
@@ -66,7 +67,10 @@ export function SalesOrdersPageClient({
   );
 }
 
-const SEARCH_DEBOUNCE_MS = 300;
+function normalizeSearch(value?: string) {
+  const trimmed = value?.trim() ?? '';
+  return trimmed ? trimmed : undefined;
+}
 
 function buildFilterUpdates(
   key: string,
@@ -144,54 +148,9 @@ function buildFilterUpdates(
   }
 }
 
-function useSalesOrderSearch(
-  searchParam: string | undefined,
-  updateParams: (updates: Partial<SalesOrderQueryParams>) => void
-) {
-  const [searchInput, setSearchInput] = React.useState(searchParam ?? '');
-  const [isSearching, setIsSearching] = React.useState(false);
-  const timerRef = React.useRef<NodeJS.Timeout | null>(null);
-
-  const clearTimer = React.useCallback(() => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-  }, []);
-
-  React.useEffect(() => {
-    setSearchInput(searchParam ?? '');
-  }, [searchParam]);
-
-  const handleSearch = React.useCallback(
-    (value: string) => {
-      const trimmed = value.trimStart();
-      setSearchInput(trimmed);
-      clearTimer();
-
-      if (trimmed === '') {
-        setIsSearching(false);
-        updateParams({ search: '', page: 1 });
-        return;
-      }
-
-      setIsSearching(true);
-      timerRef.current = setTimeout(() => {
-        updateParams({ search: trimmed, page: 1 });
-        setIsSearching(false);
-      }, SEARCH_DEBOUNCE_MS);
-    },
-    [clearTimer, updateParams]
-  );
-
-  React.useEffect(() => () => clearTimer(), [clearTimer]);
-
-  return { searchInput, isSearching, handleSearch } as const;
-}
-
 function useSalesOrdersController(initialParams: SalesOrderQueryParams) {
   const router = useRouter();
-  const { params, updateParams, setParam } = useUrlSearchParams(
+  const { params, updateParams } = useUrlSearchParams(
     salesOrderParamsConfig,
     {
       basePath: '/sales-orders',
@@ -201,30 +160,66 @@ function useSalesOrdersController(initialParams: SalesOrderQueryParams) {
     }
   );
 
-  const { searchInput, isSearching, handleSearch } = useSalesOrderSearch(
-    params.search,
-    updateParams
+  const {
+    searchInput,
+    isSearching,
+    handleSearchChange,
+    cancelPendingCommit,
+    setSearchInput,
+  } = useListSearchController({
+    committedValue: params.search,
+    onCommit: search => {
+      updateParams({ search: search ?? '', page: 1 });
+    },
+  });
+
+  const getPendingSearch = React.useCallback(() => {
+    cancelPendingCommit();
+    return normalizeSearch(searchInput);
+  }, [cancelPendingCommit, searchInput]);
+
+  const handleSearch = React.useCallback(
+    (value: string) => {
+      handleSearchChange(value);
+    },
+    [handleSearchChange]
   );
 
   const handleFilter = React.useCallback(
     (key: string, value: string | undefined) => {
-      updateParams(buildFilterUpdates(key, value));
+      const nextSearch = getPendingSearch();
+      updateParams({
+        ...buildFilterUpdates(key, value),
+        search: nextSearch ?? '',
+      });
     },
-    [updateParams]
+    [getPendingSearch, updateParams]
   );
 
   const handleRecordScopeChange = React.useCallback(
     (recordScope: SalesOrderQueryParams['recordScope']) => {
-      updateParams(buildFilterUpdates('recordScope', recordScope));
+      const nextSearch = getPendingSearch();
+      updateParams({
+        ...buildFilterUpdates('recordScope', recordScope),
+        search: nextSearch ?? '',
+      });
     },
-    [updateParams]
+    [getPendingSearch, updateParams]
   );
 
   const handlePageChange = React.useCallback(
     (nextPage: number) => {
-      if (nextPage !== params.page) setParam('page', nextPage);
+      if (nextPage === params.page) {
+        return;
+      }
+
+      const nextSearch = getPendingSearch();
+      updateParams({
+        search: nextSearch ?? '',
+        page: nextPage,
+      });
     },
-    [setParam, params.page]
+    [getPendingSearch, params.page, updateParams]
   );
 
   const currentQueryParams: SalesOrderQueryParams = React.useMemo(
@@ -233,6 +228,8 @@ function useSalesOrdersController(initialParams: SalesOrderQueryParams) {
   );
 
   const handleClearFilters = React.useCallback(() => {
+    cancelPendingCommit();
+    setSearchInput('');
     updateParams({
       search: '',
       status: undefined,
@@ -247,7 +244,7 @@ function useSalesOrdersController(initialParams: SalesOrderQueryParams) {
       includeVoided: undefined,
       page: 1,
     });
-  }, [params.recordScope, updateParams]);
+  }, [cancelPendingCommit, params.recordScope, setSearchInput, updateParams]);
 
   const handleOrderSelect = React.useCallback(
     (order: { id: string }) => {

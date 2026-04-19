@@ -7,12 +7,18 @@ import type {
 
 interface AdjustmentRecordsFiltersProps {
   filters: AdjustmentQueryParams;
+  searchValue?: string;
+  isSearching?: boolean;
+  onSearchChange?: (value: string) => void;
   onFiltersChange: (filters: AdjustmentQueryParams) => void;
   onReset: () => void;
 }
 
 export function AdjustmentRecordsFilters({
   filters,
+  searchValue,
+  isSearching = false,
+  onSearchChange,
   onFiltersChange,
   onReset,
 }: AdjustmentRecordsFiltersProps) {
@@ -29,11 +35,14 @@ export function AdjustmentRecordsFilters({
 
   return (
     <SearchFilterCard
-      searchValue={filters?.search || ''}
+      searchValue={searchValue ?? (filters?.search || '')}
       onSearchChange={val =>
-        onFiltersChange({ ...filters, search: val, page: 1 })
+        onSearchChange
+          ? onSearchChange(val)
+          : onFiltersChange({ ...filters, search: val, page: 1 })
       }
       searchPlaceholder="搜索调整单号、产品名称、编码..."
+      isSearching={isSearching}
       // 筛选器配置
       filters={[
         {

@@ -37,10 +37,13 @@ interface RefundsClientProps {
   initialParams: RefundListQueryParams;
   isLoading?: boolean;
   errorMessage?: string | null;
+  searchValue?: string;
+  isSearching?: boolean;
   onSearch?: (value: string) => void;
   onFilter?: (key: string, value: string | undefined) => void;
   onDateRangeChange?: (range: DateRangeValue) => void;
   onPageChange?: (page: number) => void;
+  onClearFilters?: () => void;
 }
 
 /**
@@ -52,10 +55,13 @@ export function RefundsClient({
   initialParams,
   isLoading,
   errorMessage,
+  searchValue: controlledSearchValue,
+  isSearching = false,
   onSearch,
   onFilter,
   onDateRangeChange,
   onPageChange,
+  onClearFilters,
 }: RefundsClientProps) {
   const router = useRouter();
   const [processDialogOpen, setProcessDialogOpen] = React.useState(false);
@@ -63,13 +69,25 @@ export function RefundsClient({
     null
   );
   const { refunds, statistics, pagination } = data;
-  const [searchValue, setSearchValue] = React.useState(
+  const [localSearchValue, setLocalSearchValue] = React.useState(
     initialParams.search ?? ''
   );
 
   React.useEffect(() => {
-    setSearchValue(initialParams.search ?? '');
+    setLocalSearchValue(initialParams.search ?? '');
   }, [initialParams.search]);
+
+  const effectiveSearchValue = controlledSearchValue ?? localSearchValue;
+
+  const handleSearchChange = React.useCallback(
+    (value: string) => {
+      if (controlledSearchValue === undefined) {
+        setLocalSearchValue(value);
+      }
+      onSearch?.(value);
+    },
+    [controlledSearchValue, onSearch]
+  );
 
   const handleDialogOpenChange = React.useCallback((open: boolean) => {
     setProcessDialogOpen(open);
@@ -329,12 +347,10 @@ export function RefundsClient({
 
       {/* 搜索和筛选 */}
       <SearchFilterCard
-        searchValue={searchValue}
-        onSearchChange={value => {
-          setSearchValue(value);
-          onSearch?.(value);
-        }}
+        searchValue={effectiveSearchValue}
+        onSearchChange={handleSearchChange}
         searchPlaceholder="搜索退款单号、退货单号或客户名称"
+        isSearching={isSearching}
         // 筛选器配置
         filters={[
           {
@@ -369,6 +385,7 @@ export function RefundsClient({
           onChange: range => onDateRangeChange?.(range),
           placeholder: '选择退款日期范围',
         }}
+        onClearFilters={onClearFilters}
         variant="bordered"
         compact={true}
       />

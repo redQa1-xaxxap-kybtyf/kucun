@@ -640,7 +640,7 @@ function CreateCategoryForm({
                           onChange={event =>
                             onParentSearchChange(event.target.value)
                           }
-                          placeholder="输入分类名称或编码搜索父级分类"
+                          placeholder="搜索父级分类"
                           autoComplete="off"
                           aria-label="搜索父级分类"
                         />
@@ -701,9 +701,6 @@ function CreateCategoryForm({
                                       <span className="truncate font-medium">
                                         {category.name}
                                       </span>
-                                      <span className="truncate text-xs text-gray-400">
-                                        {category.code}
-                                      </span>
                                     </div>
                                     <div className="truncate text-xs text-gray-500">
                                       {category.fullPath}
@@ -718,7 +715,7 @@ function CreateCategoryForm({
                       <FormDescription>
                         选择父级分类以创建层级结构（最多支持3级），系统会显示完整路径，避免同名分类选错
                         <span className="mt-1 block text-xs text-blue-600">
-                          提示：可输入分类名称或编码搜索，编码会自动生成，创建后可在分类列表查看
+                          提示：输入关键词即可查找，选择时优先显示分类名称和路径
                         </span>
                       </FormDescription>
                       <FormMessage />
