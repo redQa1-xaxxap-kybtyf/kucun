@@ -63,6 +63,7 @@ const customJestConfig = {
     '<rootDir>/kucunxcx/',
     '<rootDir>/tests/e2e/',
     '<rootDir>/tests/cache-behavior-test.spec.ts',
+    '<rootDir>/tests/finance-reports-browser.spec.ts',
   ],
 
   // 忽略的模块路径（避免子工程包名冲突和重复 __mocks__）

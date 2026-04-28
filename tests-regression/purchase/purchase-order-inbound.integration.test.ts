@@ -30,6 +30,7 @@ jest.mock('@/lib/api/middleware', () => ({
 }));
 
 jest.mock('@/lib/utils/idempotency', () => ({
+  checkIdempotency: jest.fn(async () => ({ isNew: true })),
   withIdempotency: jest.fn(
     async (_key: any, _type: any, _id: any, _user: any, _meta: any, fn: any) =>
       fn()

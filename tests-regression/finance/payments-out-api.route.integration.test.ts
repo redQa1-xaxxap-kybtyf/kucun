@@ -275,9 +275,34 @@ describe('/api/finance/payments-out（端点级回归）', () => {
           gte: expect.any(Date),
           lte: expect.any(Date),
         }),
-        OR: expect.any(Array),
+        OR: expect.arrayContaining([
+          { paymentNumber: { contains: 'foo' } },
+          { voucherNumber: { contains: 'foo' } },
+          { remarks: { contains: 'foo' } },
+          { bankInfo: { contains: 'foo' } },
+          { supplier: { name: { contains: 'foo' } } },
+          { supplier: { phone: { contains: 'foo' } } },
+          {
+            payableRecord: {
+              is: {
+                OR: expect.arrayContaining([
+                  { payableNumber: { contains: 'foo' } },
+                  { sourceNumber: { contains: 'foo' } },
+                ]),
+              },
+            },
+          },
+        ]),
       })
     );
+    const paymentDate = findManyArgs.where.paymentDate as {
+      gte: Date;
+      lte: Date;
+    };
+    expect(paymentDate.lte.getHours()).toBe(23);
+    expect(paymentDate.lte.getMinutes()).toBe(59);
+    expect(paymentDate.lte.getSeconds()).toBe(59);
+    expect(paymentDate.lte.getMilliseconds()).toBe(999);
   });
 
   test('POST：数据验证失败应返回 400', async () => {

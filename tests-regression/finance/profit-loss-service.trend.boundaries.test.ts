@@ -17,6 +17,7 @@ jest.mock('@/lib/db', () => ({
     },
     outboundRecord: {
       aggregate: jest.fn(),
+      findMany: jest.fn(),
     },
     expenseRecord: {
       groupBy: jest.fn(),
@@ -57,6 +58,7 @@ describe('profit-loss-service：趋势分组/日期边界（集成回归）', ()
     prisma.outboundRecord.aggregate.mockResolvedValue({
       _sum: { totalCost: 0 },
     });
+    prisma.outboundRecord.findMany.mockResolvedValue([]);
     prisma.expenseRecord.groupBy.mockResolvedValue([]);
     prisma.refundRecord.aggregate.mockResolvedValue({
       _sum: { processedAmount: 0 },

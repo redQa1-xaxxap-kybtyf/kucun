@@ -98,7 +98,7 @@ describe('/api/finance（集成回归）', () => {
     expect(body).toEqual(
       expect.objectContaining({
         success: false,
-        error: '参数验证失败',
+        error: '提交内容有误，请检查后重试',
         details: expect.any(Array),
       })
     );

@@ -188,7 +188,7 @@ describe('/api/payments（端点级回归）', () => {
         select: expect.objectContaining({
           payments: expect.objectContaining({
             where: expect.objectContaining({
-              status: { in: ['confirmed', 'applied'] },
+              status: { in: ['confirmed', 'applied', 'pending'] },
               NOT: expect.objectContaining({
                 AND: expect.arrayContaining([
                   expect.objectContaining({
@@ -200,6 +200,11 @@ describe('/api/payments（端点级回归）', () => {
                     remarks: expect.objectContaining({
                       contains: '确认应收',
                     }),
+                  }),
+                  expect.objectContaining({
+                    actualPaymentAmount: {
+                      equals: 0,
+                    },
                   }),
                 ]),
               }),

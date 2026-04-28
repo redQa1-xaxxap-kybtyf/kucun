@@ -40,6 +40,7 @@ jest.mock('@/lib/services/profit-loss-service', () => ({
 }));
 
 describe('财务报表 API：参数/缓存多边界（集成回归）', () => {
+  const VALIDATION_ERROR_MESSAGE = '提交内容有误，请检查后重试';
   const { getOrSetJSON, buildCacheKey } = jest.requireMock('@/lib/cache') as {
     getOrSetJSON: jest.Mock;
     buildCacheKey: jest.Mock;
@@ -59,6 +60,16 @@ describe('财务报表 API：参数/缓存多边界（集成回归）', () => {
     getOrSetJSON.mockImplementation(async (_key: string, fn: any) => fn());
   });
 
+  const expectValidationFailure = (body: unknown) => {
+    expect(body).toEqual(
+      expect.objectContaining({
+        success: false,
+        error: VALIDATION_ERROR_MESSAGE,
+        details: expect.any(Array),
+      })
+    );
+  };
+
   test('GET /api/finance/reports/monthly：月份越界应返回 400', async () => {
     const { GET } = await import('@/app/api/finance/reports/monthly/route');
     const response = await GET({
@@ -69,13 +80,7 @@ describe('财务报表 API：参数/缓存多边界（集成回归）', () => {
 
     expect(response.status).toBe(400);
     const body = await response.json();
-    expect(body).toEqual(
-      expect.objectContaining({
-        success: false,
-        error: '参数验证失败',
-        details: expect.any(Array),
-      })
-    );
+    expectValidationFailure(body);
   });
 
   test('GET /api/finance/reports/monthly：forceRefresh=true 应绕过缓存', async () => {
@@ -124,8 +129,7 @@ describe('财务报表 API：参数/缓存多边界（集成回归）', () => {
 
     expect(response.status).toBe(400);
     const body = await response.json();
-    expect(body.success).toBe(false);
-    expect(body.error).toBe('参数验证失败');
+    expectValidationFailure(body);
   });
 
   test('GET /api/finance/reports/monthly：默认走缓存，并透传 includeComparison=false', async () => {
@@ -175,8 +179,7 @@ describe('财务报表 API：参数/缓存多边界（集成回归）', () => {
 
     expect(response.status).toBe(400);
     const body = await response.json();
-    expect(body.success).toBe(false);
-    expect(body.error).toBe('参数验证失败');
+    expectValidationFailure(body);
   });
 
   test('GET /api/finance/reports/annual：forceRefresh=true 应绕过缓存', async () => {
@@ -248,8 +251,7 @@ describe('财务报表 API：参数/缓存多边界（集成回归）', () => {
 
     expect(response.status).toBe(400);
     const body = await response.json();
-    expect(body.success).toBe(false);
-    expect(body.error).toBe('参数验证失败');
+    expectValidationFailure(body);
   });
 
   test('GET /api/finance/reports/profit-loss：groupBy 非法应返回 400', async () => {
@@ -262,8 +264,7 @@ describe('财务报表 API：参数/缓存多边界（集成回归）', () => {
 
     expect(response.status).toBe(400);
     const body = await response.json();
-    expect(body.success).toBe(false);
-    expect(body.error).toBe('参数验证失败');
+    expectValidationFailure(body);
   });
 
   test('GET /api/finance/reports/profit-loss：开始日期晚于结束日期应返回 400', async () => {
@@ -276,8 +277,7 @@ describe('财务报表 API：参数/缓存多边界（集成回归）', () => {
 
     expect(response.status).toBe(400);
     const body = await response.json();
-    expect(body.success).toBe(false);
-    expect(body.error).toBe('参数验证失败');
+    expectValidationFailure(body);
   });
 
   test('GET /api/finance/reports/profit-loss：日期格式非法应返回 400', async () => {
@@ -290,8 +290,7 @@ describe('财务报表 API：参数/缓存多边界（集成回归）', () => {
 
     expect(response.status).toBe(400);
     const body = await response.json();
-    expect(body.success).toBe(false);
-    expect(body.error).toBe('参数验证失败');
+    expectValidationFailure(body);
   });
 
   test('GET /api/finance/reports/profit-loss：结束日期未来应返回 400', async () => {
@@ -311,8 +310,7 @@ describe('财务报表 API：参数/缓存多边界（集成回归）', () => {
 
     expect(response.status).toBe(400);
     const body = await response.json();
-    expect(body.success).toBe(false);
-    expect(body.error).toBe('参数验证失败');
+    expectValidationFailure(body);
   });
 
   test('GET /api/finance/reports/profit-loss：省略 groupBy/includeComparison 时使用默认值', async () => {

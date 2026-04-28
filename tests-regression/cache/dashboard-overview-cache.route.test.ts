@@ -91,7 +91,8 @@ describe('dashboard overview cache route', () => {
     expect(body).toEqual(
       expect.objectContaining({
         success: false,
-        error: '请求参数格式不正确',
+        error: '请求内容有误，请稍后重试',
+        details: expect.any(Array),
       })
     );
   });

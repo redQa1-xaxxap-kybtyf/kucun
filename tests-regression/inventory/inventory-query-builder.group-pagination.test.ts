@@ -76,11 +76,10 @@ describe('inventory-query-builder grouped pagination', () => {
     jest.clearAllMocks();
   });
 
-  it('应先按产品分页，再返回当前页产品下的全部批次', async () => {
+  it('应先按产品编码分页，再返回当前页同编码下的全部批次', async () => {
     queryRawMock
       .mockResolvedValueOnce([
         {
-          product_id: 'product-1',
           product_code: 'P-001',
         },
       ])
@@ -111,14 +110,14 @@ describe('inventory-query-builder grouped pagination', () => {
         },
         {
           id: 'inventory-2',
-          productId: 'product-1',
+          productId: 'product-2',
           batchNumber: 'BATCH-B',
           quantity: 80,
           reservedQuantity: 0,
           location: 'A-02',
           unitCost: 12.5,
           updatedAt: new Date('2026-04-04T10:00:00.000Z'),
-          product_id: 'product-1',
+          product_id: 'product-2',
           product_code: 'P-001',
           product_name: '产品一',
           specification_size: '36M06#',
@@ -154,24 +153,36 @@ describe('inventory-query-builder grouped pagination', () => {
     expect(queryRawMock).toHaveBeenCalledTimes(2);
 
     const groupPageSql = extractSql(queryRawMock.mock.calls[0]);
-    expect(groupPageSql).toContain('GROUP BY i.product_id, p.code');
+    const groupPageSqlFragments = collectEmbeddedSqlFragments(
+      queryRawMock.mock.calls[0]
+    );
     expect(groupPageSql).toContain('LIMIT');
     expect(groupPageSql).toContain('OFFSET');
+    expect(
+      groupPageSqlFragments.some(fragment =>
+        fragment.includes("COALESCE(NULLIF(TRIM(p.code), ''), i.product_id)")
+      )
+    ).toBe(true);
 
-    const rowFetchSql = extractSql(queryRawMock.mock.calls[1]);
-    expect(rowFetchSql).toContain('i.product_id IN');
     const rowFetchSqlFragments = collectEmbeddedSqlFragments(
       queryRawMock.mock.calls[1]
     );
     expect(
       rowFetchSqlFragments.some(fragment =>
-        fragment.includes('FIELD(i.product_id,')
+        fragment.includes("COALESCE(NULLIF(TRIM(p.code), ''), i.product_id)")
+      )
+    ).toBe(true);
+    expect(
+      rowFetchSqlFragments.some(fragment =>
+        fragment.includes(
+          "FIELD(COALESCE(NULLIF(TRIM(p.code), ''), i.product_id),"
+        )
       )
     ).toBe(true);
   });
 
-  it('库存总数应按产品分组计数，而不是按库存记录计数', async () => {
-    queryRawMock.mockResolvedValueOnce([{ count: BigInt(3) }]);
+  it('库存总数应按产品编码分组计数，而不是按库存记录或产品ID计数', async () => {
+    queryRawMock.mockResolvedValueOnce([{ count: BigInt(2) }]);
 
     const { getInventoryCount } = await import(
       '@/lib/api/inventory-query-builder'
@@ -182,18 +193,23 @@ describe('inventory-query-builder grouped pagination', () => {
       limit: 20,
     });
 
-    expect(total).toBe(3);
+    expect(total).toBe(2);
     expect(queryRawMock).toHaveBeenCalledTimes(1);
 
-    const countSql = extractSql(queryRawMock.mock.calls[0]);
-    expect(countSql).toContain('COUNT(DISTINCT i.product_id)');
+    const countSqlFragments = collectEmbeddedSqlFragments(
+      queryRawMock.mock.calls[0]
+    );
+    expect(
+      countSqlFragments.some(fragment =>
+        fragment.includes("COALESCE(NULLIF(TRIM(p.code), ''), i.product_id)")
+      )
+    ).toBe(true);
   });
 
   it('搜索并筛选仅看有库存时，仍应返回同一产品下的全部有库存批次', async () => {
     queryRawMock
       .mockResolvedValueOnce([
         {
-          product_id: 'product-2',
           product_code: 'RET-rr-416972',
         },
       ])
@@ -267,10 +283,12 @@ describe('inventory-query-builder grouped pagination', () => {
       'BATCH-rr-0611',
     ]);
 
-    const groupPageSql = extractSql(queryRawMock.mock.calls[0]);
-    expect(groupPageSql).toContain('GROUP BY i.product_id, p.code');
-
     const filterSqlFragments = collectEmbeddedSqlFragments(queryRawMock.mock.calls[0]);
+    expect(
+      filterSqlFragments.some(fragment =>
+        fragment.includes("COALESCE(NULLIF(TRIM(p.code), ''), i.product_id)")
+      )
+    ).toBe(true);
     expect(
       filterSqlFragments.some(fragment =>
         fragment.includes('CASE WHEN i.quantity - i.reserved_quantity < 0 THEN 0 ELSE i.quantity - i.reserved_quantity END')

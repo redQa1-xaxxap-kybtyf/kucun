@@ -60,7 +60,7 @@ describe('payables-export-service（字段口径回归）', () => {
     },
   };
 
-  test('prepareExportData 应输出“已核销金额”和“结算状态”语义字段', () => {
+  test('prepareExportData 应输出“已付金额”和“结算状态”语义字段', () => {
     const [row] = PayablesExportService.prepareExportData([payable as any]);
 
     expect(row).toEqual(
@@ -68,31 +68,37 @@ describe('payables-export-service（字段口径回归）', () => {
         应付款编号: 'PAY-001',
         供应商名称: '供应商A',
         应付金额: 100,
-        已核销金额: 88,
+        已付金额: 88,
         剩余金额: 12,
         结算状态: '部分结清',
       })
     );
-    expect('已付金额' in row).toBe(false);
+    expect('已核销金额' in row).toBe(false);
     expect('付款状态' in row).toBe(false);
   });
 
-  test('exportToCSV/exportToExcel 应使用“已核销金额”字段顺序与数值列配置', () => {
+  test('exportToCSV/exportToExcel 应使用“已付金额”字段顺序与数值列配置', () => {
     PayablesExportService.exportToCSV([payable as any], 'payables.csv');
     PayablesExportService.exportToExcel([payable as any], 'payables.xlsx');
 
     expect(CSVExportService.exportToCSV).toHaveBeenCalledWith(
       expect.any(Array),
       expect.objectContaining({
-        numberFields: ['应付金额', '已核销金额', '剩余金额'],
-        fieldOrder: expect.arrayContaining(['应付金额', '已核销金额', '剩余金额']),
+        numberFields: ['应付金额', '已付金额', '剩余金额'],
+        fieldOrder: expect.arrayContaining([
+          '应付金额',
+          '已付金额',
+          '剩余金额',
+        ]),
       })
     );
 
-    expect(EnhancedExcelExportService.exportToEnhancedExcel).toHaveBeenCalledWith(
+    expect(
+      EnhancedExcelExportService.exportToEnhancedExcel
+    ).toHaveBeenCalledWith(
       expect.any(Array),
       expect.objectContaining({
-        numberFields: ['应付金额', '已核销金额', '剩余金额'],
+        numberFields: ['应付金额', '已付金额', '剩余金额'],
       })
     );
   });

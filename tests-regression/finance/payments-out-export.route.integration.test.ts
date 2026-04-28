@@ -78,6 +78,9 @@ describe('/api/finance/payments-out/export（导出口径回归）', () => {
       data: {
         page: 1,
         limit: 50000,
+        search: 'YFK',
+        startDate: '2026-04-01',
+        endDate: '2026-04-30',
         sortBy: 'createdAt',
         sortOrder: 'desc',
       },
@@ -149,5 +152,36 @@ describe('/api/finance/payments-out/export（导出口径回归）', () => {
     expect(exportRows[0]?.付款状态).toBe('已确认');
     expect(exportRows[0]?.付款方式).not.toBe('bank_transfer');
     expect(exportRows[0]?.付款状态).not.toBe('confirmed');
+
+    expect(prisma.paymentOutRecord.findMany).toHaveBeenCalledTimes(1);
+    const [findManyArgs] = prisma.paymentOutRecord.findMany.mock.calls[0] as [
+      Record<string, any>,
+    ];
+    expect(findManyArgs.where).toEqual(
+      expect.objectContaining({
+        paymentDate: expect.objectContaining({
+          gte: expect.any(Date),
+          lte: expect.any(Date),
+        }),
+        OR: expect.arrayContaining([
+          { paymentNumber: { contains: 'YFK' } },
+          { voucherNumber: { contains: 'YFK' } },
+          { remarks: { contains: 'YFK' } },
+          { bankInfo: { contains: 'YFK' } },
+          { supplier: { name: { contains: 'YFK' } } },
+          { supplier: { phone: { contains: 'YFK' } } },
+          {
+            payableRecord: {
+              is: {
+                OR: expect.arrayContaining([
+                  { payableNumber: { contains: 'YFK' } },
+                  { sourceNumber: { contains: 'YFK' } },
+                ]),
+              },
+            },
+          },
+        ]),
+      })
+    );
   });
 });

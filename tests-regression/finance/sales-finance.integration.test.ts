@@ -627,7 +627,8 @@ describe('财务 × 销售：关键链路（集成回归）', () => {
         amount: 100,
         referenceId: result.id,
         referenceNumber: 'SO-0001',
-      })
+      }),
+      undefined
     );
   });
 
@@ -714,7 +715,8 @@ describe('财务 × 销售：关键链路（集成回归）', () => {
         amount: 99.5,
         referenceId: result.id,
         referenceNumber: 'SO-0004',
-      })
+      }),
+      undefined
     );
   });
 
@@ -786,7 +788,8 @@ describe('财务 × 销售：关键链路（集成回归）', () => {
         amount: 6,
         referenceId: result.id,
         referenceNumber: 'SO-0005',
-      })
+      }),
+      undefined
     );
   });
 

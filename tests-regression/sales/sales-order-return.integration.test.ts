@@ -722,7 +722,7 @@ describe('销售订单 × 退货订单（集成回归）', () => {
     expect(payment.paymentAmount).toBe(100);
 
     expect(recordPartnerTransaction).toHaveBeenCalledTimes(1);
-    expect(recordPartnerTransaction.mock.calls[0]!.length).toBe(1);
+    expect(recordPartnerTransaction.mock.calls[0]!.length).toBe(2);
     expect(recordPartnerTransaction.mock.calls[0]![0]).toEqual(
       expect.objectContaining({
         partnerId: customerId,
@@ -734,6 +734,7 @@ describe('销售订单 × 退货订单（集成回归）', () => {
         referenceNumber: 'SO-0001',
       })
     );
+    expect(recordPartnerTransaction.mock.calls[0]![1]).toBeUndefined();
 
     store.returnOrdersById.set('ro-1', {
       id: 'ro-1',

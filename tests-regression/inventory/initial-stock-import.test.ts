@@ -661,6 +661,102 @@ describe('initial-stock import handler', () => {
     });
   });
 
+  test('按片导入时，填写批次实际每件重量且未填装箱数，会使用产品默认装箱数保存批次重量', async () => {
+    prisma.product.findMany.mockResolvedValue([
+      {
+        id: 'product-piece-weight',
+        code: 'P-PW',
+        name: '木纹砖',
+        specification: '200x1200mm',
+        piecesPerUnit: 6,
+        weight: 24,
+        variants: [],
+      },
+    ]);
+
+    const rows = [
+      {
+        产品编码: 'P-PW',
+        产品名称: '',
+        规格: '',
+        色号: '',
+        批次号: 'PW-001',
+        '本批次实际每件重量(kg)': 25.5,
+        数量: 120,
+        数量单位: '片',
+        单位成本: 9.8,
+        库位: 'B-03',
+        备注: '按片导入但仍需保存批次每件重量',
+      },
+    ];
+
+    const previewResult = await validateInitialStockImportRows(rows);
+
+    expect(previewResult.valid).toBe(true);
+    expect(previewResult.previewRows[0]).toMatchObject({
+      productCode: 'P-PW',
+      batchNumber: 'PW-001',
+      quantityUnit: '片',
+      piecesPerUnit: undefined,
+      weight: 25.5,
+      weightSource: 'row',
+      quantity: 120,
+      unitCost: 9.8,
+    });
+
+    await importInitialStockRows(rows, 'user-1');
+
+    expect(executeMinimalInboundTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        productId: 'product-piece-weight',
+        batchNumber: 'PW-001',
+        piecesPerUnit: 6,
+        weight: 25.5,
+        quantity: 120,
+        unitCost: 9.8,
+      })
+    );
+  });
+
+  test('按片导入时，填写批次实际每件重量但产品没有默认装箱数，会提示补充装箱数', async () => {
+    prisma.product.findMany.mockResolvedValue([
+      {
+        id: 'product-piece-weight-no-ppu',
+        code: 'P-PW-NO-PPU',
+        name: '素色砖',
+        specification: '600x600mm',
+        piecesPerUnit: null,
+        weight: 18,
+        variants: [],
+      },
+    ]);
+
+    const result = await validateInitialStockImportRows([
+      {
+        产品编码: 'P-PW-NO-PPU',
+        产品名称: '',
+        规格: '',
+        色号: '',
+        批次号: 'PW-ERR-01',
+        '本批次实际每件重量(kg)': 19.2,
+        数量: 80,
+        数量单位: '片',
+        单位成本: 11,
+        库位: '',
+        备注: '',
+      },
+    ]);
+
+    expect(result.valid).toBe(false);
+    expect(result.canImport).toBe(false);
+    expect(result.errorCount).toBe(1);
+    expect(result.errors[0]).toMatchObject({
+      field: '装箱数',
+      productCode: 'P-PW-NO-PPU',
+    });
+    expect(result.errors[0].message).toContain('默认装箱数');
+  });
+
   test('填写不存在的供应商时会报错', async () => {
     prisma.product.findMany.mockResolvedValue([
       {
@@ -1141,7 +1237,7 @@ describe('initial-stock import handler', () => {
     );
   });
 
-  test('只填写每件重量时，只写入当前批次重量，不再回填产品档案装箱数', async () => {
+  test('只填写每件重量时，会使用产品默认装箱数保存当前批次重量', async () => {
     prisma.product.findMany.mockResolvedValue([
       {
         id: 'product-weight-only',
@@ -1179,7 +1275,7 @@ describe('initial-stock import handler', () => {
       expect.objectContaining({
         productId: 'product-weight-only',
         batchNumber: 'WEIGHT-ONLY',
-        piecesPerUnit: undefined,
+        piecesPerUnit: 6,
         weight: 30.25,
       })
     );
