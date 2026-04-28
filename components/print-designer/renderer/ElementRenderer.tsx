@@ -17,18 +17,21 @@ import {
   TableRenderer,
   TextRenderer,
 } from './elements';
+import type { TableRenderOverride } from './paginated-layout';
 import { mmToPx } from './utils';
 
 interface ElementRendererProps {
   element: DesignElement;
   data: Record<string, unknown>;
   scale: number;
+  tableRenderOverride?: TableRenderOverride;
 }
 
 export function ElementRenderer({
   element,
   data,
   scale,
+  tableRenderOverride,
 }: ElementRendererProps) {
   // 计算元素包装器样式
   const wrapperStyle: React.CSSProperties = {
@@ -54,7 +57,15 @@ export function ElementRenderer({
         );
 
       case 'table':
-        return <TableRenderer element={element} data={data} scale={scale} />;
+        return (
+          <TableRenderer
+            element={element}
+            data={data}
+            scale={scale}
+            rowNumberOffset={tableRenderOverride?.rowNumberOffset}
+            summaryItems={tableRenderOverride?.summaryItems}
+          />
+        );
 
       case 'image':
         return <ImageRenderer element={element} data={data} scale={scale} />;

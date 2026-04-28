@@ -8,7 +8,12 @@
 
 import type { PlaceholderElement } from '@/lib/print-designer/schemas';
 
-import { formatValue, getNestedValue, ptToPx } from '../utils';
+import {
+  formatValue,
+  getNestedValue,
+  ptToPx,
+  resolveFontFamilyStack,
+} from '../utils';
 
 interface PlaceholderRendererProps {
   element: PlaceholderElement;
@@ -35,7 +40,7 @@ export function PlaceholderRenderer({
   const textStyle: React.CSSProperties = {
     width: '100%',
     height: '100%',
-    fontFamily: style.fontFamily,
+    fontFamily: resolveFontFamilyStack(style.fontFamily),
     fontSize: ptToPx(style.fontSize) * scale,
     fontWeight: style.fontWeight,
     fontStyle: style.fontStyle,

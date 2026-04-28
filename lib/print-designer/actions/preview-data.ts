@@ -6,6 +6,7 @@
 
 import { PRODUCT_UNIT_LABELS } from '@/lib/config/product';
 import { prisma } from '@/lib/db';
+import { systemConfig } from '@/lib/env';
 import {
   getSalesOrderDisplayQuantityValue,
   getSalesOrderItemDisplayCode,
@@ -20,6 +21,7 @@ import {
   getSalesOrderTotalWeightKg,
 } from '@/lib/utils/sales-order-display';
 
+import type { PrintCompanyProfile } from '../company-profile';
 import type { TemplateType } from '../schemas';
 
 import { getAuthUser } from './auth';
@@ -38,6 +40,42 @@ function todayYmd(): string {
   return new Date().toISOString().split('T')[0];
 }
 
+async function getPrintCompanyProfile(): Promise<PrintCompanyProfile> {
+  const fallbackProfile: PrintCompanyProfile = {
+    name: systemConfig.companyName,
+    address: '',
+    phone: '',
+    fax: '',
+  };
+
+  try {
+    const settings = await prisma.systemSetting.findMany({
+      where: {
+        category: 'basic',
+        key: {
+          in: ['companyName', 'companyAddress', 'companyPhone'],
+        },
+      },
+      select: {
+        key: true,
+        value: true,
+      },
+      take: 20,
+    });
+
+    const settingMap = new Map(settings.map(setting => [setting.key, setting.value]));
+
+    return {
+      name: settingMap.get('companyName')?.trim() || fallbackProfile.name,
+      address: settingMap.get('companyAddress')?.trim() || fallbackProfile.address,
+      phone: settingMap.get('companyPhone')?.trim() || fallbackProfile.phone,
+      fax: fallbackProfile.fax,
+    };
+  } catch {
+    return fallbackProfile;
+  }
+}
+
 function toSafeInteger(value: unknown): number {
   const numeric = Number(value ?? 0);
 
@@ -51,6 +89,45 @@ function toSafeInteger(value: unknown): number {
 function toSafeNumber(value: unknown): number {
   const numeric = Number(value ?? 0);
   return Number.isFinite(numeric) ? numeric : 0;
+}
+
+function roundWeightKg(value: number): number {
+  return Math.round(value * 1000) / 1000;
+}
+
+function calculateLineWeightKg(
+  weightPerUnit: unknown,
+  quantity: unknown
+): number {
+  const normalizedWeight = toSafeNumber(weightPerUnit);
+  const normalizedQuantity = toSafeNumber(quantity);
+
+  if (normalizedWeight <= 0 || normalizedQuantity <= 0) {
+    return 0;
+  }
+
+  return roundWeightKg(normalizedWeight * normalizedQuantity);
+}
+
+function calculatePieceBackedWeightKg(
+  totalPieces: unknown,
+  weightPerUnit: unknown,
+  piecesPerUnit = 0
+): number {
+  const normalizedPieces = toSafeNumber(totalPieces);
+  const normalizedWeight = toSafeNumber(weightPerUnit);
+  const normalizedPiecesPerUnit = toSafeInteger(piecesPerUnit);
+
+  if (normalizedPieces <= 0 || normalizedWeight <= 0) {
+    return 0;
+  }
+
+  const units =
+    normalizedPiecesPerUnit > 1
+      ? normalizedPieces / normalizedPiecesPerUnit
+      : normalizedPieces;
+
+  return roundWeightKg(units * normalizedWeight);
 }
 
 function resolvePiecesPerUnit(...values: unknown[]): number {
@@ -122,6 +199,7 @@ export interface RecentPrintDocumentOption {
 export async function getSalesOrderForPrint(orderId: string) {
   const user = await getAuthUser();
   if (!user) return null;
+  const company = await getPrintCompanyProfile();
 
   const order = await prisma.salesOrder.findUnique({
     where: { id: orderId },
@@ -175,7 +253,9 @@ export async function getSalesOrderForPrint(orderId: string) {
     const spec = getSalesOrderItemSpecification(displayItem);
     const unit = getSalesOrderNormalizedDisplayUnit(displayItem);
     const quantityText = getSalesOrderItemQuantityText(displayItem);
-    const itemWeightKg = getSalesOrderItemWeightKg(displayItem);
+    const itemWeightKg = roundWeightKg(
+      getSalesOrderItemWeightKg(displayItem) ?? 0
+    );
     const piecesPerUnit = getSalesOrderPiecesPerUnit(displayItem) ?? 0;
     const quantityFields = buildPieceBackedQuantityFields(
       displayItem.quantity,
@@ -206,9 +286,14 @@ export async function getSalesOrderForPrint(orderId: string) {
       specification: spec,
 
       // 其他补充信息（可选）
-      weight: itemWeightKg ?? 0,
+      itemWeightKg,
+      weight: itemWeightKg,
     };
   });
+
+  const totalWeightKg = roundWeightKg(
+    getSalesOrderTotalWeightKg(normalizedItems)
+  );
 
   return {
     order: {
@@ -236,7 +321,8 @@ export async function getSalesOrderForPrint(orderId: string) {
     totalAmountCap: Number(order.totalAmount),
     totalQuantity: getSalesOrderTotalQuantitySummary(normalizedItems),
     totalPieces: getSalesOrderTotalPieces(normalizedItems),
-    totalWeight: getSalesOrderTotalWeightKg(normalizedItems),
+    totalWeight: totalWeightKg,
+    totalWeightKg,
     totalBoxes: mappedItems.reduce(
       (sum, item) => sum + toSafeNumber(item.boxes),
       0
@@ -245,12 +331,7 @@ export async function getSalesOrderForPrint(orderId: string) {
       name: order.user?.name ?? '',
     },
     printDate: todayYmd(),
-    company: {
-      name: '天津豪星陶瓷有限公司', // TODO: 从系统配置获取
-      phone: '',
-      address: '',
-      fax: '',
-    },
+    company,
   };
 }
 
@@ -260,6 +341,7 @@ export async function getSalesOrderForPrint(orderId: string) {
 export async function getPurchaseOrderForPrint(orderId: string) {
   const user = await getAuthUser();
   if (!user) return null;
+  const company = await getPrintCompanyProfile();
 
   const order = await prisma.purchaseOrder.findUnique({
     where: { id: orderId },
@@ -299,6 +381,10 @@ export async function getPurchaseOrderForPrint(orderId: string) {
       unit,
       piecesPerUnit
     );
+    const itemWeightKg = calculateLineWeightKg(
+      item.manualWeight ?? item.weight,
+      quantity
+    );
 
     return {
       name,
@@ -313,6 +399,8 @@ export async function getPurchaseOrderForPrint(orderId: string) {
       supplierName: item.supplier?.name ?? order.supplier?.name ?? '',
       remark: item.remarks ?? '',
       remarks: item.remarks ?? '',
+      itemWeightKg,
+      weight: itemWeightKg,
       ...quantityFields,
 
       productName: name,
@@ -320,6 +408,10 @@ export async function getPurchaseOrderForPrint(orderId: string) {
       specification: spec,
     };
   });
+
+  const totalWeightKg = roundWeightKg(
+    mappedItems.reduce((sum, item) => sum + item.itemWeightKg, 0)
+  );
 
   return {
     order: {
@@ -344,16 +436,13 @@ export async function getPurchaseOrderForPrint(orderId: string) {
     totalQuantity: order.items.reduce((sum, i) => sum + i.quantity, 0),
     totalBoxes: mappedItems.reduce((sum, item) => sum + item.boxes, 0),
     totalPieces: mappedItems.reduce((sum, item) => sum + item.pieces, 0),
+    totalWeight: totalWeightKg,
+    totalWeightKg,
     operator: {
       name: order.user?.name ?? '',
     },
     printDate: todayYmd(),
-    company: {
-      name: '天津豪星陶瓷有限公司', // TODO: 从系统配置获取
-      phone: '',
-      address: '',
-      fax: '',
-    },
+    company,
   };
 }
 
@@ -363,6 +452,7 @@ export async function getPurchaseOrderForPrint(orderId: string) {
 export async function getFactoryShipmentForPrint(orderId: string) {
   const user = await getAuthUser();
   if (!user) return null;
+  const company = await getPrintCompanyProfile();
 
   const order = await prisma.factoryShipmentOrder.findUnique({
     where: { id: orderId },
@@ -402,7 +492,10 @@ export async function getFactoryShipmentForPrint(orderId: string) {
       unit,
       piecesPerUnit
     );
-    const weight = toSafeNumber(item.manualWeight ?? item.weight);
+    const itemWeightKg = calculateLineWeightKg(
+      item.manualWeight ?? item.weight,
+      quantity
+    );
 
     return {
       name,
@@ -417,7 +510,8 @@ export async function getFactoryShipmentForPrint(orderId: string) {
       supplierName: item.supplier?.name ?? '',
       remark: item.remarks ?? '',
       remarks: item.remarks ?? '',
-      weight,
+      itemWeightKg,
+      weight: itemWeightKg,
       ...quantityFields,
 
       productName: name,
@@ -425,6 +519,10 @@ export async function getFactoryShipmentForPrint(orderId: string) {
       specification: spec,
     };
   });
+
+  const totalWeightKg = roundWeightKg(
+    mappedItems.reduce((sum, item) => sum + item.itemWeightKg, 0)
+  );
 
   return {
     order: {
@@ -450,17 +548,13 @@ export async function getFactoryShipmentForPrint(orderId: string) {
     totalQuantity: order.items.reduce((sum, i) => sum + i.quantity, 0),
     totalBoxes: mappedItems.reduce((sum, item) => sum + item.boxes, 0),
     totalPieces: mappedItems.reduce((sum, item) => sum + item.pieces, 0),
-    totalWeight: mappedItems.reduce((sum, item) => sum + item.weight, 0),
+    totalWeight: totalWeightKg,
+    totalWeightKg,
     operator: {
       name: order.user?.name ?? '',
     },
     printDate: todayYmd(),
-    company: {
-      name: '天津豪星陶瓷有限公司', // TODO: 从系统配置获取
-      phone: '',
-      address: '',
-      fax: '',
-    },
+    company,
   };
 }
 
@@ -472,6 +566,7 @@ export async function getFactoryShipmentForPrint(orderId: string) {
 export async function getDeliveryNoteForPrint(recordNumber: string) {
   const user = await getAuthUser();
   if (!user) return null;
+  const company = await getPrintCompanyProfile();
 
   const record = await prisma.outboundRecord.findUnique({
     where: { recordNumber },
@@ -512,6 +607,11 @@ export async function getDeliveryNoteForPrint(recordNumber: string) {
     unit,
     piecesPerUnit
   );
+  const itemWeightKg = calculatePieceBackedWeightKg(
+    record.quantity,
+    record.product?.weight,
+    piecesPerUnit
+  );
 
   const itemRow = {
     name,
@@ -526,6 +626,8 @@ export async function getDeliveryNoteForPrint(recordNumber: string) {
     colorNo: record.variant?.colorCode ?? '',
     remark: record.notes ?? '',
     remarks: record.notes ?? '',
+    itemWeightKg,
+    weight: itemWeightKg,
     ...quantityFields,
 
     productName: name,
@@ -552,16 +654,13 @@ export async function getDeliveryNoteForPrint(recordNumber: string) {
     totalQuantity: Number(record.quantity),
     totalBoxes: itemRow.boxes,
     totalPieces: itemRow.pieces,
+    totalWeight: itemWeightKg,
+    totalWeightKg: itemWeightKg,
     operator: {
       name: record.operator?.name ?? '',
     },
     printDate: todayYmd(),
-    company: {
-      name: '天津豪星陶瓷有限公司', // TODO: 从系统配置获取
-      phone: '',
-      address: '',
-      fax: '',
-    },
+    company,
   };
 }
 
@@ -573,6 +672,7 @@ export async function getDeliveryNoteForPrint(recordNumber: string) {
 export async function getInboundRecordForPrint(recordNumber: string) {
   const user = await getAuthUser();
   if (!user) return null;
+  const company = await getPrintCompanyProfile();
 
   const record = await prisma.inboundRecord.findUnique({
     where: { recordNumber },
@@ -602,6 +702,11 @@ export async function getInboundRecordForPrint(recordNumber: string) {
     unit,
     piecesPerUnit
   );
+  const itemWeightKg = calculatePieceBackedWeightKg(
+    record.quantity,
+    record.batchSpecification?.weight ?? record.product?.weight,
+    piecesPerUnit
+  );
 
   const itemRow = {
     name,
@@ -615,6 +720,8 @@ export async function getInboundRecordForPrint(recordNumber: string) {
     remark: record.remarks ?? '',
     remarks: record.remarks ?? '',
     locationName: record.location ?? '',
+    itemWeightKg,
+    weight: itemWeightKg,
     ...quantityFields,
 
     productName: name,
@@ -647,16 +754,13 @@ export async function getInboundRecordForPrint(recordNumber: string) {
     items: [itemRow],
     totalBoxes: itemRow.boxes,
     totalPieces: itemRow.pieces,
+    totalWeight: itemWeightKg,
+    totalWeightKg: itemWeightKg,
     operator: {
       name: record.user?.name ?? '',
     },
     printDate: todayYmd(),
-    company: {
-      name: '天津豪星陶瓷有限公司', // TODO: 从系统配置获取
-      phone: '',
-      address: '',
-      fax: '',
-    },
+    company,
   };
 }
 
@@ -666,6 +770,7 @@ export async function getInboundRecordForPrint(recordNumber: string) {
 export async function getReturnOrderForPrint(orderId: string) {
   const user = await getAuthUser();
   if (!user) return null;
+  const company = await getPrintCompanyProfile();
 
   const order = await prisma.returnOrder.findUnique({
     where: { id: orderId },
@@ -704,6 +809,11 @@ export async function getReturnOrderForPrint(orderId: string) {
       unit,
       piecesPerUnit
     );
+    const itemWeightKg = calculatePieceBackedWeightKg(
+      item.returnQuantity,
+      item.salesOrderItem?.weightSnapshot ?? item.product?.weight,
+      piecesPerUnit
+    );
 
     return {
       name,
@@ -719,6 +829,8 @@ export async function getReturnOrderForPrint(orderId: string) {
       colorNo: item.colorCode ?? '',
       remark: item.reason ?? '',
       remarks: item.reason ?? '',
+      itemWeightKg,
+      weight: itemWeightKg,
       ...quantityFields,
 
       returnQuantity: item.returnQuantity,
@@ -731,6 +843,10 @@ export async function getReturnOrderForPrint(orderId: string) {
       specification: spec,
     };
   });
+
+  const totalWeightKg = roundWeightKg(
+    mappedItems.reduce((sum, item) => sum + item.itemWeightKg, 0)
+  );
 
   return {
     order: {
@@ -755,16 +871,13 @@ export async function getReturnOrderForPrint(orderId: string) {
     refundAmount: Number(order.refundAmount),
     totalBoxes: mappedItems.reduce((sum, item) => sum + item.boxes, 0),
     totalPieces: mappedItems.reduce((sum, item) => sum + item.pieces, 0),
+    totalWeight: totalWeightKg,
+    totalWeightKg,
     operator: {
       name: order.user?.name ?? '',
     },
     printDate: todayYmd(),
-    company: {
-      name: '天津豪星陶瓷有限公司', // TODO: 从系统配置获取
-      phone: '',
-      address: '',
-      fax: '',
-    },
+    company,
   };
 }
 

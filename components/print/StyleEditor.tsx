@@ -25,6 +25,15 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  factoryShipmentPrintConfig,
+} from '@/lib/config/print-fields/factory-shipment-fields';
+import {
+  purchaseOrderPrintConfig,
+} from '@/lib/config/print-fields/purchase-order-fields';
+import {
+  salesOrderPrintConfig,
+} from '@/lib/config/print-fields/sales-order-fields';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -44,6 +53,7 @@ import {
   type PresetStyleType,
   type PrintStyleConfig,
   type SignatureSettings,
+  type SummaryFieldColorOption,
   type SummarySettings,
   type TableSettings,
   validateStyleConfig,
@@ -116,6 +126,18 @@ export function StyleEditor({
   onSave,
   previewData: _previewData,
 }: StyleEditorProps) {
+  const getPrintConfigForDocumentType = useCallback(() => {
+    switch (documentType) {
+      case 'purchase-order':
+        return purchaseOrderPrintConfig;
+      case 'factory-shipment':
+        return factoryShipmentPrintConfig;
+      case 'sales-order':
+      default:
+        return salesOrderPrintConfig;
+    }
+  }, [documentType]);
+
   // 当前配置状态
   const [config, setConfig] = useState<PrintStyleConfig>(
     () =>
@@ -216,6 +238,15 @@ export function StyleEditor({
     []
   );
 
+  const summaryFieldOptions = useMemo<SummaryFieldColorOption[]>(
+    () =>
+      getPrintConfigForDocumentType().summaryFields.map(field => ({
+        key: field.key,
+        label: field.label,
+      })),
+    [getPrintConfigForDocumentType]
+  );
+
   // 保存模板
   const handleSave = useCallback(() => {
     const validation = validateStyleConfig(config);
@@ -246,8 +277,22 @@ export function StyleEditor({
 
   // 预览内容
   const previewContent = useMemo(
-    () => (
-      <PrintLayout
+    () => {
+      const printConfig = getPrintConfigForDocumentType();
+      const summarySampleValues: Record<string, unknown> = {
+        totalQuantity: 300,
+        totalWeight: 5.5,
+        totalAmount: 3000,
+        totalAmountChinese: '叁仟元整',
+        customerOwnedAmount: 1800,
+        selfOwnedAmount: 1200,
+        costAmount: 2300,
+        expenseAmount: 260,
+        profitAmount: 440,
+      };
+
+      return (
+        <PrintLayout
         size={config.page.size}
         orientation={config.page.orientation}
         margin={config.page.margin}
@@ -490,22 +535,56 @@ export function StyleEditor({
             padding: `${config.summary.padding}px`,
           }}
         >
-          <div
-            style={{
-              backgroundColor: config.summary.highlightTotal
-                ? config.summary.highlightColor
-                : 'transparent',
-              display: 'inline-block',
-              padding: '8px 16px',
-            }}
-          >
-            合计：¥3,000.00
-          </div>
-          {config.summary.showChineseAmount && (
-            <div style={{ marginTop: '4px', fontSize: '0.9em' }}>
-              大写：叁仟元整
-            </div>
-          )}
+          {printConfig.summaryFields.map(field => {
+            if (
+              !config.summary.showChineseAmount &&
+              field.key === 'totalAmountChinese'
+            ) {
+              return null;
+            }
+
+            const rawValue = summarySampleValues[field.key];
+            if (rawValue === undefined) {
+              return null;
+            }
+
+            const fieldLabelColor = config.summary.fieldLabelColors?.[field.key];
+            const fieldValueColor = config.summary.fieldColors?.[field.key];
+            const shouldHighlight =
+              config.summary.highlightTotal &&
+              field.key.toLowerCase().includes('totalamount') &&
+              !field.key.includes('Chinese');
+
+            return (
+              <div
+                key={field.key}
+                style={{
+                  backgroundColor: shouldHighlight
+                    ? config.summary.highlightColor
+                    : 'transparent',
+                  display: 'inline-block',
+                  padding: '6px 12px',
+                  margin: '2px 8px',
+                }}
+              >
+                <span
+                  style={{
+                    color: fieldLabelColor || 'inherit',
+                  }}
+                >
+                  {field.label}：
+                </span>
+                <span
+                  style={{
+                    color: fieldValueColor || 'inherit',
+                    fontWeight: fieldValueColor ? 'bold' : 'inherit',
+                  }}
+                >
+                  {field.format ? field.format(rawValue) : String(rawValue)}
+                </span>
+              </div>
+            );
+          })}
         </div>
 
         {/* 签名区示例 */}
@@ -552,9 +631,10 @@ export function StyleEditor({
               .replace('{time}', new Date().toLocaleTimeString())}
           </div>
         )}
-      </PrintLayout>
-    ),
-    [config]
+        </PrintLayout>
+      );
+    },
+    [config, getPrintConfigForDocumentType]
   );
 
   return (
@@ -658,6 +738,7 @@ export function StyleEditor({
                     summary={config.summary}
                     footer={config.footer}
                     signature={config.signature}
+                    summaryFields={summaryFieldOptions}
                     onSummaryChange={updateSummarySettings}
                     onFooterChange={updateFooterSettings}
                     onSignatureChange={updateSignatureSettings}

@@ -9,8 +9,11 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 
 import { useToast } from '@/components/ui/use-toast';
-import { getTemplate, saveTemplate } from '@/lib/print-designer/actions';
 import type { PrintTemplate } from '@/lib/print-designer/schemas';
+import {
+  fetchPrintTemplate,
+  savePrintTemplate,
+} from '@/lib/print-designer/template-client';
 
 const PrintDesignerEditor = dynamic(
   () =>
@@ -42,7 +45,7 @@ function PrintDesignerContent() {
   useEffect(() => {
     if (templateId) {
       setIsLoading(true);
-      getTemplate(templateId)
+      fetchPrintTemplate(templateId)
         .then(result => {
           if (result.success && result.data) {
             setTemplate(result.data);
@@ -62,7 +65,7 @@ function PrintDesignerContent() {
   const handleSave = async (templateData: PrintTemplate) => {
     try {
       setIsSaving(true);
-      const result = await saveTemplate(templateData);
+      const result = await savePrintTemplate(templateData);
       if (result.success) {
         toast({
           title: '保存成功',

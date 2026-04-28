@@ -22,11 +22,19 @@ interface TableRendererProps {
   element: TableElement;
   data: Record<string, unknown>;
   scale: number;
+  rowNumberOffset?: number;
+  summaryItems?: unknown[];
 }
 
 type TableCellSection = 'header' | 'body' | 'summary';
 
-export function TableRenderer({ element, data, scale }: TableRendererProps) {
+export function TableRenderer({
+  element,
+  data,
+  scale,
+  rowNumberOffset = 0,
+  summaryItems,
+}: TableRendererProps) {
   const {
     dataSource,
     title,
@@ -67,9 +75,10 @@ export function TableRenderer({ element, data, scale }: TableRendererProps) {
 
   // 计算合计
   const summaryData: Record<string, number> = {};
+  const summarySourceItems = summaryItems ?? items;
   if (showSummary && summaryColumns) {
     summaryColumns.forEach(colKey => {
-      summaryData[colKey] = items.reduce<number>((sum, item) => {
+      summaryData[colKey] = summarySourceItems.reduce<number>((sum, item) => {
         const val = getNestedValue(item, colKey);
         return sum + (typeof val === 'number' ? val : 0);
       }, 0);
@@ -84,7 +93,10 @@ export function TableRenderer({ element, data, scale }: TableRendererProps) {
   ): string => {
     if (isRowNumberColumn(column)) {
       return rowIndex < items.length
-        ? formatTableRowNumber(rowIndex, rowNumberMode ?? 'numeric')
+        ? formatTableRowNumber(
+            rowIndex + rowNumberOffset,
+            rowNumberMode ?? 'numeric'
+          )
         : '';
     }
 

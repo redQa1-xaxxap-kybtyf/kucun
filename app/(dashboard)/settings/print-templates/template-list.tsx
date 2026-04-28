@@ -19,21 +19,14 @@ import {
 } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import {
-  deleteTemplate,
-  duplicateTemplate,
-  getTemplates,
-  setDefaultTemplate,
-} from '@/lib/print-designer/actions';
+  copyPrintTemplate,
+  fetchPrintTemplates,
+  markDefaultPrintTemplate,
+  removePrintTemplate,
+  type PrintTemplateListItem,
+} from '@/lib/print-designer/template-client';
 
-interface TemplateItem {
-  id: string;
-  name: string;
-  type: string;
-  isDefault: boolean;
-  isSystem: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
+type TemplateItem = PrintTemplateListItem;
 
 const typeLabels: Record<string, string> = {
   'sales-order': '销售订单',
@@ -58,7 +51,7 @@ export function TemplateList() {
   // 加载模板列表
   const loadTemplates = () => {
     startTransition(async () => {
-      const result = await getTemplates(
+      const result = await fetchPrintTemplates(
         filterType === 'all' ? undefined : filterType
       );
       if (result.success && result.data) {
@@ -89,7 +82,7 @@ export function TemplateList() {
   const handleDelete = async (id: string) => {
     if (!confirm('确定要删除这个模板吗？此操作不可撤销。')) return;
 
-    const result = await deleteTemplate(id);
+    const result = await removePrintTemplate(id);
     if (result.success) {
       toast({
         title: '删除成功',
@@ -107,7 +100,7 @@ export function TemplateList() {
   };
 
   const handleDuplicate = async (id: string) => {
-    const result = await duplicateTemplate(id);
+    const result = await copyPrintTemplate(id);
     if (result.success) {
       toast({
         title: '复制成功',
@@ -125,7 +118,7 @@ export function TemplateList() {
   };
 
   const handleSetDefault = async (id: string, type: string) => {
-    const result = await setDefaultTemplate(id, type);
+    const result = await markDefaultPrintTemplate(id, type);
     if (result.success) {
       toast({
         title: '设置成功',

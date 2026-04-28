@@ -8,7 +8,7 @@
 
 import type { TextElement } from '@/lib/print-designer/schemas';
 
-import { ptToPx } from '../utils';
+import { ptToPx, resolveFontFamilyStack } from '../utils';
 
 interface TextRendererProps {
   element: TextElement;
@@ -21,7 +21,7 @@ export function TextRenderer({ element, scale }: TextRendererProps) {
   const textStyle: React.CSSProperties = {
     width: '100%',
     height: '100%',
-    fontFamily: style.fontFamily,
+    fontFamily: resolveFontFamilyStack(style.fontFamily),
     fontSize: ptToPx(style.fontSize) * scale,
     fontWeight: style.fontWeight,
     fontStyle: style.fontStyle,

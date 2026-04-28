@@ -59,6 +59,7 @@ const FIELD_SEARCH_ALIASES: Record<string, string[]> = {
   totalBoxes: ['总件数', '件数', 'jianshu'],
   totalPieces: ['总片数', '片数', '总数量片', 'pianshu'],
   totalWeight: ['总重量', '重量', 'zhongliang'],
+  totalWeightKg: ['总重量(kg)', '总重量', '合计重量', '公斤', 'kg'],
   'product.name': ['产品', '品名', '商品', 'mingcheng'],
   'product.code': ['产品编码', '商品编码', 'bianma'],
   'product.spec': ['规格', 'guige'],
@@ -73,6 +74,14 @@ const FIELD_SEARCH_ALIASES: Record<string, string[]> = {
   totalPrice: ['金额', '总价', '合计金额', 'zongjia'],
   batchNumber: ['批次', '批号', 'pici'],
   weight: ['重量', 'kg', '毛重', 'zhongliang'],
+  itemWeightKg: [
+    '单品种重量',
+    '单项重量',
+    '明细重量',
+    '重量(kg)',
+    '公斤',
+    'kg',
+  ],
   area: ['面积', '平方', 'm2', 'mianji'],
   warehouseName: ['仓库', '仓库名称', 'cangku'],
   locationName: ['库位', '货位', '存放区', 'kuwei'],
@@ -114,6 +123,72 @@ const COMMON_TABLE_RECOMMENDED_PATHS = [
 const TEMPLATE_SPECIFIC_RECOMMENDED_PATHS: Partial<
   Record<string, { template?: string[]; table?: string[] }>
 > = {
+  'sales-order': {
+    template: [
+      'order.orderNumber',
+      'customer.name',
+      'order.createdAt',
+      'totalQuantity',
+      'totalWeightKg',
+      'totalAmount',
+    ],
+    table: ['code', 'name', 'spec', 'quantity', 'itemWeightKg', 'subtotal'],
+  },
+  'purchase-order': {
+    template: [
+      'order.orderNumber',
+      'supplier.name',
+      'order.createdAt',
+      'totalQuantity',
+      'totalWeightKg',
+      'totalAmount',
+    ],
+    table: ['code', 'name', 'spec', 'quantity', 'itemWeightKg', 'subtotal'],
+  },
+  'factory-shipment': {
+    template: [
+      'order.orderNumber',
+      'customer.name',
+      'order.createdAt',
+      'totalQuantity',
+      'totalWeightKg',
+      'totalAmount',
+    ],
+    table: ['code', 'name', 'spec', 'quantity', 'itemWeightKg', 'subtotal'],
+  },
+  'delivery-note': {
+    template: [
+      'order.orderNumber',
+      'customer.name',
+      'order.createdAt',
+      'totalQuantity',
+      'totalWeightKg',
+      'totalAmount',
+    ],
+    table: ['code', 'name', 'spec', 'quantity', 'itemWeightKg', 'subtotal'],
+  },
+  'inbound-record': {
+    template: [
+      'order.orderNumber',
+      'supplier.name',
+      'order.createdAt',
+      'quantity',
+      'totalWeightKg',
+      'product.name',
+    ],
+    table: ['code', 'name', 'spec', 'quantity', 'itemWeightKg', 'batchNumber'],
+  },
+  'return-order': {
+    template: [
+      'order.orderNumber',
+      'customer.name',
+      'order.createdAt',
+      'refundAmount',
+      'totalWeightKg',
+      'salesOrder.orderNumber',
+    ],
+    table: ['code', 'name', 'spec', 'quantity', 'itemWeightKg', 'subtotal'],
+  },
   'finance-monthly-report': {
     template: [
       'period.label',
@@ -254,6 +329,13 @@ export const salesOrderFields: FieldDefinition[] = [
     suggestedFormat: 'number',
   },
   {
+    path: 'totalWeightKg',
+    label: '总重量(kg)',
+    group: '汇总',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
+  {
     path: 'totalBoxes',
     label: '总件数',
     group: '汇总',
@@ -329,6 +411,13 @@ const commonItemFields: FieldDefinition[] = [
   {
     path: 'pieces',
     label: '片数',
+    group: '明细',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
+  {
+    path: 'itemWeightKg',
+    label: '单品种重量(kg)',
     group: '明细',
     type: 'number',
     suggestedFormat: 'number',
@@ -508,6 +597,13 @@ export const purchaseOrderFields: FieldDefinition[] = [
     type: 'number',
     suggestedFormat: 'number',
   },
+  {
+    path: 'totalWeightKg',
+    label: '总重量(kg)',
+    group: '汇总',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
 
   { path: 'operator.name', label: '制单人', group: '制单', type: 'string' },
   {
@@ -625,6 +721,13 @@ export const factoryShipmentFields: FieldDefinition[] = [
     type: 'number',
     suggestedFormat: 'number',
   },
+  {
+    path: 'totalWeightKg',
+    label: '总重量(kg)',
+    group: '汇总',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
 
   { path: 'operator.name', label: '制单人', group: '制单', type: 'string' },
   {
@@ -697,6 +800,20 @@ export const deliveryNoteFields: FieldDefinition[] = [
   {
     path: 'totalPieces',
     label: '总片数',
+    group: '汇总',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
+  {
+    path: 'totalWeight',
+    label: '总重量',
+    group: '汇总',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
+  {
+    path: 'totalWeightKg',
+    label: '总重量(kg)',
     group: '汇总',
     type: 'number',
     suggestedFormat: 'number',
@@ -793,6 +910,20 @@ export const inboundRecordFields: FieldDefinition[] = [
     type: 'number',
     suggestedFormat: 'number',
   },
+  {
+    path: 'totalWeight',
+    label: '总重量',
+    group: '汇总',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
+  {
+    path: 'totalWeightKg',
+    label: '总重量(kg)',
+    group: '汇总',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
 
   { path: 'operator.name', label: '操作人', group: '制单', type: 'string' },
   {
@@ -872,6 +1003,20 @@ export const returnOrderFields: FieldDefinition[] = [
   {
     path: 'totalPieces',
     label: '总片数',
+    group: '汇总',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
+  {
+    path: 'totalWeight',
+    label: '总重量',
+    group: '汇总',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
+  {
+    path: 'totalWeightKg',
+    label: '总重量(kg)',
     group: '汇总',
     type: 'number',
     suggestedFormat: 'number',

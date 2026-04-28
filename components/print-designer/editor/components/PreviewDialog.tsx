@@ -25,12 +25,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import type { PrintCompanyProfile } from '@/lib/print-designer/company-profile';
 import {
   fetchPrintDataForTemplate,
   fetchRecentDocumentsForTemplate,
   type RecentPrintDocumentOption,
 } from '@/lib/print-designer/preview-data-client';
-import { getMockPrintData } from '@/lib/print-designer/preview-mock-data';
+import { cloneMockPrintData } from '@/lib/print-designer/preview-mock-data';
 import type { PrintTemplate } from '@/lib/print-designer/schemas';
 import {
   getTemplateTypeMeta,
@@ -38,26 +39,22 @@ import {
 } from '@/lib/print-designer/template-meta';
 
 import { PrintCanvas } from '../../renderer';
+import { printTemplateContent } from '../../renderer/print-frame';
 
 interface PreviewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   template: PrintTemplate;
+  companyProfile?: PrintCompanyProfile | null;
 }
 
 type PreviewSource = 'mock' | 'real';
-
-function getCssPageSize(settings: PrintTemplate['pageSettings']): string {
-  if (settings.size === 'Custom') {
-    return `${settings.width}mm ${settings.height}mm`;
-  }
-  return `${settings.size} ${settings.orientation}`;
-}
 
 export function PreviewDialog({
   open,
   onOpenChange,
   template,
+  companyProfile,
 }: PreviewDialogProps) {
   const templateMeta = getTemplateTypeMeta(template.type);
   const supportsRealPreview = templateMeta?.supportsRealPreview ?? false;
@@ -69,17 +66,23 @@ export function PreviewDialog({
     RecentPrintDocumentOption[]
   >([]);
   const [previewData, setPreviewData] = useState<Record<string, unknown>>(
-    getMockPrintData(template.type)
+    cloneMockPrintData(template.type, companyProfile)
   );
   const [loadingText, setLoadingText] = useState('');
   const [error, setError] = useState('');
+  const [isPrinting, setIsPrinting] = useState(false);
   const [isPending, startTransition] = useTransition();
   const printRef = useRef<HTMLDivElement>(null);
+  const latestCompanyProfileRef = useRef(companyProfile);
 
   const selectedDocument = useMemo(
     () => recentDocuments.find(item => item.id === selectedDocumentId) ?? null,
     [recentDocuments, selectedDocumentId]
   );
+
+  useEffect(() => {
+    latestCompanyProfileRef.current = companyProfile;
+  }, [companyProfile]);
 
   useEffect(() => {
     if (!open) return;
@@ -90,13 +93,15 @@ export function PreviewDialog({
     setRecentDocuments([]);
     setSelectedDocumentId('');
     setDataSource('mock');
-    setPreviewData(getMockPrintData(template.type));
+    setPreviewData(
+      cloneMockPrintData(template.type, latestCompanyProfileRef.current)
+    );
   }, [open, template.type]);
 
   useEffect(() => {
     if (!open) return;
     if (dataSource !== 'real' || !supportsRealPreview) {
-      setPreviewData(getMockPrintData(template.type));
+      setPreviewData(cloneMockPrintData(template.type, companyProfile));
       setError('');
       setLoadingText('');
       return;
@@ -138,6 +143,7 @@ export function PreviewDialog({
     template.type,
     templateMeta?.realDataLabel,
     templateMeta?.recentDocumentLabel,
+    companyProfile,
   ]);
 
   useEffect(() => {
@@ -177,45 +183,26 @@ export function PreviewDialog({
     templateMeta?.realDataLabel,
   ]);
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     if (!printRef.current) return;
+    if (isPrinting) return;
 
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-
-    const content = printRef.current.innerHTML;
-
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>${template.name}</title>
-          <style>
-            @page {
-              size: ${getCssPageSize(template.pageSettings)};
-              margin: 0;
-            }
-            body {
-              margin: 0;
-              padding: 0;
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
-            }
-          </style>
-        </head>
-        <body>${content}</body>
-      </html>
-    `);
-
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
+    setIsPrinting(true);
+    try {
+      await printTemplateContent({
+        template,
+        content: printRef.current.innerHTML,
+      });
+    } catch (error) {
+      setError(error instanceof Error ? error.message : '无法调起浏览器打印');
+    } finally {
+      setIsPrinting(false);
+    }
   };
 
   const handleRefresh = () => {
     if (dataSource === 'mock') {
-      setPreviewData(getMockPrintData(template.type));
+      setPreviewData(cloneMockPrintData(template.type, companyProfile));
       return;
     }
 
@@ -348,14 +335,14 @@ export function PreviewDialog({
 
               <Button
                 onClick={handlePrint}
-                disabled={Boolean(loadingText) || Boolean(error)}
+                disabled={Boolean(loadingText) || Boolean(error) || isPrinting}
               >
-                {isPending ? (
+                {isPending || isPrinting ? (
                   <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
                 ) : (
                   <Printer className="mr-1.5 h-4 w-4" />
                 )}
-                打印
+                {isPrinting ? '调起打印...' : '打印'}
               </Button>
             </div>
           </div>

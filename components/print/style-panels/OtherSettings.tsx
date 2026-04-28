@@ -32,6 +32,7 @@ import type {
   Alignment,
   FontWeight,
   FooterSettings,
+  SummaryFieldColorOption,
   SignatureField,
   SignatureSettings,
   SummarySettings,
@@ -55,6 +56,11 @@ export interface OtherSettingsProps {
    * 签名区设置
    */
   signature: SignatureSettings;
+
+  /**
+   * 可单独设置颜色的汇总字段
+   */
+  summaryFields?: SummaryFieldColorOption[];
 
   /**
    * 更新回调
@@ -83,10 +89,47 @@ export function OtherSettings({
   summary,
   footer,
   signature,
+  summaryFields = [],
   onSummaryChange,
   onFooterChange,
   onSignatureChange,
 }: OtherSettingsProps) {
+  const visibleSummaryFields =
+    summaryFields.length > 0
+      ? summaryFields
+      : [
+          { key: 'totalAmount', label: '合计金额' },
+          { key: 'totalAmountChinese', label: '大写金额' },
+          { key: 'totalWeight', label: '总重量' },
+          { key: 'totalQuantity', label: '合计数量' },
+        ];
+
+  const handleSummaryFieldColorChange = (key: string, value: string) => {
+    const trimmedValue = value.trim();
+    const nextFieldColors = { ...(summary.fieldColors ?? {}) };
+
+    if (!trimmedValue) {
+      delete nextFieldColors[key];
+    } else {
+      nextFieldColors[key] = trimmedValue;
+    }
+
+    onSummaryChange({ fieldColors: nextFieldColors });
+  };
+
+  const handleSummaryFieldLabelColorChange = (key: string, value: string) => {
+    const trimmedValue = value.trim();
+    const nextFieldLabelColors = { ...(summary.fieldLabelColors ?? {}) };
+
+    if (!trimmedValue) {
+      delete nextFieldLabelColors[key];
+    } else {
+      nextFieldLabelColors[key] = trimmedValue;
+    }
+
+    onSummaryChange({ fieldLabelColors: nextFieldLabelColors });
+  };
+
   // 添加签名字段
   const handleAddSignatureField = () => {
     const newField: SignatureField = {
@@ -281,6 +324,136 @@ export function OtherSettings({
             max={50}
             step={4}
           />
+        </div>
+
+        <div className="space-y-3 rounded-xl border p-3">
+          <div>
+            <Label className="text-sm font-medium">汇总字段颜色</Label>
+            <p className="text-muted-foreground mt-1 text-xs leading-5">
+              这里可以单独控制“合计金额、总重量”等汇总字段的标签颜色和数值颜色，优先级高于整块高亮背景。
+            </p>
+          </div>
+          <div className="space-y-3">
+            {visibleSummaryFields.map(field => {
+              const currentLabelColor =
+                summary.fieldLabelColors?.[field.key] ?? '';
+              const currentValueColor = summary.fieldColors?.[field.key] ?? '';
+              const labelColorInputValue =
+                currentLabelColor.startsWith('#') &&
+                currentLabelColor.length >= 4
+                  ? currentLabelColor
+                  : '#111111';
+              const valueColorInputValue =
+                currentValueColor.startsWith('#') &&
+                currentValueColor.length >= 4
+                  ? currentValueColor
+                  : '#111111';
+
+              return (
+                <div
+                  key={field.key}
+                  className="rounded-lg border border-slate-200 p-3"
+                >
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <Label
+                      htmlFor={`summary-field-value-color-${field.key}`}
+                      className="text-xs font-medium"
+                    >
+                      {field.label}
+                    </Label>
+                  </div>
+                  <div className="grid grid-cols-[64px_1fr_auto] items-center gap-2">
+                    <Label
+                      htmlFor={`summary-field-label-color-${field.key}`}
+                      className="text-xs text-slate-500"
+                    >
+                      标签
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id={`summary-field-label-color-${field.key}`}
+                        type="color"
+                        value={labelColorInputValue}
+                        onChange={e =>
+                          handleSummaryFieldLabelColorChange(
+                            field.key,
+                            e.target.value
+                          )
+                        }
+                        className="h-10 w-[72px]"
+                        aria-label={`${field.label} 标签颜色`}
+                      />
+                      <Input
+                        value={currentLabelColor}
+                        onChange={e =>
+                          handleSummaryFieldLabelColorChange(
+                            field.key,
+                            e.target.value
+                          )
+                        }
+                        placeholder="留空则跟随默认颜色"
+                        aria-label={`${field.label} 标签颜色值`}
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={!currentLabelColor}
+                      onClick={() =>
+                        handleSummaryFieldLabelColorChange(field.key, '')
+                      }
+                    >
+                      跟随默认
+                    </Button>
+                  </div>
+                  <div className="mt-2 grid grid-cols-[64px_1fr_auto] items-center gap-2">
+                    <Label
+                      htmlFor={`summary-field-value-color-${field.key}`}
+                      className="text-xs text-slate-500"
+                    >
+                      数值
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id={`summary-field-value-color-${field.key}`}
+                        type="color"
+                        value={valueColorInputValue}
+                        onChange={e =>
+                          handleSummaryFieldColorChange(
+                            field.key,
+                            e.target.value
+                          )
+                        }
+                        className="h-10 w-[72px]"
+                        aria-label={`${field.label} 数值颜色`}
+                      />
+                      <Input
+                        value={currentValueColor}
+                        onChange={e =>
+                          handleSummaryFieldColorChange(
+                            field.key,
+                            e.target.value
+                          )
+                        }
+                        placeholder="留空则跟随默认颜色"
+                        aria-label={`${field.label} 数值颜色值`}
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={!currentValueColor}
+                      onClick={() => handleSummaryFieldColorChange(field.key, '')}
+                    >
+                      跟随默认
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 

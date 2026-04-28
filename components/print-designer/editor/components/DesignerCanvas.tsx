@@ -4,10 +4,23 @@
 
 'use client';
 
-import { Maximize2, Minus, Plus } from 'lucide-react';
+import {
+  Copy,
+  Eye,
+  EyeOff,
+  Lock,
+  LockOpen,
+  Maximize2,
+  Minus,
+  Plus,
+  Trash2,
+} from 'lucide-react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import type { PrintCompanyProfile } from '@/lib/print-designer/company-profile';
+import type { ElementArrangementMode } from '@/lib/print-designer/element-arrangement';
+import { cloneMockPrintData } from '@/lib/print-designer/preview-mock-data';
 import {
   createDefaultPlaceholderElement,
   createDefaultTableElement,
@@ -16,6 +29,7 @@ import {
   createDefaultRectElement,
   getPaperDimensions,
   type DesignElement,
+  type TemplateType,
 } from '@/lib/print-designer/schemas';
 import {
   createDefaultBarcodeElement,
@@ -23,7 +37,8 @@ import {
 } from '@/lib/print-designer/schemas/visual-elements';
 import { cn } from '@/lib/utils';
 
-import { mmToPx } from '../../renderer/utils';
+import { PlaceholderRenderer, TextRenderer } from '../../renderer/elements';
+import { getNestedValue, mmToPx } from '../../renderer/utils';
 import {
   snapToGuides,
   useAlignmentGuides,
@@ -32,6 +47,7 @@ import {
 import { useDesignerStore, useElements, usePageSettings } from '../stores';
 
 import { ElementContextMenu } from './ElementContextMenu';
+import { Ruler } from './Ruler';
 import { TableElementPreview } from './TableElementPreview';
 
 function clampValue(value: number, min: number, max: number) {
@@ -49,6 +65,62 @@ function clampElementPosition(
   };
 }
 
+function formatMillimeters(value: number) {
+  return `${value.toFixed(1)}mm`;
+}
+
+function getElementDisplayName(element: DesignElement) {
+  switch (element.type) {
+    case 'text':
+      return '文本';
+    case 'placeholder':
+      return `字段·${element.label}`;
+    case 'table':
+      return '表格';
+    case 'image':
+      return '图片';
+    case 'barcode':
+      return '条码';
+    case 'line':
+      return '线条';
+    case 'rect':
+      return '矩形';
+    default:
+      return '元素';
+  }
+}
+
+function setNestedPreviewValue(
+  target: Record<string, unknown>,
+  path: string,
+  value: unknown
+) {
+  const keys = path
+    .split('.')
+    .map(key => key.trim())
+    .filter(Boolean);
+
+  if (keys.length === 0) {
+    return target;
+  }
+
+  let current = target;
+  keys.forEach((key, index) => {
+    if (index === keys.length - 1) {
+      current[key] = value;
+      return;
+    }
+
+    const nextValue = current[key];
+    if (!nextValue || typeof nextValue !== 'object' || Array.isArray(nextValue)) {
+      current[key] = {};
+    }
+    current = current[key] as Record<string, unknown>;
+  });
+
+  return target;
+}
+
 // ============================================================================
 // 对齐辅助线覆盖层
 // ============================================================================
@@ -57,6 +129,29 @@ interface AlignmentGuidesOverlayProps {
   zoom: number;
   guides?: AlignmentGuide[];
 }
+
+interface SelectionBoxState {
+  startX: number;
+  startY: number;
+  currentX: number;
+  currentY: number;
+}
+
+const MULTI_SELECT_ACTIONS: Array<{
+  label: string;
+  mode: ElementArrangementMode;
+}> = [
+  { label: '左对齐', mode: 'align-left' },
+  { label: '水平居中', mode: 'align-center' },
+  { label: '右对齐', mode: 'align-right' },
+  { label: '上对齐', mode: 'align-top' },
+  { label: '垂直居中', mode: 'align-middle' },
+  { label: '下对齐', mode: 'align-bottom' },
+  { label: '横向分布', mode: 'distribute-horizontal' },
+  { label: '纵向分布', mode: 'distribute-vertical' },
+  { label: '等宽', mode: 'match-width' },
+  { label: '等高', mode: 'match-height' },
+];
 
 function AlignmentGuidesOverlay({
   zoom,
@@ -92,23 +187,88 @@ function AlignmentGuidesOverlay({
   );
 }
 
-export function DesignerCanvas() {
+function normalizeSelectionBox(selectionBox: SelectionBoxState) {
+  const left = Math.min(selectionBox.startX, selectionBox.currentX);
+  const top = Math.min(selectionBox.startY, selectionBox.currentY);
+  const width = Math.abs(selectionBox.currentX - selectionBox.startX);
+  const height = Math.abs(selectionBox.currentY - selectionBox.startY);
+
+  return {
+    left,
+    top,
+    width,
+    height,
+    right: left + width,
+    bottom: top + height,
+  };
+}
+
+function getSelectionBoxStyle(selectionBox: SelectionBoxState) {
+  const normalizedSelectionBox = normalizeSelectionBox(selectionBox);
+
+  return {
+    left: normalizedSelectionBox.left,
+    top: normalizedSelectionBox.top,
+    width: normalizedSelectionBox.width,
+    height: normalizedSelectionBox.height,
+  };
+}
+
+function selectionBoxIntersectsElement(
+  selectionBox: SelectionBoxState,
+  element: DesignElement,
+  zoom: number
+) {
+  const box = normalizeSelectionBox(selectionBox);
+  const left = mmToPx(element.position.x) * zoom;
+  const top = mmToPx(element.position.y) * zoom;
+  const right = left + mmToPx(element.size.width) * zoom;
+  const bottom = top + mmToPx(element.size.height) * zoom;
+
+  return !(
+    right < box.left ||
+    left > box.right ||
+    bottom < box.top ||
+    top > box.bottom
+  );
+}
+
+interface DesignerCanvasProps {
+  companyProfile?: PrintCompanyProfile | null;
+}
+
+export function DesignerCanvas({ companyProfile }: DesignerCanvasProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const ignoreNextCanvasClickRef = useRef(false);
+  const isSelectionDraggingRef = useRef(false);
   const [draggingElementId, setDraggingElementId] = useState<string | null>(
+    null
+  );
+  const [selectionBox, setSelectionBox] = useState<SelectionBoxState | null>(
     null
   );
 
   const pageSettings = usePageSettings();
   const elements = useElements();
+  const templateType = useDesignerStore(s => s.template?.type ?? 'sales-order');
   const selectedElementId = useDesignerStore(s => s.selectedElementId);
+  const selectedElementIds = useDesignerStore(s => s.selectedElementIds);
   const zoom = useDesignerStore(s => s.zoom);
   const isDragging = useDesignerStore(s => s.isDragging);
 
   const setZoom = useDesignerStore(s => s.setZoom);
   const addElement = useDesignerStore(s => s.addElement);
   const selectElement = useDesignerStore(s => s.selectElement);
+  const selectElements = useDesignerStore(s => s.selectElements);
+  const arrangeSelectedElements = useDesignerStore(s => s.arrangeSelectedElements);
+  const duplicateSelectedElements = useDesignerStore(
+    s => s.duplicateSelectedElements
+  );
+  const moveElements = useDesignerStore(s => s.moveElements);
+  const removeSelectedElements = useDesignerStore(s => s.removeSelectedElements);
   const updateElement = useDesignerStore(s => s.updateElement);
+  const updateElements = useDesignerStore(s => s.updateElements);
   const setDragging = useDesignerStore(s => s.setDragging);
 
   const pageDimensions =
@@ -136,6 +296,28 @@ export function DesignerCanvas() {
       paddingTop,
     ]
   );
+  const selectedElement = useMemo(
+    () =>
+      selectedElementId
+        ? (elements.find(element => element.id === selectedElementId) ?? null)
+        : null,
+    [elements, selectedElementId]
+  );
+  const selectedElements = useMemo(() => {
+    if (selectedElementIds.length === 0) {
+      return [];
+    }
+
+    const selectedIdSet = new Set(selectedElementIds);
+    return elements.filter(element => selectedIdSet.has(element.id));
+  }, [elements, selectedElementIds]);
+  const lockedSelectedCount = selectedElements.filter(
+    element => element.locked
+  ).length;
+  const allSelectedLocked =
+    selectedElements.length > 0 &&
+    selectedElements.every(element => element.locked);
+  const hasHiddenSelected = selectedElements.some(element => !element.visible);
 
   // 计算对齐辅助线
   const draggingElement = draggingElementId
@@ -236,11 +418,123 @@ export function DesignerCanvas() {
   // 点击画布取消选中
   const handleCanvasClick = useCallback(
     (e: React.MouseEvent) => {
+      if (ignoreNextCanvasClickRef.current) {
+        ignoreNextCanvasClickRef.current = false;
+        return;
+      }
+
       if (e.target === e.currentTarget) {
         selectElement(null);
       }
     },
     [selectElement]
+  );
+
+  const handleContentMouseDown = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (e.button !== 0) return;
+      if (e.target !== e.currentTarget) return;
+      if (!contentRef.current) return;
+
+      const contentRect = contentRef.current.getBoundingClientRect();
+      const startX = e.clientX - contentRect.left;
+      const startY = e.clientY - contentRect.top;
+      const additiveSelection = e.ctrlKey || e.metaKey || e.shiftKey;
+      const selectionBaseIds = additiveSelection ? selectedElementIds : [];
+      let currentSelectionBox: SelectionBoxState = {
+        startX,
+        startY,
+        currentX: startX,
+        currentY: startY,
+      };
+
+      isSelectionDraggingRef.current = false;
+      setSelectionBox(currentSelectionBox);
+
+      const handleMouseMove = (moveEvent: MouseEvent) => {
+        const nextX = moveEvent.clientX - contentRect.left;
+        const nextY = moveEvent.clientY - contentRect.top;
+
+        if (
+          Math.abs(nextX - startX) > 3 ||
+          Math.abs(nextY - startY) > 3
+        ) {
+          isSelectionDraggingRef.current = true;
+        }
+
+        currentSelectionBox = {
+          startX,
+          startY,
+          currentX: nextX,
+          currentY: nextY,
+        };
+        setSelectionBox(currentSelectionBox);
+      };
+
+      const handleMouseUp = () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+
+        setSelectionBox(null);
+
+        if (!isSelectionDraggingRef.current) {
+          return;
+        }
+
+        const nextSelectedIds = elements
+          .filter(element =>
+            selectionBoxIntersectsElement(currentSelectionBox, element, zoom)
+          )
+          .map(element => element.id);
+        const mergedSelectedIds = additiveSelection
+          ? Array.from(new Set([...selectionBaseIds, ...nextSelectedIds]))
+          : nextSelectedIds;
+
+        selectElements(
+          mergedSelectedIds,
+          nextSelectedIds[nextSelectedIds.length - 1] ??
+            mergedSelectedIds[mergedSelectedIds.length - 1] ??
+            null
+        );
+        ignoreNextCanvasClickRef.current = true;
+      };
+
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    },
+    [elements, selectElements, selectedElementIds, zoom]
+  );
+
+  const handleSetSelectedLocked = useCallback(
+    (locked: boolean) => {
+      if (selectedElements.length === 0) {
+        return;
+      }
+
+      updateElements(
+        selectedElements.map(element => ({
+          id: element.id,
+          updates: { locked },
+        }))
+      );
+    },
+    [selectedElements, updateElements]
+  );
+
+  const handleSetSelectedVisible = useCallback(
+    (visible: boolean) => {
+      if (selectedElements.length === 0) {
+        return;
+      }
+
+      updateElements(
+        selectedElements.map(element => ({
+          id: element.id,
+          updates: { visible },
+        }))
+      );
+    },
+    [selectedElements, updateElements]
   );
 
   if (!pageSettings) {
@@ -257,41 +551,140 @@ export function DesignerCanvas() {
   const contentHeight = mmToPx(contentBounds.height) * zoom;
   const contentLeft = mmToPx(paddingLeft) * zoom;
   const contentTop = mmToPx(paddingTop) * zoom;
+  const rulerThickness = 20;
+  const minorGridSize = mmToPx(5) * zoom;
+  const majorGridSize = mmToPx(10) * zoom;
+  const showMinorGrid = minorGridSize >= 8;
+  const pageLabel =
+    pageSettings.size === 'Custom'
+      ? `自定义 ${formatMillimeters(pageDimensions.width)} × ${formatMillimeters(
+          pageDimensions.height
+        )}`
+      : `${pageSettings.size} ${
+          pageSettings.orientation === 'portrait' ? '纵向' : '横向'
+        }`;
+  const gridBackgroundImage = showMinorGrid
+    ? [
+        'linear-gradient(to right, rgba(148, 163, 184, 0.22) 1px, transparent 1px)',
+        'linear-gradient(to bottom, rgba(148, 163, 184, 0.22) 1px, transparent 1px)',
+        'linear-gradient(to right, rgba(100, 116, 139, 0.3) 1px, transparent 1px)',
+        'linear-gradient(to bottom, rgba(100, 116, 139, 0.3) 1px, transparent 1px)',
+      ].join(', ')
+    : [
+        'linear-gradient(to right, rgba(100, 116, 139, 0.3) 1px, transparent 1px)',
+        'linear-gradient(to bottom, rgba(100, 116, 139, 0.3) 1px, transparent 1px)',
+      ].join(', ');
+  const gridBackgroundSize = showMinorGrid
+    ? [
+        `${minorGridSize}px ${minorGridSize}px`,
+        `${minorGridSize}px ${minorGridSize}px`,
+        `${majorGridSize}px ${majorGridSize}px`,
+        `${majorGridSize}px ${majorGridSize}px`,
+      ].join(', ')
+    : [
+        `${majorGridSize}px ${majorGridSize}px`,
+        `${majorGridSize}px ${majorGridSize}px`,
+      ].join(', ');
 
   return (
     <div className="relative flex flex-1 flex-col overflow-hidden bg-[#ece4d8]">
-      <div className="border-b bg-white/80 px-4 py-2 text-xs text-slate-600">
-        灰色为纸张，虚线框内为可打印区域。元素会自动限制在可打印区域内，避免实际打印被裁切。
-        拖动元素靠近页边、中心线或其他元素时会自动吸附，排版会顺手很多。
+      <div
+        className="border-b bg-white/85 px-4 py-3 text-xs text-slate-600"
+        data-testid="canvas-status-bar"
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-stone-100 px-3 py-1 font-medium text-slate-700">
+            纸张 {pageLabel}
+          </span>
+          <span className="rounded-full bg-stone-100 px-3 py-1 text-slate-600">
+            可打印区 {formatMillimeters(contentBounds.width)} ×{' '}
+            {formatMillimeters(contentBounds.height)}
+          </span>
+          <span className="rounded-full bg-amber-50 px-3 py-1 text-amber-800">
+            灰色为纸张，虚线框内为实际可打印区域
+          </span>
+          <span className="rounded-full bg-sky-50 px-3 py-1 text-sky-800">
+            靠近边线、中心线和其他元素时会自动吸附
+          </span>
+          <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-800">
+            方向键 1mm，Shift + 方向键 10mm
+          </span>
+          <span className="rounded-full bg-violet-50 px-3 py-1 text-violet-800">
+            Ctrl / Shift + 点击可多选
+          </span>
+          {selectedElements.length > 1 ? (
+            <span className="rounded-full bg-rose-50 px-3 py-1 text-rose-800">
+              已选 {selectedElements.length} 项，可直接批量对齐、锁定或隐藏
+            </span>
+          ) : null}
+          {lockedSelectedCount > 0 ? (
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">
+              其中 {lockedSelectedCount} 项已锁定，不参与拖动、微调和对齐
+            </span>
+          ) : null}
+        </div>
       </div>
 
       {/* 画布区域 */}
       <div
         ref={viewportRef}
-        className="flex flex-1 items-center justify-center overflow-auto p-8"
+        className="flex flex-1 items-start justify-center overflow-auto p-8"
         onClick={handleCanvasClick}
       >
         <div
-          className={cn(
-            'relative rounded-sm bg-white shadow-[0_24px_60px_rgba(73,55,28,0.18)] transition-all',
-            isDragging &&
-              'ring-2 ring-amber-500 ring-offset-4 ring-offset-[#ece4d8]'
-          )}
+          className="relative"
           style={{
-            width: pageWidth,
-            height: pageHeight,
+            width: pageWidth + rulerThickness,
+            height: pageHeight + rulerThickness,
           }}
         >
           <div
+            className="absolute top-0 left-0 flex items-center justify-center rounded-tl-md border border-stone-300 bg-white/95 text-[10px] font-medium text-slate-500 shadow-sm"
+            style={{ width: rulerThickness, height: rulerThickness }}
+          >
+            mm
+          </div>
+          <div
+            className="absolute top-0 left-5 overflow-hidden rounded-tr-md border border-stone-300 border-l-0 bg-white/95 shadow-sm"
+            data-testid="canvas-rulers"
+          >
+            <Ruler
+              direction="horizontal"
+              length={pageDimensions.width}
+              zoom={zoom}
+            />
+          </div>
+          <div className="absolute top-5 left-0 overflow-hidden rounded-bl-md border border-stone-300 border-t-0 bg-white/95 shadow-sm">
+            <Ruler direction="vertical" length={pageDimensions.height} zoom={zoom} />
+          </div>
+          <div
+            className={cn(
+              'absolute top-5 left-5 rounded-sm bg-white shadow-[0_24px_60px_rgba(73,55,28,0.18)] transition-all',
+              isDragging &&
+                'ring-2 ring-amber-500 ring-offset-4 ring-offset-[#ece4d8]'
+            )}
+            style={{
+              width: pageWidth,
+              height: pageHeight,
+            }}
+          >
+          <div
             ref={contentRef}
             className="absolute overflow-hidden rounded-[2px] border border-dashed border-amber-400/90 bg-[linear-gradient(180deg,rgba(245,158,11,0.07),rgba(245,158,11,0.02))]"
+            data-testid="canvas-content"
             style={{
               left: contentLeft,
               top: contentTop,
               width: contentWidth,
               height: contentHeight,
             }}
+            onMouseDown={handleContentMouseDown}
             onClick={e => {
+              if (ignoreNextCanvasClickRef.current) {
+                ignoreNextCanvasClickRef.current = false;
+                return;
+              }
+
               if (e.target === e.currentTarget) {
                 selectElement(null);
               }
@@ -299,9 +692,122 @@ export function DesignerCanvas() {
             onDragOver={handleDragOver}
             onDrop={handleDrop}
           >
+            <div
+              className="pointer-events-none absolute inset-0"
+              style={{
+                backgroundImage: gridBackgroundImage,
+                backgroundSize: gridBackgroundSize,
+              }}
+            />
             <div className="pointer-events-none absolute top-2 left-2 rounded-full bg-white/90 px-2 py-1 text-[10px] text-amber-700 shadow-sm">
               可打印区域
             </div>
+            {selectionBox ? (
+              <div
+                className="pointer-events-none absolute rounded-md border border-sky-500 bg-sky-200/20 shadow-[inset_0_0_0_1px_rgba(14,165,233,0.2)]"
+                data-testid="marquee-selection"
+                style={getSelectionBoxStyle(selectionBox)}
+              />
+            ) : null}
+            <div
+              className="pointer-events-none absolute top-2 right-2 rounded-full bg-white/92 px-2 py-1 text-[10px] text-slate-600 shadow-sm"
+              data-testid="canvas-grid-badge"
+            >
+              {showMinorGrid ? '5mm/10mm 对齐网格' : '10mm 对齐网格'}
+            </div>
+            {selectedElements.length > 1 ? (
+              <div
+                className="absolute top-10 right-2 z-10 max-w-[22rem] rounded-2xl border border-stone-200 bg-white/95 p-3 shadow-xl"
+                data-testid="multi-select-actions"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-medium text-slate-900">
+                      已选 {selectedElements.length} 项
+                    </p>
+                    <p className="mt-1 text-[11px] leading-5 text-slate-500">
+                      先多选，再一键对齐、分布、锁定或隐藏，做中文表单会顺手很多。
+                    </p>
+                    {lockedSelectedCount > 0 ? (
+                      <p className="mt-1 text-[11px] leading-5 text-slate-500">
+                        已锁定元素会保留原位，不会跟着拖动、微调或批量对齐。
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {MULTI_SELECT_ACTIONS.map(action => (
+                    <Button
+                      key={action.mode}
+                      variant="outline"
+                      size="sm"
+                      className="h-7 rounded-full px-3 text-[11px]"
+                      onClick={() => arrangeSelectedElements(action.mode)}
+                    >
+                      {action.label}
+                    </Button>
+                  ))}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2 border-t border-stone-200 pt-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 rounded-full px-3 text-[11px]"
+                    onClick={() => handleSetSelectedLocked(!allSelectedLocked)}
+                  >
+                    {allSelectedLocked ? (
+                      <LockOpen className="mr-1.5 h-3.5 w-3.5" />
+                    ) : (
+                      <Lock className="mr-1.5 h-3.5 w-3.5" />
+                    )}
+                    {allSelectedLocked ? '解锁选中' : '锁定选中'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 rounded-full px-3 text-[11px]"
+                    onClick={() => handleSetSelectedVisible(hasHiddenSelected)}
+                  >
+                    {hasHiddenSelected ? (
+                      <Eye className="mr-1.5 h-3.5 w-3.5" />
+                    ) : (
+                      <EyeOff className="mr-1.5 h-3.5 w-3.5" />
+                    )}
+                    {hasHiddenSelected ? '显示选中' : '隐藏选中'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 rounded-full px-3 text-[11px]"
+                    onClick={duplicateSelectedElements}
+                  >
+                    <Copy className="mr-1.5 h-3.5 w-3.5" />
+                    复制选中
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 rounded-full px-3 text-[11px] text-rose-700"
+                    onClick={removeSelectedElements}
+                  >
+                    <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                    删除选中
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+            {selectedElement && selectedElements.length === 1 ? (
+              <div
+                className="pointer-events-none absolute top-10 right-2 rounded-2xl bg-slate-950/90 px-3 py-2 text-[11px] text-white shadow-lg"
+                data-testid="selected-element-hud"
+              >
+                {getElementDisplayName(selectedElement)} · X{' '}
+                {formatMillimeters(selectedElement.position.x)} · Y{' '}
+                {formatMillimeters(selectedElement.position.y)} · 宽{' '}
+                {formatMillimeters(selectedElement.size.width)} · 高{' '}
+                {formatMillimeters(selectedElement.size.height)}
+              </div>
+            ) : null}
 
             {elements.length === 0 ? (
               <div className="pointer-events-none flex h-full items-center justify-center px-6">
@@ -325,18 +831,35 @@ export function DesignerCanvas() {
                 key={element.id}
                 element={element}
                 zoom={zoom}
-                isSelected={element.id === selectedElementId}
+                isSelected={selectedElementIds.includes(element.id)}
+                isPrimarySelected={element.id === selectedElementId}
+                selectedCount={selectedElements.length}
+                selectedElementsForDrag={selectedElements}
                 bounds={contentBounds}
+                templateType={templateType}
+                companyProfile={companyProfile}
                 alignmentGuides={
                   element.id === draggingElementId ? alignmentGuides : []
                 }
-                onSelect={() => selectElement(element.id)}
+                onSelect={options => selectElement(element.id, options)}
+                onFocusWithinSelection={() =>
+                  selectElements(selectedElementIds, element.id)
+                }
+                onMoveSelection={(startPositions, delta) =>
+                  moveElements({
+                    ids: selectedElementIds,
+                    startPositions,
+                    delta,
+                    bounds: contentBounds,
+                  })
+                }
                 onUpdate={updates => updateElement(element.id, updates)}
                 onDragStart={() => setDraggingElementId(element.id)}
                 onDragEnd={() => setDraggingElementId(null)}
               />
             ))}
           </div>
+        </div>
         </div>
       </div>
 
@@ -391,9 +914,19 @@ interface CanvasElementProps {
   element: DesignElement;
   zoom: number;
   isSelected: boolean;
+  isPrimarySelected: boolean;
+  selectedCount: number;
+  selectedElementsForDrag: DesignElement[];
   bounds: { width: number; height: number };
+  templateType: TemplateType;
+  companyProfile?: PrintCompanyProfile | null;
   alignmentGuides?: AlignmentGuide[];
-  onSelect: () => void;
+  onSelect: (options?: { additive?: boolean }) => void;
+  onFocusWithinSelection: () => void;
+  onMoveSelection: (
+    startPositions: Record<string, { x: number; y: number }>,
+    delta: { dx: number; dy: number }
+  ) => void;
   onUpdate: (updates: Partial<DesignElement>) => void;
   onDragStart?: () => void;
   onDragEnd?: () => void;
@@ -403,9 +936,16 @@ function CanvasElement({
   element,
   zoom,
   isSelected,
+  isPrimarySelected,
+  selectedCount,
+  selectedElementsForDrag,
   bounds,
+  templateType,
+  companyProfile,
   alignmentGuides = [],
   onSelect,
+  onFocusWithinSelection,
+  onMoveSelection,
   onUpdate,
   onDragStart,
   onDragEnd,
@@ -430,12 +970,74 @@ function CanvasElement({
   const y = mmToPx(element.position.y) * zoom;
   const width = mmToPx(element.size.width) * zoom;
   const height = mmToPx(element.size.height) * zoom;
+  const placeholderPreviewData = useMemo(() => {
+    if (element.type !== 'placeholder') {
+      return null;
+    }
+
+    const previewData = cloneMockPrintData(templateType, companyProfile);
+    const currentValue = getNestedValue(previewData, element.field);
+
+    if (currentValue === undefined || currentValue === null || currentValue === '') {
+      const previewValue =
+        element.fallback.trim() || `示例${element.label || '字段内容'}`;
+      setNestedPreviewValue(previewData, element.field, previewValue);
+    }
+
+    return previewData;
+  }, [companyProfile, element, templateType]);
 
   // 开始拖拽
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    onSelect();
+    const additiveSelection = e.ctrlKey || e.metaKey || e.shiftKey;
+    const shouldDragSelection = isSelected && selectedCount > 1;
+
+    onSelect({ additive: additiveSelection });
+
+    if (additiveSelection) {
+      return;
+    }
+
+    if (shouldDragSelection) {
+      onFocusWithinSelection();
+
+      if (element.locked) return;
+      onDragStart?.();
+
+      const startPositions = Object.fromEntries(
+        selectedElementsForDrag.map(selectedElement => [
+          selectedElement.id,
+          {
+            x: selectedElement.position.x,
+            y: selectedElement.position.y,
+          },
+        ])
+      );
+      const startClientX = e.clientX;
+      const startClientY = e.clientY;
+
+      const handleGroupMouseMove = (moveEvent: MouseEvent) => {
+        const deltaXPx = (moveEvent.clientX - startClientX) / zoom;
+        const deltaYPx = (moveEvent.clientY - startClientY) / zoom;
+
+        onMoveSelection(startPositions, {
+          dx: deltaXPx / (96 / 25.4),
+          dy: deltaYPx / (96 / 25.4),
+        });
+      };
+
+      const handleGroupMouseUp = () => {
+        onDragEnd?.();
+        document.removeEventListener('mousemove', handleGroupMouseMove);
+        document.removeEventListener('mouseup', handleGroupMouseUp);
+      };
+
+      document.addEventListener('mousemove', handleGroupMouseMove);
+      document.addEventListener('mouseup', handleGroupMouseUp);
+      return;
+    }
 
     if (element.locked) return;
     onDragStart?.();
@@ -606,14 +1208,27 @@ function CanvasElement({
     switch (element.type) {
       case 'text':
         return (
-          <div className="h-full w-full overflow-hidden text-sm">
-            {element.content || '文本'}
+          <div className="h-full w-full overflow-hidden">
+            <TextRenderer
+              element={{
+                ...element,
+                content: element.content || '文本',
+              }}
+              scale={zoom}
+            />
           </div>
         );
       case 'placeholder':
         return (
-          <div className="flex h-full w-full items-center rounded bg-blue-50 px-2 text-xs text-blue-700">
-            {`{{${element.label}}}`}
+          <div className="relative h-full w-full overflow-hidden rounded-sm bg-sky-50/25 ring-1 ring-inset ring-sky-200/70">
+            <PlaceholderRenderer
+              element={element}
+              data={placeholderPreviewData ?? {}}
+              scale={zoom}
+            />
+            <div className="pointer-events-none absolute top-1 right-1 rounded-full bg-white/95 px-1.5 py-0.5 text-[10px] leading-none text-sky-700 shadow-sm">
+              {element.label}
+            </div>
           </div>
         );
       case 'table':
@@ -657,7 +1272,11 @@ function CanvasElement({
       <div
         className={cn(
           'absolute cursor-move rounded-[2px] select-none',
-          isSelected && 'ring-2 ring-amber-500 ring-offset-1 ring-offset-white',
+          isPrimarySelected &&
+            'ring-2 ring-amber-500 ring-offset-1 ring-offset-white',
+          isSelected &&
+            !isPrimarySelected &&
+            'ring-2 ring-sky-500 ring-offset-1 ring-offset-white',
           element.locked && 'cursor-not-allowed',
           !element.visible && 'opacity-40'
         )}
@@ -668,10 +1287,24 @@ function CanvasElement({
           height,
           zIndex: element.zIndex,
         }}
+        data-testid={`canvas-element-${element.id}`}
         onMouseDown={handleMouseDown}
-        onContextMenu={() => onSelect()}
+        onContextMenu={() => {
+          if (isSelected && selectedCount > 1) {
+            onFocusWithinSelection();
+            return;
+          }
+
+          onSelect();
+        }}
       >
         {renderContent()}
+
+        {element.locked ? (
+          <div className="pointer-events-none absolute top-1 left-1 rounded-full bg-slate-900/80 px-2 py-0.5 text-[10px] text-white">
+            已锁定
+          </div>
+        ) : null}
 
         {!element.visible ? (
           <div className="pointer-events-none absolute top-1 right-1 rounded-full bg-slate-900/75 px-2 py-0.5 text-[10px] text-white">
@@ -679,7 +1312,7 @@ function CanvasElement({
           </div>
         ) : null}
 
-        {isSelected && !element.locked && (
+        {isPrimarySelected && !element.locked && (
           <>
             <div
               className="absolute -top-1 -left-1 h-2.5 w-2.5 cursor-nwse-resize rounded-full bg-amber-500"

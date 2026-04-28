@@ -112,6 +112,11 @@ export function DataBindingSection({
         <div className="mt-1 text-sm font-semibold text-slate-900">
           {currentField?.label ?? field}
         </div>
+        {currentField ? (
+          <div className="mt-1 inline-flex rounded-full bg-sky-50 px-2 py-0.5 text-[10px] text-sky-700">
+            {currentField.group}
+          </div>
+        ) : null}
         <div className="mt-1 font-mono text-xs text-slate-500">{field}</div>
       </div>
 
@@ -163,10 +168,15 @@ export function DataBindingSection({
                     onFieldChange(recommendedField.path, recommendedField.label)
                   }
                 >
-                  <div className="text-sm font-medium">
-                    {recommendedField.label}
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm font-medium">
+                      {recommendedField.label}
+                    </div>
+                    <div className="rounded-full bg-white px-2 py-0.5 text-[10px] text-sky-700">
+                      {recommendedField.group}
+                    </div>
                   </div>
-                  <div className="font-mono text-[11px] text-slate-500">
+                  <div className="font-mono text-[11px] text-slate-400">
                     {recommendedField.path}
                   </div>
                 </button>
@@ -188,8 +198,13 @@ export function DataBindingSection({
                   }`}
                   onClick={() => onFieldChange(f.path, f.label)}
                 >
-                  <div className="text-sm font-medium">{f.label}</div>
-                  <div className="font-mono text-[11px] text-slate-500">
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm font-medium">{f.label}</div>
+                    <div className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500">
+                      {f.group}
+                    </div>
+                  </div>
+                  <div className="font-mono text-[11px] text-slate-400">
                     {f.path}
                   </div>
                 </button>

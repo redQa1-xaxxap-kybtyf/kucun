@@ -3,20 +3,20 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { PreviewDialog } from '@/components/print-designer/editor/components/PreviewDialog';
 import { createEmptyTemplate } from '@/lib/print-designer/schemas';
 
-jest.mock('@/lib/print-designer/actions', () => ({
-  getRecentDocumentsForTemplate: jest.fn(),
-  getPrintDataForTemplate: jest.fn(),
+jest.mock('@/lib/print-designer/preview-data-client', () => ({
+  fetchRecentDocumentsForTemplate: jest.fn(),
+  fetchPrintDataForTemplate: jest.fn(),
 }));
 
-const { getRecentDocumentsForTemplate, getPrintDataForTemplate } =
-  jest.requireMock('@/lib/print-designer/actions') as {
-    getRecentDocumentsForTemplate: jest.Mock;
-    getPrintDataForTemplate: jest.Mock;
+const { fetchRecentDocumentsForTemplate, fetchPrintDataForTemplate } =
+  jest.requireMock('@/lib/print-designer/preview-data-client') as {
+    fetchRecentDocumentsForTemplate: jest.Mock;
+    fetchPrintDataForTemplate: jest.Mock;
   };
 
 describe('PreviewDialog', () => {
   beforeEach(() => {
-    getRecentDocumentsForTemplate.mockResolvedValue([
+    fetchRecentDocumentsForTemplate.mockResolvedValue([
       {
         id: 'po-1',
         label: 'PO-2026-0012',
@@ -24,7 +24,7 @@ describe('PreviewDialog', () => {
         description: '创建于 2026-03-10',
       },
     ]);
-    getPrintDataForTemplate.mockResolvedValue({
+    fetchPrintDataForTemplate.mockResolvedValue({
       order: { orderNumber: 'PO-2026-0012' },
       supplier: { name: '佛山鸿瑞瓷砖厂' },
       items: [],
@@ -46,14 +46,14 @@ describe('PreviewDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: '真实采购单' }));
 
     await waitFor(() => {
-      expect(getRecentDocumentsForTemplate).toHaveBeenCalledWith(
+      expect(fetchRecentDocumentsForTemplate).toHaveBeenCalledWith(
         'purchase-order',
         20
       );
     });
 
     await waitFor(() => {
-      expect(getPrintDataForTemplate).toHaveBeenCalledWith(
+      expect(fetchPrintDataForTemplate).toHaveBeenCalledWith(
         'purchase-order',
         'po-1'
       );
@@ -74,7 +74,7 @@ describe('PreviewDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: '真实发货单' }));
 
     await waitFor(() => {
-      expect(getRecentDocumentsForTemplate).toHaveBeenCalledWith(
+      expect(fetchRecentDocumentsForTemplate).toHaveBeenCalledWith(
         'delivery-note',
         20
       );

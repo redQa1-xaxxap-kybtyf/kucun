@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
+import type { PrintCompanyProfile } from '@/lib/print-designer/company-profile';
 import { getArrayFieldsForTemplateType } from '@/lib/print-designer/field-registry';
 import { getPaperDimensions } from '@/lib/print-designer/schemas';
 
@@ -26,6 +27,7 @@ import {
   useSelectedElement,
 } from '../stores';
 
+import { CommonHeaderQuickEditSection } from './CommonHeaderQuickEditSection';
 import { DataBindingSection } from './DataBindingSection';
 import { ShapeStyleSection } from './ShapeStyleSection';
 import { TableBehaviorSection } from './TableBehaviorSection';
@@ -34,7 +36,11 @@ import { TableRecommendationSection } from './TableRecommendationSection';
 import { TableStyleSection } from './TableStyleSection';
 import { TypographySection } from './TypographySection';
 
-export function PropertiesPanel() {
+interface PropertiesPanelProps {
+  companyProfile?: PrintCompanyProfile | null;
+}
+
+export function PropertiesPanel({ companyProfile }: PropertiesPanelProps) {
   const selectedElement = useSelectedElement();
   const pageSettings = usePageSettings();
   const templateType = useDesignerStore(s => s.template?.type ?? 'sales-order');
@@ -66,6 +72,9 @@ export function PropertiesPanel() {
         </div>
 
         <div className="flex-1 overflow-auto p-3">
+          <CommonHeaderQuickEditSection companyProfile={companyProfile} />
+          <Separator className="my-4" />
+
           <div className="space-y-4">
             {/* 纸张大小 */}
             <div className="space-y-1.5">
@@ -329,6 +338,9 @@ export function PropertiesPanel() {
       </div>
 
       <div className="flex-1 overflow-auto p-3">
+        <CommonHeaderQuickEditSection companyProfile={companyProfile} />
+        <Separator className="my-4" />
+
         {/* 通用属性: 位置与尺寸 */}
         <div className="mb-6 space-y-3">
           <Label className="text-muted-foreground text-xs font-semibold">

@@ -8,6 +8,10 @@ import { temporal } from 'zundo';
 import { create, useStore } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
+import {
+  arrangeElements,
+  type ElementArrangementMode,
+} from '@/lib/print-designer/element-arrangement';
 import type {
   DesignElement,
   PageSettings,
@@ -21,6 +25,7 @@ import type {
 interface DesignerState {
   template: PrintTemplate | null;
   selectedElementId: string | null;
+  selectedElementIds: string[];
   hoveredElementId: string | null;
   zoom: number;
   isDragging: boolean;
@@ -37,9 +42,18 @@ interface DesignerActions {
   addElement: (element: DesignElement) => void;
   addElements: (elements: DesignElement[]) => void;
   updateElement: (id: string, updates: Partial<DesignElement>) => void;
+  updateElements: (
+    updates: Array<{ id: string; updates: Partial<DesignElement> }>
+  ) => void;
   removeElement: (id: string) => void;
+  removeSelectedElements: () => void;
   duplicateElement: (id: string) => void;
-  selectElement: (id: string | null) => void;
+  duplicateSelectedElements: () => void;
+  selectElements: (ids: string[], primaryId?: string | null) => void;
+  selectElement: (
+    id: string | null,
+    options?: { additive?: boolean }
+  ) => void;
   setHoveredElement: (id: string | null) => void;
   bringToFront: (id: string) => void;
   sendToBack: (id: string) => void;
@@ -48,6 +62,14 @@ interface DesignerActions {
   setPreviewing: (isPreviewing: boolean) => void;
   copyElement: (id: string) => void;
   pasteElement: () => void;
+  nudgeSelectedElements: (dx: number, dy: number) => void;
+  moveElements: (options: {
+    ids?: string[];
+    startPositions: Record<string, { x: number; y: number }>;
+    delta: { dx: number; dy: number };
+    bounds?: { width: number; height: number };
+  }) => void;
+  arrangeSelectedElements: (mode: ElementArrangementMode) => void;
   reset: () => void;
 }
 
@@ -60,12 +82,17 @@ type DesignerStore = DesignerState & DesignerActions;
 const initialState: DesignerState = {
   template: null,
   selectedElementId: null,
+  selectedElementIds: [],
   hoveredElementId: null,
   zoom: 1,
   isDragging: false,
   isPreviewing: false,
   clipboard: null,
 };
+
+function clampValue(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
 
 // ============================================================================
 // Store 创建 (带历史记录)
@@ -77,7 +104,7 @@ export const useDesignerStore = create<DesignerStore>()(
       ...initialState,
 
       setTemplate: (template: PrintTemplate) => {
-        set({ template, selectedElementId: null });
+        set({ template, selectedElementId: null, selectedElementIds: [] });
       },
 
       updateTemplate: (
@@ -102,6 +129,7 @@ export const useDesignerStore = create<DesignerStore>()(
           if (state.template) {
             state.template.elements.push(element);
             state.selectedElementId = element.id;
+            state.selectedElementIds = [element.id];
           }
         });
       },
@@ -113,6 +141,9 @@ export const useDesignerStore = create<DesignerStore>()(
           if (state.template) {
             state.template.elements.push(...elements);
             state.selectedElementId = elements[elements.length - 1]?.id ?? null;
+            state.selectedElementIds = state.selectedElementId
+              ? [state.selectedElementId]
+              : [];
           }
         });
       },
@@ -127,15 +158,51 @@ export const useDesignerStore = create<DesignerStore>()(
         });
       },
 
+      updateElements: (
+        updates: Array<{ id: string; updates: Partial<DesignElement> }>
+      ) => {
+        if (updates.length === 0) return;
+
+        set((state: DesignerStore) => {
+          if (!state.template) return;
+
+          updates.forEach(({ id, updates: nextUpdates }) => {
+            const element = state.template?.elements.find(el => el.id === id);
+            if (element) {
+              Object.assign(element, nextUpdates);
+            }
+          });
+        });
+      },
+
       removeElement: (id: string) => {
         set((state: DesignerStore) => {
           if (!state.template) return;
           state.template.elements = state.template.elements.filter(
             el => el.id !== id
           );
-          if (state.selectedElementId === id) {
-            state.selectedElementId = null;
-          }
+          state.selectedElementIds = state.selectedElementIds.filter(
+            selectedId => selectedId !== id
+          );
+          state.selectedElementId = state.selectedElementIds.includes(
+            state.selectedElementId ?? ''
+          )
+            ? state.selectedElementId
+            : state.selectedElementIds[state.selectedElementIds.length - 1] ??
+              null;
+        });
+      },
+
+      removeSelectedElements: () => {
+        set((state: DesignerStore) => {
+          if (!state.template || state.selectedElementIds.length === 0) return;
+
+          const selectedIds = new Set(state.selectedElementIds);
+          state.template.elements = state.template.elements.filter(
+            element => !selectedIds.has(element.id)
+          );
+          state.selectedElementId = null;
+          state.selectedElementIds = [];
         });
       },
 
@@ -159,12 +226,82 @@ export const useDesignerStore = create<DesignerStore>()(
           if (s.template) {
             s.template.elements.push(newElement);
             s.selectedElementId = newElement.id;
+            s.selectedElementIds = [newElement.id];
           }
         });
       },
 
-      selectElement: (id: string | null) => {
-        set({ selectedElementId: id });
+      duplicateSelectedElements: () => {
+        const state = get();
+        if (!state.template || state.selectedElementIds.length === 0) return;
+
+        const selectedIds = new Set(state.selectedElementIds);
+        const selectedElements = state.template.elements.filter(element =>
+          selectedIds.has(element.id)
+        );
+
+        if (selectedElements.length === 0) return;
+
+        const duplicatedElements = selectedElements.map(element => ({
+          ...JSON.parse(JSON.stringify(element)),
+          id: crypto.randomUUID(),
+          position: {
+            x: element.position.x + 5,
+            y: element.position.y + 5,
+          },
+        })) as DesignElement[];
+
+        set((s: DesignerStore) => {
+          if (!s.template) return;
+          s.template.elements.push(...duplicatedElements);
+          s.selectedElementId =
+            duplicatedElements[duplicatedElements.length - 1]?.id ?? null;
+          s.selectedElementIds = duplicatedElements.map(element => element.id);
+        });
+      },
+
+      selectElements: (ids: string[], primaryId?: string | null) => {
+        set((state: DesignerStore) => {
+          const uniqueIds = Array.from(
+            new Set(ids.map(id => id?.trim()).filter(Boolean))
+          );
+
+          state.selectedElementIds = uniqueIds;
+          state.selectedElementId =
+            primaryId && uniqueIds.includes(primaryId)
+              ? primaryId
+              : uniqueIds[uniqueIds.length - 1] ?? null;
+        });
+      },
+
+      selectElement: (id: string | null, options?: { additive?: boolean }) => {
+        set((state: DesignerStore) => {
+          if (!id) {
+            state.selectedElementId = null;
+            state.selectedElementIds = [];
+            return;
+          }
+
+          if (!options?.additive) {
+            state.selectedElementId = id;
+            state.selectedElementIds = [id];
+            return;
+          }
+
+          const alreadySelected = state.selectedElementIds.includes(id);
+          if (alreadySelected) {
+            state.selectedElementIds = state.selectedElementIds.filter(
+              selectedId => selectedId !== id
+            );
+            state.selectedElementId =
+              state.selectedElementIds[state.selectedElementIds.length - 1] ??
+              null;
+            return;
+          }
+
+          state.selectedElementIds = [...state.selectedElementIds, id];
+          state.selectedElementId = id;
+        });
       },
 
       setHoveredElement: (id: string | null) => {
@@ -236,7 +373,112 @@ export const useDesignerStore = create<DesignerStore>()(
           if (s.template) {
             s.template.elements.push(newElement);
             s.selectedElementId = newElement.id;
+            s.selectedElementIds = [newElement.id];
           }
+        });
+      },
+
+      nudgeSelectedElements: (dx: number, dy: number) => {
+        set((state: DesignerStore) => {
+          if (!state.template || state.selectedElementIds.length === 0) return;
+
+          const selectedIds = new Set(state.selectedElementIds);
+          state.template.elements.forEach(element => {
+            if (!selectedIds.has(element.id) || element.locked) {
+              return;
+            }
+
+            element.position = {
+              x: Math.max(0, element.position.x + dx),
+              y: Math.max(0, element.position.y + dy),
+            };
+          });
+        });
+      },
+
+      moveElements: ({ ids, startPositions, delta, bounds }) => {
+        set((state: DesignerStore) => {
+          if (!state.template) return;
+
+          const targetIds = ids?.length
+            ? ids
+            : Object.keys(startPositions).filter(Boolean);
+          if (targetIds.length === 0) return;
+
+          const targetIdSet = new Set(targetIds);
+          const elementsToMove = state.template.elements.filter(
+            element =>
+              targetIdSet.has(element.id) &&
+              startPositions[element.id] !== undefined &&
+              !element.locked
+          );
+
+          if (elementsToMove.length === 0) return;
+
+          let nextDx = delta.dx;
+          let nextDy = delta.dy;
+
+          if (bounds) {
+            const minX = Math.min(
+              ...elementsToMove.map(element => startPositions[element.id]!.x)
+            );
+            const minY = Math.min(
+              ...elementsToMove.map(element => startPositions[element.id]!.y)
+            );
+            const maxRight = Math.max(
+              ...elementsToMove.map(
+                element =>
+                  startPositions[element.id]!.x + element.size.width
+              )
+            );
+            const maxBottom = Math.max(
+              ...elementsToMove.map(
+                element =>
+                  startPositions[element.id]!.y + element.size.height
+              )
+            );
+
+            nextDx = clampValue(nextDx, -minX, bounds.width - maxRight);
+            nextDy = clampValue(nextDy, -minY, bounds.height - maxBottom);
+          }
+
+          elementsToMove.forEach(element => {
+            const startPosition = startPositions[element.id];
+            if (!startPosition) return;
+
+            element.position = {
+              x: Math.max(0, startPosition.x + nextDx),
+              y: Math.max(0, startPosition.y + nextDy),
+            };
+          });
+        });
+      },
+
+      arrangeSelectedElements: (mode: ElementArrangementMode) => {
+        set((state: DesignerStore) => {
+          if (!state.template || state.selectedElementIds.length < 2) return;
+
+          const selectedIds = new Set(state.selectedElementIds);
+          const selectedElements = state.template.elements.filter(element =>
+            selectedIds.has(element.id) && !element.locked
+          );
+          if (selectedElements.length < 2) return;
+
+          const arrangedUpdates = arrangeElements(
+            selectedElements,
+            mode,
+            selectedElements.some(
+              element => element.id === state.selectedElementId
+            )
+              ? state.selectedElementId
+              : selectedElements[selectedElements.length - 1]?.id
+          );
+
+          arrangedUpdates.forEach(({ id, updates }) => {
+            const element = state.template?.elements.find(item => item.id === id);
+            if (!element) return;
+            Object.assign(element, updates);
+          });
         });
       },
 
@@ -301,6 +543,17 @@ export const useElements = (): DesignElement[] =>
   useDesignerStore(
     (state: DesignerStore) => state.template?.elements ?? EMPTY_ELEMENTS
   );
+
+/** 获取当前多选元素 */
+export const useSelectedElements = (): DesignElement[] =>
+  useDesignerStore((state: DesignerStore) => {
+    if (!state.template || state.selectedElementIds.length === 0) {
+      return EMPTY_ELEMENTS;
+    }
+
+    const selectedIds = new Set(state.selectedElementIds);
+    return state.template.elements.filter(element => selectedIds.has(element.id));
+  });
 
 /** 获取页面设置 */
 export const usePageSettings = (): PageSettings | undefined =>

@@ -23,6 +23,18 @@ export interface TableColumnQuickInsertPreset {
   fields: FieldDefinition[];
 }
 
+export type TableColumnWidthPresetKey =
+  | 'balanced'
+  | 'equal'
+  | 'text-first'
+  | 'compact-numeric';
+
+export interface TableColumnWidthPreset {
+  key: TableColumnWidthPresetKey;
+  label: string;
+  description: string;
+}
+
 export const TABLE_ROW_NUMBER_KEY = '__rowNumber';
 export type TableColumnLabelMode = 'canonical' | 'piece' | 'item';
 export type TableDocumentLabelPresetKey =
@@ -240,6 +252,29 @@ const TABLE_DOCUMENT_LABEL_PRESETS: TableDocumentLabelPreset[] = [
     key: 'loading-list',
     label: '装车单列头',
     description: '更适合装车、配货、出库装载明细',
+  },
+];
+
+const TABLE_COLUMN_WIDTH_PRESETS: TableColumnWidthPreset[] = [
+  {
+    key: 'balanced',
+    label: '中文推荐',
+    description: '按名称、规格、数量、金额等常见单据习惯自动分配列宽',
+  },
+  {
+    key: 'equal',
+    label: '等宽排版',
+    description: '所有列尽量一样宽，适合简单清单和规整模板',
+  },
+  {
+    key: 'text-first',
+    label: '文本列更宽',
+    description: '优先给名称、规格、备注留空间，中文内容更不容易挤',
+  },
+  {
+    key: 'compact-numeric',
+    label: '数字列更紧凑',
+    description: '压缩数量、单价、金额等列，方便在一页里放下更多字段',
   },
 ];
 
@@ -488,6 +523,145 @@ function normalizeWidths(weights: number[]): number[] {
   });
 }
 
+function applyNormalizedColumnWidths(
+  columns: TableColumn[],
+  weights: number[]
+): TableColumn[] {
+  if (columns.length === 0) return columns;
+
+  const normalized = normalizeWidths(
+    weights.map(weight => Math.max(0.1, roundTo(weight, 2)))
+  );
+
+  return columns.map((column, index) => ({
+    ...column,
+    widthUnit: '%',
+    width: Math.max(5, normalized[index] ?? column.width),
+  }));
+}
+
+function getTextFirstWeight(column: TableColumn): number {
+  const semanticKey = getColumnSemanticKey(column);
+  const baseWeight = getWidthWeight(column.key || column.label);
+
+  if (semanticKey === 'rownumber') {
+    return 5;
+  }
+
+  if (
+    [
+      'remark',
+      'remarks',
+      'note',
+      'reason',
+      'message',
+      'content',
+      'name',
+      'productname',
+      'title',
+      'suppliername',
+      'customername',
+    ].includes(semanticKey)
+  ) {
+    return baseWeight * 1.45;
+  }
+
+  if (
+    [
+      'spec',
+      'specification',
+      'model',
+      'batchnumber',
+      'warehousename',
+      'locationname',
+      'colorno',
+    ].includes(semanticKey)
+  ) {
+    return baseWeight * 1.2;
+  }
+
+  if (
+    [
+      'unit',
+      'quantity',
+      'totalquantity',
+      'piecesperunit',
+      'batchpiecesperunit',
+      'boxes',
+      'totalboxes',
+      'pieces',
+      'sheets',
+      'unitprice',
+      'price',
+      'subtotal',
+      'totalprice',
+      'amount',
+      'totalamount',
+      'total',
+      'weight',
+      'area',
+      'grade',
+    ].includes(semanticKey)
+  ) {
+    return baseWeight * 0.78;
+  }
+
+  return baseWeight;
+}
+
+function getCompactNumericWeight(column: TableColumn): number {
+  const semanticKey = getColumnSemanticKey(column);
+  const baseWeight = getWidthWeight(column.key || column.label);
+
+  if (semanticKey === 'rownumber') {
+    return 5;
+  }
+
+  if (
+    [
+      'name',
+      'productname',
+      'spec',
+      'specification',
+      'remark',
+      'remarks',
+      'note',
+      'reason',
+      'message',
+      'content',
+    ].includes(semanticKey)
+  ) {
+    return baseWeight * 1.25;
+  }
+
+  if (
+    [
+      'unit',
+      'quantity',
+      'totalquantity',
+      'piecesperunit',
+      'batchpiecesperunit',
+      'boxes',
+      'totalboxes',
+      'pieces',
+      'sheets',
+      'unitprice',
+      'price',
+      'subtotal',
+      'totalprice',
+      'amount',
+      'totalamount',
+      'total',
+      'weight',
+      'area',
+    ].includes(semanticKey)
+  ) {
+    return baseWeight * 0.72;
+  }
+
+  return baseWeight * 0.95;
+}
+
 function resolveColumnAlign(
   field: Pick<FieldDefinition, 'type'>
 ): TableColumn['align'] {
@@ -707,6 +881,10 @@ export function getTableDocumentLabelPresets(): TableDocumentLabelPreset[] {
   return TABLE_DOCUMENT_LABEL_PRESETS;
 }
 
+export function getTableColumnWidthPresets(): TableColumnWidthPreset[] {
+  return TABLE_COLUMN_WIDTH_PRESETS;
+}
+
 export function applyTableDocumentLabelPreset(
   columns: TableColumn[],
   preset: TableDocumentLabelPresetKey
@@ -826,15 +1004,51 @@ export function rebalanceTableColumnWidths(
 ): TableColumn[] {
   if (columns.length === 0) return columns;
 
-  const widths = normalizeWidths(
+  return applyNormalizedColumnWidths(
+    columns,
     columns.map(column => getWidthWeight(column.key || column.label))
   );
+}
 
-  return columns.map((column, index) => ({
-    ...column,
-    widthUnit: '%',
-    width: Math.max(5, widths[index] ?? column.width),
-  }));
+export function distributeTableColumnWidthsEvenly(
+  columns: TableColumn[]
+): TableColumn[] {
+  return applyNormalizedColumnWidths(columns, columns.map(() => 1));
+}
+
+export function emphasizeTextTableColumnWidths(
+  columns: TableColumn[]
+): TableColumn[] {
+  return applyNormalizedColumnWidths(
+    columns,
+    columns.map(column => getTextFirstWeight(column))
+  );
+}
+
+export function compactNumericTableColumnWidths(
+  columns: TableColumn[]
+): TableColumn[] {
+  return applyNormalizedColumnWidths(
+    columns,
+    columns.map(column => getCompactNumericWeight(column))
+  );
+}
+
+export function applyTableColumnWidthPreset(
+  columns: TableColumn[],
+  preset: TableColumnWidthPresetKey
+): TableColumn[] {
+  switch (preset) {
+    case 'equal':
+      return distributeTableColumnWidthsEvenly(columns);
+    case 'text-first':
+      return emphasizeTextTableColumnWidths(columns);
+    case 'compact-numeric':
+      return compactNumericTableColumnWidths(columns);
+    case 'balanced':
+    default:
+      return rebalanceTableColumnWidths(columns);
+  }
 }
 
 export function getTableColumnPresets(

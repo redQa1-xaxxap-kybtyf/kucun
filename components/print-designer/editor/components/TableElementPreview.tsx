@@ -15,6 +15,14 @@ import type { TableColumn, TableElement } from '@/lib/print-designer/schemas';
 import { TableRenderer, mmToPx, pxToMm } from '../../renderer';
 
 type HeaderCellMetrics = { left: number; width: number };
+type ResizeIndicator = {
+  boundaryIndex: number;
+  leftLabel: string;
+  rightLabel: string;
+  leftWidth: string;
+  rightWidth: string;
+  x: number;
+};
 
 interface TableElementPreviewProps {
   element: TableElement;
@@ -26,6 +34,19 @@ interface TableElementPreviewProps {
 function roundTo(value: number, decimals: number): number {
   const factor = 10 ** decimals;
   return Math.round(value * factor) / factor;
+}
+
+function formatColumnWidth(
+  column: TableColumn,
+  widthPx: number,
+  tableWidthPx: number,
+  zoom: number
+): string {
+  if (column.widthUnit === 'mm') {
+    return `${roundTo(pxToMm(widthPx) / zoom, 1).toFixed(1)}mm`;
+  }
+
+  return `${roundTo((widthPx / tableWidthPx) * 100, 1).toFixed(1)}%`;
 }
 
 function buildNestedData(
@@ -80,6 +101,12 @@ export function TableElementPreview({
   } | null>(null);
 
   const [headerCells, setHeaderCells] = useState<HeaderCellMetrics[]>([]);
+  const [hoveredBoundaryIndex, setHoveredBoundaryIndex] = useState<number | null>(
+    null
+  );
+  const [resizeIndicator, setResizeIndicator] = useState<ResizeIndicator | null>(
+    null
+  );
 
   const previewData = useMemo(() => {
     const rows = Math.max(element.minRows ?? 0, 3);
@@ -215,6 +242,8 @@ export function TableElementPreview({
           Math.min(totalPx - minRightPx, startLeftPx + deltaPx)
         );
         const nextRightPx = Math.max(minRightPx, totalPx - nextLeftPx);
+        const boundaryX =
+          (headerCells[leftIndex]?.left ?? 0) + nextLeftPx;
 
         applyColumnResizeByPx(
           leftIndex,
@@ -222,10 +251,30 @@ export function TableElementPreview({
           nextRightPx,
           state.tableWidthPx
         );
+
+        setResizeIndicator({
+          boundaryIndex: leftIndex,
+          leftLabel: leftColumn.label.replace(/\n/g, ' '),
+          rightLabel: rightColumn.label.replace(/\n/g, ' '),
+          leftWidth: formatColumnWidth(
+            leftColumn,
+            nextLeftPx,
+            state.tableWidthPx,
+            zoom
+          ),
+          rightWidth: formatColumnWidth(
+            rightColumn,
+            nextRightPx,
+            state.tableWidthPx,
+            zoom
+          ),
+          x: boundaryX,
+        });
       };
 
       const handleMouseUp = () => {
         resizeStateRef.current = null;
+        setResizeIndicator(null);
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
       };
@@ -248,15 +297,56 @@ export function TableElementPreview({
         <TableRenderer element={element} data={previewData} scale={zoom} />
       </div>
 
+      {isSelected ? (
+        <div className="pointer-events-none absolute top-1 left-1 rounded-full bg-slate-950/75 px-2 py-1 text-[10px] text-white shadow-sm">
+          拖拽表头分隔线可直接调列宽
+        </div>
+      ) : null}
+
+      {resizeIndicator ? (
+        <div
+          className="pointer-events-none absolute top-8 z-10 -translate-x-1/2 rounded-2xl bg-slate-950/90 px-3 py-2 text-[10px] text-white shadow-lg"
+          style={{ left: resizeIndicator.x }}
+          data-testid="table-resize-indicator"
+        >
+          <div className="font-medium text-white">
+            {resizeIndicator.leftLabel} {resizeIndicator.leftWidth}
+          </div>
+          <div className="mt-1 text-slate-200">
+            {resizeIndicator.rightLabel} {resizeIndicator.rightWidth}
+          </div>
+        </div>
+      ) : null}
+
       {isSelected &&
         boundaries.map((x, index) => (
           <div
             key={`col-resize-${index}`}
             className="absolute top-0 h-full cursor-col-resize"
             style={{ left: x - 3, width: 6 }}
+            data-testid={`table-resize-handle-${index}`}
             onMouseDown={e => handleResizeMouseDown(index, e)}
+            onMouseEnter={() => setHoveredBoundaryIndex(index)}
+            onMouseLeave={() => setHoveredBoundaryIndex(current =>
+              current === index ? null : current
+            )}
           >
-            <div className="bg-primary/40 mx-auto h-full w-px" />
+            <div
+              className={`mx-auto h-full transition-all ${
+                resizeIndicator?.boundaryIndex === index ||
+                hoveredBoundaryIndex === index
+                  ? 'w-[2px] bg-amber-500'
+                  : 'w-px bg-primary/40'
+              }`}
+            />
+            <div
+              className={`absolute top-2 left-1/2 h-3 w-3 -translate-x-1/2 rounded-full border bg-white shadow-sm transition-all ${
+                resizeIndicator?.boundaryIndex === index ||
+                hoveredBoundaryIndex === index
+                  ? 'border-amber-400'
+                  : 'border-slate-300'
+              }`}
+            />
           </div>
         ))}
     </div>

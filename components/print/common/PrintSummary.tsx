@@ -117,8 +117,9 @@ export function PrintSummary({
         const shouldHighlight =
           settings.highlightTotal && isTotalAmountField(key);
 
-        // 获取字段特定颜色（优先级高于高亮色）
-        const fieldColor = settings.fieldColors?.[key];
+        // 字段标签与数值可单独配置颜色；旧配置继续兼容为数值颜色
+        const fieldLabelColor = settings.fieldLabelColors?.[key];
+        const fieldValueColor = settings.fieldColors?.[key];
 
         return (
           <div
@@ -133,12 +134,19 @@ export function PrintSummary({
               margin: '2px 8px',
             }}
           >
-            <span className="summary-label">{field.label}：</span>
+            <span
+              className="summary-label"
+              style={{
+                color: fieldLabelColor || 'inherit',
+              }}
+            >
+              {field.label}：
+            </span>
             <span
               className="summary-value"
               style={{
-                color: fieldColor || 'inherit',
-                fontWeight: fieldColor ? 'bold' : 'inherit',
+                color: fieldValueColor || 'inherit',
+                fontWeight: fieldValueColor ? 'bold' : 'inherit',
               }}
             >
               {formatFieldValue(key, data[key])}

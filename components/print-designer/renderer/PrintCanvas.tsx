@@ -15,6 +15,7 @@ import {
 } from '@/lib/print-designer/schemas';
 
 import { ElementRenderer } from './ElementRenderer';
+import { buildPrintLayout } from './paginated-layout';
 import { mmToPx } from './utils';
 
 interface PrintCanvasProps {
@@ -41,12 +42,17 @@ export function PrintCanvas({
   showShadow = false,
   className,
 }: PrintCanvasProps) {
-  const { pageSettings, elements } = template;
+  const { pageSettings } = template;
 
   const pageDimensions =
     pageSettings.size === 'Custom'
       ? { width: pageSettings.width, height: pageSettings.height }
       : getPaperDimensions(pageSettings.size, pageSettings.orientation);
+
+  const layout = useMemo(
+    () => buildPrintLayout(template, data),
+    [data, template]
+  );
 
   // 计算页面尺寸
   const pageStyle = useMemo<React.CSSProperties>(() => {
@@ -74,26 +80,60 @@ export function PrintCanvas({
     scale,
     showShadow,
   ]);
-
-  // 按 zIndex 排序元素
-  const sortedElements = useMemo(
-    () =>
-      [...elements]
-        .filter(el => el.visible)
-        .sort((a, b) => a.zIndex - b.zIndex),
-    [elements]
+  const pageGap = showShadow ? 24 * scale : 0;
+  const pageLabelStyle = useMemo<React.CSSProperties>(
+    () => ({
+      position: 'absolute',
+      right: mmToPx(8) * scale,
+      bottom: mmToPx(5) * scale,
+      fontSize: 11 * scale,
+      lineHeight: 1.2,
+      color: '#64748b',
+      letterSpacing: '0.02em',
+    }),
+    [scale]
   );
 
   return (
-    <div className={className} style={pageStyle}>
-      {sortedElements.map(element => (
-        <ElementRenderer
-          key={element.id}
-          element={element}
-          data={data}
-          scale={scale}
-        />
-      ))}
+    <div
+      className={className}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: pageGap,
+      }}
+    >
+      {layout.pages.map((page, pageIndex) => {
+        const sortedElements = [...page.elements].sort(
+          (a, b) => a.zIndex - b.zIndex
+        );
+        const isLastPage = pageIndex === layout.pages.length - 1;
+
+        return (
+          <div
+            key={`print-page-${pageIndex}`}
+            style={{
+              ...pageStyle,
+              pageBreakAfter: isLastPage ? undefined : 'always',
+              breakAfter: isLastPage ? undefined : 'page',
+            }}
+          >
+            {sortedElements.map(element => (
+              <ElementRenderer
+                key={`${pageIndex}-${element.id}`}
+                element={element}
+                data={page.data}
+                scale={scale}
+                tableRenderOverride={page.tableOverrides[element.id]}
+              />
+            ))}
+
+            {layout.pages.length > 1 && page.pageLabel ? (
+              <div style={pageLabelStyle}>{page.pageLabel}</div>
+            ) : null}
+          </div>
+        );
+      })}
     </div>
   );
 }

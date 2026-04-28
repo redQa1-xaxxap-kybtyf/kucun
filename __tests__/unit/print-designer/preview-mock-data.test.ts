@@ -1,4 +1,7 @@
-import { getMockPrintData } from '@/lib/print-designer/preview-mock-data';
+import {
+  cloneMockPrintData,
+  getMockPrintData,
+} from '@/lib/print-designer/preview-mock-data';
 import { getTemplateTypeMeta, getTemplateTypeLabel } from '@/lib/print-designer/template-meta';
 
 describe('print preview metadata', () => {
@@ -38,6 +41,24 @@ describe('getMockPrintData', () => {
           code: 'RK-800-006',
         }),
       ],
+    });
+  });
+
+  it('applies company profile overrides to cloned mock data', () => {
+    const data = cloneMockPrintData('sales-order', {
+      name: '华北建材有限公司',
+      address: '',
+      phone: '',
+      fax: '',
+    });
+
+    expect(data).toMatchObject({
+      company: {
+        name: '华北建材有限公司',
+        address: '',
+        phone: '',
+        fax: '',
+      },
     });
   });
 });

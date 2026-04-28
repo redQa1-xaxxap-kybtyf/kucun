@@ -13,4 +13,5 @@ export {
   useUndo,
   usePageSettings,
   useSelectedElement,
+  useSelectedElements,
 } from './designer-history-store';

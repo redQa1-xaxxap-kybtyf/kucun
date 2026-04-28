@@ -6,9 +6,12 @@ import {
   PrintTemplateExportService,
 } from '@/lib/services/print-template-export-service';
 
-jest.mock('@/lib/print-designer/actions', () => ({
-  getDefaultTemplate: jest.fn(),
-  getPrintDataForTemplate: jest.fn(),
+jest.mock('@/lib/print-designer/default-template-client', () => ({
+  fetchDefaultTemplate: jest.fn(),
+}));
+
+jest.mock('@/lib/print-designer/preview-data-client', () => ({
+  fetchPrintDataForTemplate: jest.fn(),
 }));
 
 jest.mock('@/lib/services/export-service', () => ({
@@ -21,11 +24,16 @@ jest.mock('react-dom/client', () => ({
   createRoot: jest.fn(),
 }));
 
-const { getDefaultTemplate, getPrintDataForTemplate } = jest.requireMock(
-  '@/lib/print-designer/actions'
+const { fetchDefaultTemplate } = jest.requireMock(
+  '@/lib/print-designer/default-template-client'
 ) as {
-  getDefaultTemplate: jest.Mock;
-  getPrintDataForTemplate: jest.Mock;
+  fetchDefaultTemplate: jest.Mock;
+};
+
+const { fetchPrintDataForTemplate } = jest.requireMock(
+  '@/lib/print-designer/preview-data-client'
+) as {
+  fetchPrintDataForTemplate: jest.Mock;
 };
 
 const { ExportService } = jest.requireMock('@/lib/services/export-service') as {
@@ -60,11 +68,11 @@ describe('PrintTemplateExportService', () => {
   });
 
   it('exports a document with the default DIY template', async () => {
-    getDefaultTemplate.mockResolvedValue({
+    fetchDefaultTemplate.mockResolvedValue({
       success: true,
       data: template,
     });
-    getPrintDataForTemplate.mockResolvedValue({
+    fetchPrintDataForTemplate.mockResolvedValue({
       order: { orderNumber: 'SO-2026-0001' },
       items: [],
     });
@@ -77,8 +85,8 @@ describe('PrintTemplateExportService', () => {
       backgroundColor: '#ffffff',
     });
 
-    expect(getDefaultTemplate).toHaveBeenCalledWith('sales-order');
-    expect(getPrintDataForTemplate).toHaveBeenCalledWith(
+    expect(fetchDefaultTemplate).toHaveBeenCalledWith('sales-order');
+    expect(fetchPrintDataForTemplate).toHaveBeenCalledWith(
       'sales-order',
       'order-1'
     );
@@ -95,7 +103,7 @@ describe('PrintTemplateExportService', () => {
   });
 
   it('throws a typed error when the default template is missing', async () => {
-    getDefaultTemplate.mockResolvedValue({
+    fetchDefaultTemplate.mockResolvedValue({
       success: true,
       data: undefined,
     });

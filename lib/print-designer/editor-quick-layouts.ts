@@ -190,12 +190,12 @@ function createPlaceholderElement(
   };
 }
 
-function createLabeledFieldElements(
+export function createLabeledFieldPairElements(
   field: FieldDefinition,
   x: number,
   y: number,
   width: number,
-  labelWidth = 18
+  labelWidth = 20
 ): DesignElement[] {
   return [
     createTextElement(`${field.label}：`, x, y, labelWidth, 5, {
@@ -319,29 +319,31 @@ function buildDocumentHeaderPreset(
 
   if (companyPhoneField) {
     elements.push(
-      ...createLabeledFieldElements(companyPhoneField, 0, 7, 72, 16)
+      ...createLabeledFieldPairElements(companyPhoneField, 0, 7, 72, 16)
     );
   }
 
   if (companyAddressField) {
     elements.push(
-      ...createLabeledFieldElements(companyAddressField, 0, 13, 108, 16)
+      ...createLabeledFieldPairElements(companyAddressField, 0, 13, 108, 16)
     );
   }
 
   if (orderNumberField) {
     elements.push(
-      ...createLabeledFieldElements(orderNumberField, 126, 2, 64, 20)
+      ...createLabeledFieldPairElements(orderNumberField, 126, 2, 64, 20)
     );
   }
 
   if (statusField) {
-    elements.push(...createLabeledFieldElements(statusField, 126, 8, 64, 20));
+    elements.push(
+      ...createLabeledFieldPairElements(statusField, 126, 8, 64, 20)
+    );
   }
 
   if (printDateField) {
     elements.push(
-      ...createLabeledFieldElements(printDateField, 126, 14, 64, 20)
+      ...createLabeledFieldPairElements(printDateField, 126, 14, 64, 20)
     );
   }
 
@@ -357,7 +359,7 @@ function buildDocumentInfoPreset(templateType: TemplateType): DesignElement[] {
     const row = Math.floor(index / 2);
     const x = column === 0 ? 0 : 98;
     const y = 28 + row * 7;
-    elements.push(...createLabeledFieldElements(field, x, y, 92, 18));
+    elements.push(...createLabeledFieldPairElements(field, x, y, 92, 18));
   });
 
   return elements;
@@ -469,7 +471,9 @@ function buildSignatureRowPreset(templateType: TemplateType): DesignElement[] {
   });
 
   if (printDateField) {
-    elements.push(...createLabeledFieldElements(printDateField, 126, 168, 64));
+    elements.push(
+      ...createLabeledFieldPairElements(printDateField, 126, 168, 64)
+    );
   }
 
   return elements;

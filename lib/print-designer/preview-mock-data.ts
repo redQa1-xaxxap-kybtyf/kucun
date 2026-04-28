@@ -1,4 +1,15 @@
+import {
+  applyCompanyProfileToPreviewData,
+  type PrintCompanyProfile,
+} from './company-profile';
 import type { TemplateType } from './schemas';
+
+const defaultCompanyMock = {
+  name: '示例公司名称',
+  phone: '',
+  address: '',
+  fax: '',
+};
 
 const salesOrderMock = {
   order: {
@@ -16,12 +27,7 @@ const salesOrderMock = {
     address: '北京市朝阳区建国路88号',
     contact: '张经理',
   },
-  company: {
-    name: '天津豪星陶瓷有限公司',
-    phone: '022-88888888',
-    address: '天津市西青区陶瓷产业园',
-    fax: '022-88888889',
-  },
+  company: { ...defaultCompanyMock },
   items: [
     {
       name: '800x800 抛光砖 - 米黄色',
@@ -34,6 +40,7 @@ const salesOrderMock = {
       quantity: 100,
       unitPrice: 45,
       subtotal: 4500,
+      itemWeightKg: 25,
       weight: 25,
       boxes: 5,
       batchNumber: 'B250301',
@@ -50,6 +57,7 @@ const salesOrderMock = {
       quantity: 200,
       unitPrice: 35,
       subtotal: 7000,
+      itemWeightKg: 30,
       weight: 30,
       boxes: 8,
       batchNumber: 'B250305',
@@ -59,6 +67,7 @@ const salesOrderMock = {
   totalAmount: 11500,
   totalAmountCap: 11500,
   totalQuantity: 300,
+  totalWeightKg: 55,
   totalWeight: 55,
   totalBoxes: 13,
   operator: { name: '李明' },
@@ -83,12 +92,7 @@ const purchaseOrderMock = {
     address: '佛山市南海区产业路18号',
     supplierCode: 'SUP-008',
   },
-  company: {
-    name: '天津豪星陶瓷有限公司',
-    phone: '022-88888888',
-    address: '天津市西青区陶瓷产业园',
-    fax: '022-88888889',
-  },
+  company: { ...defaultCompanyMock },
   items: [
     {
       name: '木纹砖 - 胡桃色',
@@ -101,6 +105,8 @@ const purchaseOrderMock = {
       quantity: 320,
       unitPrice: 68,
       subtotal: 21760,
+      itemWeightKg: 7680,
+      weight: 7680,
       supplierName: '佛山鸿瑞瓷砖厂',
       batchNumber: 'POB260310',
       remark: '',
@@ -108,6 +114,8 @@ const purchaseOrderMock = {
   ],
   totalAmount: 21760,
   totalQuantity: 320,
+  totalWeightKg: 7680,
+  totalWeight: 7680,
   operator: { name: '赵倩' },
   printDate: '2026-03-15',
 };
@@ -131,12 +139,7 @@ const factoryShipmentMock = {
     address: '石家庄市裕华区东二环66号',
     contact: '王总',
   },
-  company: {
-    name: '天津豪星陶瓷有限公司',
-    phone: '022-88888888',
-    address: '天津市西青区陶瓷产业园',
-    fax: '022-88888889',
-  },
+  company: { ...defaultCompanyMock },
   items: [
     {
       name: '柔光砖 - 云白',
@@ -149,6 +152,8 @@ const factoryShipmentMock = {
       quantity: 480,
       unitPrice: 52,
       subtotal: 24960,
+      itemWeightKg: 12480,
+      weight: 12480,
       supplierName: '佛山鸿瑞瓷砖厂',
       batchNumber: 'FSB260313',
       remark: '',
@@ -156,6 +161,8 @@ const factoryShipmentMock = {
   ],
   totalAmount: 24960,
   totalQuantity: 480,
+  totalWeightKg: 12480,
+  totalWeight: 12480,
   operator: { name: '韩涛' },
   printDate: '2026-03-15',
 };
@@ -174,12 +181,7 @@ const deliveryNoteMock = {
     address: '北京市朝阳区建国路88号',
     contact: '张经理',
   },
-  company: {
-    name: '天津豪星陶瓷有限公司',
-    phone: '022-88888888',
-    address: '天津市西青区陶瓷产业园',
-    fax: '022-88888889',
-  },
+  company: { ...defaultCompanyMock },
   items: [
     {
       name: '800x800 抛光砖 - 米黄色',
@@ -192,12 +194,16 @@ const deliveryNoteMock = {
       quantity: 120,
       unitPrice: 45,
       subtotal: 5400,
+      itemWeightKg: 3000,
+      weight: 3000,
       batchNumber: 'CK260314',
       remark: '先送 1 车',
     },
   ],
   totalAmount: 5400,
   totalQuantity: 120,
+  totalWeightKg: 3000,
+  totalWeight: 3000,
   operator: { name: '李明' },
   printDate: '2026-03-15',
 };
@@ -233,19 +239,18 @@ const inboundRecordMock = {
       specification: '800x800mm',
       unit: '片',
       quantity: 256,
+      itemWeightKg: 6400,
+      weight: 6400,
       batchNumber: 'RK260311',
       supplierName: '佛山鸿瑞瓷砖厂',
       remark: '',
     },
   ],
+  totalWeightKg: 6400,
+  totalWeight: 6400,
   operator: { name: '陈琳' },
   printDate: '2026-03-15',
-  company: {
-    name: '天津豪星陶瓷有限公司',
-    phone: '022-88888888',
-    address: '天津市西青区陶瓷产业园',
-    fax: '022-88888889',
-  },
+  company: { ...defaultCompanyMock },
 };
 
 const returnOrderMock = {
@@ -278,6 +283,8 @@ const returnOrderMock = {
       quantity: 20,
       unitPrice: 45,
       subtotal: 900,
+      itemWeightKg: 500,
+      weight: 500,
       returnQuantity: 20,
       damagedQuantity: 4,
       originalQuantity: 100,
@@ -288,14 +295,11 @@ const returnOrderMock = {
   ],
   totalAmount: 900,
   refundAmount: 900,
+  totalWeightKg: 500,
+  totalWeight: 500,
   operator: { name: '孙洁' },
   printDate: '2026-03-15',
-  company: {
-    name: '天津豪星陶瓷有限公司',
-    phone: '022-88888888',
-    address: '天津市西青区陶瓷产业园',
-    fax: '022-88888889',
-  },
+  company: { ...defaultCompanyMock },
 };
 
 const monthlyReportMock = {
@@ -938,4 +942,15 @@ export function getMockPrintData(
   templateType: TemplateType
 ): Record<string, unknown> {
   return mockDataByTemplateType[templateType] ?? salesOrderMock;
+}
+
+export function cloneMockPrintData(
+  templateType: TemplateType,
+  companyProfile?: PrintCompanyProfile | null
+): Record<string, unknown> {
+  const clonedData = JSON.parse(
+    JSON.stringify(getMockPrintData(templateType))
+  ) as Record<string, unknown>;
+
+  return applyCompanyProfileToPreviewData(clonedData, companyProfile);
 }

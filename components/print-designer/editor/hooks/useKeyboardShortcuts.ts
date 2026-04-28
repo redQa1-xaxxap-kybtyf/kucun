@@ -24,15 +24,19 @@ export function useKeyboardShortcuts({
   onSave,
 }: UseKeyboardShortcutsOptions = {}) {
   const selectedElementId = useDesignerStore(s => s.selectedElementId);
+  const selectedElementIds = useDesignerStore(s => s.selectedElementIds);
   const selectElement = useDesignerStore(s => s.selectElement);
-  const removeElement = useDesignerStore(s => s.removeElement);
-  const duplicateElement = useDesignerStore(s => s.duplicateElement);
+  const removeSelectedElements = useDesignerStore(
+    s => s.removeSelectedElements
+  );
+  const duplicateSelectedElements = useDesignerStore(
+    s => s.duplicateSelectedElements
+  );
   const copyElement = useDesignerStore(s => s.copyElement);
   const pasteElement = useDesignerStore(s => s.pasteElement);
-  const updateElement = useDesignerStore(s => s.updateElement);
+  const nudgeSelectedElements = useDesignerStore(s => s.nudgeSelectedElements);
   const setZoom = useDesignerStore(s => s.setZoom);
   const zoom = useDesignerStore(s => s.zoom);
-  const template = useDesignerStore(s => s.template);
   const undo = useUndo();
   const redo = useRedo();
   const canUndo = useCanUndo();
@@ -78,22 +82,17 @@ export function useKeyboardShortcuts({
       }
 
       // 以下需要选中元素
-      if (!selectedElementId || !template) return;
-
-      const selectedElement = template.elements.find(
-        el => el.id === selectedElementId
-      );
-      if (!selectedElement) return;
+      if (selectedElementIds.length === 0) return;
 
       // Delete / Backspace: 删除
       if (e.key === 'Delete' || e.key === 'Backspace') {
         e.preventDefault();
-        removeElement(selectedElementId);
+        removeSelectedElements();
         return;
       }
 
       // Ctrl + C: 复制
-      if (isMod && e.key === 'c') {
+      if (isMod && e.key === 'c' && selectedElementId) {
         e.preventDefault();
         copyElement(selectedElementId);
         return;
@@ -109,7 +108,7 @@ export function useKeyboardShortcuts({
       // Ctrl + D: 原位复制
       if (isMod && e.key === 'd') {
         e.preventDefault();
-        duplicateElement(selectedElementId);
+        duplicateSelectedElements();
         return;
       }
 
@@ -125,12 +124,7 @@ export function useKeyboardShortcuts({
       if (arrowMoves[e.key]) {
         e.preventDefault();
         const { dx, dy } = arrowMoves[e.key];
-        updateElement(selectedElementId, {
-          position: {
-            x: Math.max(0, selectedElement.position.x + dx),
-            y: Math.max(0, selectedElement.position.y + dy),
-          },
-        });
+        nudgeSelectedElements(dx, dy);
         return;
       }
 
@@ -151,7 +145,7 @@ export function useKeyboardShortcuts({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [
     selectedElementId,
-    template,
+    selectedElementIds,
     zoom,
     onSave,
     undo,
@@ -159,11 +153,11 @@ export function useKeyboardShortcuts({
     canUndo,
     canRedo,
     selectElement,
-    removeElement,
-    duplicateElement,
+    removeSelectedElements,
+    duplicateSelectedElements,
     copyElement,
     pasteElement,
-    updateElement,
+    nudgeSelectedElements,
     setZoom,
   ]);
 }

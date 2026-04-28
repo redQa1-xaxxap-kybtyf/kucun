@@ -34,6 +34,7 @@ import {
   type TableColumn,
 } from '@/lib/print-designer/schemas';
 import {
+  applyTableColumnWidthPreset,
   applyTableDocumentLabelPreset,
   applyTableColumnLabelMode,
   appendRecommendedTableColumns,
@@ -42,12 +43,14 @@ import {
   getTableColumnPresets,
   getTableColumnQuickInsertPresets,
   getTableColumnLabelQuickOptions,
+  getTableColumnWidthPresets,
   hasRowNumberColumn,
   insertTableFieldAsColumn,
   rebalanceTableColumnWidths,
   type TableDocumentLabelPreset,
   type TableColumnLabelMode,
   type TableColumnQuickInsertPreset,
+  type TableColumnWidthPreset,
   toggleRowNumberColumn,
 } from '@/lib/print-designer/table-column-presets';
 
@@ -131,6 +134,16 @@ function summarizeFieldLabels(fields: FieldDefinition[]): string {
   return `${preview}等${labels.length}列`;
 }
 
+function getWidthInputStep(widthUnit: TableColumn['widthUnit']) {
+  return widthUnit === 'mm' ? '0.5' : '1';
+}
+
+function getWidthInputHint(widthUnit: TableColumn['widthUnit']) {
+  return widthUnit === 'mm'
+    ? '毫米更适合中文套打和精细对齐'
+    : '百分比更适合整体自适应排版';
+}
+
 export function TableColumnManager({
   templateType,
   columns,
@@ -148,6 +161,7 @@ export function TableColumnManager({
     () => getTableColumnQuickInsertPresets(templateType),
     [templateType]
   );
+  const widthPresets = useMemo(() => getTableColumnWidthPresets(), []);
   const documentLabelPresets = useMemo(
     () => getTableDocumentLabelPresets(),
     []
@@ -329,6 +343,22 @@ export function TableColumnManager({
     setMessage('已按常见中文单据习惯重新整理列宽，后面还可以继续拖拽微调。');
     setHighlightedColumnKey(null);
     updateColumns(rebalanceTableColumnWidths(columns));
+  };
+
+  const handleApplyWidthPreset = (preset: TableColumnWidthPreset) => {
+    const nextColumns = applyTableColumnWidthPreset(columns, preset.key);
+    const presetMessage =
+      preset.key === 'equal'
+        ? '已按等宽排版整理当前列，适合简单清单和规整模板。'
+        : preset.key === 'text-first'
+          ? '已优先给名称、规格、备注等文本列留空间，中文内容更不容易挤。'
+          : preset.key === 'compact-numeric'
+            ? '已把数量、单价、金额等数字列收紧，方便在一页里排下更多列。'
+            : '已按中文单据常见习惯重新整理列宽，后面还可以继续拖拽微调。';
+
+    setMessage(presetMessage);
+    setHighlightedColumnKey(null);
+    updateColumns(nextColumns);
   };
 
   const handleApplyQuickLabel = (index: number, label: string) => {
@@ -607,6 +637,43 @@ export function TableColumnManager({
         </div>
       )}
 
+      <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-medium text-slate-900">列宽策略</p>
+            <p className="text-muted-foreground mt-1 text-[11px] leading-5">
+              一键按中文单据常见版式整理列宽，不用一列列试。整理后仍可在画布里继续拖拽微调。
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            type="button"
+            onClick={handleRebalanceWidths}
+          >
+            重新推荐
+          </Button>
+        </div>
+
+        <div className="grid gap-2">
+          {widthPresets.map(preset => (
+            <button
+              key={preset.key}
+              type="button"
+              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-left transition-colors hover:border-slate-300 hover:bg-slate-100"
+              onClick={() => handleApplyWidthPreset(preset)}
+            >
+              <div className="text-sm font-medium text-slate-900">
+                {preset.label}
+              </div>
+              <div className="mt-1 text-[11px] leading-5 text-slate-500">
+                {preset.description}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="flex items-center justify-between">
         <Label className="text-muted-foreground text-xs">列定义</Label>
         <div className="flex items-center gap-1">
@@ -617,10 +684,6 @@ export function TableColumnManager({
             onClick={handleToggleRowNumberColumn}
           >
             {rowNumberEnabled ? '去掉序号列' : '加序号列'}
-          </Button>
-
-          <Button variant="ghost" size="sm" onClick={handleRebalanceWidths}>
-            整理列宽
           </Button>
 
           <FieldPicker
@@ -763,10 +826,14 @@ export function TableColumnManager({
                       </Label>
                       <Input
                         type="number"
+                        step={getWidthInputStep(col.widthUnit)}
                         value={col.width}
                         onChange={e =>
                           handleUpdateColumn(index, {
-                            width: parseInt(e.target.value) || 10,
+                            width: Math.max(
+                              5,
+                              parseFloat(e.target.value) || 10
+                            ),
                           })
                         }
                         className="h-7 px-1 text-xs"
@@ -836,6 +903,14 @@ export function TableColumnManager({
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 text-[10px] leading-4 text-slate-500">
+                  <span className="rounded-full bg-slate-100 px-2 py-1">
+                    当前列宽 {col.width}{col.widthUnit}
+                  </span>
+                  <span>{getWidthInputHint(col.widthUnit)}</span>
+                  <span>画布上也可以直接拖拽列头分隔线微调</span>
                 </div>
               </div>
 

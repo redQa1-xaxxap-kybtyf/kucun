@@ -23,6 +23,9 @@ jest.mock('@/lib/db', () => ({
     purchaseOrder: {
       findUnique: jest.fn(),
     },
+    systemSetting: {
+      findMany: jest.fn(),
+    },
     factoryShipmentOrder: {
       findUnique: jest.fn(),
     },
@@ -51,6 +54,9 @@ describe('preview-data server actions', () => {
       purchaseOrder: {
         findUnique: jest.Mock;
       };
+      systemSetting: {
+        findMany: jest.Mock;
+      };
       returnOrder: {
         findUnique: jest.Mock;
       };
@@ -62,6 +68,11 @@ describe('preview-data server actions', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    prisma.systemSetting.findMany.mockResolvedValue([
+      { key: 'companyName', value: '华北建材有限公司' },
+      { key: 'companyAddress', value: '天津市河西区解放南路 66 号' },
+      { key: 'companyPhone', value: '022-66668888' },
+    ]);
   });
 
   test('销售订单打印数据应优先带出真实商品字段与旧模板兼容字段', async () => {
@@ -118,8 +129,15 @@ describe('preview-data server actions', () => {
       customer: {
         name: '天津客户',
       },
+      company: {
+        name: '华北建材有限公司',
+        address: '天津市河西区解放南路 66 号',
+        phone: '022-66668888',
+        fax: '',
+      },
       totalQuantity: '2件（共12片）',
       totalWeight: 49,
+      totalWeightKg: 49,
     });
     expect(data?.items).toEqual(
       expect.arrayContaining([
@@ -129,6 +147,7 @@ describe('preview-data server actions', () => {
           spec: '600x1200',
           unit: '件',
           quantity: '2件',
+          itemWeightKg: 49,
           weight: 49,
           boxes: 2,
           productName: '柔光砖',
@@ -136,6 +155,78 @@ describe('preview-data server actions', () => {
           specification: '600x1200',
           batchNumber: 'LOT-001',
           remark: '靠窗摆放',
+        }),
+      ])
+    );
+  });
+
+  test('采购订单打印数据应提供单品种重量和总重量字段', async () => {
+    prisma.purchaseOrder.findUnique.mockResolvedValue({
+      orderNumber: 'PO-2026-0015',
+      createdAt: new Date('2026-03-26T08:00:00.000Z'),
+      status: 'confirmed',
+      remarks: '优先整柜',
+      totalAmount: 5120,
+      supplier: {
+        name: '佛山供应商',
+        phone: '0757-12345678',
+        address: '佛山市南海区',
+        supplierCode: 'SUP-015',
+      },
+      user: {
+        name: '采购李四',
+      },
+      items: [
+        {
+          quantity: 8,
+          unitPrice: 640,
+          totalPrice: 5120,
+          batchNumber: 'PO-LOT-01',
+          remarks: '靠前装柜',
+          manualWeight: 12.5,
+          weight: null,
+          piecesPerUnit: 4,
+          manualProductName: null,
+          manualSpecification: null,
+          manualUnit: null,
+          displayName: null,
+          productCode: null,
+          specification: null,
+          supplier: null,
+          product: {
+            name: '岩板',
+            code: 'YB-900',
+            specification: '900x1800',
+            unit: 'piece',
+            piecesPerUnit: 4,
+          },
+        },
+      ],
+    });
+
+    const { getPrintDataForTemplate } = await import(
+      '@/lib/print-designer/actions/preview-data'
+    );
+    const data = await getPrintDataForTemplate('purchase-order', 'order-2');
+
+    expect(data).toMatchObject({
+      order: {
+        orderNumber: 'PO-2026-0015',
+      },
+      supplier: {
+        name: '佛山供应商',
+      },
+      totalWeight: 100,
+      totalWeightKg: 100,
+    });
+    expect(data?.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: '岩板',
+          code: 'YB-900',
+          itemWeightKg: 100,
+          weight: 100,
+          batchNumber: 'PO-LOT-01',
         }),
       ])
     );
@@ -156,6 +247,8 @@ describe('preview-data server actions', () => {
         code: 'P-900',
         specification: '900x1800',
         unit: 'sheet',
+        piecesPerUnit: 4,
+        weight: 20,
       },
       variant: {
         colorCode: 'M01',
@@ -189,6 +282,8 @@ describe('preview-data server actions', () => {
       customer: {
         name: '上海客户',
       },
+      totalWeight: 200,
+      totalWeightKg: 200,
       items: [
         expect.objectContaining({
           name: '木纹砖 - M01 · 暖灰',
@@ -196,7 +291,146 @@ describe('preview-data server actions', () => {
           quantity: 40,
           unitPrice: 18.125,
           subtotal: 725,
+          itemWeightKg: 200,
+          weight: 200,
           batchNumber: 'OUT-01',
+        }),
+      ],
+    });
+  });
+
+  test('入库打印数据应优先使用批次重量计算单品种重量和总重量', async () => {
+    prisma.inboundRecord.findUnique.mockResolvedValue({
+      recordNumber: 'RK-2026-0008',
+      createdAt: new Date('2026-03-24T11:00:00.000Z'),
+      quantity: 32,
+      location: 'A-01-02',
+      reason: 'purchase',
+      remarks: '码放整齐',
+      supplier: {
+        name: '佛山鸿瑞',
+        phone: '0757-00001111',
+        address: '佛山南海',
+        supplierCode: 'SUP-008',
+      },
+      user: {
+        name: '仓管王五',
+      },
+      variant: {
+        colorCode: 'G01',
+      },
+      batchNumber: 'IN-LOT-01',
+      batchSpecification: {
+        batchNumber: 'IN-LOT-01',
+        piecesPerUnit: 8,
+        weight: 24,
+      },
+      product: {
+        code: 'P-800',
+        name: '通体砖',
+        specification: '800x800',
+        unit: 'sheet',
+        piecesPerUnit: 6,
+        weight: 18,
+      },
+    });
+
+    const { getPrintDataForTemplate } = await import(
+      '@/lib/print-designer/actions/preview-data'
+    );
+    const data = await getPrintDataForTemplate('inbound-record', 'RK-2026-0008');
+
+    expect(data).toMatchObject({
+      order: {
+        orderNumber: 'RK-2026-0008',
+        location: 'A-01-02',
+      },
+      supplier: {
+        name: '佛山鸿瑞',
+      },
+      totalWeight: 96,
+      totalWeightKg: 96,
+      items: [
+        expect.objectContaining({
+          code: 'P-800',
+          itemWeightKg: 96,
+          weight: 96,
+          batchNumber: 'IN-LOT-01',
+        }),
+      ],
+    });
+  });
+
+  test('退货打印数据应提供单品种重量和总重量字段', async () => {
+    prisma.returnOrder.findUnique.mockResolvedValue({
+      returnNumber: 'RT-2026-0003',
+      createdAt: new Date('2026-03-24T12:00:00.000Z'),
+      status: 'pending',
+      type: 'quality',
+      processType: 'refund',
+      reason: '破损退货',
+      remarks: '客户要求退款',
+      totalAmount: 1260,
+      refundAmount: 1260,
+      customer: {
+        name: '石家庄客户',
+        phone: '0311-00001111',
+        address: '石家庄裕华区',
+      },
+      user: {
+        name: '售后赵六',
+      },
+      salesOrder: {
+        orderNumber: 'SO-2026-0102',
+      },
+      items: [
+        {
+          returnQuantity: 8,
+          damagedQuantity: 2,
+          originalQuantity: 40,
+          unitPrice: 157.5,
+          subtotal: 1260,
+          reason: '边角破损',
+          colorCode: 'B01',
+          product: {
+            name: '仿古砖',
+            code: 'FG-800',
+            specification: '800x800',
+            unit: 'sheet',
+            piecesPerUnit: 4,
+            weight: 12,
+          },
+          salesOrderItem: {
+            displayUnit: 'sheet',
+            manualUnit: null,
+            piecesPerUnit: 4,
+            batchNumber: 'RT-LOT-01',
+            weightSnapshot: 18,
+          },
+        },
+      ],
+    });
+
+    const { getPrintDataForTemplate } = await import(
+      '@/lib/print-designer/actions/preview-data'
+    );
+    const data = await getPrintDataForTemplate('return-order', 'order-3');
+
+    expect(data).toMatchObject({
+      order: {
+        orderNumber: 'RT-2026-0003',
+      },
+      salesOrder: {
+        orderNumber: 'SO-2026-0102',
+      },
+      totalWeight: 36,
+      totalWeightKg: 36,
+      items: [
+        expect.objectContaining({
+          code: 'FG-800',
+          itemWeightKg: 36,
+          weight: 36,
+          batchNumber: 'RT-LOT-01',
         }),
       ],
     });

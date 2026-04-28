@@ -109,7 +109,7 @@ export function FieldPicker({
       }}
     >
       <PopoverTrigger asChild>{children}</PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="start">
+      <PopoverContent className="w-[22rem] p-0" align="start">
         <div className="border-b p-2">
           <div className="relative">
             <Search className="text-muted-foreground absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2" />
@@ -149,17 +149,26 @@ export function FieldPicker({
                 <button
                   key={`recommended-${field.path}`}
                   type="button"
-                  className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-blue-50 ${
+                  className={`w-full px-3 py-2 text-left hover:bg-blue-50 ${
                     field.path === currentField
                       ? 'bg-blue-100 text-blue-700'
                       : ''
                   }`}
                   onClick={() => handleSelect(field)}
                 >
-                  <span>{field.label}</span>
-                  <span className="text-muted-foreground font-mono text-xs">
-                    {field.path}
-                  </span>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate text-sm font-medium">
+                        {field.label}
+                      </span>
+                      <span className="rounded-full bg-white/80 px-2 py-0.5 text-[10px] text-slate-500">
+                        {field.group}
+                      </span>
+                    </div>
+                    <div className="text-muted-foreground mt-1 truncate text-[11px]">
+                      {field.path}
+                    </div>
+                  </div>
                 </button>
               ))}
             </div>
@@ -174,15 +183,24 @@ export function FieldPicker({
                 <button
                   key={f.path}
                   type="button"
-                  className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-blue-50 ${
+                  className={`w-full px-3 py-2 text-left hover:bg-blue-50 ${
                     f.path === currentField ? 'bg-blue-100 text-blue-700' : ''
                   }`}
                   onClick={() => handleSelect(f)}
                 >
-                  <span>{f.label}</span>
-                  <span className="text-muted-foreground font-mono text-xs">
-                    {f.path}
-                  </span>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate text-sm font-medium">
+                        {f.label}
+                      </span>
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500">
+                        {f.group}
+                      </span>
+                    </div>
+                    <div className="text-muted-foreground mt-1 truncate text-[11px]">
+                      {f.path}
+                    </div>
+                  </div>
                 </button>
               ))}
             </div>
