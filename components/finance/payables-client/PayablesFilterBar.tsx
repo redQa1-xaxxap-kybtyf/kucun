@@ -100,7 +100,7 @@ export function PayablesFilterBar({
         label: '单据日期',
         value: { startDate: query.startDate, endDate: query.endDate },
         onChange: onDateRangeChange,
-        placeholder: '选择单据日期范围',
+        placeholder: '选择单据日期',
       }}
       onClearFilters={onClearFilters}
       hasActiveFilters={hasActiveFilters}

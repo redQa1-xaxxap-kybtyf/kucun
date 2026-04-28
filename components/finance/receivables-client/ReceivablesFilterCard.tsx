@@ -109,7 +109,7 @@ function ReceivablesFilterBar({
     <SearchFilterCard
       searchValue={searchValue}
       onSearchChange={onSearch}
-      searchPlaceholder="搜索订单号或客户名称..."
+      searchPlaceholder="搜索订单号、客户"
       isSearching={isSearching}
       // 筛选器配置
       filters={[
@@ -138,7 +138,7 @@ function ReceivablesFilterBar({
           endDate: queryParams.endDate,
         },
         onChange: onDateRangeChange,
-        placeholder: '选择订单日期范围',
+        placeholder: '选择订单日期',
       }}
       onClearFilters={onClearFilters}
       hasActiveFilters={hasActiveFilters}

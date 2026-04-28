@@ -498,7 +498,7 @@ export function PaymentsClient({
           </AlertDialogHeader>
 
           <div className="space-y-2">
-            <div className="text-sm font-medium">备注（可选）</div>
+            <div className="text-sm font-medium">备注</div>
             <Textarea
               value={cancelNotes}
               onChange={event => setCancelNotes(event.target.value)}
@@ -676,7 +676,7 @@ function PaymentFilters({
           endDate: initialParams?.endDate,
         },
         onChange: onDateRangeChange,
-        placeholder: '选择收款日期范围',
+        placeholder: '选择收款日期',
       }}
       onClearFilters={onClearFilters}
       variant="pro"

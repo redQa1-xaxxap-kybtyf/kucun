@@ -209,7 +209,7 @@ export function ManualDamageFiltersCard({
     <SearchFilterCard
       searchValue={searchInput}
       onSearchChange={handleSearchChange}
-      searchPlaceholder="搜索台账号、调整单号、产品编码、产品名称、供应商、批次号..."
+      searchPlaceholder="搜索台账号、单号、产品、供应商、批次"
       isSearching={isSearching}
       filters={[
         {
@@ -242,7 +242,7 @@ export function ManualDamageFiltersCard({
         label: '登记日期',
         value: dateRange,
         onChange: handleDateRangeChange,
-        placeholder: '开始日期至结束日期',
+        placeholder: '选择登记日期',
       }}
       onClearFilters={handleClearFilters}
       hasActiveFilters={hasActiveFilters}

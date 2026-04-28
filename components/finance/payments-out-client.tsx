@@ -455,7 +455,7 @@ function PaymentsOutFilters({
                   endDate: initialParams?.endDate,
                 },
                 onChange: onDateRangeChange,
-                placeholder: '选择付款日期范围',
+                placeholder: '选择付款日期',
               }
             : undefined
         }
@@ -499,7 +499,7 @@ function VoidPaymentDialog({
         </AlertDialogHeader>
 
         <div className="space-y-2">
-          <div className="text-sm font-medium">备注（可选）</div>
+          <div className="text-sm font-medium">备注</div>
           <Textarea
             value={voidReason}
             onChange={e => onReasonChange(e.target.value)}
