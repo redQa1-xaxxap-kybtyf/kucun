@@ -54,9 +54,9 @@ function DetailStat({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="group rounded-xl border border-slate-100 bg-white p-4 shadow-sm transition-all hover:border-blue-200 hover:shadow-md sm:p-5">
+    <div className="rounded-md border border-slate-100 bg-white p-4 shadow-sm sm:p-5">
       <div className="flex items-center gap-4">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-50 text-blue-600 shadow-inner group-hover:bg-blue-50 sm:h-12 sm:w-12">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-slate-50 text-blue-600 sm:h-12 sm:w-12">
           {icon}
         </div>
         <div className="min-w-0 flex-1">
@@ -216,7 +216,7 @@ export function InboundSummaryCard({
 
   return (
     <>
-      <Card className="overflow-hidden border-slate-200 bg-white transition-all hover:shadow-lg">
+      <Card className="overflow-hidden rounded-md border-slate-200 bg-white shadow-sm">
         <CardHeader className="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/50 px-4 py-4 sm:px-6 sm:py-5 xl:flex-row xl:items-center xl:justify-between">
           <div className="space-y-1.5 text-left">
             <CardTitle className="flex items-center justify-start gap-2 text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">

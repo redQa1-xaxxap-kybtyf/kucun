@@ -249,7 +249,7 @@ export function PurchaseOrdersPageClient({
             <Button
               size="lg"
               asChild
-              className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+              className="h-11 shadow-sm"
             >
               <Link href="/purchase-orders/create">
                 <Plus className="mr-2 h-4 w-4" />

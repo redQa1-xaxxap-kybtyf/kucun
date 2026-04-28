@@ -9,7 +9,6 @@ import {
   Monitor,
   Plus,
   RefreshCw,
-  Search,
   User,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -35,6 +34,7 @@ import {
 import { usePollingNotifications } from '@/hooks/use-polling-notifications';
 import { queryKeys } from '@/lib/queryKeys';
 import type { NotificationItem } from '@/lib/types/layout';
+import { USER_ROLE_LABELS, type UserRole } from '@/lib/types/user';
 import { cn } from '@/lib/utils';
 
 interface HeaderProps {
@@ -114,7 +114,7 @@ function HeaderComponent({
     return (
       <header
         className={cn(
-          'bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-50 w-full border-b backdrop-blur-sm',
+          'bg-background sticky top-0 z-50 w-full border-b',
           className
         )}
       >
@@ -155,11 +155,13 @@ function HeaderComponent({
       .join('')
       .toUpperCase()
       .slice(0, 2);
+  const getRoleLabel = (role?: string) =>
+    role ? (USER_ROLE_LABELS[role as UserRole] ?? role) : '';
 
   return (
     <header
       className={cn(
-        'sticky top-0 z-50 w-full border-b border-slate-100 bg-white/80 backdrop-blur-xl transition-all duration-300',
+        'sticky top-0 z-50 w-full border-b border-slate-200 bg-white',
         className
       )}
     >
@@ -178,17 +180,8 @@ function HeaderComponent({
             </Button>
           )}
 
-          {/* 全域搜索占位框 - 桌面端 */}
-          <div className="hidden md:flex">
-            <div className="group relative flex h-9 w-[280px] cursor-pointer items-center gap-2 rounded-full border border-slate-100 bg-slate-50/50 px-3 transition-all hover:border-blue-200 hover:bg-white hover:shadow-sm">
-              <Search className="h-4 w-4 text-slate-400 transition-colors group-hover:text-blue-500" />
-              <span className="text-xs font-medium text-slate-400 group-hover:text-slate-500">
-                搜索功能、订单、报表...
-              </span>
-              <kbd className="pointer-events-none absolute right-2 flex h-5 items-center gap-1 rounded border border-slate-200 bg-white px-1.5 font-mono text-xs font-medium text-slate-500 opacity-100 transition-opacity select-none group-hover:opacity-0">
-                <span className="text-xs">⌘</span>K
-              </kbd>
-            </div>
+          <div className="hidden text-sm font-medium text-slate-600 md:block">
+            进销存工作台
           </div>
         </div>
 
@@ -199,12 +192,12 @@ function HeaderComponent({
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="flex items-center rounded-full"
+                  className="flex items-center rounded-md"
                 >
                   <Badge
                     variant="secondary"
                     className={cn(
-                      'rounded-full px-2 py-1 text-[10px] font-semibold sm:px-3',
+                      'rounded-md px-2 py-1 text-[10px] font-semibold sm:px-3',
                       systemMode === 'trial'
                         ? 'bg-emerald-50 text-emerald-700'
                         : 'bg-amber-50 text-amber-700'
@@ -222,7 +215,7 @@ function HeaderComponent({
                   </Badge>
                 </button>
               </PopoverTrigger>
-              <PopoverContent align="end" className="w-80 rounded-xl">
+              <PopoverContent align="end" className="w-80 rounded-md">
                 <div className="space-y-2">
                   <div className="text-sm font-semibold text-slate-900">
                     账套模式说明
@@ -238,16 +231,20 @@ function HeaderComponent({
                       </>
                     )}
                   </div>
-                  <div className="pt-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-8 rounded-full text-xs font-bold"
-                      onClick={() => router.push('/settings/data-management')}
-                    >
-                      进入数据管理
-                    </Button>
-                  </div>
+                  {currentUser.role === 'admin' ? (
+                    <div className="pt-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 rounded-md text-xs font-medium"
+                        onClick={() =>
+                          router.push('/settings/data-management')
+                        }
+                      >
+                        进入数据管理
+                      </Button>
+                    </div>
+                  ) : null}
                 </div>
               </PopoverContent>
             </Popover>
@@ -271,18 +268,18 @@ function HeaderComponent({
               <Button
                 variant="default"
                 size="sm"
-                className="h-9 gap-2 rounded-full bg-slate-900 px-4 text-xs font-bold hover:bg-slate-800"
+                className="h-9 gap-2 rounded-md bg-slate-900 px-3 text-xs font-medium hover:bg-slate-800"
               >
                 <Plus className="h-4 w-4" />
-                <span className="hidden lg:inline">快速新建</span>
+                <span className="hidden lg:inline">新建</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className="w-56 rounded-xl border-slate-100 p-1.5 shadow-xl"
+              className="w-56 rounded-md border-slate-100 p-1.5 shadow-md"
             >
               <DropdownMenuLabel className="px-2 py-1.5 text-xs font-semibold text-slate-500">
-                核心配置
+                常用操作
               </DropdownMenuLabel>
               <DropdownMenuItem
                 onClick={() => router.push('/products/create')}
@@ -303,7 +300,7 @@ function HeaderComponent({
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
                     <Plus className="h-4 w-4" />
                   </div>
-                  <span>下达销售订单</span>
+                  <span>新建销售单</span>
                 </div>
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-slate-50" />
@@ -341,10 +338,12 @@ function HeaderComponent({
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className="w-[360px] rounded-2xl border-slate-100 p-0 shadow-2xl"
+              className="w-[360px] rounded-md border-slate-200 p-0 shadow-md"
             >
               <div className="flex items-center justify-between border-b border-slate-50 p-4">
-                <h3 className="text-sm font-semibold text-slate-900">通知中心</h3>
+                <h3 className="text-sm font-semibold text-slate-900">
+                  通知中心
+                </h3>
                 {unreadCount > 0 && (
                   <Badge
                     variant="secondary"
@@ -361,7 +360,7 @@ function HeaderComponent({
                       key={notification.id}
                       onClick={() => handleNotificationClick(notification)}
                       className={cn(
-                        'flex cursor-pointer flex-col items-start gap-1 rounded-xl p-3 transition-colors',
+                        'flex cursor-pointer flex-col items-start gap-1 rounded-md p-3 transition-colors',
                         !notification.isRead
                           ? 'bg-blue-50/50 hover:bg-blue-50'
                           : 'hover:bg-slate-50'
@@ -403,7 +402,7 @@ function HeaderComponent({
                   className="h-8 flex-1 text-xs font-bold text-slate-500"
                   onClick={markAllAsRead}
                 >
-                  一键忽略
+                  全部已读
                 </Button>
                 <Button
                   variant="ghost"
@@ -422,7 +421,7 @@ function HeaderComponent({
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                className="relative ml-2 flex items-center gap-2 rounded-full p-0.5 pr-3 transition-all hover:bg-slate-100"
+                className="relative ml-2 flex items-center gap-2 rounded-md p-0.5 pr-3 transition-colors hover:bg-slate-100"
               >
                 <Avatar className="h-7 w-7 border-2 border-slate-200">
                   <AvatarImage
@@ -439,14 +438,14 @@ function HeaderComponent({
                   <p className="text-xs leading-none font-semibold text-slate-900">
                     {currentUser?.name}
                   </p>
-                  <p className="mt-1 text-xs leading-none font-bold text-slate-500 capitalize">
-                    {currentUser?.role}
+                  <p className="mt-1 text-xs leading-none font-medium text-slate-500">
+                    {getRoleLabel(currentUser?.role)}
                   </p>
                 </div>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
-              className="w-64 rounded-2xl border-slate-100 p-2 shadow-2xl"
+              className="w-64 rounded-md border-slate-200 p-2 shadow-md"
               align="end"
               forceMount
             >
@@ -471,7 +470,7 @@ function HeaderComponent({
 
               <DropdownMenuItem
                 onClick={handleProfileClick}
-                className="cursor-pointer rounded-xl py-2"
+                className="cursor-pointer rounded-md py-2"
               >
                 <User className="mr-3 h-4 w-4 text-slate-400" />
                 <span className="font-bold text-slate-700">账户设置</span>
@@ -479,7 +478,7 @@ function HeaderComponent({
 
               <DropdownMenuItem
                 onClick={() => router.push('/help/shortcuts')}
-                className="cursor-pointer rounded-xl py-2"
+                className="cursor-pointer rounded-md py-2"
               >
                 <Keyboard className="mr-3 h-4 w-4 text-slate-400" />
                 <span className="font-bold text-slate-700">键盘快捷键</span>
@@ -489,7 +488,7 @@ function HeaderComponent({
 
               <DropdownMenuItem
                 onClick={handleSignOut}
-                className="cursor-pointer rounded-xl py-2 text-rose-600 focus:bg-rose-50 focus:text-rose-600"
+                className="cursor-pointer rounded-md py-2 text-rose-600 focus:bg-rose-50 focus:text-rose-600"
               >
                 <LogOut className="mr-3 h-4 w-4" />
                 <span className="font-bold">安全退出</span>

@@ -165,27 +165,20 @@ export default function ShippingQueryPage() {
   return (
     <div className="flex h-full flex-col overflow-hidden p-6">
       <div className="flex-1 space-y-6 overflow-y-auto">
-        {/* 页面头部 - v3 PRO 玻璃拟态风格 */}
-        <Card className="relative overflow-hidden border-none bg-slate-900 shadow-[0_20px_50px_rgba(0,0,0,0.2)]">
-          {/* 装饰性背景 */}
-          <div className="absolute -top-20 -right-20 h-64 w-64 rounded-full bg-purple-500/10 blur-3xl" />
-          <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl" />
-
-          <CardContent className="relative z-10 p-6 sm:p-8">
+        {/* 页面头部 */}
+        <Card className="relative overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
+          <CardContent className="p-6 sm:p-8">
             <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-5">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-600 shadow-[0_10px_20px_rgba(124,58,237,0.3)]">
+                <div className="flex h-14 w-14 items-center justify-center rounded-md bg-slate-900 shadow-sm">
                   <Package className="h-7 w-7 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-                    运输智能查询{' '}
-                    <span className="ml-2 text-xs font-normal opacity-40 sm:text-sm">
-                      查询中心
-                    </span>
+                  <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+                    运输查询
                   </h1>
-                  <p className="mt-1 text-sm font-medium text-slate-400">
-                    全网快递实时追踪 · 物流进度自动更新
+                  <p className="mt-1 text-sm font-medium text-slate-500">
+                    按配置站点查询物流状态
                   </p>
                 </div>
               </div>
@@ -193,7 +186,7 @@ export default function ShippingQueryPage() {
                 variant="outline"
                 size="lg"
                 onClick={() => router.push('/settings')}
-                className="h-12 border-white/10 bg-white/5 text-white transition-all hover:scale-105 hover:bg-white/10 hover:text-white"
+                className="h-12 border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 返回系统设置
@@ -203,7 +196,7 @@ export default function ShippingQueryPage() {
         </Card>
 
         {/* 查询表单 */}
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+        <Card className="overflow-hidden rounded-md border border-slate-200 shadow-sm">
           <CardContent className="space-y-6 p-6">
             <div className="flex items-start gap-3 text-sm text-gray-600">
               <Search className="h-4 w-4 text-purple-600" />
@@ -260,12 +253,12 @@ export default function ShippingQueryPage() {
                   <Button
                     onClick={handleQuery}
                     disabled={queryMutation.isPending}
-                    className="h-12 bg-slate-900 px-8 shadow-xl shadow-slate-900/20 hover:bg-slate-800"
+                    className="h-12 bg-slate-900 px-8 shadow-sm hover:bg-slate-800"
                   >
                     {queryMutation.isPending ? (
                       <>
                         <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        深度同步中
+                        查询中
                       </>
                     ) : (
                       <>
@@ -278,9 +271,9 @@ export default function ShippingQueryPage() {
               </div>
             </div>
 
-            {/* 查询结果展示 - v3 高度可视化布局 */}
+            {/* 查询结果展示 */}
             {currentResult && (
-              <div className="relative mt-8 overflow-hidden rounded-2xl border border-slate-100 bg-slate-50/30 p-8 shadow-sm">
+              <div className="relative mt-8 overflow-hidden rounded-md border border-slate-100 bg-slate-50/30 p-8 shadow-sm">
                 {/* 状态背景水印 */}
                 <div className="absolute -top-8 -right-8 opacity-[0.03]">
                   {currentResult.queryStatus === 'success' ? (
@@ -312,7 +305,7 @@ export default function ShippingQueryPage() {
                   {currentResult.queryStatus === 'success' ? (
                     <div className="grid gap-8 md:grid-cols-3">
                       <div className="space-y-4">
-                        <div className="text-[11px] font-semibold tracking-tighter text-slate-400">
+                        <div className="text-[11px] font-semibold tracking-tight text-slate-400">
                           追踪单号
                         </div>
                         <div className="font-mono text-xl leading-none font-semibold text-slate-900">
@@ -323,7 +316,7 @@ export default function ShippingQueryPage() {
                         </div>
                       </div>
                       <div className="space-y-4 md:border-x md:border-slate-200 md:px-8">
-                        <div className="text-[11px] font-semibold tracking-tighter text-slate-400">
+                        <div className="text-[11px] font-semibold tracking-tight text-slate-400">
                           当前物流节点
                         </div>
                         <div className="text-lg leading-none font-semibold text-slate-900">
@@ -339,7 +332,7 @@ export default function ShippingQueryPage() {
                         </div>
                       </div>
                       <div className="space-y-4">
-                        <div className="text-[11px] font-semibold tracking-tighter text-slate-400">
+                        <div className="text-[11px] font-semibold tracking-tight text-slate-400">
                           预计送达日期
                         </div>
                         <div className="text-lg leading-none font-semibold text-blue-600">
@@ -359,7 +352,7 @@ export default function ShippingQueryPage() {
                       </div>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-4 rounded-xl border border-rose-100 bg-rose-50 p-6 text-rose-600">
+                    <div className="flex items-center gap-4 rounded-md border border-rose-100 bg-rose-50 p-6 text-rose-600">
                       <AlertCircle className="h-6 w-6 shrink-0" />
                       <div>
                         <div className="mb-1 text-sm font-semibold">
@@ -378,12 +371,12 @@ export default function ShippingQueryPage() {
         </Card>
 
         {/* 查询历史 */}
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+        <Card className="overflow-hidden rounded-md border border-slate-200 shadow-sm">
           <CardHeader className="relative overflow-hidden border-b border-slate-50 bg-slate-50/30">
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="flex items-center text-lg font-semibold tracking-tight text-slate-900">
-                  查询历史资源池
+                  查询历史
                 </CardTitle>
                 <CardDescription className="mt-1 text-xs font-bold text-slate-400">
                   最近 50 条查询记录 · 自动保存
@@ -450,7 +443,7 @@ export default function ShippingQueryPage() {
                           <span className="text-xs font-bold text-slate-900">
                             {query.status || '暂无更新'}
                           </span>
-                          <span className="mt-0.5 text-[10px] font-bold tracking-tighter text-slate-400">
+                          <span className="mt-0.5 text-[10px] font-bold tracking-tight text-slate-400">
                             {query.destination || '目的地：未知'}
                           </span>
                         </div>

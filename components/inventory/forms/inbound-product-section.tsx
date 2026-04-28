@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 interface InboundProductSectionProps {
   form: UseFormReturn<InboundFormData, any, any>;
   selectedProduct: ProductOption | null;
-  onProductSelect: (product: ProductOption) => void;
+  onProductSelect: (product: ProductOption | null) => void;
   showProductPrompt?: boolean;
 }
 
@@ -151,9 +151,7 @@ export function InboundProductSection({
                 value={field.value}
                 onChange={(productId, product) => {
                   field.onChange(productId);
-                  if (product) {
-                    onProductSelect(product);
-                  }
+                  onProductSelect(product ?? null);
                 }}
                 placeholder="搜索产品名称、编码..."
                 error={fieldState.invalid || showProductPrompt}

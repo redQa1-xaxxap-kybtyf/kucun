@@ -8,7 +8,6 @@ import {
   FileText,
   Package,
   Pencil,
-  Receipt,
   ShoppingCart,
   Trash2,
   Truck,
@@ -114,12 +113,15 @@ export function ExpenseList({
       if (filters.page) searchParams.set('page', filters.page.toString());
       if (filters.pageSize)
         searchParams.set('pageSize', filters.pageSize.toString());
+      if (filters.search) searchParams.set('search', filters.search);
       if (filters.expenseType)
         searchParams.set('expenseType', filters.expenseType);
       if (filters.startDate) searchParams.set('startDate', filters.startDate);
       if (filters.endDate) searchParams.set('endDate', filters.endDate);
       if (filters.relatedType)
         searchParams.set('relatedType', filters.relatedType);
+      if (filters.includeTest) searchParams.set('includeTest', 'true');
+      if (filters.includeVoided) searchParams.set('includeVoided', 'true');
       if (filters.sortBy) searchParams.set('sortBy', filters.sortBy);
       if (filters.sortOrder) searchParams.set('sortOrder', filters.sortOrder);
 
@@ -293,7 +295,7 @@ export function ExpenseList({
 
   return (
     <>
-      <Card className="overflow-hidden border-none shadow-[0_10px_40px_rgba(0,0,0,0.04)]">
+      <Card className="overflow-hidden rounded-md border border-border shadow-sm">
         <CardHeader className="border-b border-slate-50 bg-slate-50/30">
           <div className="flex items-center justify-between">
             <div className="space-y-2">
@@ -305,7 +307,7 @@ export function ExpenseList({
                   </span>
                 )}
               </CardTitle>
-              <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
+              <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
                 只有“已审核入账”的费用会进入月报、年报和利润分析。
               </div>
             </div>
@@ -383,7 +385,7 @@ export function ExpenseList({
                             </Badge>
                             <span
                               className={cn(
-                                'inline-flex items-center rounded-md border px-1.5 py-0.5 text-[9px] font-semibold tracking-tighter',
+                                'inline-flex items-center rounded-md border px-1.5 py-0.5 text-[9px] font-semibold',
                                 getStatusBadgeVariant(expense.status)
                               )}
                             >
@@ -624,13 +626,8 @@ function ExpenseCard({
   onApprove: (expense: ExpenseRecord) => void;
 }) {
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all active:scale-[0.98]">
-      {/* 装饰性背景 */}
-      <div className="absolute top-0 right-0 p-4 opacity-[0.03] transition-transform group-hover:scale-110">
-        <Receipt size={64} />
-      </div>
-
-      <div className="relative z-10">
+    <div className="relative overflow-hidden rounded-md border border-slate-100 bg-white p-5 shadow-sm">
+      <div>
         <div className="mb-4 flex items-start justify-between">
           <div className="space-y-1">
             <div className="text-[10px] font-semibold text-slate-400">
@@ -649,7 +646,7 @@ function ExpenseCard({
             </Badge>
             <span
               className={cn(
-                'inline-flex items-center rounded-md border px-1.5 py-0.5 text-[9px] font-semibold tracking-tighter',
+                'inline-flex items-center rounded-md border px-1.5 py-0.5 text-[9px] font-semibold',
                 getStatusBadgeVariant(expense.status)
               )}
             >
@@ -691,11 +688,11 @@ function ExpenseCard({
         <div className="flex items-center justify-between gap-4">
           {expense.relatedType && expense.relatedNumber ? (
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-400">
+              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-slate-50 text-slate-400">
                 {getRelatedTypeIcon(expense.relatedType)}
               </div>
               <div className="flex flex-col">
-                <span className="mb-1 text-[10px] leading-none font-semibold tracking-tighter text-slate-900">
+                <span className="mb-1 text-[10px] leading-none font-semibold text-slate-900">
                   {expense.relatedNumber}
                 </span>
                 <span className="line-clamp-1 text-[9px] font-bold text-slate-400">

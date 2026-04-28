@@ -1,6 +1,13 @@
 'use client';
 
-import { Edit, Eye, ImageIcon, MoreHorizontal, Trash2 } from 'lucide-react';
+import {
+  Edit,
+  Eye,
+  ImageIcon,
+  MoreHorizontal,
+  Route,
+  Trash2,
+} from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
@@ -72,22 +79,26 @@ export function ProductTable({
     router.push(`/products/${productId}/edit`);
   };
 
+  const handleTrackProduct = (productId: string) => {
+    router.push(`/products/${productId}/tracking`);
+  };
+
   return (
     <>
       <div className="space-y-3 p-3 md:hidden">
         {products.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-4 py-8 text-center text-sm text-[hsl(var(--color-text-secondary))]">
+          <div className="rounded-lg border border-dashed border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-4 py-8 text-center text-sm text-[hsl(var(--color-text-secondary))]">
             暂无产品数据
           </div>
         ) : (
           products.map(product => (
             <div
               key={product.id}
-              className="rounded-2xl border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4 shadow-[var(--shadow-light)]"
+              className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3 shadow-[var(--shadow-light)]"
             >
               <div className="flex items-start gap-3">
                 {product.thumbnailUrl ? (
-                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-[hsl(var(--color-border-secondary))] bg-white">
+                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-[hsl(var(--color-border-secondary))] bg-white">
                     <Image
                       src={product.thumbnailUrl}
                       alt={product.name}
@@ -100,7 +111,7 @@ export function ProductTable({
                     />
                   </div>
                 ) : (
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-dashed border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))]">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-dashed border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))]">
                     <ImageIcon className="h-5 w-5 text-[hsl(var(--color-text-tertiary))]" />
                   </div>
                 )}
@@ -115,7 +126,9 @@ export function ProductTable({
                         {product.name}
                       </div>
                     </div>
-                    <div className="shrink-0">{getStatusBadge(product.status)}</div>
+                    <div className="shrink-0">
+                      {getStatusBadge(product.status)}
+                    </div>
                   </div>
 
                   <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
@@ -132,7 +145,9 @@ export function ProductTable({
                         厚度(mm)
                       </div>
                       <div className="mt-1 font-medium text-[hsl(var(--color-text-secondary))]">
-                        {ProductDataUtils.formatter.formatThickness(product.thickness)}
+                        {ProductDataUtils.formatter.formatThickness(
+                          product.thickness
+                        )}
                       </div>
                     </div>
                     <div className="col-span-2 min-w-0">
@@ -153,10 +168,10 @@ export function ProductTable({
                 </div>
               </div>
 
-              <div className="mt-4 flex gap-2">
+              <div className="mt-4 grid grid-cols-2 gap-2">
                 <Button
                   variant="outline"
-                  className="h-9 flex-1"
+                  className="h-9"
                   disabled={isLoading}
                   onClick={() => handleViewProduct(product)}
                 >
@@ -165,7 +180,16 @@ export function ProductTable({
                 </Button>
                 <Button
                   variant="outline"
-                  className="h-9 flex-1"
+                  className="h-9"
+                  disabled={isLoading}
+                  onClick={() => handleTrackProduct(product.id)}
+                >
+                  <Route className="h-4 w-4" />
+                  流向
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-9"
                   disabled={isLoading}
                   onClick={() => handleEditProduct(product.id)}
                 >
@@ -174,7 +198,7 @@ export function ProductTable({
                 </Button>
                 <Button
                   variant="ghost"
-                  className="h-9 flex-1 text-destructive hover:text-destructive"
+                  className="text-destructive hover:text-destructive h-9"
                   disabled={isLoading}
                   onClick={() => onDeleteProduct(product.id, product.code)}
                 >
@@ -189,7 +213,7 @@ export function ProductTable({
 
       <div className="hidden md:block">
         <Table>
-          <TableHeader className="card-shadow-light">
+          <TableHeader className="shadow-sm">
             <TableRow>
               <TableHead className="w-16 whitespace-nowrap">缩略图</TableHead>
               <TableHead>产品编码</TableHead>
@@ -251,7 +275,9 @@ export function ProductTable({
                     )}
                   </TableCell>
                   <TableCell className="text-[hsl(var(--color-text-secondary))]">
-                    {ProductDataUtils.formatter.formatThickness(product.thickness)}
+                    {ProductDataUtils.formatter.formatThickness(
+                      product.thickness
+                    )}
                   </TableCell>
                   <TableCell>{getStatusBadge(product.status)}</TableCell>
                   <TableCell className="text-[hsl(var(--color-text-secondary))]">
@@ -279,6 +305,13 @@ export function ProductTable({
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           disabled={isLoading}
+                          onClick={() => handleTrackProduct(product.id)}
+                        >
+                          <Route className="mr-2 h-4 w-4" />
+                          流向跟踪
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={isLoading}
                           onClick={() => handleEditProduct(product.id)}
                         >
                           <Edit className="mr-2 h-4 w-4" />
@@ -286,7 +319,9 @@ export function ProductTable({
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           disabled={isLoading}
-                          onClick={() => onDeleteProduct(product.id, product.code)}
+                          onClick={() =>
+                            onDeleteProduct(product.id, product.code)
+                          }
                           className="text-destructive"
                         >
                           <Trash2 className="mr-2 h-4 w-4" />

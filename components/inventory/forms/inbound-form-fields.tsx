@@ -181,7 +181,7 @@ export function InboundSpecificationFields({ form }: InboundFormFieldsProps) {
           )}
         />
       ) : (
-        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/80 p-4">
+        <div className="rounded-md border border-dashed border-slate-200 bg-slate-50/80 p-4">
           <p className="text-sm font-semibold text-slate-700">装箱数</p>
           <p className="mt-1 text-xs leading-5 text-slate-500">
             当前按片录入，不需要填写装箱数。需要按件录入时，再把上方录入单位切换为“件”。
@@ -406,7 +406,7 @@ export function InboundPurchaseDamageSection({ form }: InboundFormFieldsProps) {
   }
 
   return (
-    <div className="space-y-4 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 sm:p-5">
+    <div className="space-y-4 rounded-md border border-amber-200 bg-amber-50/70 p-4 sm:p-5">
       <p className="text-sm leading-6 font-medium text-amber-900">
         这里只填写收货时已经确认的破损。提交后会从到货数量里扣掉这部分，库存只记能正常入库的数量。
       </p>
@@ -426,7 +426,7 @@ export function InboundPurchaseDamageSection({ form }: InboundFormFieldsProps) {
                   min="0"
                   step="1"
                   placeholder="无破损可留空"
-                  className="h-9 border-amber-200 bg-white/80"
+                  className="h-9 border-amber-200 bg-white"
                   name={field.name}
                   ref={field.ref}
                   value={field.value ?? ''}
@@ -485,7 +485,7 @@ export function InboundPurchaseDamageSection({ form }: InboundFormFieldsProps) {
                 disabled={!damagedQuantity}
               >
                 <FormControl>
-                  <SelectTrigger className="h-9 border-amber-200 bg-white/80">
+                  <SelectTrigger className="h-9 border-amber-200 bg-white">
                     <SelectValue placeholder="有破损时必须选择" />
                   </SelectTrigger>
                 </FormControl>
@@ -504,7 +504,7 @@ export function InboundPurchaseDamageSection({ form }: InboundFormFieldsProps) {
       </div>
 
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
-        <div className="rounded-xl border border-white/70 bg-white/80 p-4">
+        <div className="rounded-md border border-white/70 bg-white p-4">
           <p className="text-[11px] font-semibold text-slate-400">
             实际入库
           </p>
@@ -512,7 +512,7 @@ export function InboundPurchaseDamageSection({ form }: InboundFormFieldsProps) {
             {formatNumber(acceptedQuantity)}片
           </p>
         </div>
-        <div className="rounded-xl border border-white/70 bg-white/80 p-4">
+        <div className="rounded-md border border-white/70 bg-white p-4">
           <p className="text-[11px] font-semibold text-slate-400">
             到货合计
           </p>
@@ -520,7 +520,7 @@ export function InboundPurchaseDamageSection({ form }: InboundFormFieldsProps) {
             {formatNumber(summary.arrivalQuantity)}片
           </p>
         </div>
-        <div className="rounded-xl border border-white/70 bg-white/80 p-4">
+        <div className="rounded-md border border-white/70 bg-white p-4">
           <p className="text-[11px] font-semibold text-slate-400">
             {summary.damageAmountLabel}
           </p>
@@ -543,7 +543,7 @@ export function InboundPurchaseDamageSection({ form }: InboundFormFieldsProps) {
             <FormControl>
               <Textarea
                 placeholder="例如：外箱破损 1 件，报工厂赔付。"
-                className="min-h-[88px] resize-none border-amber-200 bg-white/80"
+                className="min-h-[88px] resize-none border-amber-200 bg-white"
                 {...field}
               />
             </FormControl>

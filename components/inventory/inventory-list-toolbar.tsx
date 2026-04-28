@@ -15,11 +15,7 @@ interface InventoryListToolbarProps {
 
 /**
  * 库存列表工具栏组件
- * 符合产品模块UI风格规范：
- * - 渐变背景卡片
- * - 图标容器 + 阴影
- * - 选中状态蓝色高亮
- * - 交互动效
+ * 库存列表工具栏。
  */
 export function InventoryListToolbar({
   selectedCount: _selectedCount,
@@ -30,12 +26,12 @@ export function InventoryListToolbar({
   const router = useRouter();
 
   return (
-    <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-      <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
+    <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+      <CardContent className="bg-card p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             {/* 图标容器 */}
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-[var(--shadow-medium)]">
+            <div className="flex h-12 w-12 items-center justify-center rounded-md bg-[hsl(var(--color-primary))]">
               <Package className="h-6 w-6 text-white" />
             </div>
 
@@ -56,7 +52,7 @@ export function InventoryListToolbar({
               onClick={() => router.push('/inventory/adjust')}
               variant="outline"
               size="lg"
-              className="h-11 gap-2 shadow-sm transition-all hover:scale-105 hover:shadow-md"
+              className="h-11 gap-2 shadow-sm"
             >
               <Settings className="h-5 w-5" />
               库存调整
@@ -65,7 +61,7 @@ export function InventoryListToolbar({
               onClick={() => router.push('/inventory/outbound')}
               variant="outline"
               size="lg"
-              className="h-11 gap-2 shadow-sm transition-all hover:scale-105 hover:shadow-md"
+              className="h-11 gap-2 shadow-sm"
             >
               <FileUp className="h-5 w-5" />
               产品出库
@@ -73,7 +69,7 @@ export function InventoryListToolbar({
             <Button
               onClick={() => router.push('/inventory/inbound/create')}
               size="lg"
-              className="h-11 gap-2 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+              className="h-11 gap-2 shadow-sm"
             >
               <Plus className="h-5 w-5" />
               采购入库

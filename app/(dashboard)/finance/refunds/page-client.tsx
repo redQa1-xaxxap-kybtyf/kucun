@@ -378,7 +378,7 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
                 variant="outline"
                 size="lg"
                 asChild
-                className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+                className="h-11 shadow-sm"
               >
                 <Link href="/finance/refunds/export">
                   <Download className="mr-2 h-4 w-4" />
@@ -388,7 +388,7 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
               <Button
                 size="lg"
                 asChild
-                className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+                className="h-11 shadow-sm"
               >
                 <Link href="/return-orders/create">
                   <Plus className="mr-2 h-4 w-4" />

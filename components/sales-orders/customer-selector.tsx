@@ -10,7 +10,6 @@ import { ZodError } from 'zod';
 import { Button } from '@/components/ui/button';
 import {
   Command,
-  CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
@@ -381,57 +380,14 @@ export function CustomerSelector({
           className="w-[min(400px,calc(100vw-2rem))] p-0"
           align="start"
         >
-          <Command shouldFilter={false}>
+          <Command filter={() => 1}>
             <CommandInput
               placeholder="搜索客户名称或手机号..."
               value={searchInput}
               onValueChange={handleSearchChange}
             />
             <CommandList>
-              <CommandEmpty>
-                {isSearchingCustomers ? (
-                  <div className="py-6 text-center">
-                    <div className="text-muted-foreground text-sm">
-                      搜索中...
-                    </div>
-                  </div>
-                ) : !hasSearchInput ? (
-                  <div className="py-6 text-center">
-                    <div className="text-muted-foreground mb-3 text-sm">
-                      输入关键词开始搜索客户
-                    </div>
-                    {allowCreate && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleCreateCustomer}
-                        className="h-8"
-                      >
-                        <Plus className="mr-2 h-3 w-3" />
-                        新增客户
-                      </Button>
-                    )}
-                  </div>
-                ) : (
-                  <div className="py-6 text-center">
-                    <div className="text-muted-foreground mb-3 text-sm">
-                      未找到相关客户，尝试输入其它关键词
-                    </div>
-                    {allowCreate && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleCreateCustomer}
-                        className="h-8"
-                      >
-                        <Plus className="mr-2 h-3 w-3" />
-                        新增客户
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </CommandEmpty>
-              {filteredCustomers.length > 0 && (
+              {filteredCustomers.length > 0 ? (
                 <CommandGroup>
                   {filteredCustomers.map((customer: Customer) => {
                     const customerEmail = extractCustomerEmail(customer);
@@ -480,6 +436,46 @@ export function CustomerSelector({
                     );
                   })}
                 </CommandGroup>
+              ) : isSearchingCustomers ? (
+                <div className="py-6 text-center">
+                  <div className="text-muted-foreground text-sm">
+                    搜索中...
+                  </div>
+                </div>
+              ) : !hasSearchInput ? (
+                <div className="py-6 text-center">
+                  <div className="text-muted-foreground mb-3 text-sm">
+                    输入关键词开始搜索客户
+                  </div>
+                  {allowCreate && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCreateCustomer}
+                      className="h-8"
+                    >
+                      <Plus className="mr-2 h-3 w-3" />
+                      新增客户
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="py-6 text-center">
+                  <div className="text-muted-foreground mb-3 text-sm">
+                    未找到相关客户，尝试输入其它关键词
+                  </div>
+                  {allowCreate && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCreateCustomer}
+                      className="h-8"
+                    >
+                      <Plus className="mr-2 h-3 w-3" />
+                      新增客户
+                    </Button>
+                  )}
+                </div>
               )}
             </CommandList>
           </Command>

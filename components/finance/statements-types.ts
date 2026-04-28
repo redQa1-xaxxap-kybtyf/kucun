@@ -24,7 +24,7 @@ export const TYPE_LABEL_MAP: Record<StatementBadgeType, string> = {
 export const STATUS_LABEL_MAP: Record<AccountStatementItem['status'], string> =
   {
     active: '进行中',
-    settled: '已结清',
+    settled: '无余额',
     suspended: '已暂停',
   };
 

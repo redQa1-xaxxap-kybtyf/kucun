@@ -16,8 +16,8 @@ import {
 import { ReceivablesPageClient } from './page-client';
 
 export const metadata: Metadata = {
-  title: '客户待收款 - 财务管理',
-  description: '查看客户待收款余额与收款进度',
+  title: '应收账款 - 财务管理',
+  description: '查看客户待收余额与收款进度',
 };
 
 // ✅ Next.js 15 Route Segment Config

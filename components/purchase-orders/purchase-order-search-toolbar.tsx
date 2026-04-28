@@ -105,7 +105,7 @@ export function PurchaseOrderSearchToolbar({
       filters={[
         {
           key: 'status',
-          label: '状态',
+          label: '采购状态',
           options: Object.entries(PURCHASE_ORDER_STATUS_LABELS).map(
             ([value, label]) => ({
               label,

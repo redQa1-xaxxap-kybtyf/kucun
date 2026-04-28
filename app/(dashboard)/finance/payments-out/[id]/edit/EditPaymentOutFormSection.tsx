@@ -56,34 +56,38 @@ const Calendar = dynamic(
 );
 
 // 编辑付款记录表单Schema
-const editPaymentOutSchema = z.object({
-  paymentMethod: z.enum(
-    ['cash', 'bank_transfer', 'alipay', 'wechat', 'check', 'other'],
+const editPaymentOutSchema = z
+  .object({
+    paymentMethod: z.enum(
+      ['cash', 'bank_transfer', 'alipay', 'wechat', 'check', 'other'],
+      {
+        message: '请选择付款方式',
+      }
+    ),
+    paymentAmount: z.number().min(0.01, { error: '付款金额必须大于0' }),
+    actualPaymentAmount: z.number().min(0, { error: '实际付款金额不能为负' }),
+    roundingAmount: z.number(),
+    paymentDate: z.string().min(1, { error: '请选择付款日期' }),
+    voucherNumber: z.string().optional(),
+    bankInfo: z.string().optional(),
+    remarks: z.string().optional(),
+  })
+  .refine(
+    value =>
+      Math.abs(
+        Number(
+          (
+            value.actualPaymentAmount +
+            value.roundingAmount -
+            value.paymentAmount
+          ).toFixed(2)
+        )
+      ) < 0.01,
     {
-      message: '请选择付款方式',
+      message: '付款金额应等于实际付款金额与抹零金额之和',
+      path: ['actualPaymentAmount'],
     }
-  ),
-  paymentAmount: z.number().min(0.01, { error: '付款金额必须大于0' }),
-  actualPaymentAmount: z.number().min(0, { error: '实际付款金额不能为负' }),
-  roundingAmount: z.number(),
-  paymentDate: z.string().min(1, { error: '请选择付款日期' }),
-  voucherNumber: z.string().optional(),
-  bankInfo: z.string().optional(),
-  remarks: z.string().optional(),
-}).refine(
-  value =>
-    Math.abs(
-      Number(
-        (
-          value.actualPaymentAmount + value.roundingAmount - value.paymentAmount
-        ).toFixed(2)
-      )
-    ) < 0.01,
-  {
-    message: '付款金额应等于实际付款金额与抹零金额之和',
-    path: ['actualPaymentAmount'],
-  }
-);
+  );
 
 type EditPaymentOutFormData = z.infer<typeof editPaymentOutSchema>;
 
@@ -96,8 +100,8 @@ function PayableInfoSidebar({
   payableRecord: NonNullable<PaymentOutRecord['payableRecord']>;
 }) {
   return (
-    <Card>
-      <CardHeader className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
+    <Card className="rounded-md border border-border shadow-sm">
+      <CardHeader className="border-b bg-slate-50">
         <CardTitle className="flex items-center gap-2">
           <ChineseYuan className="h-5 w-5" />
           关联应付款信息
@@ -257,8 +261,8 @@ export function EditPaymentOutFormSection({
     <div className="grid gap-6 lg:grid-cols-3">
       {/* 主表单区域 */}
       <div className="lg:col-span-2">
-        <Card>
-          <CardHeader className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
+        <Card className="rounded-md border border-border shadow-sm">
+          <CardHeader className="border-b bg-slate-50">
             <CardTitle>付款信息</CardTitle>
             <CardDescription>编辑付款详细信息</CardDescription>
           </CardHeader>
@@ -371,7 +375,7 @@ export function EditPaymentOutFormSection({
                         />
                       </FormControl>
                       <FormDescription>
-                        根据记账金额和实际付款自动计算；正数表示少付结清，负数表示多付。
+                        根据记账金额和实际付款自动计算；正数表示少付，负数表示多付。
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -406,10 +410,7 @@ export function EditPaymentOutFormSection({
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
-                        <PopoverContent
-                          className="w-auto p-0"
-                          align="start"
-                        >
+                        <PopoverContent className="w-auto p-0" align="start">
                           <Calendar
                             mode="single"
                             selected={

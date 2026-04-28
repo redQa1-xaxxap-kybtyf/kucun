@@ -39,7 +39,7 @@ export function FinancePrioritySection({
                 <div className="flex h-full flex-col gap-4">
                   <div className="flex items-start justify-between gap-3">
                     <div
-                      className={`flex h-11 w-11 items-center justify-center rounded-xl ${item.accentClassName}`}
+                      className={`flex h-11 w-11 items-center justify-center rounded-md ${item.accentClassName}`}
                     >
                       <IconComponent className="h-5 w-5" />
                     </div>

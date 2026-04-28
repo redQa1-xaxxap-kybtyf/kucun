@@ -1,19 +1,12 @@
 'use client';
 
-import { Check, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import React from 'react';
 
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
+import { ProductSearchResults } from '@/components/inventory/product-selector/product-search-results';
+import { Command, CommandInput } from '@/components/ui/command';
 import { Popover } from '@/components/ui/popover';
-import { useListSearchController } from '@/hooks/use-list-search-controller';
-import { useProductSearch } from '@/lib/api/inbound';
+import { useProductSelector } from '@/hooks/use-product-selector';
 import type { ProductOption } from '@/lib/types/inbound';
 import { cn } from '@/lib/utils';
 
@@ -23,6 +16,7 @@ interface ProductComboboxProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  autoFocus?: boolean;
 }
 
 /**
@@ -36,96 +30,61 @@ export function ProductCombobox({
   placeholder = '搜索产品名称、编码...',
   disabled = false,
   className,
+  autoFocus = false,
 }: ProductComboboxProps) {
-  const [open, setOpen] = React.useState(false);
-  const [searchQuery, setSearchQuery] = React.useState('');
-  const [selectedProduct, setSelectedProduct] =
-    React.useState<ProductOption | null>(null);
   const {
+    open,
+    setOpen,
     searchInput,
-    isSearching,
-    handleSearchChange: handleDebouncedSearchChange,
-    cancelPendingCommit,
-    clearSearch,
-  } = useListSearchController({
-    committedValue: searchQuery,
-    onCommit: query => {
-      setSearchQuery(query ?? '');
+    selectedProduct,
+    products,
+    isLoading,
+    error,
+    handleSearchChange,
+    handleClear,
+    handleCommandSelect,
+  } = useProductSelector(value, onChange);
+
+  const handleClearClick = React.useCallback(
+    (event: React.MouseEvent) => {
+      event.stopPropagation();
+      handleClear();
     },
-  });
+    [handleClear]
+  );
 
-  // 搜索产品
-  const { data: products = [], isLoading } = useProductSearch(searchQuery);
-
-  // 当value变化时，更新选中的产品
-  React.useEffect(() => {
-    if (value && products.length > 0) {
-      const product = products.find(p => p.value === value);
-      if (product) {
-        setSelectedProduct(product);
+  const handleInputKeyDown = React.useCallback(
+    (event: React.KeyboardEvent<HTMLInputElement>) => {
+      if (event.key !== 'Enter') {
+        return;
       }
-    } else if (!value) {
-      setSelectedProduct(null);
-    }
-  }, [value, products]);
 
-  const handleSearchChange = React.useCallback(
-    (query: string) => {
-      if (query.trim().length > 0) {
-        setOpen(true);
+      const nativeEvent = event.nativeEvent as KeyboardEvent;
+      if (nativeEvent.isComposing || nativeEvent.keyCode === 229) {
+        return;
       }
-      handleDebouncedSearchChange(query);
-    },
-    [handleDebouncedSearchChange]
-  );
 
-  // 处理产品选择
-  const handleSelect = React.useCallback(
-    (product: ProductOption) => {
-      cancelPendingCommit();
-      setSelectedProduct(product);
-      onChange(product.value, product);
-      setOpen(false);
-      setSearchQuery('');
-      clearSearch();
-    },
-    [cancelPendingCommit, clearSearch, onChange]
-  );
+      if (!open || isLoading || error || products.length === 0) {
+        return;
+      }
 
-  // 清除选择
-  const handleClear = React.useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      cancelPendingCommit();
-      setSelectedProduct(null);
-      onChange('', undefined);
-      setSearchQuery('');
-      clearSearch();
-    },
-    [cancelPendingCommit, clearSearch, onChange]
-  );
-
-  // 处理命令项选择
-  const handleCommandSelect = React.useCallback(
-    (commandValue: string) => {
-      // commandValue 格式：CODE-PRODUCTID
-      // 由于 CODE 可能包含连字符，我们需要找到匹配的产品
-      const selectedProductItem = products.find(
-        p => commandValue === `${p.code}-${p.value}`
+      const commandRoot = event.currentTarget.closest('[cmdk-root]');
+      const highlightedItem = commandRoot?.querySelector<HTMLElement>(
+        '[cmdk-item][data-selected="true"]'
       );
+      const highlightedProductId = highlightedItem?.dataset.productValue;
 
-      if (selectedProductItem) {
-        handleSelect(selectedProductItem);
-      }
+      event.preventDefault();
+      handleCommandSelect(highlightedProductId ?? products[0].value);
     },
-    [products, handleSelect]
+    [error, handleCommandSelect, isLoading, open, products]
   );
 
   return (
     <div className={cn('relative', className)}>
       <Popover open={open} onOpenChange={setOpen}>
         <Command
-          shouldFilter={false}
+          filter={() => 1}
           className="overflow-visible bg-transparent"
         >
           <div className="group border-input ring-offset-background focus-within:ring-ring rounded-md border px-3 py-1.5 text-sm focus-within:ring-1 focus-within:ring-offset-0">
@@ -138,7 +97,7 @@ export function ProductCombobox({
                   {!disabled && (
                     <button
                       type="button"
-                      onClick={handleClear}
+                      onClick={handleClearClick}
                       className="ml-1 rounded hover:bg-[hsl(var(--color-primary-light))]"
                     >
                       <X className="h-3 w-3 text-[hsl(var(--color-primary))]" />
@@ -149,7 +108,9 @@ export function ProductCombobox({
               <CommandInput
                 value={searchInput}
                 placeholder={selectedProduct ? '' : placeholder}
+                autoFocus={autoFocus}
                 onValueChange={handleSearchChange}
+                onKeyDown={handleInputKeyDown}
                 onFocus={() => {
                   if (searchInput.length > 0 || products.length > 0) {
                     setOpen(true);
@@ -161,50 +122,20 @@ export function ProductCombobox({
             </div>
           </div>
           <div className="relative mt-1">
-            {open && (searchInput.length > 0 || products.length > 0) && (
+            {open && (searchInput.length > 0 || products.length > 0 || isLoading) && (
               <div className="bg-popover text-popover-foreground animate-in absolute top-0 z-10 w-full rounded-md border shadow-md outline-hidden">
-                <CommandList>
-                  <CommandEmpty>{isLoading || isSearching ? '搜索中...' : '未找到相关产品'}</CommandEmpty>
-                  <CommandGroup>
-                    {products.map(product => (
-                      <CommandItem
-                        key={product.value}
-                        value={`${product.code}-${product.value}`}
-                        onSelect={handleCommandSelect}
-                        className="py-2"
-                      >
-                        <Check
-                          className={cn(
-                            'mr-2 h-3.5 w-3.5 text-[hsl(var(--color-primary))]',
-                            value === product.value
-                              ? 'opacity-100'
-                              : 'opacity-0'
-                          )}
-                        />
-                        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold text-slate-900">
-                              {product.code}
-                            </span>
-                            <span className="text-xs font-bold text-slate-400">
-                              {product.label}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-3 text-xs text-gray-600">
-                            {product.specification && (
-                              <span>规格: {product.specification}</span>
-                            )}
-                            {product.currentStock !== undefined && (
-                              <span className="font-medium text-emerald-600">
-                                库存: {product.currentStock}片
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
+                {error ? (
+                  <div className="p-4 text-center text-sm text-slate-500">
+                    搜索失败: {error.message}
+                  </div>
+                ) : (
+                  <ProductSearchResults
+                    products={products}
+                    selectedProduct={selectedProduct}
+                    isLoading={isLoading}
+                    onSelect={handleCommandSelect}
+                  />
+                )}
               </div>
             )}
           </div>

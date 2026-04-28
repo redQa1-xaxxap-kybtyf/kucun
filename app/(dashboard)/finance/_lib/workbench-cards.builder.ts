@@ -54,8 +54,8 @@ export function buildFinanceWorkbenchCards(
     },
     {
       id: 'customer-receivables',
-      title: '客户待跟进',
-      description: '按客户跟进未回款余额，优先处理金额较大或时间较久的款项。',
+      title: '应收账款',
+      description: '按客户跟进待收余额，优先处理金额较大或时间较久的款项。',
       hint:
         userRole === 'sales'
           ? '销售今天优先跟进回款'
@@ -105,8 +105,8 @@ export function buildFinanceWorkbenchCards(
     },
     {
       id: 'supplier-payables',
-      title: '供应商待付款',
-      description: '查看供应商待付款余额，避免漏付、迟付或结算节奏失衡。',
+      title: '应付账款',
+      description: '查看供应商待付余额，避免漏付、迟付或结算节奏失衡。',
       hint: '可先看逾期和金额较大的单据',
       href: '/finance/payables',
       count: metrics.payables.count,
@@ -142,7 +142,7 @@ export function getFinanceWorkbenchSummary(userRole: UserRole) {
     case 'finance':
       return '财务员今天优先确认到账、确认付款、处理退款，再补齐费用审核。';
     case 'sales':
-      return '销售今天优先跟进客户待收和到账进度，避免订单推进和回款脱节。';
+      return '销售今天优先跟进应收和到账进度，避免订单推进和回款脱节。';
     case 'admin':
       return '管理员今天优先关注逾期、待确认和异常金额，先把高风险事项压下去。';
     default:

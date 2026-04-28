@@ -81,11 +81,11 @@ export function OrderItemsTable({
   const totalWeightKg = getSalesOrderTotalWeightKg(orderItems);
 
   return (
-    <Card className="overflow-hidden rounded-2xl border-slate-100 shadow-sm ring-1 ring-slate-100/50">
+    <Card className="overflow-hidden rounded-md border border-border shadow-sm">
       <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <CardTitle className="flex items-center gap-3 text-sm font-semibold text-slate-900">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-100/50 text-blue-600 shadow-sm">
+            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-50 text-blue-600">
               <ShoppingCart className="h-5 w-5" />
             </div>
             业务订购明细
@@ -120,7 +120,7 @@ export function OrderItemsTable({
         {/* 桌面端：表格视图 */}
         <div className="hidden overflow-x-auto md:block">
           <table className="w-full text-sm text-slate-600">
-            <thead className="sticky top-0 z-10 border-b border-slate-100 bg-slate-50/80 text-table-header backdrop-blur-md">
+            <thead className="sticky top-0 z-10 border-b border-slate-100 bg-slate-50 text-table-header">
               <tr>
                 <th className="h-11 px-3 py-3 text-left align-middle font-semibold leading-none whitespace-nowrap">
                   产品编码
@@ -473,7 +473,7 @@ export function OrderItemsTable({
             return (
               <div
                 key={item.id}
-                className="rounded-lg border border-[hsl(var(--color-border-secondary))] bg-white p-3 shadow-[var(--shadow-light)]"
+                className="rounded-md border border-[hsl(var(--color-border-secondary))] bg-white p-3"
               >
                 {/* 顶部：名称 + 编码 */}
                 <div className="flex items-start justify-between gap-2">
@@ -580,7 +580,7 @@ export function OrderItemsTable({
           })}
 
           {/* 小结 */}
-          <div className="rounded-lg border border-dashed border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] p-3 text-[11px] text-[hsl(var(--color-text-secondary))]">
+          <div className="rounded-md border border-dashed border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] p-3 text-[11px] text-[hsl(var(--color-text-secondary))]">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <span className="mr-1 font-medium text-[hsl(var(--color-text-primary))]">

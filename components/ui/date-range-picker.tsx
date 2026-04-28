@@ -148,6 +148,9 @@ export interface DateRangePickerProps {
   /** 样式定制 */
   className?: string;
 
+  /** 触发按钮样式定制 */
+  triggerClassName?: string;
+
   /** 是否显示清除按钮 */
   showClearButton?: boolean;
 }
@@ -232,6 +235,7 @@ export const DateRangePicker = React.memo(
     maxDate,
     disabled = false,
     className,
+    triggerClassName,
     showClearButton = true,
   }: DateRangePickerProps) => {
     const [isOpen, setIsOpen] = React.useState(false);
@@ -357,7 +361,8 @@ export const DateRangePicker = React.memo(
               disabled={disabled}
               className={cn(
                 'h-8 justify-start text-left text-xs font-normal',
-                !formattedRange && 'text-muted-foreground'
+                !formattedRange && 'text-muted-foreground',
+                triggerClassName
               )}
             >
               <CalendarIcon className="mr-2 h-3.5 w-3.5" />

@@ -1,10 +1,11 @@
 'use client';
 
-import { Calendar, Clock, DollarSign, Eye, MoreHorizontal } from 'lucide-react';
+import { Calendar, Clock, Eye, MoreHorizontal } from 'lucide-react';
 
 import { CopyableText } from '@/components/common/copyable-text';
 import { EmptyState } from '@/components/common/empty-state';
 import { RelativeTime } from '@/components/common/relative-time';
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Badge, type BadgeProps } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -72,7 +73,7 @@ export function ReceivablesTableList({
   if (error) {
     const message = getFriendlyErrorMessage(
       error,
-      '客户待收款暂时无法加载，请稍后重试'
+      '应收账款暂时无法加载，请稍后重试'
     );
     return (
       <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-[hsl(var(--color-error-light))] bg-[hsl(var(--color-error-lighter))] p-8">
@@ -92,13 +93,13 @@ export function ReceivablesTableList({
   }
 
   if (!receivables.length) {
-    return <EmptyState className="my-8" title="暂无客户待收款" compact />;
+    return <EmptyState className="my-8" title="暂无应收账款" compact />;
   }
 
   return (
     <div className="space-y-4">
       {/* 桌面端：宽表格 + 横向滚动 */}
-      <div className="hidden overflow-x-auto rounded-md border 2xl:block">
+      <div className="hidden overflow-x-auto rounded-md border lg:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -108,7 +109,7 @@ export function ReceivablesTableList({
               <TableHead className="w-[120px] text-right">订单金额</TableHead>
               <TableHead className="w-[120px] text-right">应收金额</TableHead>
               <TableHead className="w-[120px] text-right">已收金额</TableHead>
-              <TableHead className="w-[120px] text-right">剩余金额</TableHead>
+              <TableHead className="w-[120px] text-right">待收金额</TableHead>
               <TableHead className="w-[140px]">订单日期</TableHead>
               <TableHead className="w-[140px]">最后收款</TableHead>
               <TableHead className="w-[100px] text-center">操作</TableHead>
@@ -127,8 +128,8 @@ export function ReceivablesTableList({
         </Table>
       </div>
 
-      {/* 移动端：卡片视图 */}
-      <div className="grid gap-3 xl:grid-cols-2 2xl:hidden">
+      {/* 小屏端：卡片视图 */}
+      <div className="grid gap-3 lg:hidden">
         {receivables.map(receivable => (
           <ReceivableCard
             key={receivable.id}
@@ -328,7 +329,7 @@ function ReceivableTableRow({
                     onClick={() => onOpenPaymentDialog(receivable)}
                     className="text-green-600"
                   >
-                    <DollarSign className="mr-2 h-4 w-4" />
+                    <ChineseYuan className="mr-2 h-4 w-4" />
                     登记收款
                   </DropdownMenuItem>
                 )}
@@ -348,7 +349,7 @@ function ReceivableCard({
   const amounts = getReceivableAmounts(receivable);
 
   return (
-    <div className="bg-card rounded-lg border p-3 shadow-[var(--shadow-light)] sm:p-4">
+    <div className="bg-card rounded-md border p-3 shadow-sm sm:p-4">
       <div className="flex items-start justify-between gap-2">
         <div className="space-y-1">
           <div className="text-muted-foreground flex items-center gap-2 text-xs">
@@ -387,7 +388,7 @@ function ReceivableCard({
           </div>
         </div>
         <div className="space-y-1 text-right">
-          <div className="text-muted-foreground">剩余金额</div>
+          <div className="text-muted-foreground">待收金额</div>
           <div
             className={`font-medium ${
               amounts.actualRemaining > 0 ? 'text-orange-600' : 'text-green-600'
@@ -472,7 +473,7 @@ function ReceivableCard({
                   onClick={() => onOpenPaymentDialog(receivable)}
                   className="text-green-600"
                 >
-                  <DollarSign className="mr-2 h-4 w-4" />
+                  <ChineseYuan className="mr-2 h-4 w-4" />
                   登记收款
                 </DropdownMenuItem>
               )}
@@ -492,7 +493,7 @@ type StatusConfigItem = {
 const STATUS_CONFIG: Partial<Record<PaymentStatus | string, StatusConfigItem>> =
   {
     unpaid: {
-      label: '未收款',
+      label: '待收款',
       variant: 'destructive' as BadgeProps['variant'],
     },
     partial: {

@@ -81,6 +81,7 @@ export function FactoryShipmentOrderList({
 
   const orders = data?.orders ?? [];
   const pagination = data?.pagination;
+  const isRefreshing = !isLoading && isFetching;
 
   const cancelOrderMutation = useCancelFactoryShipmentOrder();
   const deleteOrderMutation = useDeleteFactoryShipmentOrder();
@@ -105,6 +106,7 @@ export function FactoryShipmentOrderList({
         onClearFilters={filters.handleClearFilters}
         orders={orders}
         isLoading={isLoading}
+        isRefreshing={isRefreshing}
         error={error}
         pagination={pagination}
         onPageChange={filters.handlePageChange}
@@ -300,6 +302,10 @@ function useFactoryShipmentOrders(filters: FactoryShipmentOrderListParams) {
         },
       };
     },
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: false,
+    placeholderData: previousData => previousData,
+    refetchOnMount: false,
     // ✅ 添加轮询机制，每2分钟自动刷新一次
     // 这样可以及时显示自动查询（定时任务）更新的运输状态
     // 2分钟的间隔既能及时更新，又不会造成过多的服务器请求

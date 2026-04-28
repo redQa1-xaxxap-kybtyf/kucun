@@ -121,22 +121,13 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
     const cardContent = (
       <div
         className={cn(
-          'group relative flex h-[88px] flex-col justify-between overflow-hidden rounded-md border border-border bg-card p-4 shadow-sm transition-all duration-500',
-          'hover:-translate-y-1 hover:border-slate-200 hover:shadow-xl hover:shadow-slate-200/50',
+          'relative flex h-[88px] flex-col justify-between overflow-hidden rounded-md border border-border bg-card p-4 shadow-sm transition-colors hover:border-slate-200',
           href && 'cursor-pointer',
           className
         )}
         ref={ref}
         {...props}
       >
-        {/* 背景装饰轨迹 */}
-        <div
-          className={cn(
-            'absolute -top-4 -right-4 h-24 w-24 rounded-full opacity-5 blur-2xl transition-all group-hover:opacity-10',
-            colorClasses.dot
-          )}
-        />
-
         <div className="flex items-start justify-between">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
@@ -147,7 +138,7 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
                 {title}
               </p>
             </div>
-            <p className="text-3xl font-semibold tracking-tighter text-slate-900">
+            <p className="text-3xl font-semibold tracking-tight text-slate-900">
               {typeof value === 'number'
                 ? dashboardUtils.formatNumber(value)
                 : value}
@@ -155,7 +146,7 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
           </div>
           <div
             className={cn(
-              'flex h-12 w-12 items-center justify-center rounded-2xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-6',
+              'flex h-10 w-10 items-center justify-center rounded-lg',
               colorClasses.bg
             )}
           >
@@ -188,7 +179,7 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
           )}
 
           {href && (
-            <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-slate-50 text-slate-400 transition-all group-hover:bg-slate-900 group-hover:text-white">
+            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-slate-50 text-slate-400">
               <ArrowRight className="h-3 w-3" />
             </div>
           )}

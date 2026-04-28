@@ -193,7 +193,7 @@ const QuickActionItem = React.forwardRef<HTMLDivElement, QuickActionItemProps>(
       <Link href={action.href} prefetch={false}>
         <Card
           className={cn(
-            'cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-md',
+            'cursor-pointer hover:shadow-sm',
             colorConfig.border,
             className
           )}

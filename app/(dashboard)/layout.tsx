@@ -81,8 +81,8 @@ export default async function DashboardLayout({
  */
 export const metadata = {
   title: {
-    template: '%s - 库存管理工具',
-    default: '库存管理工具',
+    template: '%s - 瓷砖销售 ERP',
+    default: '瓷砖销售 ERP',
   },
-  description: '专业的库存管理解决方案',
+  description: '面向瓷砖销售业务的进销存、库存和财务工作台',
 };

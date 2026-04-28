@@ -5,6 +5,7 @@ import {
   Anchor,
   Edit,
   Eye,
+  Loader2,
   MoreHorizontal,
   Package,
   Trash2,
@@ -56,6 +57,7 @@ import {
   getFactoryShipmentStatusBadgeVariant,
   getShippingQueryStatusVariant,
 } from '@/lib/utils/factory-shipment-helpers';
+import { cn } from '@/lib/utils';
 
 const MANUAL_QUERY_COOLDOWN_MS = 6 * 60 * 60 * 1000;
 
@@ -74,6 +76,7 @@ export function FactoryShipmentOrderListView({
   onClearFilters,
   orders,
   isLoading,
+  isRefreshing = false,
   error,
   pagination,
   onPageChange,
@@ -105,29 +108,40 @@ export function FactoryShipmentOrderListView({
         onClearFilters={onClearFilters}
       />
 
-      <FactoryShipmentOrderTable
-        label={label}
-        orders={orders}
-        onCancelRequest={onCancelRequest}
-        onDeleteRequest={onDeleteRequest}
-        onOrderSelect={onOrderSelect}
-      />
-
-      {pagination && (
-        <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
-          <Pagination
-            pagination={{
-              page: pagination.page,
-              limit: pagination.limit,
-              total: pagination.totalCount,
-              totalPages: pagination.totalPages,
-            }}
-            onPageChange={onPageChange}
-            showRange
-            showTotal
+      <div className="relative" aria-busy={isRefreshing}>
+        {isRefreshing && (
+          <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-center border-b border-[hsl(var(--color-border-primary))] bg-white/95 px-3 py-2 text-xs font-medium text-[hsl(var(--color-text-secondary))] shadow-sm">
+            <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin text-[hsl(var(--color-primary))]" />
+            正在更新列表...
+          </div>
+        )}
+        <div className={cn('transition-opacity', isRefreshing && 'opacity-60')}>
+          <FactoryShipmentOrderTable
+            label={label}
+            orders={orders}
+            onCancelRequest={onCancelRequest}
+            onDeleteRequest={onDeleteRequest}
+            onOrderSelect={onOrderSelect}
           />
         </div>
-      )}
+
+        {pagination && (
+          <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
+            <Pagination
+              pagination={{
+                page: pagination.page,
+                limit: pagination.limit,
+                total: pagination.totalCount,
+                totalPages: pagination.totalPages,
+              }}
+              onPageChange={onPageChange}
+              showRange
+              showTotal
+              disabled={isRefreshing}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -149,7 +163,7 @@ function FactoryShipmentOrderTable({
 }: FactoryShipmentOrderTableProps) {
   if (orders.length === 0) {
     return (
-      <div className="card-shadow-medium flex flex-col items-center justify-center rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] py-10">
+      <div className="flex flex-col items-center justify-center rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] py-10 shadow-sm">
         <Package className="h-12 w-12 text-[hsl(var(--color-text-tertiary))]" />
         <h3 className="mt-2 text-sm font-medium text-[hsl(var(--color-text-primary))]">
           暂无{label}
@@ -159,12 +173,12 @@ function FactoryShipmentOrderTable({
   }
 
   return (
-    <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
+    <div className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm">
       {/* 桌面端：表格视图，支持横向滚动 */}
-      <div className="hidden xl:block">
+      <div className="hidden lg:block">
         <div className="overflow-x-auto">
           <Table className="min-w-[1540px]">
-            <TableHeader className="card-shadow-light">
+            <TableHeader className="shadow-sm">
               <TableRow>
                 <TableHead className="w-[130px] min-w-[130px] whitespace-nowrap">
                   订单编号
@@ -226,7 +240,7 @@ function FactoryShipmentOrderTable({
       </div>
 
       {/* 移动端：卡片视图 */}
-      <div className="space-y-3 px-3 py-3 xl:hidden">
+      <div className="space-y-3 px-3 py-3 lg:hidden">
         {orders.map(order => {
           const handleCardClick = () => {
             if (onOrderSelect) {
@@ -239,7 +253,7 @@ function FactoryShipmentOrderTable({
           return (
             <div
               key={order.id}
-              className="card-shadow-light cursor-pointer rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3"
+              className="cursor-pointer rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3 shadow-sm"
               onClick={handleCardClick}
               onKeyDown={event => {
                 if (event.key === 'Enter' || event.key === ' ') {

@@ -261,7 +261,7 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
 
         <div
           data-testid="inventory-query-summary"
-          className="rounded-2xl border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-4 py-3"
+          className="rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-4 py-3"
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-1">
@@ -302,11 +302,11 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
         </div>
 
         {/* 库存列表 */}
-        <div className="card-shadow-medium relative rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
+        <div className="relative rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm">
           {/* ✅ 加载中提示 */}
           {isFetching && (
             <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/50">
-              <div className="flex items-center gap-2 rounded-lg bg-white px-4 py-2 shadow-lg">
+              <div className="flex items-center gap-2 rounded-md bg-white px-4 py-2 shadow-sm">
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-[hsl(var(--color-primary))] border-t-transparent" />
                 <span className="text-sm text-gray-600">加载中...</span>
               </div>

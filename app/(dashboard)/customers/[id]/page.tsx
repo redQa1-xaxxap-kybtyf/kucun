@@ -134,25 +134,22 @@ function CustomerHeader({
   const router = useRouter();
 
   return (
-    <div className="relative overflow-hidden rounded-[2.5rem] border border-white bg-white/60 p-8 shadow-sm backdrop-blur-xl transition-all duration-500 hover:shadow-xl">
-      <div className="absolute -top-20 -right-20 h-64 w-64 rounded-full bg-blue-50/50 blur-3xl" />
-      <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-emerald-50/30 blur-3xl" />
-
-      <div className="relative flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-center gap-6">
-          <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-slate-900 text-white shadow-2xl transition-transform duration-500 hover:scale-110">
-            <User className="h-10 w-10" />
+    <div className="rounded-lg border bg-white p-4 sm:p-5">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 items-start gap-4 sm:items-center">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-white">
+            <User className="h-6 w-6" />
           </div>
-          <div className="space-y-3">
+          <div className="min-w-0 space-y-2">
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-4xl font-semibold tracking-tighter text-slate-900">
+              <h1 className="truncate text-xl font-semibold text-slate-900 sm:text-2xl">
                 {customer.name}
               </h1>
               <div
                 className={cn(
-                  'rounded-full px-4 py-1.5 text-xs font-bold',
+                  'rounded-md px-2.5 py-1 text-xs font-medium',
                   customer.status === 'active'
-                    ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200'
+                    ? 'bg-emerald-50 text-emerald-700'
                     : 'bg-slate-100 text-slate-500'
                 )}
               >
@@ -160,21 +157,16 @@ function CustomerHeader({
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-6">
-              <div className="flex items-center gap-2 text-sm font-bold text-slate-400">
-                <span className="text-xs text-slate-500">
-                  客户编号
-                </span>
-                <span className="font-bold text-slate-600">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-slate-500">
+              <div className="flex items-center gap-2">
+                <span>客户编号</span>
+                <span className="font-mono font-medium text-slate-700">
                   {customer.id.substring(0, 8).toUpperCase()}
                 </span>
               </div>
-              <span className="h-1 w-1 rounded-full bg-slate-200" />
-              <div className="flex items-center gap-2 text-sm font-bold text-slate-400">
-                <span className="text-xs text-slate-500">
-                  建档时间
-                </span>
-                <span className="font-bold text-slate-600">
+              <div className="flex items-center gap-2">
+                <span>建档时间</span>
+                <span className="font-medium text-slate-700">
                   {formatDateTime(customer.createdAt).split(' ')[0]}
                 </span>
               </div>
@@ -182,19 +174,17 @@ function CustomerHeader({
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
           <Button
-            variant="ghost"
-            size="lg"
+            variant="outline"
             onClick={onEdit}
-            className="h-14 rounded-2xl border-none bg-white px-8 font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-900 hover:text-white active:scale-95"
+            className="h-10 rounded-lg"
           >
-            <Edit className="mr-2 h-5 w-5" />
+            <Edit className="mr-2 h-4 w-4" />
             编辑资料
           </Button>
           <Button
-            size="lg"
-            className="h-14 rounded-2xl bg-slate-900 px-10 font-semibold text-white shadow-xl transition-all hover:shadow-slate-200 active:scale-95"
+            className="h-10 rounded-lg"
             onClick={() =>
               router.push(
                 withReturnTo(
@@ -204,8 +194,8 @@ function CustomerHeader({
               )
             }
           >
-            <ShoppingCart className="mr-2 h-5 w-5" />
-            新建销售单
+            <ShoppingCart className="mr-2 h-4 w-4" />
+            新建销售订单
           </Button>
         </div>
       </div>
@@ -252,15 +242,15 @@ function CustomerDetailContent({ customer }: { customer: CustomerDetail }) {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50/50">
-      <div className="mx-auto max-w-[1680px] space-y-12 p-4 transition-all duration-500 lg:p-10 xl:p-14">
+    <div className="min-h-screen bg-[hsl(var(--color-bg-primary))]">
+      <div className="mx-auto max-w-[1680px] space-y-4 p-4 sm:space-y-5 lg:p-8 xl:p-10">
         <CustomerHeader
           customer={customer}
           onEdit={() => router.push(`/customers/${customer.id}/edit`)}
         />
 
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-4">
-          <div className="lg:col-span-3">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+          <div className="lg:col-span-8 xl:col-span-9">
             <CustomerContactCard
               phone={customer.phone}
               address={customer.address}
@@ -270,7 +260,7 @@ function CustomerDetailContent({ customer }: { customer: CustomerDetail }) {
               formatDateTime={formatDateTime}
             />
           </div>
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-4 xl:col-span-3">
             <CustomerStatsGrid
               totalSalesAmount={totalSalesAmount}
               totalReturnAmount={totalReturnAmount}
@@ -282,16 +272,16 @@ function CustomerDetailContent({ customer }: { customer: CustomerDetail }) {
           </div>
         </div>
 
-        <div className="rounded-[2.5rem] border border-white bg-white/40 p-1 shadow-sm backdrop-blur-md">
-          <div className="p-8 pb-4">
-            <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
+        <div className="rounded-lg border bg-white">
+          <div className="border-b p-4 sm:p-5">
+            <h2 className="text-base font-semibold text-slate-900 sm:text-lg">
               业务往来与近期记录
             </h2>
-            <p className="mt-1 text-sm font-bold text-slate-400">
-              集中查看销售、退货和待收款情况。
+            <p className="mt-1 text-sm text-slate-500">
+              集中查看销售、退货和待收款情况
             </p>
           </div>
-          <div className="p-2">
+          <div className="p-4 sm:p-5">
             <CustomerActivityTabs
               salesOrders={customer.salesOrders}
               returnOrders={customer.returnOrders}

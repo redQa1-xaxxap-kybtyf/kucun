@@ -9,17 +9,27 @@ import {
 
 interface ExpenseFiltersProps {
   filters: ExpenseQueryParams;
+  searchValue: string;
+  onSearchChange: (value: string) => void;
+  isSearching?: boolean;
   onFilterChange: (filters: Partial<ExpenseQueryParams>) => void;
+  onClearFilters?: () => void;
 }
 
 export function ExpenseFilters({
   filters,
+  searchValue,
+  onSearchChange,
+  isSearching = false,
   onFilterChange,
+  onClearFilters,
 }: ExpenseFiltersProps) {
   return (
     <SearchFilterCard
-      searchValue=""
-      onSearchChange={() => {}}
+      searchValue={searchValue}
+      onSearchChange={onSearchChange}
+      searchPlaceholder="搜索费用单号、费用名称、关联单号、备注"
+      isSearching={isSearching}
       // 筛选器配置
       filters={[
         {
@@ -78,7 +88,8 @@ export function ExpenseFilters({
           },
         },
       ]}
-      variant="bordered"
+      onClearFilters={onClearFilters}
+      variant="pro"
       compact={true}
     />
   );

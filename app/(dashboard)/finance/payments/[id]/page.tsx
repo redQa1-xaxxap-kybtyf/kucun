@@ -22,7 +22,7 @@ export async function generateMetadata({
 }: PaymentDetailPageProps): Promise<Metadata> {
   const { id } = await params;
   return {
-    title: `收款详情 #${id} - 库存管理工具`,
+    title: `收款详情 #${id} - 瓷砖销售 ERP`,
     description: '查看收款详情和关联订单信息',
   };
 }

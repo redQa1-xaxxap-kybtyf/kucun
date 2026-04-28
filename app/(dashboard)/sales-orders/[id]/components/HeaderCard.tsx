@@ -157,8 +157,8 @@ const getTransferModeBadge = (mode: string | undefined) => {
 function SalesOrderMeta({ order }: SalesOrderMetaProps) {
   return (
     <div className="flex items-center gap-5">
-      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-100/40 text-blue-600 transition-colors hover:bg-blue-100/60">
-        <Truck className="h-7 w-7" />
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-blue-50 text-blue-600">
+        <Truck className="h-5 w-5" />
       </div>
       <div className="min-w-0">
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
@@ -171,7 +171,7 @@ function SalesOrderMeta({ order }: SalesOrderMetaProps) {
           <div className="h-3.5 w-px bg-slate-200" />
           <Badge
             variant={getSalesOrderStatusBadgeVariant(order.status)}
-            className="rounded-lg px-2 py-0.5"
+            className="rounded-md px-2 py-0.5"
           >
             {SALES_ORDER_STATUS_LABELS[
               order.status as keyof typeof SALES_ORDER_STATUS_LABELS
@@ -229,6 +229,15 @@ function HeaderActions({
       >
         <Edit className="mr-1.5 h-3.5 w-3.5" />
         编辑
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onPrint}
+        className="h-8 px-3 text-xs sm:h-9 sm:px-4"
+      >
+        <Printer className="mr-1.5 h-3.5 w-3.5" />
+        打印
       </Button>
       {isDraft && (
         <Button
@@ -291,12 +300,8 @@ function HeaderActions({
         </DropdownMenuTrigger>
         <DropdownMenuContent
           align="end"
-          className="w-56 rounded-xl border-slate-100 shadow-xl"
+          className="w-56 rounded-md border-slate-200 shadow-md"
         >
-          <DropdownMenuItem onClick={onPrint} className="cursor-pointer py-2.5">
-            <Printer className="mr-3 h-4 w-4 text-slate-500" />
-            <span className="font-semibold text-slate-700">打印订单单据</span>
-          </DropdownMenuItem>
           <DropdownMenuItem
             onClick={onExportImage}
             disabled={isExportingImage}
@@ -304,7 +309,7 @@ function HeaderActions({
           >
             <Download className="mr-3 h-4 w-4 text-slate-500" />
             <span className="font-semibold text-slate-700">
-              {isExportingImage ? '正在生成报表...' : '导出为专业图片'}
+              {isExportingImage ? '正在生成图片...' : '导出图片'}
             </span>
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -410,7 +415,8 @@ export function HeaderCard({
 
   const handleQuickReturn = useCallback(() => {
     const currentPath =
-      getCurrentPathWithSearch() ?? withReturnTo(`/sales-orders/${id}`, returnTo);
+      getCurrentPathWithSearch() ??
+      withReturnTo(`/sales-orders/${id}`, returnTo);
 
     router.push(
       buildQuickReturnPath(order.id, {
@@ -434,8 +440,8 @@ export function HeaderCard({
   }, [onShowToast, withdrawConfirmationDisabledReason]);
 
   return (
-    <Card className="overflow-hidden rounded-2xl border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.02)]">
-      <CardContent className="bg-white p-6 sm:p-8">
+    <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+      <CardContent className="bg-card p-4 sm:p-5">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <SalesOrderMeta order={order} />
           <div className="h-px w-full bg-slate-100 lg:hidden" />
@@ -481,7 +487,7 @@ export function HeaderCard({
         <AlertDialogContent>
           <AlertDialogHeader>
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-50">
+              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-amber-50">
                 <AlertCircle className="h-5 w-5 text-amber-600" />
               </div>
               <AlertDialogTitle>确认撤回为草稿</AlertDialogTitle>

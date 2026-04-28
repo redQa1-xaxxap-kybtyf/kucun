@@ -4,7 +4,6 @@ import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
-import { can } from '@/lib/auth/permissions';
 import { getSystemMode } from '@/lib/services/system-mode-service';
 
 import { DataManagementPageClient } from './page-client';
@@ -16,7 +15,7 @@ export const metadata: Metadata = {
 
 export default async function DataManagementPage() {
   const session = await getServerSession(authOptions);
-  if (!session?.user || !can(session.user, 'finance:manage')) {
+  if (!session?.user || session.user.role !== 'admin') {
     redirect('/dashboard');
   }
 
@@ -26,9 +25,9 @@ export default async function DataManagementPage() {
   return (
     <div className="flex h-full flex-col overflow-hidden p-4 sm:p-6">
       <div className="space-y-4 sm:space-y-6">
-        <div className="overflow-hidden rounded-lg border bg-gradient-to-r from-slate-50 to-gray-50 p-4 shadow-sm sm:p-6">
+        <div className="overflow-hidden rounded-md border bg-[hsl(var(--color-bg-secondary))] p-4 shadow-sm sm:p-6">
           <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900 shadow-lg shadow-slate-900/30">
+            <div className="flex h-12 w-12 items-center justify-center rounded-md bg-slate-900 shadow-sm">
               <Database className="h-6 w-6 text-white" />
             </div>
             <div>

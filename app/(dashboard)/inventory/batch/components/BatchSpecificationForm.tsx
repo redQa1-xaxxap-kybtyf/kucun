@@ -87,7 +87,10 @@ export function BatchSpecificationForm({
           batchSpecificationDefaults.piecesPerUnit,
         weight: defaultValues.weight,
       });
+      return;
     }
+
+    setSelectedProduct(null);
   }, [mode, defaultValues]);
 
   const handleSubmit = async (values: FormValues) => {
@@ -135,9 +138,7 @@ export function BatchSpecificationForm({
                     value={field.value}
                     onChange={(productId, product) => {
                       field.onChange(productId);
-                      if (product) {
-                        setSelectedProduct(product);
-                      }
+                      setSelectedProduct(product ?? null);
                     }}
                     placeholder="搜索产品名称或编码"
                     error={fieldState.invalid}

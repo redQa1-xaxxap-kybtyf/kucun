@@ -25,7 +25,7 @@ export default function NotFound() {
               <Link href="/">返回首页</Link>
             </Button>
             <Button variant="outline" asChild>
-              <Link href="/dashboard">前往仪表盘</Link>
+              <Link href="/dashboard">返回首页</Link>
             </Button>
           </div>
         </CardContent>

@@ -89,8 +89,8 @@ export function PayableForm({
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           {/* 基础信息 */}
-          <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
-            <CardHeader className="border-b bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
+          <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+            <CardHeader className="border-b bg-slate-50">
               <CardTitle className="flex items-center text-[hsl(var(--color-text-primary))]">
                 <Building2 className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
                 基础信息
@@ -315,8 +315,8 @@ export function PayableForm({
           </Card>
 
           {/* 详细信息 */}
-          <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
-            <CardHeader className="border-b bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
+          <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+            <CardHeader className="border-b bg-slate-50">
               <CardTitle className="flex items-center text-[hsl(var(--color-text-primary))]">
                 <FileText className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
                 详细信息
@@ -377,7 +377,7 @@ export function PayableForm({
           </Card>
 
           {/* 表单操作 */}
-          <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
+          <Card className="overflow-hidden rounded-md border border-border shadow-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-end gap-4">
                 <Button

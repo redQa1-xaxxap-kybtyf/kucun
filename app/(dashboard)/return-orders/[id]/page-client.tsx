@@ -34,7 +34,9 @@ import { formatDetailedPieceSummary } from '@/lib/utils/piece-calculation';
 
 const ReturnOrderHeaderActions = dynamic(
   () =>
-    import('./ReturnOrderHeaderActions').then(mod => mod.ReturnOrderHeaderActions),
+    import('./ReturnOrderHeaderActions').then(
+      mod => mod.ReturnOrderHeaderActions
+    ),
   {
     ssr: false,
     loading: () => (
@@ -50,9 +52,9 @@ const ReturnOrderHeaderActions = dynamic(
 
 const PrintTemplatePreviewDialog = dynamic(
   () =>
-    import('@/components/print-designer/renderer/PrintTemplatePreviewDialog').then(
-      mod => mod.PrintTemplatePreviewDialog
-    ),
+    import(
+      '@/components/print-designer/renderer/PrintTemplatePreviewDialog'
+    ).then(mod => mod.PrintTemplatePreviewDialog),
   { ssr: false, loading: () => null }
 );
 
@@ -283,7 +285,8 @@ export function ReturnOrderDetailPageClient({
     } catch (error) {
       toast({
         title: '处理失败',
-        description: error instanceof Error ? error.message : '生成退款处理单失败',
+        description:
+          error instanceof Error ? error.message : '生成退款处理单失败',
         variant: 'destructive',
       });
     } finally {
@@ -294,9 +297,9 @@ export function ReturnOrderDetailPageClient({
   return (
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="space-y-4 sm:space-y-6">
-        {/* 页面标题卡片 - 统一风格 */}
-        <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
-          <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-4 sm:p-6">
+        {/* 页面标题卡片 */}
+        <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+          <CardContent className="bg-card p-4 sm:p-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
                 <div className="flex items-center gap-3">
@@ -308,9 +311,7 @@ export function ReturnOrderDetailPageClient({
                     className="text-xs sm:text-sm"
                   >
                     {getStatusIcon(displayStatus.value)}
-                    <span className="ml-1">
-                      {displayStatus.label}
-                    </span>
+                    <span className="ml-1">{displayStatus.label}</span>
                   </Badge>
                 </div>
                 <p className="text-[10px] text-[hsl(var(--color-text-secondary))] sm:text-xs">
@@ -482,27 +483,27 @@ export function ReturnOrderDetailPageClient({
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead className="bg-[hsl(var(--color-bg-tertiary))] text-table-header">
+                    <thead className="text-table-header bg-[hsl(var(--color-bg-tertiary))]">
                       <tr>
-                        <th className="h-11 px-4 py-3 text-left align-middle font-semibold leading-none text-[hsl(var(--color-text-tertiary))]">
+                        <th className="h-11 px-4 py-3 text-left align-middle leading-none font-semibold text-[hsl(var(--color-text-tertiary))]">
                           产品信息
                         </th>
-                        <th className="h-11 px-4 py-3 text-left align-middle font-semibold leading-none text-[hsl(var(--color-text-tertiary))]">
+                        <th className="h-11 px-4 py-3 text-left align-middle leading-none font-semibold text-[hsl(var(--color-text-tertiary))]">
                           规格/色号
                         </th>
-                        <th className="h-11 px-4 py-3 text-center align-middle font-semibold leading-none text-[hsl(var(--color-text-tertiary))]">
+                        <th className="h-11 px-4 py-3 text-center align-middle leading-none font-semibold text-[hsl(var(--color-text-tertiary))]">
                           原始数量
                         </th>
-                        <th className="h-11 px-4 py-3 text-center align-middle font-semibold leading-none text-[hsl(var(--color-text-tertiary))]">
+                        <th className="h-11 px-4 py-3 text-center align-middle leading-none font-semibold text-[hsl(var(--color-text-tertiary))]">
                           退货数量
                         </th>
-                        <th className="h-11 px-4 py-3 text-center align-middle font-semibold leading-none text-[hsl(var(--color-text-tertiary))]">
+                        <th className="h-11 px-4 py-3 text-center align-middle leading-none font-semibold text-[hsl(var(--color-text-tertiary))]">
                           破损数量
                         </th>
-                        <th className="h-11 px-4 py-3 text-center align-middle font-semibold leading-none text-[hsl(var(--color-text-tertiary))]">
+                        <th className="h-11 px-4 py-3 text-center align-middle leading-none font-semibold text-[hsl(var(--color-text-tertiary))]">
                           单价
                         </th>
-                        <th className="h-11 px-4 py-3 text-right align-middle font-semibold leading-none text-[hsl(var(--color-text-tertiary))]">
+                        <th className="h-11 px-4 py-3 text-right align-middle leading-none font-semibold text-[hsl(var(--color-text-tertiary))]">
                           小计
                         </th>
                       </tr>
@@ -656,7 +657,7 @@ export function ReturnOrderDetailPageClient({
                       </span>
                       {hasWriteOff && (
                         <span className="text-xs text-[hsl(var(--color-text-tertiary))]">
-                          已核销 {formatCurrency(Math.abs(writeOffAmount))}
+                          已抵扣 {formatCurrency(Math.abs(writeOffAmount))}
                         </span>
                       )}
                     </div>
@@ -682,7 +683,7 @@ export function ReturnOrderDetailPageClient({
                   <CardTitle className="text-lg">退款处理</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4 pt-6">
-                  <div className="rounded-xl border border-[hsl(var(--color-warning))]/25 bg-white/80 p-4">
+                  <div className="rounded-md border border-[hsl(var(--color-warning))]/25 bg-white p-4">
                     <p className="text-sm text-[hsl(var(--color-text-secondary))]">
                       这张退货单已经完成，库存已回补。
                     </p>

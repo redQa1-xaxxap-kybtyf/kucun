@@ -28,11 +28,11 @@ export default function CreatePaymentOutPage() {
   return (
     <div className="flex h-full flex-col overflow-hidden p-6">
       <div className="space-y-6">
-        <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
-          <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
+        <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+          <CardContent className="bg-card p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-[0_10px_24px_rgba(9,88,217,0.22)]">
+                <div className="flex h-11 w-11 items-center justify-center rounded-md bg-[hsl(var(--color-primary))]">
                   <ChineseYuan className="h-6 w-6 text-white" />
                 </div>
                 <div>
@@ -48,7 +48,7 @@ export default function CreatePaymentOutPage() {
                 variant="outline"
                 size="lg"
                 asChild
-                className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
+                className="h-10"
               >
                 <Link href="/finance/payments-out">
                   <ArrowLeft className="mr-2 h-4 w-4" />

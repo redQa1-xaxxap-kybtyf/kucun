@@ -294,7 +294,7 @@ export function BasicSettingsForm() {
               control={form.control}
               name="systemName"
               render={({ field }) => (
-                <FormItem className="relative flex h-[130px] flex-col justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md">
+                <FormItem className="relative flex h-[130px] flex-col justify-between rounded-md border border-slate-100 bg-white p-6 shadow-sm hover:border-blue-100">
                   <div className="space-y-1">
                     <FormLabel className="text-sm font-semibold text-slate-900">
                       系统显示名称 *
@@ -319,7 +319,7 @@ export function BasicSettingsForm() {
               control={form.control}
               name="defaultLanguage"
               render={({ field }) => (
-                <FormItem className="relative flex h-[130px] flex-col justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md">
+                <FormItem className="relative flex h-[130px] flex-col justify-between rounded-md border border-slate-100 bg-white p-6 shadow-sm hover:border-blue-100">
                   <div className="space-y-1">
                     <FormLabel className="text-sm font-semibold text-slate-900">
                       系统默认语言
@@ -356,7 +356,7 @@ export function BasicSettingsForm() {
             control={form.control}
             name="systemDescription"
             render={({ field }) => (
-              <FormItem className="relative flex flex-col gap-4 rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md">
+              <FormItem className="relative flex flex-col gap-4 rounded-md border border-slate-100 bg-white p-6 shadow-sm hover:border-blue-100">
                 <div className="space-y-1">
                   <FormLabel className="text-sm font-semibold text-slate-900">
                     系统全局描述 / 标语
@@ -388,7 +388,7 @@ export function BasicSettingsForm() {
               control={form.control}
               name="lowStockThreshold"
               render={({ field }) => (
-                <FormItem className="relative flex h-[130px] flex-col justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md">
+                <FormItem className="relative flex h-[130px] flex-col justify-between rounded-md border border-slate-100 bg-white p-6 shadow-sm hover:border-blue-100">
                   <div className="space-y-1">
                     <FormLabel className="flex items-center gap-2 text-sm font-semibold text-slate-900">
                       <RefreshCw className="h-4 w-4 text-blue-500" />
@@ -422,7 +422,7 @@ export function BasicSettingsForm() {
               control={form.control}
               name="enableStockAlerts"
               render={({ field }) => (
-                <FormItem className="flex h-[130px] flex-row items-center justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md">
+                <FormItem className="flex h-[130px] flex-row items-center justify-between rounded-md border border-slate-100 bg-white p-6 shadow-sm hover:border-blue-100">
                   <div className="space-y-1">
                     <FormLabel className="text-sm font-semibold text-slate-900">
                       自动预警通知
@@ -440,7 +440,7 @@ export function BasicSettingsForm() {
                     </FormControl>
                     <span
                       className={cn(
-                        'text-xs font-semibold tracking-tighter transition-colors',
+                        'text-xs font-semibold tracking-tight transition-colors',
                         field.value ? 'text-blue-600' : 'text-slate-300'
                       )}
                     >
@@ -463,7 +463,7 @@ export function BasicSettingsForm() {
               control={form.control}
               name="orderNumberPrefix"
               render={({ field }) => (
-                <FormItem className="relative flex h-[130px] flex-col justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md">
+                <FormItem className="relative flex h-[130px] flex-col justify-between rounded-md border border-slate-100 bg-white p-6 shadow-sm hover:border-blue-100">
                   <div className="space-y-1">
                     <FormLabel className="flex items-center gap-2 text-sm font-semibold text-slate-900">
                       订单唯一识别前缀
@@ -489,7 +489,7 @@ export function BasicSettingsForm() {
               control={form.control}
               name="enableOrderApproval"
               render={({ field }) => (
-                <FormItem className="flex h-[130px] flex-row items-center justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md">
+                <FormItem className="flex h-[130px] flex-row items-center justify-between rounded-md border border-slate-100 bg-white p-6 shadow-sm hover:border-blue-100">
                   <div className="space-y-1">
                     <FormLabel className="text-sm font-semibold text-slate-900">
                       强制订单审批
@@ -507,7 +507,7 @@ export function BasicSettingsForm() {
                     </FormControl>
                     <span
                       className={cn(
-                        'text-xs font-semibold tracking-tighter transition-colors',
+                        'text-xs font-semibold tracking-tight transition-colors',
                         field.value ? 'text-blue-600' : 'text-slate-300'
                       )}
                     >
@@ -521,7 +521,7 @@ export function BasicSettingsForm() {
         </SettingsSection>
 
         {/* 底部悬浮动作栏 / Floating Action Bar */}
-        <div className="fixed inset-x-3 bottom-3 z-50 flex items-center gap-2 rounded-3xl border border-slate-200 bg-white/95 p-2 shadow-[0_12px_40px_rgba(0,0,0,0.1)] backdrop-blur-md transition-all duration-300 sm:inset-x-auto sm:bottom-6 sm:left-1/2 sm:w-fit sm:-translate-x-1/2 sm:gap-3 sm:rounded-full">
+        <div className="fixed inset-x-3 bottom-3 z-50 flex items-center gap-2 rounded-md border border-slate-200 bg-white p-2 shadow-md sm:inset-x-auto sm:bottom-6 sm:left-1/2 sm:w-fit sm:-translate-x-1/2 sm:gap-3">
           <Button
             type="button"
             variant="ghost"
@@ -538,7 +538,7 @@ export function BasicSettingsForm() {
           <Button
             type="submit"
             disabled={isSubmitting || !hasChanges}
-            className="h-11 min-w-0 flex-1 rounded-full bg-slate-900 px-5 font-semibold text-white shadow-lg hover:bg-slate-800 disabled:bg-slate-200 sm:flex-none sm:px-10"
+            className="h-11 min-w-0 flex-1 rounded-md bg-slate-900 px-5 font-semibold text-white shadow-sm hover:bg-slate-800 disabled:bg-slate-200 sm:flex-none sm:px-10"
           >
             {isSubmitting ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

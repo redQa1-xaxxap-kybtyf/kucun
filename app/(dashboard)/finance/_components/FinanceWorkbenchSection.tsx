@@ -40,7 +40,7 @@ export function FinanceWorkbenchSection({
                 <CardContent className="flex h-full flex-col gap-4 p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div
-                      className={`flex h-11 w-11 items-center justify-center rounded-xl ${toneStyles.icon}`}
+                      className={`flex h-11 w-11 items-center justify-center rounded-md ${toneStyles.icon}`}
                     >
                       <IconComponent className="h-5 w-5" />
                     </div>
@@ -58,7 +58,7 @@ export function FinanceWorkbenchSection({
                     </p>
                   </div>
 
-                  <div className="space-y-1 rounded-xl bg-[hsl(var(--color-bg-secondary))] px-3 py-3">
+                  <div className="space-y-1 rounded-md bg-[hsl(var(--color-bg-secondary))] px-3 py-3">
                     <p className={`text-xl font-bold ${toneStyles.amount}`}>
                       {formatCurrency(card.amount)}
                     </p>

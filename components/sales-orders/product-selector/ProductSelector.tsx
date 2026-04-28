@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Command,
-  CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
@@ -43,6 +42,17 @@ interface ProductSelectorViewProps {
   onSelectProduct: (productId: string) => void;
 }
 
+function buildProductSearchValue(product: Product) {
+  return [
+    product.code,
+    product.name,
+    product.specification,
+    product.id,
+  ]
+    .filter((value): value is string => Boolean(value && value.trim()))
+    .join(' ');
+}
+
 export function ProductSelector(props: ProductSelectorProps) {
   const controller = useProductSelectorController(props);
   return <ProductSelectorView {...controller} />;
@@ -71,24 +81,27 @@ function ProductSelectorView({
         />
       </PopoverTrigger>
       <PopoverContent className="w-[400px] p-0" align="start">
-        <Command shouldFilter={false}>
+        <Command filter={() => 1}>
           <CommandInput
             placeholder="搜索产品名称、编码或规格..."
             value={searchValue}
             onValueChange={onSearchChange}
           />
           <CommandList>
-            <EmptyState />
-            <CommandGroup>
-              {products.map(product => (
-                <ProductOptionItem
-                  key={product.id}
-                  product={product}
-                  isSelected={product.id === selectedProduct?.id}
-                  onSelect={() => onSelectProduct(product.id)}
-                />
-              ))}
-            </CommandGroup>
+            {products.length > 0 ? (
+              <CommandGroup>
+                {products.map(product => (
+                  <ProductOptionItem
+                    key={product.id}
+                    product={product}
+                    isSelected={product.id === selectedProduct?.id}
+                    onSelect={() => onSelectProduct(product.id)}
+                  />
+                ))}
+              </CommandGroup>
+            ) : (
+              <EmptyState />
+            )}
           </CommandList>
         </Command>
       </PopoverContent>
@@ -149,15 +162,13 @@ function SelectedProductSummary({ product }: { product: Product }) {
 
 function EmptyState() {
   return (
-    <CommandEmpty>
-      <div className="flex flex-col items-center gap-2 py-6">
-        <Search className="text-muted-foreground h-8 w-8" />
-        <p className="text-muted-foreground text-sm">未找到匹配的产品</p>
-        <p className="text-muted-foreground text-xs">
-          尝试使用产品名称、编码或规格搜索
-        </p>
-      </div>
-    </CommandEmpty>
+    <div className="flex flex-col items-center gap-2 py-6">
+      <Search className="text-muted-foreground h-8 w-8" />
+      <p className="text-muted-foreground text-sm">未找到匹配的产品</p>
+      <p className="text-muted-foreground text-xs">
+        尝试使用产品名称、编码或规格搜索
+      </p>
+    </div>
   );
 }
 
@@ -174,7 +185,15 @@ function ProductOptionItem({
 }: ProductOptionItemProps) {
   return (
     <CommandItem
-      value={`${product.code ?? ''} ${product.name ?? ''}`.trim()}
+      value={buildProductSearchValue(product)}
+      keywords={[
+        product.code,
+        product.name,
+        product.specification,
+        product.id,
+      ].filter(
+        (keyword): keyword is string => Boolean(keyword && keyword.trim())
+      )}
       onSelect={onSelect}
       className="flex items-center gap-3 p-3"
     >
@@ -334,57 +353,71 @@ function BatchProductSelectorView({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[400px] p-0" align="start">
-        <Command>
+        <Command filter={() => 1}>
           <CommandInput
             placeholder="搜索产品..."
             value={searchValue}
             onValueChange={onSearchChange}
           />
           <CommandList>
-            <CommandEmpty>未找到匹配的产品</CommandEmpty>
-            <CommandGroup>
-              {products.map(product => {
-                const isSelected = selectedProducts.includes(product.id);
-                const canSelect =
-                  selectedProducts.length < maxSelection || isSelected;
+            {products.length > 0 ? (
+              <CommandGroup>
+                {products.map(product => {
+                  const isSelected = selectedProducts.includes(product.id);
+                  const canSelect =
+                    selectedProducts.length < maxSelection || isSelected;
 
-                return (
-                  <CommandItem
-                    key={product.id}
-                    value={product.id}
-                    onSelect={() => canSelect && onToggleProduct(product.id)}
-                    className={cn(
-                      'flex items-center gap-3 p-3',
-                      !canSelect && 'cursor-not-allowed opacity-50'
-                    )}
-                    disabled={!canSelect}
-                  >
-                    <Check
-                      className={cn(
-                        'h-4 w-4',
-                        isSelected ? 'opacity-100' : 'opacity-0'
+                  return (
+                    <CommandItem
+                      key={product.id}
+                      value={buildProductSearchValue(product)}
+                      keywords={[
+                        product.code,
+                        product.name,
+                        product.specification,
+                        product.id,
+                      ].filter(
+                        (keyword): keyword is string =>
+                          Boolean(keyword && keyword.trim())
                       )}
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        {product.code && (
-                          <Badge
-                            variant="outline"
-                            className="border-[hsl(var(--color-primary-light))] bg-[hsl(var(--color-primary-light))] px-2.5 py-0.5 font-mono text-xs font-bold text-[hsl(var(--color-primary))] shadow-sm"
-                          >
-                            {product.code}
-                          </Badge>
+                      onSelect={() => canSelect && onToggleProduct(product.id)}
+                      className={cn(
+                        'flex items-center gap-3 p-3',
+                        !canSelect && 'cursor-not-allowed opacity-50'
+                      )}
+                      disabled={!canSelect}
+                    >
+                      <Check
+                        className={cn(
+                          'h-4 w-4',
+                          isSelected ? 'opacity-100' : 'opacity-0'
                         )}
-                        <span className="font-medium">{product.name}</span>
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          {product.code && (
+                            <Badge
+                              variant="outline"
+                              className="border-[hsl(var(--color-primary-light))] bg-[hsl(var(--color-primary-light))] px-2.5 py-0.5 font-mono text-xs font-bold text-[hsl(var(--color-primary))] shadow-sm"
+                            >
+                              {product.code}
+                            </Badge>
+                          )}
+                          <span className="font-medium">{product.name}</span>
+                        </div>
+                        <div className="text-muted-foreground text-sm">
+                          {product.specification}
+                        </div>
                       </div>
-                      <div className="text-muted-foreground text-sm">
-                        {product.specification}
-                      </div>
-                    </div>
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            ) : (
+              <div className="text-muted-foreground py-6 text-center text-sm">
+                未找到匹配的产品
+              </div>
+            )}
           </CommandList>
         </Command>
       </PopoverContent>

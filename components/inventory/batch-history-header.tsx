@@ -18,14 +18,10 @@ export function BatchHistoryHeader({
   backUrl = '/inventory/batch',
 }: BatchHistoryHeaderProps) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white/70 shadow-sm backdrop-blur-xl">
-      {/* 背景装饰：紫色与粉色调，体现详情页的深度与丰富性 */}
-      <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-violet-500/5 blur-3xl" />
-      <div className="absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-fuchsia-500/5 blur-3xl" />
-
-      <div className="relative z-10 flex flex-col gap-6 p-6 sm:p-8 xl:flex-row xl:items-center xl:justify-between">
+    <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
+      <div className="flex flex-col gap-6 p-6 sm:p-8 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex items-start gap-5 sm:items-center">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-600 shadow-lg shadow-violet-200">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-md bg-violet-600">
             <ActivitySquare className="h-7 w-7 text-white" />
           </div>
           <div className="flex flex-col gap-1">
@@ -63,7 +59,7 @@ export function BatchHistoryHeader({
             variant="outline"
             size="lg"
             asChild
-            className="h-12 w-full gap-2 rounded-xl border-slate-200 bg-white font-bold text-slate-600 hover:bg-slate-50 hover:text-slate-900 xl:w-auto"
+            className="h-12 w-full gap-2 rounded-md border-slate-200 bg-white font-bold text-slate-600 hover:bg-slate-50 hover:text-slate-900 xl:w-auto"
           >
             <Link href={backUrl}>
               <ArrowLeft className="h-4 w-4" />

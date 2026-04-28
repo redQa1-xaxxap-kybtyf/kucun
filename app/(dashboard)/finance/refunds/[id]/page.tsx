@@ -28,6 +28,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { REFUND_METHOD_LABELS } from '@/lib/config/finance';
 import { prisma } from '@/lib/db';
 import { formatCurrency } from '@/lib/utils';
 import { formatDateTime } from '@/lib/utils/datetime';
@@ -43,7 +44,7 @@ export async function generateMetadata({
 }: RefundDetailPageProps): Promise<Metadata> {
   const { id } = await params;
   return {
-    title: `退款详情 #${id} - 库存管理工具`,
+    title: `退款详情 #${id} - 瓷砖销售 ERP`,
     description: '查看退款详情和处理状态',
   };
 }
@@ -145,11 +146,11 @@ export default async function RefundDetailPage({
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="space-y-4 sm:space-y-6">
         {/* 页面标题卡片 */}
-        <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
-          <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-4 sm:p-6">
+        <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+          <CardContent className="bg-card p-4 sm:p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))] shadow-[0_10px_24px_rgba(9,88,217,0.22)]">
+                <div className="flex h-12 w-12 items-center justify-center rounded-md bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))]">
                   <ChineseYuan className="h-6 w-6" />
                 </div>
                 <div>
@@ -167,7 +168,7 @@ export default async function RefundDetailPage({
                   <Button
                     size="lg"
                     asChild
-                    className="h-11 gap-2 bg-[hsl(var(--color-primary))] shadow-[0_10px_24px_rgba(9,88,217,0.22)] transition-all hover:scale-105 hover:shadow-[var(--shadow-heavy)]"
+                    className="h-11 gap-2 bg-[hsl(var(--color-primary))]"
                   >
                     <Link href={`/finance/refunds/${refund.id}/process`}>
                       处理退款
@@ -178,7 +179,7 @@ export default async function RefundDetailPage({
                   variant="outline"
                   size="lg"
                   asChild
-                  className="h-11 gap-2 transition-all hover:scale-105 hover:border-[hsl(var(--color-border-strong))]"
+                  className="h-11 gap-2 hover:border-[hsl(var(--color-border-strong))]"
                 >
                   <Link href="/finance/refunds">
                     <ArrowLeft className="h-4 w-4" />
@@ -194,8 +195,8 @@ export default async function RefundDetailPage({
           {/* 主要信息 */}
           <div className="space-y-6 lg:col-span-2">
             {/* 退款信息 */}
-            <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
-              <CardHeader className="border-b bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
+            <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+              <CardHeader className="border-b bg-slate-50">
                 <CardTitle className="flex items-center text-[hsl(var(--color-text-primary))]">
                   <ChineseYuan className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
                   退款信息
@@ -232,7 +233,13 @@ export default async function RefundDetailPage({
                     <label className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
                       退款方式
                     </label>
-                    <p className="text-sm">{refund.refundMethod || '未指定'}</p>
+                    <p className="text-sm">
+                      {refund.refundMethod
+                        ? REFUND_METHOD_LABELS[
+                            refund.refundMethod as keyof typeof REFUND_METHOD_LABELS
+                          ] || refund.refundMethod
+                        : '未指定'}
+                    </p>
                   </div>
                 </div>
 
@@ -261,8 +268,8 @@ export default async function RefundDetailPage({
 
             {/* 关联订单信息 */}
             {refund.returnOrder && (
-              <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
-                <CardHeader className="border-b bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
+              <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+                <CardHeader className="border-b bg-slate-50">
                   <CardTitle className="flex items-center text-[hsl(var(--color-text-primary))]">
                     <Package className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
                     关联订单信息
@@ -319,8 +326,8 @@ export default async function RefundDetailPage({
           {/* 侧边栏信息 */}
           <div className="space-y-6">
             {/* 处理状态 */}
-            <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
-              <CardHeader className="border-b bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
+            <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+              <CardHeader className="border-b bg-slate-50">
                 <CardTitle className="flex items-center text-[hsl(var(--color-text-primary))]">
                   <Clock className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
                   处理状态
@@ -360,8 +367,8 @@ export default async function RefundDetailPage({
             </Card>
 
             {/* 操作记录 */}
-            <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
-              <CardHeader className="border-b bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
+            <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+              <CardHeader className="border-b bg-slate-50">
                 <CardTitle className="flex items-center text-[hsl(var(--color-text-primary))]">
                   <FileText className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
                   操作记录

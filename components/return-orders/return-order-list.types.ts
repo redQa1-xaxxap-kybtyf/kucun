@@ -18,12 +18,12 @@ export interface ReturnOrderListViewProps {
   onStatusChange: (value: ReturnOrderUiStatus | 'all') => void;
   onTypeChange: (value: ReturnOrderType | 'all') => void;
   onProcessTypeChange: (value: ReturnProcessType | 'all') => void;
-  onIncludeTestToggle: () => void;
   onIncludeVoidedToggle: () => void;
   onDateRangeChange: (range: { startDate?: string; endDate?: string }) => void;
   onClearFilters: () => void;
   orders: ReturnOrder[];
   isLoading: boolean;
+  isRefreshing?: boolean;
   error: unknown;
   pagination?: {
     page: number;

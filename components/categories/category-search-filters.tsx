@@ -45,7 +45,7 @@ export function CategorySearchFilters({
       filters={[
         {
           key: 'status',
-          label: '状态',
+          label: '分类状态',
           options: [
             { label: '启用', value: 'active' },
             { label: '禁用', value: 'inactive' },

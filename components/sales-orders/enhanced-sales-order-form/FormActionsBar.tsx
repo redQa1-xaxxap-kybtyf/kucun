@@ -24,7 +24,7 @@ export function FormActionsBar({
   activeStatus,
 }: FormActionsBarProps) {
   return (
-    <div className="bg-background/95 supports-backdrop-filter:bg-background/60 sticky bottom-0 border-t pt-6 backdrop-blur-sm">
+    <div className="bg-background sticky bottom-0 border-t pt-6">
       <div className="flex items-center justify-between gap-4">
         <Button
           type="button"

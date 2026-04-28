@@ -400,7 +400,7 @@ const RoundingAmountField = ({
           />
         </FormControl>
         <p className="text-muted-foreground text-xs">
-          根据记账金额和实际付款自动计算；正数表示少付结清，负数表示多付
+          根据记账金额和实际付款自动计算；正数表示少付，负数表示多付
         </p>
         <FormMessage />
       </FormItem>

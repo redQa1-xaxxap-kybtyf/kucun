@@ -15,10 +15,10 @@ export function TransferModeInfoCard({ order }: { order: SalesOrderDetail }) {
   if (order.orderType !== 'TRANSFER') return null;
 
   return (
-    <Card className="overflow-hidden rounded-2xl border-amber-200 bg-white shadow-sm ring-1 ring-amber-100/50">
-      <div className="flex bg-amber-50/50 p-5">
-        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-amber-500 shadow-lg shadow-amber-500/20">
-          <Truck className="h-6 w-6 text-white" />
+    <Card className="overflow-hidden rounded-md border border-amber-200 bg-white shadow-sm">
+      <div className="flex bg-amber-50 p-4">
+        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md bg-amber-500">
+          <Truck className="h-5 w-5 text-white" />
         </div>
         <div className="ml-5 flex-1">
           <div className="flex items-center gap-3">
@@ -37,7 +37,7 @@ export function TransferModeInfoCard({ order }: { order: SalesOrderDetail }) {
           <div className="mt-3 space-y-2 text-xs font-medium text-amber-800">
             {order.transferMode === 'MIXED' ? (
               <p className="flex items-center gap-2">
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-600 text-[10px] font-semibold text-white">
+                <span className="flex h-4 w-4 items-center justify-center rounded-md bg-amber-600 text-[10px] font-semibold text-white">
                   ✓
                 </span>
                 <span>
@@ -47,7 +47,7 @@ export function TransferModeInfoCard({ order }: { order: SalesOrderDetail }) {
               </p>
             ) : (
               <p className="flex items-center gap-2">
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-600 text-[10px] font-semibold text-white">
+                <span className="flex h-4 w-4 items-center justify-center rounded-md bg-amber-600 text-[10px] font-semibold text-white">
                   !
                 </span>
                 <span>
@@ -58,7 +58,7 @@ export function TransferModeInfoCard({ order }: { order: SalesOrderDetail }) {
               </p>
             )}
             <div className="ml-6 flex items-center gap-2 text-[11px] text-amber-700">
-              <span className="font-bold tracking-tighter opacity-70">
+              <span className="font-bold opacity-70">
                 指定的履约供应商:
               </span>
               <span className="rounded bg-amber-100/50 px-2 py-0.5 font-semibold">

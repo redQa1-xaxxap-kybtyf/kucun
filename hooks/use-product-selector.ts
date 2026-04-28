@@ -38,14 +38,20 @@ export function useProductSelector(
 
   // 当value变化时，更新选中的产品
   useEffect(() => {
-    if (value && products.length > 0) {
-      const product = products.find(p => p.value === value);
-      if (product) {
-        setSelectedProduct(product);
-      }
-    } else if (!value) {
+    if (!value) {
       setSelectedProduct(null);
+      return;
     }
+
+    const matchedProduct = products.find(product => product.value === value);
+    if (matchedProduct) {
+      setSelectedProduct(matchedProduct);
+      return;
+    }
+
+    setSelectedProduct(current =>
+      current?.value === value ? current : null
+    );
   }, [value, products]);
 
   // 处理搜索输入
@@ -90,13 +96,8 @@ export function useProductSelector(
   }, [cancelPendingCommit, clearSearch, onChange]);
 
   // 处理命令项选择
-  const handleCommandSelect = useCallback((commandValue: string) => {
-    // 直接根据commandValue查找产品
-    // CommandItem的value格式为: `${product.code}-${product.value}`
-    // 由于产品编码可能包含'-',不能简单split,应该直接从products列表中查找
-    const selectedProductItem = products.find(
-      p => `${p.code}-${p.value}` === commandValue
-    );
+  const handleCommandSelect = useCallback((productId: string) => {
+    const selectedProductItem = products.find(p => p.value === productId);
 
     if (selectedProductItem) {
       handleSelect(selectedProductItem);
@@ -104,7 +105,7 @@ export function useProductSelector(
       logger.warn(
         'hooks:use-product-selector',
         '未找到匹配的产品',
-        commandValue,
+        productId,
         products
       );
     }

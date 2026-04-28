@@ -43,7 +43,7 @@ export function BasicInfoCard({ order }: { order: SalesOrderDetail }) {
   };
 
   return (
-    <Card className="overflow-hidden rounded-2xl border-slate-100 shadow-sm ring-1 ring-slate-100/50">
+    <Card className="overflow-hidden rounded-md border border-border shadow-sm">
       <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4">
         <CardTitle className="flex items-center text-sm font-semibold text-slate-900">
           <ShoppingCart className="mr-2.5 h-4 w-4 text-blue-600" />
@@ -52,7 +52,7 @@ export function BasicInfoCard({ order }: { order: SalesOrderDetail }) {
       </CardHeader>
       <CardContent className="p-6">
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-4">
-          <div className="space-y-1.5 rounded-xl border border-slate-100 bg-white p-4 transition-all hover:border-blue-100/50 hover:shadow-sm">
+          <div className="space-y-1.5 rounded-md border border-slate-100 bg-white p-3">
             <div className="text-[10px] font-bold text-slate-500">
               客户名称
             </div>
@@ -61,7 +61,7 @@ export function BasicInfoCard({ order }: { order: SalesOrderDetail }) {
             </div>
           </div>
 
-          <div className="space-y-1.5 rounded-xl border border-slate-100 bg-white p-4 transition-all hover:border-blue-100/50 hover:shadow-sm">
+          <div className="space-y-1.5 rounded-md border border-slate-100 bg-white p-3">
             <div className="text-[10px] font-bold text-slate-500">
               联系电话
             </div>
@@ -70,14 +70,14 @@ export function BasicInfoCard({ order }: { order: SalesOrderDetail }) {
             </div>
           </div>
 
-          <div className="space-y-1.5 rounded-xl border border-slate-100 bg-white p-4 transition-all hover:border-blue-100/50 hover:shadow-sm">
+          <div className="space-y-1.5 rounded-md border border-slate-100 bg-white p-3">
             <div className="text-[10px] font-bold text-slate-500">
               当前订单状态
             </div>
             <div className="flex items-center gap-2 pt-0.5">
               <Badge
                 variant={getSalesOrderStatusBadgeVariant(order.status)}
-                className="rounded-lg px-2 py-0.5 font-bold tracking-tighter"
+                className="rounded-md px-2 py-0.5 font-bold"
               >
                 {SALES_ORDER_STATUS_LABELS[
                   order.status as keyof typeof SALES_ORDER_STATUS_LABELS
@@ -86,7 +86,7 @@ export function BasicInfoCard({ order }: { order: SalesOrderDetail }) {
             </div>
           </div>
 
-          <div className="space-y-1.5 rounded-xl border border-slate-100 bg-white p-4 transition-all hover:border-blue-100/50 hover:shadow-sm">
+          <div className="space-y-1.5 rounded-md border border-slate-100 bg-white p-3">
             <div className="text-[10px] font-bold text-slate-500">
               订单类型
             </div>
@@ -127,7 +127,7 @@ export function BasicInfoCard({ order }: { order: SalesOrderDetail }) {
           </div>
 
           {order.supplier && (
-            <div className="space-y-1.5 rounded-xl border border-slate-100 bg-white p-4 transition-all hover:border-blue-100/50 hover:shadow-sm">
+            <div className="space-y-1.5 rounded-md border border-slate-100 bg-white p-3">
               <div className="text-[10px] font-bold text-slate-500">
                 关联供应商
               </div>
@@ -137,14 +137,14 @@ export function BasicInfoCard({ order }: { order: SalesOrderDetail }) {
             </div>
           )}
 
-          <div className="space-y-1.5 rounded-xl border border-slate-100 bg-white p-4 transition-all hover:border-blue-100/50 hover:shadow-sm">
+          <div className="space-y-1.5 rounded-md border border-slate-100 bg-white p-3">
             <div className="text-[10px] font-bold text-slate-500">
               创建人
             </div>
             <div className="text-sm font-medium text-slate-600">{userName}</div>
           </div>
 
-          <div className="space-y-1.5 rounded-xl border border-slate-100 bg-white p-4 transition-all hover:border-blue-100/50 hover:shadow-sm">
+          <div className="space-y-1.5 rounded-md border border-slate-100 bg-white p-3">
             <div className="text-[10px] font-bold text-slate-500">
               销售日期
             </div>
@@ -153,7 +153,7 @@ export function BasicInfoCard({ order }: { order: SalesOrderDetail }) {
             </div>
           </div>
 
-          <div className="space-y-1.5 rounded-xl border border-slate-100 bg-white p-4 transition-all hover:border-blue-100/50 hover:shadow-sm">
+          <div className="space-y-1.5 rounded-md border border-slate-100 bg-white p-3">
             <div className="text-[10px] font-bold text-slate-500">
               创建时间
             </div>
@@ -162,7 +162,7 @@ export function BasicInfoCard({ order }: { order: SalesOrderDetail }) {
             </div>
           </div>
 
-          <div className="space-y-1.5 rounded-xl border border-slate-100 bg-white p-4 transition-all hover:border-blue-100/50 hover:shadow-sm">
+          <div className="space-y-1.5 rounded-md border border-slate-100 bg-white p-3">
             <div className="text-[10px] font-bold text-slate-500">
               最后更新时间
             </div>
@@ -173,7 +173,7 @@ export function BasicInfoCard({ order }: { order: SalesOrderDetail }) {
         </div>
 
         {order.remarks && (
-          <div className="mt-6 rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-5">
+          <div className="mt-6 rounded-md border border-dashed border-slate-200 bg-slate-50 p-4">
             <div className="text-[10px] font-bold text-slate-400">
               备注
             </div>

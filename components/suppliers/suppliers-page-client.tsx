@@ -11,7 +11,6 @@ import {
   Briefcase,
   Building2,
   Clock,
-  Download,
   Loader2,
   MapPin,
   Plus,
@@ -123,7 +122,7 @@ export function SuppliersPageClient({
     } satisfies SupplierQueryParams;
   }, [initialParams]);
 
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: supplierQueryKeys.list(queryParams),
     queryFn: () => getSuppliers(queryParams),
     placeholderData: keepPreviousData => keepPreviousData,
@@ -132,6 +131,7 @@ export function SuppliersPageClient({
 
   const suppliers = data?.data ?? [];
   const pagination = data?.pagination;
+  const isListRefreshing = !isLoading && isFetching;
 
   const syncUrl = useCallback(
     ({
@@ -258,40 +258,23 @@ export function SuppliersPageClient({
 
   return (
     <PageContainer
-      title="供应商管理"
+      title="供应商档案"
       description="统一维护供应商资料，查看供货记录、应付款和合作状态。"
       icon={<Building2 className="h-6 w-6 text-white" />}
       actions={
-        <>
-          <Button
-            variant="ghost"
-            size="lg"
-            asChild
-            className="h-12 rounded-2xl border-none bg-white px-6 font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-900 hover:text-white active:scale-95"
-          >
-            <Link href="/suppliers/export">
-              <Download className="mr-2 h-4 w-4" />
-              导出供应商列表
-            </Link>
-          </Button>
-          <Button
-            size="lg"
-            asChild
-            className="h-12 rounded-2xl border-none bg-slate-900 px-6 font-semibold text-white shadow-xl transition-all hover:shadow-slate-200 active:scale-95"
-          >
-            <Link href="/suppliers/create">
-              <Plus className="mr-2 h-4 w-4" />
-              新建供应商
-            </Link>
-          </Button>
-        </>
+        <Button size="lg" asChild className="h-10 rounded-md px-4 font-medium">
+          <Link href="/suppliers/create">
+            <Plus className="mr-2 h-4 w-4" />
+            新建供应商
+          </Link>
+        </Button>
       }
       banner={
         <FilterBar
           searchValue={searchInput}
           onSearchChange={handleSearchChange}
           searchPlaceholder="搜索供应商名称、证照编号或联系人..."
-          isSearching={isSearching}
+          isSearching={isSearching || isFetching}
           filters={[
             {
               key: 'status',
@@ -315,23 +298,30 @@ export function SuppliersPageClient({
           onClearFilters={handleClearFilters}
         />
       }
-      className="min-h-screen bg-slate-50/50 transition-all duration-500"
+      className="min-h-screen bg-slate-50/50"
       maxWidthClassName="max-w-[1680px]"
-      headerClassName="lg:px-10 lg:pt-10 xl:px-14 xl:pt-14"
-      bannerClassName="lg:px-10 xl:px-14"
-      bodyClassName="space-y-6 lg:px-10 lg:pb-10 xl:px-14 xl:pb-14"
+      headerClassName="lg:px-8 lg:pt-6 xl:px-10"
+      bannerClassName="lg:px-8 xl:px-10"
+      bodyClassName="space-y-4 lg:px-8 lg:pb-8 xl:px-10"
     >
       <div className="relative">
         {isError && (
-          <div className="animate-in fade-in slide-in-from-top-4 mb-8 flex items-center gap-3 rounded-2xl border border-rose-100 bg-rose-50/50 px-6 py-4 text-sm font-bold text-rose-600 duration-500">
+          <div className="mb-4 flex items-center gap-3 rounded-lg border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-600">
             <div className="h-2 w-2 animate-pulse rounded-full bg-rose-500" />
             加载供应商资料失败：
             {getFriendlyErrorMessage(error, '请稍后重试')}
           </div>
         )}
 
+        {isListRefreshing && (
+          <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-center rounded-lg border border-[hsl(var(--color-border-primary))] bg-white/95 px-3 py-2 text-xs font-medium text-[hsl(var(--color-text-secondary))] shadow-sm">
+            <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin text-[hsl(var(--color-primary))]" />
+            正在更新列表...
+          </div>
+        )}
+
         {isLoading ? (
-          <div className="flex min-h-[400px] items-center justify-center rounded-[2.5rem] border border-white bg-white/40 backdrop-blur-md">
+          <div className="flex min-h-[360px] items-center justify-center rounded-lg border bg-white">
             <EmptyState
               title="正在加载供应商资料..."
               icon={
@@ -341,14 +331,14 @@ export function SuppliersPageClient({
             />
           </div>
         ) : suppliers.length === 0 ? (
-          <div className="rounded-[2.5rem] border border-dashed border-slate-200 bg-white/20 p-20 text-center">
+          <div className="rounded-lg border border-dashed border-slate-200 bg-white p-10 text-center">
             <EmptyState
               title="还没有供应商资料"
               description="先新增一位供应商，后续更方便录入采购和对账"
               action={
                 <Button
                   onClick={() => router.push('/suppliers/create')}
-                  className="h-12 rounded-2xl bg-slate-900 px-8 font-semibold"
+                  className="h-10 rounded-md px-4 font-medium"
                 >
                   新增供应商
                 </Button>
@@ -357,29 +347,32 @@ export function SuppliersPageClient({
             />
           </div>
         ) : (
-          <div className="space-y-4">
+          <div
+            className={cn(
+              'space-y-3 transition-opacity',
+              isListRefreshing && 'opacity-60'
+            )}
+          >
             {suppliers.map((supplier, index) => (
               <div
                 key={supplier.id}
                 onClick={() => router.push(`/suppliers/${supplier.id}`)}
                 className={cn(
-                  'group relative flex flex-col gap-6 rounded-[2rem] border border-white bg-white/60 p-6 backdrop-blur-xl transition-all duration-500',
-                  'cursor-pointer hover:-translate-y-1 hover:bg-white hover:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.08)]',
-                  'animate-in fade-in slide-in-from-bottom-4',
-                  `duration-${(index + 1) * 100}`
+                  'relative flex cursor-pointer flex-col gap-4 rounded-lg border bg-white p-4 shadow-sm transition-colors hover:border-slate-300',
+                  isListRefreshing && index === 0 ? 'mt-10' : ''
                 )}
               >
-                <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                   {/* Left: Identity Section */}
-                  <div className="flex min-w-[300px] items-center gap-5">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-xl transition-transform duration-500 group-hover:scale-110">
-                      <Building2 className="h-7 w-7" />
+                  <div className="flex min-w-[260px] items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-900 text-white">
+                      <Building2 className="h-5 w-5" />
                     </div>
-                    <div className="space-y-1">
-                      <h3 className="text-xl font-semibold tracking-tight text-slate-900 transition-colors group-hover:text-amber-600">
+                    <div className="min-w-0 space-y-1">
+                      <h3 className="truncate text-base font-semibold text-slate-900">
                         {supplier.name}
                       </h3>
-                      <div className="flex items-center gap-3 text-xs font-bold text-slate-400">
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
                           建档时间 {formatDate(supplier.createdAt)}
@@ -393,41 +386,41 @@ export function SuppliersPageClient({
                   </div>
 
                   {/* Middle: Contact & Status */}
-                  <div className="flex flex-wrap items-center gap-4 lg:flex-1 lg:px-8">
-                    <div className="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
+                  <div className="flex flex-wrap items-center gap-2 lg:flex-1 lg:px-4">
+                    <div className="flex items-center gap-2 rounded-md border border-slate-100 bg-slate-50 px-3 py-1.5">
                       <Briefcase className="h-3.5 w-3.5 text-slate-400" />
-                      <span className="text-sm font-bold text-slate-600">
+                      <span className="text-sm font-medium text-slate-600">
                         {supplier.phone || '未留联系电话'}
                       </span>
                     </div>
-                    <div className="flex max-w-[240px] items-center gap-2 truncate rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
+                    <div className="flex max-w-[260px] items-center gap-2 truncate rounded-md border border-slate-100 bg-slate-50 px-3 py-1.5">
                       <MapPin className="h-3.5 w-3.5 text-slate-400" />
-                      <span className="truncate text-sm font-bold text-slate-600">
+                      <span className="truncate text-sm font-medium text-slate-600">
                         {supplier.address || '未填写地址'}
                       </span>
                     </div>
                   </div>
 
                   {/* Right: Business Insights */}
-                  <div className="grid min-w-[240px] grid-cols-2 gap-3">
-                    <div className="flex flex-col items-center justify-center rounded-2xl border border-amber-100/50 bg-amber-50/50 px-4 py-3">
-                      <span className="mb-1 text-xs font-semibold text-amber-600">
+                  <div className="grid min-w-[220px] grid-cols-2 gap-2">
+                    <div className="flex flex-col items-center justify-center rounded-lg border border-amber-100 bg-amber-50 px-3 py-2">
+                      <span className="mb-1 text-xs text-amber-700">
                         合作状态
                       </span>
                       <div className="flex items-center gap-1 text-amber-700">
                         <Truck className="h-3 w-3" />
-                        <span className="text-sm font-semibold text-amber-900">
+                        <span className="text-sm font-medium text-amber-900">
                           {formatSupplierStatus(supplier.status)}
                         </span>
                       </div>
                     </div>
-                    <div className="flex flex-col items-center justify-center rounded-2xl border border-blue-100/50 bg-blue-50/50 px-4 py-3">
-                      <span className="mb-1 text-xs font-semibold text-blue-600">
+                    <div className="flex flex-col items-center justify-center rounded-lg border border-blue-100 bg-blue-50 px-3 py-2">
+                      <span className="mb-1 text-xs text-blue-700">
                         联系资料
                       </span>
                       <div className="flex items-center gap-1 text-blue-700">
                         <TrendingUp className="h-3 w-3" />
-                        <span className="text-sm font-semibold text-blue-900">
+                        <span className="text-sm font-medium text-blue-900">
                           {supplier.phone || supplier.address
                             ? '已完善'
                             : '待补充'}
@@ -445,11 +438,10 @@ export function SuppliersPageClient({
                   </div>
                 </div>
 
-                {/* Status Badges Overlay */}
                 <div className="flex items-center gap-2">
                   <div
                     className={cn(
-                      'rounded-full px-3 py-1 text-xs font-semibold tracking-[0.2em]',
+                      'rounded-md px-2.5 py-1 text-xs font-medium',
                       supplier.status === 'active'
                         ? 'bg-emerald-500 text-white'
                         : 'bg-slate-100 text-slate-500'
@@ -464,8 +456,8 @@ export function SuppliersPageClient({
         )}
 
         {pagination && pagination.total > 0 && (
-          <div className="flex items-center justify-center py-10">
-            <div className="group flex h-16 items-center gap-6 rounded-3xl border border-white bg-white/60 px-8 py-3 shadow-sm backdrop-blur-xl transition-all hover:bg-white hover:shadow-xl">
+          <div className="flex items-center justify-center py-6">
+            <div className="flex min-h-12 flex-wrap items-center gap-4 rounded-lg border bg-white px-4 py-3 shadow-sm">
               <div className="mr-2 flex items-center gap-1.5 border-r border-slate-100 pr-6">
                 <span className="text-xs font-semibold text-slate-500">
                   供应规模
@@ -479,6 +471,7 @@ export function SuppliersPageClient({
                 onPageChange={handlePageChange}
                 showRange={false}
                 showTotal={false}
+                disabled={isListRefreshing}
               />
             </div>
           </div>

@@ -132,7 +132,11 @@ const ActionButtonsSection: React.FC<ActionButtonsSectionProps> = ({
           key={action.key || action.label || `action-${index}`}
           size={compact ? 'sm' : 'default'}
           variant={action.variant || 'default'}
-          className={cn('w-full justify-center sm:w-auto', buttonSize, action.className)}
+          className={cn(
+            'w-full justify-center sm:w-auto',
+            buttonSize,
+            action.className
+          )}
           onClick={action.onClick}
           disabled={disabled || action.disabled}
         >
@@ -168,7 +172,7 @@ const SearchInputBox: React.FC<SearchInputBoxProps> = ({
   searchValue,
   showClearButton,
 }) => (
-  <div className="relative min-w-0 w-full flex-1 sm:max-w-[320px] sm:min-w-[200px]">
+  <div className="relative w-full min-w-0 flex-1 sm:max-w-[320px] sm:min-w-[200px]">
     {isSearching ? (
       <Loader2
         className={cn(
@@ -197,10 +201,7 @@ const SearchInputBox: React.FC<SearchInputBoxProps> = ({
       className={cn(
         'pl-10',
         showClearButton && searchValue && 'pr-10',
-        inputSize,
-        // Pro 样式覆盖
-        inputSize.includes('h-14') &&
-          'rounded-2xl border-white bg-white/40 font-bold shadow-sm backdrop-blur-md focus:bg-white'
+        inputSize
       )}
     />
     {showClearButton && searchValue && (
@@ -333,13 +334,10 @@ const FiltersSection: React.FC<FiltersSectionProps> = ({
             onChange={e => createHandler(filter)(e.target.value)}
             disabled={disabled}
             className={cn(
-              inputSize,
+              'border-input bg-background ring-offset-background focus:ring-ring rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50',
               getResponsiveFilterWidthClass(filter.width),
-              compact && 'text-xs',
-              // Pro 样式覆盖
-              inputSize.includes('h-14') &&
-                'rounded-2xl border-white bg-white/40 font-bold shadow-sm backdrop-blur-md hover:bg-white',
-              'border-input bg-background ring-offset-background focus:ring-ring rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50'
+              inputSize,
+              compact && 'text-xs'
             )}
           >
             {includeAllOption ? (
@@ -414,7 +412,8 @@ export const UnifiedSearchBar = React.memo<UnifiedSearchBarProps>(
           const isResetValue =
             value === '' ||
             (includeAllOption && value === 'all') ||
-            (filter.defaultValue !== undefined && value === filter.defaultValue);
+            (filter.defaultValue !== undefined &&
+              value === filter.defaultValue);
           onFilterChange(filter.key, isResetValue ? undefined : value);
         }
       },
@@ -422,8 +421,16 @@ export const UnifiedSearchBar = React.memo<UnifiedSearchBarProps>(
     );
 
     const isPro = variant === 'pro';
-    const inputSize = isPro ? 'h-14' : compact ? 'h-8 text-sm' : 'h-10';
-    const buttonSize = isPro ? 'h-14 px-6' : compact ? 'h-8' : 'h-10';
+    const inputSize = isPro
+      ? 'h-11 rounded-lg border-[hsl(var(--color-border-primary))] bg-white font-medium'
+      : compact
+        ? 'h-8 text-sm'
+        : 'h-10';
+    const buttonSize = isPro
+      ? 'h-10 rounded-lg px-3'
+      : compact
+        ? 'h-8'
+        : 'h-10';
 
     return (
       <div className={cn('flex flex-wrap items-center gap-2', className)}>

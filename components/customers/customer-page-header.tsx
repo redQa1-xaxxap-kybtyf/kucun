@@ -26,16 +26,16 @@ export function CustomerPageHeader({
   const router = useRouter();
 
   return (
-    <Card className="overflow-hidden">
-      <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
+    <Card className="overflow-hidden border border-border shadow-sm">
+      <CardContent className="bg-card p-4 sm:p-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-[0_10px_24px_rgba(9,88,217,0.22)]">
-              <Users className="h-6 w-6 text-white" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-[hsl(var(--color-primary))]">
+              <Users className="h-5 w-5 text-white" />
             </div>
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
-                客户管理
+                客户档案
               </h1>
               <p className="text-sm text-[hsl(var(--color-text-secondary))]">
                 管理客户信息和交易记录
@@ -54,7 +54,7 @@ export function CustomerPageHeader({
                 size="lg"
                 onClick={onBatchDelete}
                 disabled={isBatchDeleting}
-                className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+                className="h-10 rounded-md"
               >
                 {isBatchDeleting ? (
                   <>
@@ -72,7 +72,7 @@ export function CustomerPageHeader({
             <Button
               size="lg"
               onClick={() => router.push('/customers/create')}
-              className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+              className="h-10 rounded-md"
             >
               <Plus className="mr-2 h-4 w-4" />
               新建客户

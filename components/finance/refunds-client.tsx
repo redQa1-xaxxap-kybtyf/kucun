@@ -149,7 +149,7 @@ export function RefundsClient({
     return (
       <div
         key={refund.id}
-        className="bg-card rounded-lg border p-3 shadow-[var(--shadow-light)] sm:p-4"
+        className="bg-card rounded-md border p-3 shadow-sm sm:p-4"
         role="button"
         tabIndex={0}
         onClick={() => router.push(`/finance/refunds/${refund.id}`)}
@@ -280,7 +280,7 @@ export function RefundsClient({
     <div className="space-y-6">
       {/* 统计卡片 */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="shadow-[var(--shadow-medium)]">
+        <Card className="rounded-md border border-border shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">待退款总额</CardTitle>
             <TrendingDown className="h-4 w-4 text-[hsl(var(--color-warning))]" />
@@ -295,7 +295,7 @@ export function RefundsClient({
           </CardContent>
         </Card>
 
-        <Card className="shadow-[var(--shadow-medium)]">
+        <Card className="rounded-md border border-border shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">已退款</CardTitle>
             <CheckCircle className="h-4 w-4 text-[hsl(var(--color-success))]" />
@@ -310,7 +310,7 @@ export function RefundsClient({
           </CardContent>
         </Card>
 
-        <Card className="shadow-[var(--shadow-medium)]">
+        <Card className="rounded-md border border-border shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">完成率</CardTitle>
             <ChineseYuan className="h-4 w-4 text-[hsl(var(--color-info))]" />
@@ -331,7 +331,7 @@ export function RefundsClient({
           </CardContent>
         </Card>
 
-        <Card className="shadow-[var(--shadow-medium)]">
+        <Card className="rounded-md border border-border shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">未完成金额</CardTitle>
             <Calendar className="h-4 w-4 text-[hsl(var(--color-primary))]" />
@@ -355,7 +355,7 @@ export function RefundsClient({
         filters={[
           {
             key: 'status',
-            label: '状态',
+            label: '退款状态',
             options: [
               { label: '待处理', value: 'pending' },
               { label: '待退款', value: 'processing' },
@@ -386,11 +386,11 @@ export function RefundsClient({
           placeholder: '选择退款日期范围',
         }}
         onClearFilters={onClearFilters}
-        variant="bordered"
+        variant="pro"
         compact={true}
       />
 
-      <Card className="border border-[hsl(var(--color-border-secondary))] shadow-[var(--shadow-light)]">
+      <Card className="rounded-md border border-border shadow-sm">
         <CardContent className="bg-[hsl(var(--color-bg-card))] pt-6">
           {/* 退款申请列表 */}
           {errorMessage && (

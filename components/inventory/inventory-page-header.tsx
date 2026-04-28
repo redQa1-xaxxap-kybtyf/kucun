@@ -28,12 +28,12 @@ export function InventoryPageHeader({
   onAdjust,
 }: InventoryPageHeaderProps) {
   return (
-    <Card className="card-shadow-medium overflow-hidden border border-[hsl(var(--color-border-primary))]">
-      <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
+    <Card className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] shadow-sm">
+      <CardContent className="bg-card p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div
-              className="card-shadow-light flex h-12 w-12 items-center justify-center rounded-xl text-white"
+              className="flex h-12 w-12 items-center justify-center rounded-md text-white"
               style={{
                 backgroundColor: 'hsl(var(--color-primary))',
               }}
@@ -54,7 +54,7 @@ export function InventoryPageHeader({
               size="lg"
               variant="outline"
               onClick={onInbound}
-              className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+              className="h-11 shadow-sm"
             >
               <ArrowDownToLine className="mr-2 h-4 w-4" />
               入库
@@ -63,7 +63,7 @@ export function InventoryPageHeader({
               size="lg"
               variant="outline"
               onClick={onOutbound}
-              className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+              className="h-11 shadow-sm"
             >
               <ArrowUpFromLine className="mr-2 h-4 w-4" />
               出库
@@ -71,7 +71,7 @@ export function InventoryPageHeader({
             <Button
               size="lg"
               onClick={onAdjust}
-              className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+              className="h-11 shadow-sm"
             >
               <Settings className="mr-2 h-4 w-4" />
               调整

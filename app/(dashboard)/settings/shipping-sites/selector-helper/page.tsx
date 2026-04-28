@@ -382,61 +382,59 @@ export default function SelectorHelperPage() {
     <div className="flex h-full flex-col overflow-hidden p-6">
       <div className="flex-1 space-y-6 overflow-y-auto">
         {/* 页面头部 */}
-        <div className="group relative overflow-hidden rounded-[32px] border border-white bg-white/60 p-1 shadow-xl shadow-slate-200/50 backdrop-blur-xl transition-all duration-500 hover:shadow-2xl hover:shadow-slate-300/40">
-          <div className="flex items-center justify-between rounded-[28px] bg-white/80 p-8 shadow-inner backdrop-blur-md">
+        <div className="rounded-lg border bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-6">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => router.back()}
-                className="h-12 w-12 rounded-2xl bg-slate-50 text-slate-500 transition-all hover:bg-slate-100 active:scale-95"
+                className="h-10 w-10 rounded-md bg-slate-50 text-slate-500 hover:bg-slate-100"
               >
                 <ArrowLeft className="h-6 w-6" />
               </Button>
               <div>
                 <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-                  网页定位规则助手
+                  识别规则设置
                 </h1>
-                <p className="mt-1 text-sm font-bold text-slate-500">
-                  粘贴网页代码，自动生成可直接填写的 XPath / CSS 页面识别规则
+                <p className="mt-1 text-sm text-slate-500">
+                  根据物流网站页面内容生成结果识别规则
                 </p>
               </div>
             </div>
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 shadow-lg shadow-indigo-600/30 transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-3">
-              <Sparkles className="h-8 w-8 text-white" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-slate-900">
+              <Sparkles className="h-6 w-6 text-white" />
             </div>
           </div>
-          {/* 装饰性背景层 */}
-          <div className="absolute -bottom-4 -left-4 h-24 w-24 rounded-full bg-indigo-500 opacity-5 blur-3xl" />
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
           {/* 左侧：HTML 输入 */}
-          <div className="rounded-[32px] border border-white bg-white/60 p-8 shadow-xl shadow-slate-200/50 backdrop-blur-xl transition-all hover:shadow-2xl hover:shadow-slate-300/40">
+          <div className="rounded-lg border bg-white p-5 shadow-sm">
             <div className="mb-6 flex items-center justify-between border-b border-slate-100 pb-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
                   <Sparkles className="h-5 w-5" />
                 </div>
                 <h3 className="text-lg font-semibold tracking-tight text-slate-900">
-                  步骤 1: 粘贴网页代码
+                  第一步：粘贴页面内容
                 </h3>
               </div>
               <span className="text-[10px] font-semibold text-slate-400">
-                步骤 01 / 输入
+                输入
               </span>
             </div>
 
             <div className="space-y-6">
               <div className="space-y-3">
                 <Label className="text-xs font-semibold text-slate-500">
-                  解析目标类型
+                  生成规则类型
                 </Label>
                 <div className="flex flex-wrap gap-2">
                   {[
-                    { id: 'both', label: '全部格式', icon: '🌐' },
-                    { id: 'xpath', label: 'XPath (推荐)', icon: '🧭' },
-                    { id: 'css', label: 'CSS 选择器', icon: '🎨' },
+                    { id: 'both', label: '全部规则', icon: '' },
+                    { id: 'xpath', label: '推荐规则', icon: '' },
+                    { id: 'css', label: '备用规则', icon: '' },
                   ].map(type => (
                     <Button
                       key={type.id}
@@ -444,13 +442,15 @@ export default function SelectorHelperPage() {
                       size="sm"
                       onClick={() => setSelectorType(type.id as any)}
                       className={cn(
-                        'h-10 rounded-xl px-4 font-bold transition-all active:scale-95',
+                        'h-9 rounded-md px-3 font-medium',
                         selectorType === type.id
-                          ? 'bg-slate-900 shadow-lg shadow-slate-900/20'
+                          ? 'bg-slate-900 shadow-sm'
                           : 'border-slate-100 bg-white text-slate-600 hover:bg-slate-50'
                       )}
                     >
-                      <span className="mr-2 text-sm">{type.icon}</span>
+                      {type.icon ? (
+                        <span className="mr-2 text-sm">{type.icon}</span>
+                      ) : null}
                       {type.label}
                     </Button>
                   ))}
@@ -463,13 +463,13 @@ export default function SelectorHelperPage() {
                     htmlFor="htmlInput"
                     className="text-xs font-semibold text-slate-500"
                   >
-                    网页代码片段
+                    页面内容片段
                   </Label>
                   <span className="text-[10px] font-bold text-slate-400">
-                    建议复制同时包含标题和结果内容的完整区域
+                    建议复制同时包含标题和查询结果的完整区域
                   </span>
                 </div>
-                <div className="relative overflow-hidden rounded-2xl border border-slate-100 bg-slate-900/5 transition-all focus-within:ring-2 focus-within:ring-blue-500/20">
+                <div className="relative overflow-hidden rounded-md border border-slate-100 bg-slate-900/5 focus-within:ring-2 focus-within:ring-blue-500/20">
                   <Textarea
                     id="htmlInput"
                     value={htmlInput}
@@ -487,16 +487,16 @@ export default function SelectorHelperPage() {
               <Button
                 onClick={analyzeHTML}
                 disabled={isAnalyzing || !htmlInput.trim()}
-                className="h-14 w-full rounded-2xl bg-blue-600 font-semibold shadow-xl shadow-blue-600/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:bg-slate-200"
+                className="h-10 w-full rounded-md font-medium disabled:bg-slate-200"
               >
                 {isAnalyzing ? (
                   <div className="flex items-center gap-2">
                     <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-                    <span>正在识别网页结构...</span>
+                    <span>正在识别页面内容...</span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <span>开始识别网页结构</span>
+                    <span>开始识别页面内容</span>
                   </div>
                 )}
               </Button>
@@ -504,14 +504,14 @@ export default function SelectorHelperPage() {
           </div>
 
           {/* 右侧：检测结果 */}
-          <div className="flex flex-col rounded-[32px] border border-white bg-white/60 p-8 shadow-xl shadow-slate-200/50 backdrop-blur-xl transition-all hover:shadow-2xl hover:shadow-slate-300/40">
+          <div className="flex flex-col rounded-lg border bg-white p-5 shadow-sm">
             <div className="mb-6 flex items-center justify-between border-b border-slate-100 pb-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-                  <div className="h-5 w-5">⭐</div>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-md bg-emerald-50 text-emerald-600">
+                  <Sparkles className="h-5 w-5" />
                 </div>
                 <h3 className="text-lg font-semibold tracking-tight text-slate-900">
-                  步骤 2: 查看识别结果
+                  第二步：查看识别结果
                 </h3>
               </div>
               {detectedFields.length > 0 && (
@@ -520,34 +520,34 @@ export default function SelectorHelperPage() {
                     variant="outline"
                     size="sm"
                     onClick={copyAsJSON}
-                    className="h-9 rounded-xl border-slate-100 bg-white font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-50 active:scale-95"
+                    className="h-9 rounded-md border-slate-100 bg-white font-semibold text-slate-600 shadow-sm hover:bg-slate-50"
                   >
                     <Copy className="mr-2 h-4 w-4" />
-                    配置格式
+                    复制配置
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={copyAllSelectors}
-                    className="h-9 rounded-xl border-slate-100 bg-white font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-50 active:scale-95"
+                    className="h-9 rounded-md border-slate-100 bg-white font-semibold text-slate-600 shadow-sm hover:bg-slate-50"
                   >
                     <Copy className="mr-2 h-4 w-4" />
-                    全选
+                    全部复制
                   </Button>
                 </div>
               )}
             </div>
             <div className="custom-scrollbar flex-1 overflow-y-auto pr-2">
               {detectedFields.length === 0 ? (
-                <div className="flex h-full flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-slate-200 bg-slate-50/50 p-12 text-center">
-                  <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-lg">
+                <div className="flex h-full flex-col items-center justify-center rounded-md border-2 border-dashed border-slate-200 bg-slate-50/50 p-12 text-center">
+                  <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-md bg-white shadow-sm">
                     <Globe className="h-10 w-10 text-slate-200" />
                   </div>
                   <h4 className="text-sm font-semibold text-slate-400">
-                    暂无分析数据
+                    暂无识别结果
                   </h4>
                   <p className="mt-2 max-w-[200px] text-xs font-bold text-slate-400">
-                    请先在左侧粘贴网页代码并开始识别
+                    请先在左侧粘贴页面内容并开始识别
                   </p>
                 </div>
               ) : (
@@ -555,7 +555,7 @@ export default function SelectorHelperPage() {
                   {detectedFields.map((field, fieldIndex) => (
                     <div
                       key={fieldIndex}
-                      className="group rounded-[24px] border border-white bg-white/80 p-6 shadow-sm shadow-slate-200/50 transition-all hover:bg-white hover:shadow-md"
+                      className="group rounded-md border border-slate-100 bg-white p-6 shadow-sm"
                     >
                       {/* 字段标题和值 */}
                       <div className="mb-4 flex items-center justify-between border-b border-slate-50 pb-4">
@@ -565,7 +565,7 @@ export default function SelectorHelperPage() {
                               {field.label}
                             </span>
                             <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
-                              {field.options.length} 种方案
+                              {field.options.length} 种规则
                             </span>
                           </div>
                           <p className="text-xs font-bold text-slate-400">
@@ -586,7 +586,7 @@ export default function SelectorHelperPage() {
                             <div
                               key={optIndex}
                               className={cn(
-                                'relative rounded-2xl border p-4 transition-all',
+                                'relative rounded-md border p-4',
                                 isRecommended
                                   ? 'border-blue-100 bg-blue-50/50 ring-1 ring-blue-50'
                                   : 'border-slate-50 bg-slate-50/30 hover:border-slate-200 hover:bg-white'
@@ -596,8 +596,8 @@ export default function SelectorHelperPage() {
                               <div className="mb-3 flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                   {isRecommended && (
-                                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] text-white shadow-lg shadow-blue-600/30">
-                                      ⭐
+                                    <div className="flex h-5 w-5 items-center justify-center rounded-md bg-blue-600 text-[10px] text-white shadow-sm">
+                                      推荐
                                     </div>
                                   )}
                                   <span
@@ -650,7 +650,7 @@ export default function SelectorHelperPage() {
                               </div>
 
                               {/* 选择器代码 */}
-                              <div className="rounded-xl bg-slate-900 p-3 shadow-inner">
+                              <div className="rounded-md bg-slate-900 p-3 shadow-inner">
                                 <code className="block font-mono text-[11px] leading-relaxed font-bold break-all text-emerald-400/90">
                                   {option.selector}
                                 </code>
@@ -658,7 +658,9 @@ export default function SelectorHelperPage() {
 
                               {/* 推荐理由 */}
                               <div className="mt-3 flex items-start gap-2">
-                                <div className="mt-0.5 text-blue-500">💡</div>
+                                <div className="mt-0.5 text-xs font-semibold text-blue-500">
+                                  说明
+                                </div>
                                 <p className="text-[11px] leading-relaxed font-bold text-slate-500">
                                   {option.reason}
                                 </p>
@@ -676,13 +678,13 @@ export default function SelectorHelperPage() {
         </div>
 
         {/* 使用说明 */}
-        <div className="rounded-[32px] border border-white bg-slate-900 p-8 shadow-2xl transition-transform hover:scale-[1.01]">
+        <div className="rounded-lg border bg-white p-5 shadow-sm">
           <div className="mb-8 border-b border-slate-800 pb-6 text-center">
-            <h2 className="mb-2 text-xl font-semibold tracking-tight text-white">
-              配置使用指南
+            <h2 className="mb-2 text-xl font-semibold tracking-tight text-slate-900">
+              使用说明
             </h2>
-            <p className="text-center text-sm font-bold text-slate-500">
-              接入流程
+            <p className="text-center text-sm text-slate-500">
+              管理员维护物流查询规则时使用
             </p>
           </div>
 
@@ -692,39 +694,39 @@ export default function SelectorHelperPage() {
               {[
                 {
                   num: '01',
-                  title: '获取 HTML 源代码',
-                  desc: '在目标页面按下 F12 检查元素，右键对应的配置区域选择 "Copy outerHTML"。',
+                  title: '复制页面内容',
+                  desc: '在物流查询网页中复制包含状态、时间、位置等结果的完整区域。',
                   color: 'bg-blue-500',
                 },
                 {
                   num: '02',
-                  title: '执行深度分析',
-                  desc: '将代码片段粘贴到上方输入框，系统会自动识别页面里各项信息的位置。',
+                  title: '识别结果字段',
+                  desc: '将内容粘贴到上方输入框，系统会尝试识别页面里各项信息的位置。',
                   color: 'bg-indigo-500',
                 },
                 {
                   num: '03',
                   title: '一键应用配置',
-                  desc: '点击 ⭐ 标记的推荐方案，直接粘贴到主站点的“识别内容设置”中即可生效。',
+                  desc: '复制推荐规则，粘贴到站点的识别内容设置中即可生效。',
                   color: 'bg-purple-500',
                 },
               ].map(step => (
                 <div
                   key={step.num}
-                  className="group relative rounded-2xl border border-white/5 bg-white/5 p-6 transition-all hover:bg-white/10"
+                  className="group relative rounded-md border border-slate-100 bg-white p-6 shadow-sm"
                 >
                   <div
                     className={cn(
-                      'mb-4 inline-flex items-center justify-center rounded-xl px-3 py-1 text-xs font-semibold text-white shadow-lg',
+                      'mb-4 inline-flex items-center justify-center rounded-md px-3 py-1 text-xs font-semibold text-white shadow-sm',
                       step.color
                     )}
                   >
-                    STEP {step.num}
+                    步骤 {step.num}
                   </div>
-                  <h3 className="mb-2 text-sm font-semibold text-white">
+                  <h3 className="mb-2 text-sm font-semibold text-slate-900">
                     {step.title}
                   </h3>
-                  <p className="text-xs leading-relaxed font-bold text-slate-500">
+                  <p className="text-xs leading-relaxed text-slate-500">
                     {step.desc}
                   </p>
                 </div>
@@ -733,7 +735,7 @@ export default function SelectorHelperPage() {
 
             <div className="grid gap-6 md:grid-cols-2">
               {/* 选择器类型说明 */}
-              <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-6">
+              <div className="rounded-md border border-amber-500/20 bg-amber-500/5 p-6">
                 <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-amber-500">
                   <div className="h-1.5 w-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
                   规则选择建议
@@ -741,31 +743,30 @@ export default function SelectorHelperPage() {
                 <div className="space-y-4">
                   <div className="space-y-1">
                     <span className="text-[11px] font-semibold text-amber-600/80">
-                      XPath 规则（推荐）
+                      推荐规则
                     </span>
-                    <p className="text-xs leading-relaxed font-bold text-amber-100/80">
-                      支持 `contains()`
-                      模糊匹配。即使样式类名随机或包含空格，也能通过文本特征定位。
+                    <p className="text-xs leading-relaxed text-amber-700">
+                      适合大多数物流网页，页面有轻微变化时更稳定。
                     </p>
                   </div>
                   <div className="space-y-1 border-t border-amber-500/10 pt-4">
                     <span className="text-[11px] font-semibold text-emerald-600/80">
-                      CSS 选择器
+                      备用规则
                     </span>
-                    <p className="text-xs leading-relaxed font-bold text-emerald-100/80">
-                      适合页面结构稳定、元素标识清晰的网页。
+                    <p className="text-xs leading-relaxed text-emerald-700">
+                      适合页面结构稳定、字段位置固定的网页。
                     </p>
                   </div>
                 </div>
               </div>
 
               {/* 实际案例 */}
-              <div className="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-6">
+              <div className="rounded-md border border-blue-500/20 bg-blue-500/5 p-6">
                 <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-blue-500">
                   <div className="h-1.5 w-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
                   示例预览
                 </h3>
-                <div className="rounded-xl border border-slate-700 bg-slate-800 p-4">
+                <div className="rounded-md border border-slate-700 bg-slate-800 p-4">
                   <code className="block space-y-1 font-mono text-[10px]">
                     <div className="text-slate-500 opacity-50">
                       &lt;!-- 输入 --&gt;

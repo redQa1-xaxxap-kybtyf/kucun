@@ -29,11 +29,11 @@ export function StatementBasicInfo({
   lastPaymentDate,
 }: StatementBasicInfoProps) {
   return (
-    <Card className="overflow-hidden border-slate-200 transition-all hover:shadow-lg">
+    <Card className="overflow-hidden rounded-md border-slate-200 shadow-sm">
       <CardHeader className="border-b border-slate-200 bg-slate-50 px-6 py-4">
-        <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-500 italic">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-500">
           <Contact2 className="h-4 w-4" />
-          往来伙伴关系名片
+          往来伙伴信息
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
@@ -43,7 +43,7 @@ export function StatementBasicInfo({
               <div className="mb-2 flex items-center gap-3 text-slate-400">
                 <MapPin className="h-4 w-4" />
                 <span className="text-[10px] font-semibold">
-                  物理地址
+                  地址
                 </span>
               </div>
               <p className="line-clamp-2 min-h-[40px] text-sm font-bold text-slate-600">
@@ -66,7 +66,7 @@ export function StatementBasicInfo({
           <div className="grid grid-cols-3 gap-px bg-slate-100">
             {[
               {
-                label: '上游类型',
+                label: '类型',
                 value: ROLE_LABEL_MAP[partnerRole],
                 icon: Users,
               },
@@ -78,7 +78,7 @@ export function StatementBasicInfo({
                 icon: Clock,
               },
               {
-                label: '最近对账',
+                label: '最近收付',
                 value: lastPaymentDate
                   ? formatDateTime(lastPaymentDate, 'MM-dd HH:mm')
                   : '待对账',
@@ -87,10 +87,10 @@ export function StatementBasicInfo({
             ].map((item, idx) => (
               <div
                 key={idx}
-                className="group bg-slate-50/30 p-4 transition-colors hover:bg-white"
+                className="bg-slate-50/30 p-4"
               >
                 <div className="mb-1 flex items-center gap-2">
-                  <item.icon className="h-3 w-3 text-slate-400 transition-colors group-hover:text-blue-500" />
+                  <item.icon className="h-3 w-3 text-slate-400" />
                   <span className="text-[9px] font-bold text-slate-400">
                     {item.label}
                   </span>

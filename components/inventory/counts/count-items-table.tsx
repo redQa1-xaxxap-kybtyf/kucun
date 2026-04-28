@@ -292,7 +292,7 @@ export function CountItemsTable({
           return (
             <div
               key={item.id}
-              className="card-shadow-light rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4"
+              className="rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4 shadow-sm"
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -342,7 +342,7 @@ export function CountItemsTable({
                 </div>
               </div>
 
-              <div className="mt-3 rounded-xl bg-[hsl(var(--color-bg-secondary))] p-3">
+              <div className="mt-3 rounded-md bg-[hsl(var(--color-bg-secondary))] p-3">
                 <div className="grid grid-cols-3 gap-2 text-xs text-[hsl(var(--color-text-secondary))]">
                   <div>
                     <div>账面数量</div>

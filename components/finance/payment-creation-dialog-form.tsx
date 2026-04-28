@@ -148,7 +148,7 @@ interface RoundingToggleProps {
 
 function RoundingToggle({ checked, onToggle }: RoundingToggleProps) {
   return (
-    <div className="flex items-center justify-between rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))]/50 p-4">
+    <div className="flex items-center justify-between rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))]/50 p-4">
       <div className="space-y-0.5">
         <label className="text-sm font-medium">本次收款有尾差</label>
         <p className="text-xs text-[hsl(var(--color-text-tertiary))]">
@@ -184,9 +184,7 @@ function ActualAmountField({ form }: FormComponentProps) {
               }
             />
           </FormControl>
-          <FormDescription>
-            这里填客户实际打款的金额
-          </FormDescription>
+          <FormDescription>这里填客户实际打款的金额</FormDescription>
           <FormMessage />
         </FormItem>
       )}
@@ -220,7 +218,7 @@ function RoundingAmountField({ form }: FormComponentProps) {
               />
             </FormControl>
             <FormDescription>
-              根据收款金额和实际到账自动计算；正数表示少收结清，负数表示多收
+              根据收款金额和实际到账自动计算；正数表示少收，负数表示多收
             </FormDescription>
             <FormMessage />
           </FormItem>
@@ -324,7 +322,6 @@ function FormActions({ onCancel, isSubmitting }: FormActionsProps) {
       <Button
         type="submit"
         disabled={isSubmitting}
-        className="bg-gradient-to-r from-[hsl(var(--color-primary))] to-[hsl(var(--color-primary))]/90"
       >
         <Save className="mr-2 h-4 w-4" />
         {isSubmitting ? '保存中...' : '登记待确认收款'}

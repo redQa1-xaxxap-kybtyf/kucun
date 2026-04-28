@@ -178,7 +178,7 @@ export function InventoryAdjustTable({
         {inventoryRecords.map(record => (
           <div
             key={record.id}
-            className="card-shadow-light rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3"
+            className="rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3 shadow-sm"
           >
             <div className="flex items-start justify-between gap-2">
               <div>
@@ -242,7 +242,7 @@ export function InventoryAdjustTable({
               </div>
             </div>
 
-            <div className="mt-2 rounded-xl bg-[hsl(var(--color-bg-secondary))] p-3 text-xs text-[hsl(var(--color-text-secondary))]">
+            <div className="mt-2 rounded-md bg-[hsl(var(--color-bg-secondary))] p-3 text-xs text-[hsl(var(--color-text-secondary))]">
               {renderStockDisplay(record)}
             </div>
           </div>

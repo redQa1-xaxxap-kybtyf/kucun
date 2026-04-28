@@ -115,7 +115,7 @@ function ReceivablesFilterBar({
       filters={[
         {
           key: 'paymentStatus',
-          label: '状态',
+          label: '收款状态',
           options: [
             { label: '未收款', value: 'unpaid' },
             { label: '部分收款', value: 'partial' },

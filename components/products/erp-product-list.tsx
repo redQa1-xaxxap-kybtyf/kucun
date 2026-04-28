@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { Loader2 } from 'lucide-react';
 
 import { CategorySelector } from '@/components/categories/category-selector';
 import { ContentLoading } from '@/components/common/loading';
@@ -22,6 +23,7 @@ import type {
   ProductQueryParams,
   ProductStatus,
 } from '@/lib/types/product';
+import { cn } from '@/lib/utils';
 
 const CATEGORY_OPTIONS_QUERY = {
   status: 'active',
@@ -66,7 +68,7 @@ function ERPProductListFilters({
       filters={[
         {
           key: 'status',
-          label: '状态',
+          label: '产品状态',
           options: PRODUCT_STATUS_OPTIONS.map(option => ({
             label: option.label,
             value: option.value,
@@ -94,20 +96,20 @@ function ERPProductListFilters({
       }
       variant="pro"
       compact={true}
-        customFilters={
-          <CategorySelector
-            categories={categories}
-            value={initialParams?.categoryId || undefined}
-            onValueChange={nextCategoryId => {
+      customFilters={
+        <CategorySelector
+          categories={categories}
+          value={initialParams?.categoryId || undefined}
+          onValueChange={nextCategoryId => {
             handleFilter({
               categoryId: nextCategoryId,
-                status: initialParams?.status,
-              });
-            }}
-            className="h-14 w-full rounded-2xl border-white bg-white/40 font-bold shadow-sm backdrop-blur-md hover:bg-white sm:w-36"
-          />
-        }
-      />
+              status: initialParams?.status,
+            });
+          }}
+          className="h-11 w-full rounded-lg border-slate-200 bg-white font-medium shadow-none hover:bg-white sm:w-36"
+        />
+      }
+    />
   );
 }
 
@@ -118,6 +120,7 @@ interface ERPProductListTableCardProps {
   onProductSelect?: (product: Product) => void;
   onDeleteProduct: ProductListState['handleDeleteProduct'];
   onPageChange: ProductListState['handlePageChange'];
+  isRefreshing?: boolean;
 }
 
 function ERPProductListTableCard({
@@ -127,15 +130,28 @@ function ERPProductListTableCard({
   onProductSelect,
   onDeleteProduct,
   onPageChange,
+  isRefreshing = false,
 }: ERPProductListTableCardProps) {
   return (
-    <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
-      <ProductTable
-        products={products}
-        categoryPathById={categoryPathById}
-        onProductSelect={onProductSelect}
-        onDeleteProduct={onDeleteProduct}
-      />
+    <div
+      className="relative overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm"
+      aria-busy={isRefreshing}
+    >
+      {isRefreshing && (
+        <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-center border-b border-[hsl(var(--color-border-primary))] bg-white/95 px-3 py-2 text-xs font-medium text-[hsl(var(--color-text-secondary))] shadow-sm">
+          <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin text-[hsl(var(--color-primary))]" />
+          正在更新列表...
+        </div>
+      )}
+      <div className={cn('transition-opacity', isRefreshing && 'opacity-60')}>
+        <ProductTable
+          products={products}
+          categoryPathById={categoryPathById}
+          onProductSelect={onProductSelect}
+          onDeleteProduct={onDeleteProduct}
+          isLoading={isRefreshing}
+        />
+      </div>
 
       {pagination && (
         <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
@@ -144,6 +160,7 @@ function ERPProductListTableCard({
             onPageChange={onPageChange}
             showRange
             showTotal
+            disabled={isRefreshing}
           />
         </div>
       )}
@@ -204,6 +221,7 @@ export function ERPProductList({
     setDeleteDialog,
     searchInput,
     isSearching,
+    isNavigationPending,
     handleSearch,
     handleFilter,
     handlePageChange,
@@ -225,18 +243,24 @@ export function ERPProductList({
 
   const categories = categoriesResponse?.data ?? [];
   const categoryPathById = new Map(
-    categories.map(category => [category.id, category.fullPath ?? category.name])
+    categories.map(category => [
+      category.id,
+      category.fullPath ?? category.name,
+    ])
   );
 
   // ✅ 直接使用 initialParams，避免状态不同步（参考销售订单模块）
   // 获取产品列表数据
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, isFetching, error } = useQuery({
     queryKey: productQueryKeys.list(initialParams),
     queryFn: () => getProducts(initialParams),
-    staleTime: 0, // ✅ 修复：设置为0，确保每次导航都重新获取最新数据
-    refetchOnWindowFocus: false, // 避免不必要的重新获取
-    refetchOnMount: 'always', // ✅ 修复：每次挂载都重新获取，确保数据最新
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: false,
+    placeholderData: previousData => previousData,
+    refetchOnMount: false,
   });
+  const isListRefreshing =
+    !isLoading && (isFetching || isSearching || isNavigationPending);
 
   if (isLoading) {
     return <ContentLoading text="加载产品列表中..." />;
@@ -259,7 +283,7 @@ export function ERPProductList({
         categories={categories}
         initialParams={initialParams}
         searchValue={searchInput}
-        isSearching={isSearching}
+        isSearching={isSearching || isFetching}
         handleSearch={handleSearch}
         handleFilter={handleFilter}
       />
@@ -271,6 +295,7 @@ export function ERPProductList({
         onProductSelect={onProductSelect}
         onDeleteProduct={handleDeleteProduct}
         onPageChange={handlePageChange}
+        isRefreshing={isListRefreshing}
       />
 
       <ERPProductListDeleteDialog

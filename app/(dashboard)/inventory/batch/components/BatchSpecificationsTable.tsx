@@ -50,13 +50,13 @@ export function BatchSpecificationsTable({
     format(new Date(dateString), 'yyyy年MM月dd日 HH:mm', { locale: zhCN });
 
   return (
-    <div className="overflow-hidden rounded-xl border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm">
+    <div className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm">
       <div className="p-0">
         {/* 桌面端：宽表格视图，支持横向滚动 */}
         <div className="hidden xl:block">
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader className="card-shadow-light">
+              <TableHeader className="shadow-sm">
                 <TableRow className="border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50">
                   <TableHead className="first:pl-6">
                     产品编码
@@ -221,7 +221,7 @@ export function BatchSpecificationsTable({
             Array.from({ length: 5 }).map((_, index) => (
               <div
                 key={`batch-card-skeleton-${index}`}
-                className="card-shadow-light rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4"
+                className="rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4 shadow-sm"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-2">
@@ -247,7 +247,7 @@ export function BatchSpecificationsTable({
             data.map(spec => (
               <div
                 key={spec.id}
-                className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-blue-200 hover:shadow-md"
+                className="group relative overflow-hidden rounded-md border border-slate-200 bg-white p-4 shadow-sm"
               >
                 <div className="absolute top-0 right-0 p-2">
                   <Badge

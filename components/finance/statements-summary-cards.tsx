@@ -14,14 +14,14 @@ export function StatementsSummaryCards({
 }) {
   const cards = [
     {
-      title: '客户待收款',
+      title: '应收账款',
       value: formatCurrency(summary.totalReceivable),
       description: `${summary.totalCustomers} 个客户有余额`,
       icon: TrendingUp,
       iconClassName: 'text-[hsl(var(--color-success))]',
     },
     {
-      title: '供应商待付款',
+      title: '应付账款',
       value: formatCurrency(summary.totalPayable),
       description: `${summary.totalSuppliers} 个供应商有余额`,
       icon: TrendingDown,
@@ -53,14 +53,18 @@ export function StatementsSummaryCards({
             className="border border-[hsl(var(--color-border-secondary))] shadow-[var(--shadow-light)]"
           >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                {card.title}
+              </CardTitle>
               <IconComponent className={`h-4 w-4 ${card.iconClassName}`} />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-[hsl(var(--color-text-primary))]">
                 {card.value}
               </div>
-              <p className="text-muted-foreground text-xs">{card.description}</p>
+              <p className="text-muted-foreground text-xs">
+                {card.description}
+              </p>
             </CardContent>
           </Card>
         );

@@ -146,7 +146,7 @@ export function ProductsPageClient({ initialParams }: ProductsPageClientProps) {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="h-11 w-full justify-center transition-transform hover:-translate-y-0.5 sm:w-auto"
+                  className="h-11 w-full justify-center sm:w-auto"
                   onClick={handleExportProducts}
                   disabled={isExporting}
                 >
@@ -160,7 +160,7 @@ export function ProductsPageClient({ initialParams }: ProductsPageClientProps) {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="h-11 w-full justify-center transition-transform hover:-translate-y-0.5 sm:w-auto"
+                  className="h-11 w-full justify-center sm:w-auto"
                   onClick={() => setIsImportDialogOpen(true)}
                 >
                   <Upload className="mr-2 h-4 w-4" />
@@ -169,7 +169,7 @@ export function ProductsPageClient({ initialParams }: ProductsPageClientProps) {
                 <Button
                   size="lg"
                   asChild
-                  className="h-11 w-full justify-center shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)] sm:w-auto"
+                  className="h-11 w-full justify-center sm:w-auto"
                 >
                   <Link href="/products/create">
                     <Plus className="mr-2 h-4 w-4" />

@@ -101,20 +101,20 @@ export function BasicInfoCard({
               </div>
               <div className="grid gap-1.5 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">📞 联系电话：</span>
+                  <span className="text-muted-foreground">联系电话：</span>
                   <span className="font-medium">
                     {selectedCustomer.phone || '未填写'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">📍 客户地址：</span>
+                  <span className="text-muted-foreground">客户地址：</span>
                   <span className="max-w-[200px] truncate text-right font-medium">
                     {selectedCustomer.address || '未填写'}
                   </span>
                 </div>
                 {selectedCustomer.transactionCount !== undefined && (
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">📊 历史交易：</span>
+                    <span className="text-muted-foreground">历史交易：</span>
                     <span className="text-primary font-medium">
                       {selectedCustomer.transactionCount}次
                     </span>

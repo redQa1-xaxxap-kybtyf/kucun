@@ -23,7 +23,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Command,
-  CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
@@ -230,6 +229,17 @@ interface CustomerSelectorProps<TFieldValues extends FieldValues> {
   onlyParents?: boolean;
 }
 
+function buildCustomerSearchValue(customer: Customer) {
+  return [
+    customer.name,
+    customer.phone,
+    customer.address,
+    customer.id,
+  ]
+    .filter((value): value is string => Boolean(value && value.trim()))
+    .join(' ');
+}
+
 // 客户选择器组件
 // eslint-disable-next-line max-lines-per-function
 export function CustomerSelector<TFieldValues extends FieldValues>({
@@ -304,7 +314,7 @@ export function CustomerSelector<TFieldValues extends FieldValues>({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-full p-0" align="start">
-          <Command>
+          <Command filter={() => 1}>
             <CommandInput
               placeholder="搜索客户..."
               value={searchQuery}
@@ -317,15 +327,7 @@ export function CustomerSelector<TFieldValues extends FieldValues>({
                 </div>
               )}
 
-              {!isLoading && filteredCustomers.length === 0 && searchQuery && (
-                <CommandEmpty>未找到匹配的客户</CommandEmpty>
-              )}
-
-              {!isLoading && filteredCustomers.length === 0 && !searchQuery && (
-                <CommandEmpty>请输入关键词搜索客户</CommandEmpty>
-              )}
-
-              {filteredCustomers.length > 0 && (
+              {filteredCustomers.length > 0 ? (
                 <CommandGroup>
                   {/* 清空选择选项 */}
                   <CommandItem
@@ -344,7 +346,16 @@ export function CustomerSelector<TFieldValues extends FieldValues>({
                   {filteredCustomers.map(customer => (
                     <CommandItem
                       key={customer.id}
-                      value={customer.id}
+                      value={buildCustomerSearchValue(customer)}
+                      keywords={[
+                        customer.name,
+                        customer.phone,
+                        customer.address,
+                        customer.id,
+                      ].filter(
+                        (keyword): keyword is string =>
+                          Boolean(keyword && keyword.trim())
+                      )}
                       onSelect={() => {
                         handleFieldChange(customer.id);
                         setOpen(false);
@@ -374,7 +385,15 @@ export function CustomerSelector<TFieldValues extends FieldValues>({
                     </CommandItem>
                   ))}
                 </CommandGroup>
-              )}
+              ) : !isLoading && searchQuery ? (
+                <div className="text-muted-foreground py-6 text-center text-sm">
+                  未找到匹配的客户
+                </div>
+              ) : !isLoading ? (
+                <div className="text-muted-foreground py-6 text-center text-sm">
+                  请输入关键词搜索客户
+                </div>
+              ) : null}
             </CommandList>
           </Command>
         </PopoverContent>

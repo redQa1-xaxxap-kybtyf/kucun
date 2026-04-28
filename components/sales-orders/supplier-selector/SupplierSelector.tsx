@@ -6,7 +6,6 @@ import { ZodError } from 'zod';
 
 import {
   Command,
-  CommandEmpty,
   CommandInput,
   CommandList,
 } from '@/components/ui/command';
@@ -120,7 +119,7 @@ export function SupplierSelector(props: SupplierSelectorProps) {
           />
         </PopoverTrigger>
         <PopoverContent className="w-[400px] p-0" align="start">
-          <Command shouldFilter={false}>
+          <Command filter={() => 1}>
             <CommandInput
               placeholder="搜索供应商名称或手机号..."
               value={searchValue}
@@ -135,13 +134,11 @@ export function SupplierSelector(props: SupplierSelectorProps) {
                   onSelect={handleSelectWithBlur}
                 />
               ) : (
-                <CommandEmpty>
-                  <SupplierSearchEmptyState
-                    searchValue={trimmedSearchValue}
-                    isSearching={isSearchingSuppliers}
-                    onAddSupplier={handleOpenCreateDialog}
-                  />
-                </CommandEmpty>
+                <SupplierSearchEmptyState
+                  searchValue={trimmedSearchValue}
+                  isSearching={isSearchingSuppliers}
+                  onAddSupplier={handleOpenCreateDialog}
+                />
               )}
             </CommandList>
           </Command>

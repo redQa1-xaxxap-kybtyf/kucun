@@ -284,7 +284,7 @@ export function PurchaseOrderList({
           return (
             <div
               key={order.id}
-              className="card-shadow-light cursor-pointer rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3"
+              className="cursor-pointer rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3 shadow-sm"
               onClick={handleCardClick}
               onKeyDown={event => {
                 if (event.key === 'Enter' || event.key === ' ') {

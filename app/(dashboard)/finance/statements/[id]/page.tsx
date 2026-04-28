@@ -28,7 +28,9 @@ import { StatementTransactions } from './components/statement-transactions';
 
 const DateRangePicker = dynamic(
   () =>
-    import('@/components/ui/date-range-picker').then(mod => mod.DateRangePicker),
+    import('@/components/ui/date-range-picker').then(
+      mod => mod.DateRangePicker
+    ),
   {
     ssr: false,
     loading: () => (
@@ -227,10 +229,7 @@ export default function StatementDetailPage() {
             加载失败
           </h2>
           <p className="text-muted-foreground mt-2 text-sm">
-            {getFriendlyErrorMessage(
-              error,
-              '往来对账暂时无法加载，请稍后重试'
-            )}
+            {getFriendlyErrorMessage(error, '往来对账暂时无法加载，请稍后重试')}
           </p>
         </div>
         <div className="flex gap-2">
@@ -260,15 +259,15 @@ export default function StatementDetailPage() {
           currentBalance={statement.currentBalance}
         />
 
-        {/* 顶部 Stat Hub + 筛选控制中心 */}
-        <Card className="overflow-hidden border-slate-200/60 bg-white shadow-sm transition-all hover:shadow-md">
+        {/* 顶部统计 */}
+        <Card className="overflow-hidden rounded-md border-slate-200/60 bg-white shadow-sm">
           <CardContent className="p-0">
             {/* 第一层：Stat Hub 统计数据 */}
             <div className="grid grid-cols-2 lg:grid-cols-4">
               {/* 总订单数 */}
-              <div className="group relative flex flex-col p-6 transition-colors hover:bg-blue-50/30">
+              <div className="relative flex flex-col p-6">
                 <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100/80 text-blue-600 transition-transform group-hover:scale-110">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-100/80 text-blue-600">
                     <FileText className="h-4 w-4" />
                   </div>
                   <span className="text-xs font-semibold text-slate-400">
@@ -287,9 +286,9 @@ export default function StatementDetailPage() {
               </div>
 
               {/* 总交易额 */}
-              <div className="group relative flex flex-col p-6 transition-colors hover:bg-purple-50/30">
+              <div className="relative flex flex-col p-6">
                 <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-100/80 text-purple-600 transition-transform group-hover:scale-110">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-md bg-purple-100/80 text-purple-600">
                     <ChineseYuan className="h-4 w-4" />
                   </div>
                   <span className="text-xs font-semibold text-slate-400">
@@ -311,13 +310,13 @@ export default function StatementDetailPage() {
               </div>
 
               {/* 累计收付 */}
-              <div className="group relative flex flex-col p-6 transition-colors hover:bg-emerald-50/30">
+              <div className="relative flex flex-col p-6">
                 <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100/80 text-emerald-600 transition-transform group-hover:scale-110">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-md bg-emerald-100/80 text-emerald-600">
                     <TrendingUp className="h-4 w-4" />
                   </div>
                   <span className="text-xs font-semibold text-slate-400">
-                    已结清额
+                    已收付金额
                   </span>
                 </div>
                 <div className="mt-3 flex items-baseline gap-1">
@@ -336,11 +335,7 @@ export default function StatementDetailPage() {
 
               {/* 余额 */}
               <div
-                className={`group relative flex flex-col p-6 transition-colors ${
-                  statement.currentBalance > 0
-                    ? 'hover:bg-orange-50/30'
-                    : 'hover:bg-rose-50/30'
-                }`}
+                className="relative flex flex-col p-6"
               >
                 <div className="flex items-center gap-2">
                   <div
@@ -348,7 +343,7 @@ export default function StatementDetailPage() {
                       statement.currentBalance > 0
                         ? 'bg-orange-100/80 text-orange-600'
                         : 'bg-rose-100/80 text-rose-600'
-                    } transition-transform group-hover:scale-110`}
+                    }`}
                   >
                     <TrendingDown className="h-4 w-4" />
                   </div>

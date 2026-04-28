@@ -524,11 +524,11 @@ function CreateCategoryView({
 
 function CreateCategoryHeader({ onBack }: { onBack: () => void }) {
   return (
-    <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-      <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
+    <Card className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] shadow-sm">
+      <CardContent className="bg-[hsl(var(--color-bg-secondary))] p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
+            <div className="flex h-12 w-12 items-center justify-center rounded-md bg-blue-600 text-white shadow-sm">
               <FolderTree className="h-6 w-6 text-white" />
             </div>
             <div>
@@ -543,7 +543,7 @@ function CreateCategoryHeader({ onBack }: { onBack: () => void }) {
             variant="outline"
             size="lg"
             onClick={onBack}
-            className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+            className="h-11 shadow-sm"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             返回
@@ -578,8 +578,8 @@ function CreateCategoryForm({
   onCancel,
 }: CreateCategoryFormProps) {
   return (
-    <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-      <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
+    <Card className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] shadow-sm">
+      <CardHeader className="border-b bg-[hsl(var(--color-bg-secondary))]">
         <CardTitle className="flex items-center text-gray-900">
           <FolderTree className="mr-2 h-5 w-5 text-blue-600" />
           分类信息
@@ -590,7 +590,7 @@ function CreateCategoryForm({
       </CardHeader>
       <div className="border-b bg-blue-50 px-6 py-3">
         <div className="flex items-start gap-2 text-sm">
-          <span className="text-blue-600">ℹ️</span>
+          <span className="text-xs font-semibold text-blue-600">说明</span>
           <div className="flex-1 text-blue-800">
             <strong>分类层级规则：</strong>
             <ul className="mt-1 ml-4 list-disc space-y-1 text-xs">
@@ -673,7 +673,6 @@ function CreateCategoryForm({
                           <SelectContent>
                             <SelectItem value="none">
                               <div className="flex items-center gap-2">
-                                <span className="text-blue-600">🏠</span>
                                 <span>无（顶级分类）</span>
                               </div>
                             </SelectItem>
@@ -753,7 +752,7 @@ function CreateCategoryForm({
                 variant="outline"
                 size="lg"
                 onClick={onCancel}
-                className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                className="h-11 shadow-sm"
               >
                 <X className="mr-2 h-4 w-4" />
                 取消
@@ -762,7 +761,7 @@ function CreateCategoryForm({
                 type="submit"
                 size="lg"
                 disabled={isCreating}
-                className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                className="h-11 shadow-sm"
               >
                 {isCreating ? (
                   <>

@@ -93,13 +93,13 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
         </div>
 
         {/* 顶部核心信息卡片 */}
-        <Card className="overflow-hidden border border-[hsl(var(--color-border-secondary))] shadow-lg">
+        <Card className="overflow-hidden rounded-md border border-border shadow-sm">
           <CardContent className="p-0">
-            <div className="border-b border-[hsl(var(--color-border-secondary))]/50 bg-gradient-to-br from-[hsl(var(--color-bg-secondary))] via-[hsl(var(--color-bg-tertiary))] to-white px-4 py-4 sm:px-6">
+            <div className="border-b border-border bg-slate-50 px-4 py-4 sm:px-6">
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                   <div className="flex items-start gap-3 sm:gap-4">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary))] shadow-md sm:h-12 sm:w-12">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-[hsl(var(--color-primary))] sm:h-12 sm:w-12">
                       <Receipt className="h-5 w-5 text-white sm:h-6 sm:w-6" />
                     </div>
                     <div className="min-w-0">
@@ -128,7 +128,7 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
                     </div>
                   </div>
                   <div className="grid gap-3 sm:grid-cols-2 xl:min-w-[360px]">
-                    <div className="rounded-xl border border-[hsl(var(--color-border-secondary))]/60 bg-white/80 px-4 py-3 shadow-sm">
+                    <div className="rounded-md border border-border bg-card px-4 py-3 shadow-sm">
                       <p className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                         应付金额
                       </p>
@@ -136,7 +136,7 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
                         {formatCurrency(payable.payableAmount)}
                       </p>
                     </div>
-                    <div className="rounded-xl border border-[hsl(var(--color-border-secondary))]/60 bg-white/80 px-4 py-3 shadow-sm">
+                    <div className="rounded-md border border-border bg-card px-4 py-3 shadow-sm">
                       <p className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                         剩余应付
                       </p>
@@ -155,7 +155,7 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
           {/* 左侧：基本信息和付款明细 */}
           <div className="space-y-6 xl:col-span-2">
             {/* 基本信息 */}
-            <Card className="overflow-hidden shadow-sm">
+            <Card className="overflow-hidden rounded-md border border-border shadow-sm">
               <CardHeader className="border-b bg-[hsl(var(--color-bg-secondary))]/50 pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <FileText className="h-4 w-4 text-[hsl(var(--color-primary))]" />
@@ -248,7 +248,7 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
             </Card>
 
             {/* 付款明细 */}
-            <Card className="overflow-hidden shadow-sm">
+            <Card className="overflow-hidden rounded-md border border-border shadow-sm">
               <CardHeader className="border-b bg-[hsl(var(--color-bg-secondary))]/50 pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <ChineseYuan className="h-4 w-4 text-[hsl(var(--color-success))]" />
@@ -330,7 +330,7 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
                       {payable.paymentOutRecords.map(payment => (
                         <div
                           key={payment.id}
-                          className="rounded-xl border border-[hsl(var(--color-border-secondary))] bg-white p-4 shadow-sm"
+                          className="rounded-md border border-border bg-card p-4 shadow-sm"
                         >
                           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                             <div className="min-w-0">
@@ -349,7 +349,7 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
                               {PAYMENT_OUT_METHOD_LABELS[payment.paymentMethod]}
                             </Badge>
                           </div>
-                          <div className="mt-3 flex items-center justify-between rounded-lg bg-[hsl(var(--color-bg-secondary))]/50 px-3 py-2">
+                          <div className="mt-3 flex items-center justify-between rounded-md bg-[hsl(var(--color-bg-secondary))]/50 px-3 py-2">
                             <span className="text-sm text-[hsl(var(--color-text-secondary))]">
                               付款金额
                             </span>
@@ -390,7 +390,7 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
           {/* 右侧：金额汇总和供应商信息 */}
           <div className="space-y-6">
             {/* 金额汇总 */}
-            <Card className="overflow-hidden shadow-sm">
+            <Card className="overflow-hidden rounded-md border border-border shadow-sm">
               <CardHeader className="border-b bg-[hsl(var(--color-bg-secondary))]/50 pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <ChineseYuan className="h-4 w-4 text-[hsl(var(--color-warning))]" />
@@ -441,7 +441,7 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
             </Card>
 
             {/* 供应商信息 */}
-            <Card className="overflow-hidden shadow-sm">
+            <Card className="overflow-hidden rounded-md border border-border shadow-sm">
               <CardHeader className="border-b bg-[hsl(var(--color-bg-secondary))]/50 pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <Building2 className="h-4 w-4 text-[hsl(var(--color-primary))]" />

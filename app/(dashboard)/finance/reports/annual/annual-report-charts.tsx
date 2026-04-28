@@ -176,19 +176,19 @@ export function AnnualReportCharts({ report }: { report: AnnualReport }) {
         </Card>
       </div>
 
-      {/* 厂家发货与费用分布看板 */}
+      {/* 厂家发货与费用分布 */}
       <div className="grid gap-6 xl:grid-cols-5">
-        {/* 厂家发货汇总 - 占据3栏 */}
-        <div className="flex flex-col rounded-2xl border border-blue-100 bg-blue-50/50 p-4 sm:p-6 xl:col-span-3">
+        {/* 厂家发货汇总 */}
+        <div className="flex flex-col rounded-md border border-blue-100 bg-blue-50/50 p-4 sm:p-6 xl:col-span-3">
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-800">
               <Package className="h-4 w-4 text-blue-500" />
-              厂家直发业务年度报告
+              厂家直发年度汇总
             </h2>
           </div>
 
           <div className="mb-6 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-xl border border-blue-100 bg-white p-4 shadow-sm">
+            <div className="rounded-md border border-blue-100 bg-white p-4 shadow-sm">
               <div className="text-[10px] font-semibold text-blue-400">
                 客户货利润
               </div>
@@ -196,7 +196,7 @@ export function AnnualReportCharts({ report }: { report: AnnualReport }) {
                 {formatCurrency(report.factoryShipmentProfit?.customerProfit)}
               </div>
             </div>
-            <div className="rounded-xl border border-blue-100 bg-white p-4 shadow-sm">
+            <div className="rounded-md border border-blue-100 bg-white p-4 shadow-sm">
               <div className="text-[10px] font-semibold text-blue-400">
                 平均利润率
               </div>

@@ -35,6 +35,7 @@ export default async function ExpensesPage({
   searchParams: Promise<{
     page?: string;
     pageSize?: string;
+    search?: string;
     expenseType?: string;
     startDate?: string;
     endDate?: string;
@@ -75,6 +76,7 @@ export default async function ExpensesPage({
   const initialParams = {
     page,
     pageSize,
+    search: params.search,
     expenseType: params.expenseType,
     startDate: params.startDate,
     endDate: params.endDate,
@@ -88,6 +90,7 @@ export default async function ExpensesPage({
   const expenseQuery: ExpenseQueryParams = {
     page,
     pageSize,
+    search: params.search?.trim() || undefined,
     expenseType: params.expenseType as ExpenseQueryParams['expenseType'],
     startDate: params.startDate,
     endDate: params.endDate,

@@ -108,7 +108,7 @@ export function DebugPanel() {
       {/* 浮动按钮 */}
       <Button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed right-4 bottom-4 z-50 h-12 w-12 rounded-full p-0 shadow-lg"
+        className="fixed right-4 bottom-4 z-50 h-12 w-12 rounded-md p-0 shadow-md"
         variant={logs.some(l => l.type === 'error') ? 'destructive' : 'default'}
       >
         <Bug className="h-5 w-5" />
@@ -121,7 +121,7 @@ export function DebugPanel() {
 
       {/* 页面状态面板 */}
       {isOpen && (
-        <div className="fixed right-4 bottom-20 z-50 flex h-96 w-[600px] flex-col rounded-lg border bg-white shadow-2xl">
+        <div className="fixed right-4 bottom-20 z-50 flex h-96 w-[600px] flex-col rounded-md border bg-white shadow-md">
           {/* 头部 */}
           <div className="flex items-center justify-between border-b bg-gray-100 px-4 py-2">
             <div className="flex items-center gap-2">

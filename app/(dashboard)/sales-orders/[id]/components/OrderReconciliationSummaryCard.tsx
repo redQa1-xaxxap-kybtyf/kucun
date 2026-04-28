@@ -71,15 +71,13 @@ function SummaryCard({
   }[variant];
 
   return (
-    <Card
-      className={`overflow-hidden rounded-2xl border bg-white shadow-sm transition-all hover:shadow-md ${borderClass}`}
-    >
+    <Card className={`overflow-hidden rounded-md border bg-white shadow-sm ${borderClass}`}>
       <CardContent className="p-5">
         <div className="text-[10px] font-bold text-slate-500">
           {label}
         </div>
         <div
-          className={`mt-2 font-mono text-2xl font-semibold tracking-tighter ${colorClass}`}
+          className={`mt-2 font-mono text-2xl font-semibold ${colorClass}`}
         >
           {value}
         </div>

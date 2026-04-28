@@ -15,7 +15,7 @@ export function ProductInfoCard({
   batchNumber,
 }: ProductInfoCardProps) {
   return (
-    <Card className="card-shadow-medium overflow-hidden border border-[hsl(var(--color-border-primary))]">
+    <Card className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] shadow-sm">
       <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] py-3">
         <CardTitle className="flex items-center text-base text-[hsl(var(--color-text-primary))]">
           <ActivitySquare className="mr-2 h-4 w-4 text-[hsl(var(--color-primary))]" />

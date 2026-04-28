@@ -190,11 +190,11 @@ export default function StorageSettingsPageClient({
       <div className="flex h-full flex-col overflow-hidden p-6">
         <div className="flex-1 space-y-6 overflow-y-auto">
           {/* 页面头部 */}
-          <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-            <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
+          <Card className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] shadow-sm">
+            <CardContent className="bg-[hsl(var(--color-bg-secondary))] p-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-600 shadow-lg shadow-gray-600/30">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-md bg-gray-600 shadow-sm">
                     <Cloud className="h-6 w-6 text-white" />
                   </div>
                   <div>
@@ -208,7 +208,7 @@ export default function StorageSettingsPageClient({
                   variant="outline"
                   size="lg"
                   onClick={() => router.push('/settings')}
-                  className="h-11 gap-2 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                  className="h-11 gap-2 shadow-sm"
                 >
                   <ArrowLeft className="h-4 w-4" />
                   返回设置
@@ -217,7 +217,7 @@ export default function StorageSettingsPageClient({
             </CardContent>
           </Card>
 
-          <Card className="border-amber-200 bg-amber-50 shadow-lg shadow-amber-200/50">
+          <Card className="rounded-md border-amber-200 bg-amber-50 shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center text-amber-800">
                 <Cloud className="mr-2 h-5 w-5" />
@@ -257,19 +257,19 @@ export default function StorageSettingsPageClient({
         {/* 1. Identity Header: 业务标识中枢 */}
         <div className="flex flex-col gap-6 px-2 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-6">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-900 shadow-xl ring-4 shadow-slate-900/10 ring-white">
+            <div className="flex h-16 w-16 items-center justify-center rounded-md bg-slate-900 shadow-sm ring-4 ring-white">
               <Cloud className="h-8 w-8 text-white" />
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-semibold tracking-tighter text-slate-900">
+                <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
                   七牛云存储
                 </h1>
                 <Badge
                   variant="outline"
                   className="border-slate-200 px-2.5 py-1 text-[10px] font-semibold text-slate-400"
                 >
-                  External Cloud
+                  外部存储
                 </Badge>
               </div>
               <p className="text-sm font-bold text-slate-400">
@@ -280,7 +280,7 @@ export default function StorageSettingsPageClient({
           <Button
             variant="outline"
             onClick={() => router.push('/settings')}
-            className="h-11 rounded-xl border-slate-200 bg-white px-6 text-xs font-semibold text-slate-900 shadow-sm transition-all hover:bg-slate-50 active:scale-95"
+            className="h-11 rounded-md border-slate-200 bg-white px-6 text-xs font-semibold text-slate-900 shadow-sm hover:bg-slate-50"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             返回全局设置
@@ -301,7 +301,7 @@ export default function StorageSettingsPageClient({
               </div>
 
               {configError ? (
-                <div className="group flex h-64 flex-col items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-white p-8 transition-all hover:border-slate-300">
+                <div className="group flex h-64 flex-col items-center justify-center rounded-md border border-dashed border-slate-200 bg-white p-8 hover:border-slate-300">
                   <p className="text-sm font-bold text-slate-400">
                     加载配置失败，请检查网络连接
                   </p>
@@ -312,7 +312,7 @@ export default function StorageSettingsPageClient({
                         queryKey: queryKeys.settings.storage(),
                       })
                     }
-                    className="mt-6 h-10 rounded-xl px-8 text-xs font-semibold"
+                  className="mt-6 h-10 rounded-md px-8 text-xs font-semibold"
                   >
                     重试加载
                   </Button>
@@ -342,9 +342,9 @@ export default function StorageSettingsPageClient({
           <div className="space-y-8">
             <section className="space-y-4">
               <h3 className="px-1 text-[11px] font-semibold text-slate-400">
-                配置指
+                配置指引
               </h3>
-              <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+              <div className="rounded-md border border-slate-100 bg-white p-6 shadow-sm">
                 <div className="space-y-6">
                   <div className="space-y-2">
                     <span className="text-[11px] font-semibold text-slate-900">

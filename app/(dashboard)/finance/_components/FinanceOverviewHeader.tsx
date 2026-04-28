@@ -1,4 +1,10 @@
-import { Calendar, RotateCcw, TrendingUp, type LucideIcon, Wallet } from 'lucide-react';
+import {
+  Calendar,
+  RotateCcw,
+  TrendingUp,
+  type LucideIcon,
+  Wallet,
+} from 'lucide-react';
 
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Badge } from '@/components/ui/badge';
@@ -20,9 +26,9 @@ export function FinanceOverviewHeader({
   const { summary } = overview;
   const cards = [
     {
-      title: '客户待收款',
+      title: '应收账款',
       value: formatCurrency(overview.totalReceivable),
-      description: `${overview.receivableCount} 个待跟进账户`,
+      description: `${overview.receivableCount} 笔待跟进`,
       icon: TrendingUp,
       valueClassName: 'text-[hsl(var(--color-success))]',
     },
@@ -70,7 +76,7 @@ export function FinanceOverviewHeader({
                 </Badge>
               </div>
               <p className="text-muted-foreground text-sm sm:text-base">
-                先处理待收、待付、待退款，再查看收款、付款、费用和报表。
+                先处理应收、应付、待退款，再查看收款、付款、费用和报表。
               </p>
             </div>
             <div className="text-muted-foreground flex items-center gap-2 text-xs sm:text-sm">
@@ -91,14 +97,18 @@ export function FinanceOverviewHeader({
               className="border border-[hsl(var(--color-border-secondary))] shadow-[var(--shadow-light)]"
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  {card.title}
+                </CardTitle>
                 <IconComponent className="h-4 w-4 text-[hsl(var(--color-text-secondary))]" />
               </CardHeader>
               <CardContent>
                 <div className={`text-2xl font-bold ${card.valueClassName}`}>
                   {card.value}
                 </div>
-                <p className="text-muted-foreground text-xs">{card.description}</p>
+                <p className="text-muted-foreground text-xs">
+                  {card.description}
+                </p>
               </CardContent>
             </Card>
           );

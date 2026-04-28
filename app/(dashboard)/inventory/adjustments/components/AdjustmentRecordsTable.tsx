@@ -125,11 +125,11 @@ export function AdjustmentRecordsTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm">
+    <div className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm">
       {/* 桌面端表格视图 */}
       <div className="hidden overflow-x-auto xl:block">
         <Table className="min-w-[1080px] [&_th]:whitespace-nowrap">
-          <TableHeader className="card-shadow-light">
+          <TableHeader className="shadow-sm">
             <TableRow>
               <TableHead>产品编码</TableHead>
               <TableHead>产品名称</TableHead>
@@ -252,7 +252,7 @@ export function AdjustmentRecordsTable({
             return (
               <div
                 key={adjustment.id}
-                className="card-shadow-light rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3"
+                className="rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3 shadow-sm"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>

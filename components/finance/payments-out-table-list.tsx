@@ -114,7 +114,7 @@ export function PaymentsOutTableList({
   return (
     <div className="space-y-4">
       {/* 桌面端：宽表格 + 横向滚动 */}
-      <div className="hidden overflow-x-auto rounded-md border 2xl:block">
+      <div className="hidden overflow-x-auto rounded-md border lg:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -146,8 +146,8 @@ export function PaymentsOutTableList({
         </Table>
       </div>
 
-      {/* 移动端：卡片列表 */}
-      <div className="grid gap-3 xl:grid-cols-2 2xl:hidden">
+      {/* 小屏端：卡片列表 */}
+      <div className="grid gap-3 lg:hidden">
         {payments.map(payment => (
           <PaymentOutCard
             key={payment.id}

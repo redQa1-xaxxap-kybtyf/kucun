@@ -54,21 +54,19 @@ import { useToast } from '@/components/ui/use-toast';
 import { useLocalFormDraft } from '@/hooks/use-local-form-draft';
 import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import { queryKeys } from '@/lib/queryKeys';
+import { DEFAULT_PAYMENT_METHODS } from '@/lib/types/payment';
 import { cn, formatCurrency } from '@/lib/utils';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
+import { paymentMethodSchema } from '@/lib/validations/payment';
 
 // 创建收款记录表单Schema
 const createPaymentSchema = z
   .object({
+    paymentType: z.literal('order_payment'),
     salesOrderId: z.string().min(1, { error: '请选择销售订单' }),
     customerId: z.string().min(1, { error: '请选择客户' }),
-    paymentMethod: z.enum(
-      ['cash', 'bank_transfer', 'alipay', 'wechat', 'check', 'other'],
-      {
-        message: '请选择收款方式',
-      }
-    ),
+    paymentMethod: paymentMethodSchema,
     paymentAmount: z.number().min(0.01, { error: '收款金额必须大于0' }),
     actualPaymentAmount: z.number().min(0, { error: '实际收款金额不能为负' }),
     roundingAmount: z
@@ -112,6 +110,9 @@ interface SalesOrder {
 }
 
 const PAYMENT_SELECTABLE_ORDER_STATUSES = new Set(['confirmed', 'shipped']);
+const PAYMENT_METHOD_OPTIONS = DEFAULT_PAYMENT_METHODS.filter(
+  method => method.isActive
+);
 
 /**
  * 创建收款记录页面组件
@@ -127,6 +128,7 @@ export default function CreatePaymentPage() {
   const form = useForm<CreatePaymentFormData>({
     resolver: standardSchemaResolver(createPaymentSchema),
     defaultValues: {
+      paymentType: 'order_payment',
       salesOrderId: orderId || '',
       customerId: '',
       paymentMethod: 'cash',
@@ -144,6 +146,9 @@ export default function CreatePaymentPage() {
   const watchedPaymentMethod = form.watch('paymentMethod');
   const watchedPaymentAmount = form.watch('paymentAmount');
   const watchedActualAmount = form.watch('actualPaymentAmount');
+  const selectedPaymentMethod = PAYMENT_METHOD_OPTIONS.find(
+    method => method.method === watchedPaymentMethod
+  );
 
   // 获取销售订单信息
   const { data: orderData } = useQuery({
@@ -314,11 +319,11 @@ export default function CreatePaymentPage() {
     <div className="flex h-full flex-col overflow-auto p-6">
       <div className="space-y-6">
         {/* 页面标题卡片 */}
-        <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
-          <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
+        <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+          <CardContent className="bg-card p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-success))] shadow-lg shadow-green-600/30">
+                <div className="flex h-11 w-11 items-center justify-center rounded-md bg-[hsl(var(--color-success))]">
                   <Receipt className="h-6 w-6 text-white" />
                 </div>
                 <div>
@@ -334,7 +339,7 @@ export default function CreatePaymentPage() {
                 variant="outline"
                 size="lg"
                 asChild
-                className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
+                className="h-10"
               >
                 <Link href="/finance/payments">
                   <ArrowLeft className="mr-2 h-4 w-4" />
@@ -348,8 +353,8 @@ export default function CreatePaymentPage() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* 主要表单 */}
           <div className="lg:col-span-2">
-            <Card>
-              <CardHeader className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
+            <Card className="rounded-md border border-border shadow-sm">
+              <CardHeader className="border-b bg-slate-50">
                 <CardTitle className="flex items-center gap-2">
                   <ChineseYuan className="h-5 w-5" />
                   收款信息
@@ -364,6 +369,8 @@ export default function CreatePaymentPage() {
                     onSubmit={form.handleSubmit(onSubmit)}
                     className="space-y-6"
                   >
+                    <input type="hidden" {...form.register('paymentType')} />
+
                     {/* 销售订单选择 */}
                     <FormField
                       control={form.control}
@@ -381,36 +388,36 @@ export default function CreatePaymentPage() {
                                 这笔收款已关联指定订单，无法修改
                               </p>
                             </div>
-	                          ) : (
-	                            // 如果没有指定订单，允许选择
-	                            <FormControl>
-	                              <select
-	                                value={field.value}
-	                                onChange={e => {
-	                                  const value = e.target.value;
-	                                  field.onChange(value);
-	                                  handleOrderSelect(value);
-	                                }}
-	                                disabled={ordersLoading}
-	                                className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
-	                              >
-	                                <option value="" disabled>
-	                                  选择销售订单
-	                                </option>
-	                                {availableOrders.map(order => (
-	                                  <option key={order.id} value={order.id}>
-	                                    {order.orderNumber} - {order.customer.name}{' '}
-	                                    - 待收：
-	                                    {formatCurrency(order.remainingAmount)}
-	                                  </option>
-	                                ))}
-	                              </select>
-	                            </FormControl>
-	                          )}
-	                          {!orderId && (
-	                            <FormDescription>
-	                              选择需要收款的销售订单
-	                            </FormDescription>
+                          ) : (
+                            // 如果没有指定订单，允许选择
+                            <FormControl>
+                              <select
+                                value={field.value}
+                                onChange={e => {
+                                  const value = e.target.value;
+                                  field.onChange(value);
+                                  handleOrderSelect(value);
+                                }}
+                                disabled={ordersLoading}
+                                className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                <option value="" disabled>
+                                  选择销售订单
+                                </option>
+                                {availableOrders.map(order => (
+                                  <option key={order.id} value={order.id}>
+                                    {order.orderNumber} - {order.customer.name}{' '}
+                                    - 待收：
+                                    {formatCurrency(order.remainingAmount)}
+                                  </option>
+                                ))}
+                              </select>
+                            </FormControl>
+                          )}
+                          {!orderId && (
+                            <FormDescription>
+                              选择需要收款的销售订单
+                            </FormDescription>
                           )}
                           <FormMessage />
                         </FormItem>
@@ -420,28 +427,30 @@ export default function CreatePaymentPage() {
                     {/* 收款方式 */}
                     <FormField
                       control={form.control}
-	                      name="paymentMethod"
-	                      render={({ field }) => (
-	                        <FormItem>
-	                          <FormLabel>收款方式 *</FormLabel>
-	                          <FormControl>
-	                            <select
-	                              value={field.value}
-	                              onChange={e => field.onChange(e.target.value)}
-	                              className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
-	                            >
-	                              <option value="cash">现金</option>
-	                              <option value="bank_transfer">银行转账</option>
-	                              <option value="alipay">支付宝</option>
-	                              <option value="wechat">微信支付</option>
-	                              <option value="check">支票</option>
-	                              <option value="other">其他</option>
-	                            </select>
-	                          </FormControl>
-	                          <FormMessage />
-	                        </FormItem>
-	                      )}
-	                    />
+                      name="paymentMethod"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>收款方式 *</FormLabel>
+                          <FormControl>
+                            <select
+                              value={field.value}
+                              onChange={e => field.onChange(e.target.value)}
+                              className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {PAYMENT_METHOD_OPTIONS.map(method => (
+                                <option
+                                  key={method.method}
+                                  value={method.method}
+                                >
+                                  {method.label}
+                                </option>
+                              ))}
+                            </select>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
                     {/* 收款金额 */}
                     <FormField
@@ -527,7 +536,7 @@ export default function CreatePaymentPage() {
                               />
                             </FormControl>
                             <FormDescription>
-                              根据收款金额和实际到账自动计算；正数表示少收结清，负数表示多收
+                              根据收款金额和实际到账自动计算；正数表示少收，负数表示多收
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -590,8 +599,7 @@ export default function CreatePaymentPage() {
                     />
 
                     {/* 银行信息 */}
-                    {(watchedPaymentMethod === 'bank_transfer' ||
-                      watchedPaymentMethod === 'check') && (
+                    {selectedPaymentMethod?.requiresBankInfo && (
                       <FormField
                         control={form.control}
                         name="bankInfo"
@@ -605,7 +613,7 @@ export default function CreatePaymentPage() {
                               />
                             </FormControl>
                             <FormDescription>
-                              银行转账或支票的相关信息
+                              请补充该收款方式对应的账户或凭证信息
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -638,7 +646,7 @@ export default function CreatePaymentPage() {
                         type="submit"
                         disabled={createMutation.isPending}
                         size="lg"
-                        className="h-11 flex-1 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
+                        className="h-11 flex-1"
                       >
                         <Save className="mr-2 h-4 w-4" />
                         {createMutation.isPending
@@ -650,7 +658,7 @@ export default function CreatePaymentPage() {
                         variant="outline"
                         size="lg"
                         asChild
-                        className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
+                        className="h-11"
                       >
                         <Link href="/finance/payments">取消</Link>
                       </Button>
@@ -665,8 +673,8 @@ export default function CreatePaymentPage() {
           <div className="space-y-4">
             {/* 订单信息 */}
             {salesOrder && (
-              <Card>
-                <CardHeader className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
+              <Card className="rounded-md border border-border shadow-sm">
+                <CardHeader className="border-b bg-slate-50">
                   <CardTitle className="flex items-center gap-2">
                     <Package className="h-5 w-5" />
                     订单信息
@@ -736,21 +744,21 @@ export default function CreatePaymentPage() {
             )}
 
             {/* 收款提示 */}
-            <Card>
-              <CardHeader className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
+            <Card className="rounded-md border border-border shadow-sm">
+              <CardHeader className="border-b bg-slate-50">
                 <CardTitle>收款提示</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 pt-6 text-sm">
                 <div className="flex items-start gap-2">
-                  <div className="bg-[hsl(var(--color-primary-light))]0 mt-2 h-2 w-2 shrink-0 rounded-full" />
+                  <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[hsl(var(--color-primary))]" />
                   <p>请确认收款金额与实际到账金额一致</p>
                 </div>
                 <div className="flex items-start gap-2">
-                  <div className="bg-[hsl(var(--color-primary-light))]0 mt-2 h-2 w-2 shrink-0 rounded-full" />
+                  <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[hsl(var(--color-primary))]" />
                   <p>建议保留收款凭证并填写收据号码</p>
                 </div>
                 <div className="flex items-start gap-2">
-                  <div className="bg-[hsl(var(--color-primary-light))]0 mt-2 h-2 w-2 shrink-0 rounded-full" />
+                  <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[hsl(var(--color-primary))]" />
                   <p>登记后可在收款列表中查看和管理</p>
                 </div>
               </CardContent>

@@ -57,7 +57,7 @@ export function ProductImageCard({
               className="absolute inset-0 flex cursor-zoom-in items-center justify-center bg-black/0 opacity-0 transition-all duration-200 group-hover:bg-black/40 group-hover:opacity-100"
               onClick={() => setPreviewOpen(true)}
             >
-              <Eye className="h-6 w-6 text-white drop-shadow-lg" />
+              <Eye className="h-6 w-6 text-white" />
             </div>
 
             {/* 图片类型标签 */}

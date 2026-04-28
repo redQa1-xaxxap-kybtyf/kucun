@@ -31,6 +31,11 @@ export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 export const runtime = 'nodejs';
 export const revalidate = 0;
+
+function getParamValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 export default async function ProductsPage({
   searchParams,
 }: {
@@ -38,18 +43,22 @@ export default async function ProductsPage({
 }) {
   // 等待并解析查询参数
   const params = await searchParams;
-  const page = Number(params.page) || 1;
-  const limit = Number(params.limit) || paginationConfig.defaultPageSize;
-  const search = (params.search as string) || '';
-  const categoryId = (params.categoryId as string) || '';
-  const status = (params.status as 'active' | 'inactive') || undefined;
-  const sortBy = (params.sortBy as string) || PRODUCT_DEFAULT_SORT.sortBy;
+  const page = Number(getParamValue(params.page)) || 1;
+  const limit =
+    Number(getParamValue(params.limit)) || paginationConfig.defaultPageSize;
+  const search = getParamValue(params.search) || '';
+  const categoryId = getParamValue(params.categoryId) || '';
+  const status =
+    (getParamValue(params.status) as 'active' | 'inactive') || undefined;
+  const sortBy = getParamValue(params.sortBy) || PRODUCT_DEFAULT_SORT.sortBy;
   const sortOrder =
-    (params.sortOrder as 'asc' | 'desc') || PRODUCT_DEFAULT_SORT.sortOrder;
+    (getParamValue(params.sortOrder) as 'asc' | 'desc') ||
+    PRODUCT_DEFAULT_SORT.sortOrder;
   const includeInventory =
-    params.includeInventory === 'true' || productConfig.defaultIncludeInventory;
+    getParamValue(params.includeInventory) === 'true' ||
+    productConfig.defaultIncludeInventory;
   const includeStatistics =
-    params.includeStatistics === 'true' ||
+    getParamValue(params.includeStatistics) === 'true' ||
     productConfig.defaultIncludeStatistics;
 
   const queryClient = new QueryClient({

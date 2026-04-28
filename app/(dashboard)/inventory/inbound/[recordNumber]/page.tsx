@@ -73,10 +73,10 @@ function ProductInfoCard({ record }: { record: InboundRecordDetail }) {
   const piecesPerUnit = getInboundPiecesPerUnit(record);
 
   return (
-    <Card className="border-slate-200 bg-white shadow-sm transition-all hover:shadow-md">
+    <Card className="rounded-md border-slate-200 bg-white shadow-sm">
       <CardHeader className="border-b border-slate-100 bg-slate-50 px-4 py-4 sm:px-6">
-        <CardTitle className="text-sm font-semibold text-slate-500 italic">
-          核心产品信息
+        <CardTitle className="text-sm font-semibold text-slate-500">
+          产品信息
         </CardTitle>
       </CardHeader>
       <CardContent className="grid gap-4 px-4 pt-4 pb-6 text-sm sm:px-6 sm:pt-6">
@@ -150,9 +150,9 @@ function OperationRecordCard({
       : null;
 
   return (
-    <Card className="border-slate-200 bg-white shadow-sm transition-all hover:shadow-md">
+    <Card className="rounded-md border-slate-200 bg-white shadow-sm">
       <CardHeader className="border-b border-slate-100 bg-slate-50 px-4 py-4 sm:px-6">
-        <CardTitle className="text-sm font-semibold text-slate-500 italic">
+        <CardTitle className="text-sm font-semibold text-slate-500">
           入库信息
         </CardTitle>
       </CardHeader>
@@ -237,7 +237,7 @@ function OperationRecordCard({
                 {record.damageRemarks || '（无破损说明）'}
               </span>
             </div>
-            <div className="rounded-xl border border-amber-100 bg-amber-50/70 px-3 py-2 text-xs leading-5 text-amber-800">
+            <div className="rounded-md border border-amber-100 bg-amber-50/70 px-3 py-2 text-xs leading-5 text-amber-800">
               库存只按“实际入库”数量增加，破损数量单独登记，方便后续追赔或内部核对。
             </div>
           </>
@@ -257,14 +257,14 @@ function OperationRecordCard({
 
 function BatchTraceCard({ batchNumber }: { batchNumber: string }) {
   return (
-    <Card className="border-slate-200 bg-white shadow-sm transition-all hover:shadow-md">
+    <Card className="rounded-md border-slate-200 bg-white shadow-sm">
       <CardHeader className="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/50 px-4 py-4 sm:px-6 sm:py-5 xl:flex-row xl:items-center xl:justify-between">
         <div>
-          <CardTitle className="text-sm font-semibold text-slate-500 italic">
+          <CardTitle className="text-sm font-semibold text-slate-500">
             批次去向
           </CardTitle>
-          <p className="mt-1 text-xs font-bold text-slate-400">
-            看这个批次从入库到出库的来龙去脉
+          <p className="mt-1 text-xs text-slate-500">
+            查看该批次的入库、出库和调整记录
           </p>
         </div>
         <Button
@@ -280,8 +280,8 @@ function BatchTraceCard({ batchNumber }: { batchNumber: string }) {
           </Link>
         </Button>
       </CardHeader>
-      <CardContent className="p-4 text-xs text-slate-400 italic sm:p-6">
-        点右上角可以查看这个批次的入库、出库、调拨和调整记录。
+      <CardContent className="p-4 text-xs text-slate-500 sm:p-6">
+        批次流水用于核对单个产品批次的完整库存变化。
       </CardContent>
     </Card>
   );

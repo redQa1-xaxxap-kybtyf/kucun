@@ -58,7 +58,7 @@ export function DashboardTodoBar({
           key={todo.id}
           data-testid={`dashboard-todo-${todo.id}`}
           className={cn(
-            'group relative overflow-hidden rounded-md border border-white p-1 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/50',
+            'relative overflow-hidden rounded-md border p-1 shadow-sm',
             todo.bg
           )}
         >
@@ -66,7 +66,7 @@ export function DashboardTodoBar({
             <div className="flex items-center gap-5">
               <div
                 className={cn(
-                  'flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg transition-all duration-500 group-hover:scale-110 group-hover:rotate-3',
+                  'flex h-12 w-12 items-center justify-center rounded-lg shadow-sm',
                   todo.color
                 )}
               >
@@ -79,7 +79,7 @@ export function DashboardTodoBar({
                 <div className="flex items-baseline gap-2">
                   <span
                     className={cn(
-                      'text-2xl font-semibold tracking-tighter',
+                      'text-2xl font-semibold tracking-tight',
                       todo.text
                     )}
                   >
@@ -95,19 +95,12 @@ export function DashboardTodoBar({
               variant="outline"
               size="icon"
               aria-label={`查看${todo.title}`}
-              className="h-12 w-12 rounded-2xl border-slate-100 text-slate-400 transition-all hover:bg-slate-900 hover:text-white active:scale-90"
+              className="h-12 w-12 rounded-md border-slate-100 text-slate-400 hover:bg-slate-900 hover:text-white"
               onClick={todo.action}
             >
               <ArrowRight className="h-5 w-5" />
             </Button>
           </div>
-          {/* 背景装饰轨迹 */}
-          <div
-            className={cn(
-              'pointer-events-none absolute -right-4 -bottom-4 h-24 w-24 rounded-full opacity-5 blur-2xl',
-              todo.color
-            )}
-          />
         </div>
       ))}
     </div>

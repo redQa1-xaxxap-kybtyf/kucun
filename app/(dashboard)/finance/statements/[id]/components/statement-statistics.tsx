@@ -24,11 +24,11 @@ export function StatementStatistics({ summary }: StatementStatisticsProps) {
     summary.currentMonthAmount > summary.lastMonthAmount ? 'up' : 'down';
 
   return (
-    <Card className="overflow-hidden border-slate-200 transition-all hover:shadow-lg">
+    <Card className="overflow-hidden rounded-md border-slate-200 shadow-sm">
       <CardHeader className="border-b border-slate-200 bg-slate-50 px-6 py-4">
-        <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-500 italic">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-500">
           <Activity className="h-4 w-4" />
-          经营往来绩效看板
+          往来统计
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
@@ -117,7 +117,7 @@ export function StatementStatistics({ summary }: StatementStatisticsProps) {
             />
           </div>
           <div className="mt-4 grid grid-cols-2 gap-4">
-            <div className="rounded-lg border border-slate-200 bg-white p-3 transition-all hover:border-blue-300">
+            <div className="rounded-md border border-slate-200 bg-white p-3">
               <div className="mb-1 text-[9px] font-bold text-slate-400">
                 月均交易强度
               </div>
@@ -125,7 +125,7 @@ export function StatementStatistics({ summary }: StatementStatisticsProps) {
                 {formatCurrency(summary.averageMonthlyAmount)}
               </div>
             </div>
-            <div className="rounded-lg border border-slate-200 bg-white p-3 transition-all hover:border-purple-300">
+            <div className="rounded-md border border-slate-200 bg-white p-3">
               <div className="mb-1 text-[9px] font-bold text-slate-400">
                 上月结算基准
               </div>

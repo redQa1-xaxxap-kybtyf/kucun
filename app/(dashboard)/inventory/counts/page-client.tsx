@@ -181,7 +181,7 @@ export function CountsPageClient({
               <Button
                 size="lg"
                 asChild
-                className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+                className="h-11 shadow-sm"
               >
                 <Link href="/inventory/counts/new">
                   <Plus className="mr-2 h-4 w-4" />

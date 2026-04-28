@@ -29,11 +29,13 @@ export function UnitAndQuantityCells({
   index,
   resolvedProduct,
   isManualProduct,
+  showInventoryStatus = true,
 }: {
   form: OrderFormInstance;
   index: number;
   resolvedProduct: Product | null;
   isManualProduct: boolean;
+  showInventoryStatus?: boolean;
 }) {
   return (
     <>
@@ -47,6 +49,7 @@ export function UnitAndQuantityCells({
         form={form}
         index={index}
         resolvedProduct={resolvedProduct}
+        showInventoryStatus={showInventoryStatus}
       />
     </>
   );
@@ -125,10 +128,12 @@ function QuantityInputCell({
   form,
   index,
   resolvedProduct,
+  showInventoryStatus = true,
 }: {
   form: OrderFormInstance;
   index: number;
   resolvedProduct: Product | null;
+  showInventoryStatus?: boolean;
 }) {
   const displayQuantityPath = `items.${index}.displayQuantity` as const;
   const quantityPath = `items.${index}.quantity` as const;
@@ -198,7 +203,7 @@ function QuantityInputCell({
           </FormItem>
         )}
       />
-      {hasInventoryInfo && requestedQuantity > 0 && (
+      {showInventoryStatus && hasInventoryInfo && requestedQuantity > 0 && (
         <div className="mt-1">
           <InventoryStatus
             product={resolvedProduct as Product}

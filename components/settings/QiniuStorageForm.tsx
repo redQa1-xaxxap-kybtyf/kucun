@@ -210,7 +210,7 @@ export const QiniuStorageForm = ({
       >
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {/* 访问密钥 */}
-          <div className="group relative flex h-[130px] flex-col justify-center rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition-all hover:border-blue-100 hover:shadow-md">
+          <div className="group relative flex h-[130px] flex-col justify-center rounded-md border border-slate-100 bg-white p-6 shadow-sm hover:border-blue-100">
             <FormField
               control={form.control}
               name="accessKey"
@@ -256,7 +256,7 @@ export const QiniuStorageForm = ({
           </div>
 
           {/* 私有密钥 */}
-          <div className="group relative flex h-[130px] flex-col justify-center rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition-all hover:border-blue-100 hover:shadow-md">
+          <div className="group relative flex h-[130px] flex-col justify-center rounded-md border border-slate-100 bg-white p-6 shadow-sm hover:border-blue-100">
             <FormField
               control={form.control}
               name="secretKey"
@@ -302,7 +302,7 @@ export const QiniuStorageForm = ({
           </div>
 
           {/* 存储空间 */}
-          <div className="group relative flex h-[130px] flex-col justify-center rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition-all hover:border-blue-100 hover:shadow-md">
+          <div className="group relative flex h-[130px] flex-col justify-center rounded-md border border-slate-100 bg-white p-6 shadow-sm hover:border-blue-100">
             <FormField
               control={form.control}
               name="bucket"
@@ -331,7 +331,7 @@ export const QiniuStorageForm = ({
           </div>
 
           {/* 访问域名 */}
-          <div className="group relative flex h-[130px] flex-col justify-center rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition-all hover:border-blue-100 hover:shadow-md">
+          <div className="group relative flex h-[130px] flex-col justify-center rounded-md border border-slate-100 bg-white p-6 shadow-sm hover:border-blue-100">
             <FormField
               control={form.control}
               name="domain"
@@ -360,7 +360,7 @@ export const QiniuStorageForm = ({
           </div>
 
           {/* 存储区域 */}
-          <div className="group relative flex h-[130px] flex-col justify-center rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition-all hover:border-blue-100 hover:shadow-md">
+          <div className="group relative flex h-[130px] flex-col justify-center rounded-md border border-slate-100 bg-white p-6 shadow-sm hover:border-blue-100">
             <FormField
               control={form.control}
               name="region"
@@ -403,7 +403,7 @@ export const QiniuStorageForm = ({
           </div>
 
           {/* 存储目录格式 */}
-          <div className="group relative flex h-[130px] flex-col justify-center rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition-all hover:border-blue-100 hover:shadow-md">
+          <div className="group relative flex h-[130px] flex-col justify-center rounded-md border border-slate-100 bg-white p-6 shadow-sm hover:border-blue-100">
             <FormField
               control={form.control}
               name="pathFormat"
@@ -443,7 +443,7 @@ export const QiniuStorageForm = ({
               variant="outline"
               onClick={handleTestConnection}
               disabled={isFormDisabled}
-              className="h-11 rounded-2xl border-slate-200 bg-white px-8 text-xs font-semibold text-slate-900 transition-all hover:bg-slate-50 active:scale-95"
+              className="h-11 rounded-md border-slate-200 bg-white px-8 text-xs font-semibold text-slate-900 hover:bg-slate-50"
             >
               {isTesting ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -455,7 +455,7 @@ export const QiniuStorageForm = ({
             <Button
               type="submit"
               disabled={isFormDisabled}
-              className="h-11 rounded-2xl bg-slate-900 px-10 text-xs font-semibold shadow-lg shadow-slate-900/10 transition-all hover:bg-slate-800 active:scale-95"
+              className="h-11 rounded-md bg-slate-900 px-10 text-xs font-semibold shadow-sm hover:bg-slate-800"
             >
               {isSaving ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -29,6 +29,14 @@ export const fetchCache = 'force-no-store';
 export const runtime = 'nodejs';
 export const revalidate = 0;
 
+function getParamValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function getBooleanParam(value: string | string[] | undefined) {
+  return getParamValue(value) === 'true' ? true : undefined;
+}
+
 export default async function SalesOrdersPage({
   searchParams,
 }: {
@@ -36,10 +44,11 @@ export default async function SalesOrdersPage({
 }) {
   // 等待并解析查询参数
   const params = await searchParams;
-  const page = Number(params.page) || 1;
-  const limit = Number(params.limit) || paginationConfig.defaultPageSize;
-  const search = (params.search as string) || '';
-  const status = params.status as
+  const page = Number(getParamValue(params.page)) || 1;
+  const limit =
+    Number(getParamValue(params.limit)) || paginationConfig.defaultPageSize;
+  const search = getParamValue(params.search) || '';
+  const status = getParamValue(params.status) as
     | 'pending'
     | 'draft'
     | 'confirmed'
@@ -47,22 +56,27 @@ export default async function SalesOrdersPage({
     | 'completed'
     | 'cancelled'
     | undefined;
-  const customerId = (params.customerId as string) || '';
+  const customerId = getParamValue(params.customerId) || '';
   const sortBy =
-    (params.sortBy as
+    (getParamValue(params.sortBy) as
       | 'orderNumber'
       | 'orderDate'
       | 'createdAt'
       | 'updatedAt'
       | 'totalAmount'
-      | 'status') || 'orderDate';
-  const sortOrder = (params.sortOrder as 'asc' | 'desc') || 'desc';
-  const startDate = (params.startDate as string) || undefined;
-  const endDate = (params.endDate as string) || undefined;
+      | 'status'
+      | 'shippedAt') || 'orderDate';
+  const sortOrder =
+    (getParamValue(params.sortOrder) as 'asc' | 'desc') || 'desc';
+  const startDate = getParamValue(params.startDate) || undefined;
+  const endDate = getParamValue(params.endDate) || undefined;
+  const orderType = getParamValue(params.orderType) as
+    | SalesOrderQueryParams['orderType']
+    | undefined;
   const recordScope: SalesOrderQueryParams['recordScope'] =
-    params.recordScope === 'history' ? 'history' : undefined;
-  const includeTest = params.includeTest === 'true' ? true : undefined;
-  const includeVoided = params.includeVoided === 'true' ? true : undefined;
+    getParamValue(params.recordScope) === 'history' ? 'history' : undefined;
+  const includeTest = getBooleanParam(params.includeTest);
+  const includeVoided = getBooleanParam(params.includeVoided);
 
   const queryParams = {
     page,
@@ -70,11 +84,14 @@ export default async function SalesOrdersPage({
     search,
     status,
     customerId,
-    userId: (params.userId as string) || '',
+    userId: getParamValue(params.userId) || '',
     sortBy,
     sortOrder,
     startDate,
     endDate,
+    orderType,
+    isSampleOrder: getBooleanParam(params.isSampleOrder),
+    hasReturns: getBooleanParam(params.hasReturns),
     recordScope,
     includeTest,
     includeVoided,

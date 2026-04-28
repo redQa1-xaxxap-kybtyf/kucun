@@ -27,7 +27,7 @@ const HeaderCard = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
+      <div className="rounded-md border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
         订单头部加载中...
       </div>
     ),
@@ -47,7 +47,7 @@ const OrderItemsTable = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
+      <div className="rounded-md border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
         明细加载中...
       </div>
     ),

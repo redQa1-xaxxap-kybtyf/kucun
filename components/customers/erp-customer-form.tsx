@@ -322,7 +322,7 @@ function FormActions({
         size="lg"
         onClick={onCancel}
         disabled={isLoading}
-        className="h-10 gap-2 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:border-[hsl(var(--color-border-strong))] hover:shadow-[var(--shadow-medium)]"
+        className="h-10 gap-2 rounded-md"
       >
         <ArrowLeft className="h-4 w-4" />
         取消
@@ -332,7 +332,7 @@ function FormActions({
         form={formId}
         size="lg"
         disabled={isLoading}
-        className="h-10 gap-2 bg-[hsl(var(--color-primary))] text-white shadow-[var(--shadow-medium)] transition-transform hover:-translate-y-0.5 hover:bg-[hsl(var(--color-primary-hover))] hover:shadow-[var(--shadow-heavy)] focus-visible:ring-[hsl(var(--color-primary))]"
+        className="h-10 gap-2 rounded-md bg-[hsl(var(--color-primary))] text-white hover:bg-[hsl(var(--color-primary-hover))] focus-visible:ring-[hsl(var(--color-primary))]"
       >
         {isLoading ? (
           <>

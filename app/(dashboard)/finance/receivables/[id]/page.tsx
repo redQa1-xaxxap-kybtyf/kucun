@@ -147,7 +147,7 @@ function ReceivableHeaderActions({
   onOpenPaymentDialog: () => void;
 }) {
   return (
-    <div className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
+    <div className="rounded-md border bg-card p-4 shadow-sm sm:p-5">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -277,7 +277,7 @@ function BasicInfoExtra({ receivable }: { receivable: ReceivableDetail }) {
   return (
     <div className="grid gap-3 lg:grid-cols-2">
       {receivable.description && (
-        <div className="rounded-xl border bg-muted/30 p-4">
+        <div className="rounded-md border bg-muted/30 p-4">
           <label className="text-sm font-medium text-muted-foreground">
             描述
           </label>
@@ -285,7 +285,7 @@ function BasicInfoExtra({ receivable }: { receivable: ReceivableDetail }) {
         </div>
       )}
       {receivable.remarks && (
-        <div className="rounded-xl border bg-muted/30 p-4">
+        <div className="rounded-md border bg-muted/30 p-4">
           <label className="text-sm font-medium text-muted-foreground">
             备注信息
           </label>
@@ -304,8 +304,8 @@ function BasicInfoCard({
   router: RouterLike;
 }) {
   return (
-    <Card>
-      <CardHeader className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
+    <Card className="rounded-md border border-border shadow-sm">
+      <CardHeader className="border-b bg-slate-50">
         <CardTitle>基本信息</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 pt-6">
@@ -322,12 +322,12 @@ function ReceivableConfirmationCard({
   receivableConfirmation: NonNullable<ReceivableDetail['receivableConfirmation']>;
 }) {
   return (
-    <Card>
-      <CardHeader className="bg-slate-50/80">
+    <Card className="rounded-md border border-border shadow-sm">
+      <CardHeader className="border-b bg-slate-50">
         <CardTitle className="text-base">应收登记记录</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 pt-6">
-        <div className="rounded-xl border border-dashed bg-muted/30 p-4">
+        <div className="rounded-md border border-dashed bg-muted/30 p-4">
           <p className="text-sm text-muted-foreground">
             这条记录用于确认订单应收已建立，不代表客户已经付款。
           </p>
@@ -367,8 +367,8 @@ function ReceivableConfirmationCard({
 
 function PaymentRecordsCard({ receivable }: { receivable: ReceivableDetail }) {
   return (
-    <Card>
-      <CardHeader className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
+    <Card className="rounded-md border border-border shadow-sm">
+      <CardHeader className="border-b bg-slate-50">
         <CardTitle className="flex items-center gap-2">
           <FileText className="h-5 w-5" />
           <span>收款和抵扣记录</span>
@@ -380,7 +380,7 @@ function PaymentRecordsCard({ receivable }: { receivable: ReceivableDetail }) {
             {receivable.paymentRecords.map(payment => (
               <div
                 key={payment.id}
-                className="rounded-xl border bg-slate-50/60 p-4"
+                className="rounded-md border bg-slate-50/60 p-4"
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0 flex-1 space-y-2">
@@ -458,8 +458,8 @@ function AmountSummaryCard({
   paymentProgress: number;
 }) {
   return (
-    <Card>
-      <CardHeader className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
+    <Card className="rounded-md border border-border shadow-sm">
+      <CardHeader className="border-b bg-slate-50">
         <CardTitle>金额汇总</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 pt-6">
@@ -573,8 +573,8 @@ function QuickActionsCard({
   onOpenPaymentDialog: () => void;
 }) {
   return (
-    <Card>
-      <CardHeader className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
+    <Card className="rounded-md border border-border shadow-sm">
+      <CardHeader className="border-b bg-slate-50">
         <CardTitle>快速操作</CardTitle>
       </CardHeader>
       <CardContent className="space-y-2 pt-6">
@@ -610,8 +610,8 @@ function CustomerInfoCard({
   router: RouterLike;
 }) {
   return (
-    <Card>
-      <CardHeader className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
+    <Card className="rounded-md border border-border shadow-sm">
+      <CardHeader className="border-b bg-slate-50">
         <CardTitle>客户信息</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 pt-6">

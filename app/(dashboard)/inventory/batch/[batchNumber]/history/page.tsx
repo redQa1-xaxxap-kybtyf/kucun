@@ -217,7 +217,7 @@ function ProductInfoCard({
     : '—';
 
   return (
-    <Card className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <Card className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
       <CardHeader className="border-b border-slate-100 bg-slate-50/50 px-6 py-4">
         <CardTitle className="flex items-center text-sm font-semibold text-slate-500">
           <Tag className="mr-2 h-4 w-4 text-violet-500" />
@@ -277,7 +277,7 @@ function MovementHistoryCard({ groups }: { groups: BatchMovementGroup[] }) {
   );
 
   return (
-    <Card className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <Card className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
       <CardHeader className="border-b border-slate-100 bg-slate-50/50 px-6 py-4">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center text-sm font-semibold text-slate-500">

@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Edit,
   Eye,
+  Loader2,
   MoreHorizontal,
   Package,
   TrendingDown,
@@ -51,7 +52,7 @@ import {
   getReturnOrderPendingRefundAmount,
   type ReturnOrder,
 } from '@/lib/types/return-order';
-import { formatCurrency } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 import { formatDateTime } from '@/lib/utils/datetime';
 import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
@@ -71,12 +72,12 @@ export function ReturnOrderListView({
   onStatusChange,
   onTypeChange,
   onProcessTypeChange,
-  onIncludeTestToggle,
   onIncludeVoidedToggle,
   onDateRangeChange,
   onClearFilters,
   orders,
   isLoading,
+  isRefreshing = false,
   error,
   pagination,
   onPageChange,
@@ -107,33 +108,43 @@ export function ReturnOrderListView({
         onStatusChange={onStatusChange}
         onTypeChange={onTypeChange}
         onProcessTypeChange={onProcessTypeChange}
-        onIncludeTestToggle={onIncludeTestToggle}
         onIncludeVoidedToggle={onIncludeVoidedToggle}
         onDateRangeChange={onDateRangeChange}
         onClearFilters={onClearFilters}
       />
 
-      <ReturnOrderTable
-        orders={orders}
-        onDeleteRequest={onDeleteRequest}
-        onOrderSelect={onOrderSelect}
-      />
-
-      {pagination && (
-        <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
-          <Pagination
-            pagination={{
-              page: pagination.page,
-              limit: pagination.limit,
-              total: pagination.totalCount,
-              totalPages: pagination.totalPages,
-            }}
-            onPageChange={onPageChange}
-            showRange
-            showTotal
+      <div className="relative" aria-busy={isRefreshing}>
+        {isRefreshing && (
+          <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-center border-b border-[hsl(var(--color-border-primary))] bg-white/95 px-3 py-2 text-xs font-medium text-[hsl(var(--color-text-secondary))] shadow-sm">
+            <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin text-[hsl(var(--color-primary))]" />
+            正在更新列表...
+          </div>
+        )}
+        <div className={cn('transition-opacity', isRefreshing && 'opacity-60')}>
+          <ReturnOrderTable
+            orders={orders}
+            onDeleteRequest={onDeleteRequest}
+            onOrderSelect={onOrderSelect}
           />
         </div>
-      )}
+
+        {pagination && (
+          <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
+            <Pagination
+              pagination={{
+                page: pagination.page,
+                limit: pagination.limit,
+                total: pagination.totalCount,
+                totalPages: pagination.totalPages,
+              }}
+              onPageChange={onPageChange}
+              showRange
+              showTotal
+              disabled={isRefreshing}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -151,7 +162,7 @@ function ReturnOrderTable({
 }: ReturnOrderTableProps) {
   if (orders.length === 0) {
     return (
-      <div className="card-shadow-medium flex flex-col items-center justify-center rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] py-10">
+      <div className="flex flex-col items-center justify-center rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] py-10 shadow-sm">
         <Package className="h-12 w-12 text-[hsl(var(--color-text-tertiary))]" />
         <h3 className="mt-2 text-sm font-medium text-[hsl(var(--color-text-primary))]">
           暂无退货订单
@@ -161,12 +172,12 @@ function ReturnOrderTable({
   }
 
   return (
-    <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
+    <div className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm">
       {/* 桌面端：表格视图，支持横向滚动 */}
       <div className="hidden md:block">
         <div className="overflow-x-auto">
           <Table>
-            <TableHeader className="card-shadow-light">
+            <TableHeader className="shadow-sm">
               <TableRow>
                 <TableHead>退货单号</TableHead>
                 <TableHead>关联销售单</TableHead>
@@ -208,7 +219,7 @@ function ReturnOrderTable({
           return (
             <div
               key={order.id}
-              className="card-shadow-light cursor-pointer rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3"
+              className="cursor-pointer rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3 shadow-sm"
               onClick={handleCardClick}
               onKeyDown={event => {
                 if (event.key === 'Enter' || event.key === ' ') {
@@ -593,7 +604,8 @@ function ReturnOrderActionMenu({
           <AlertDialogHeader>
             <AlertDialogTitle>确定取消这张退货单吗？</AlertDialogTitle>
             <AlertDialogDescription>
-              退货单 <strong>{order.returnNumber}</strong> 取消后将不再继续处理。
+              退货单 <strong>{order.returnNumber}</strong>{' '}
+              取消后将不再继续处理。
               <br />
               <br />
               取消后：

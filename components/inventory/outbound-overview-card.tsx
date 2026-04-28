@@ -63,7 +63,7 @@ type SummaryItem = {
 
 function SummaryStat({ icon: Icon, iconClassName, label, value }: SummaryItem) {
   return (
-    <div className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4 shadow-[var(--shadow-light)]">
+    <div className="rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4 shadow-sm">
       <div className="flex items-center gap-3">
         <div
           className={`flex h-10 w-10 items-center justify-center rounded-full ${iconClassName}`}
@@ -171,7 +171,7 @@ export function OutboundOverviewCard({
 
   return (
     <>
-      <Card className="border-[hsl(var(--color-border-primary))] shadow-[var(--shadow-medium)]">
+      <Card className="rounded-md border border-[hsl(var(--color-border-primary))] shadow-sm">
         <CardHeader className="flex flex-col gap-3 border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] md:flex-row md:items-center md:justify-between">
           <div className="space-y-1">
             <CardTitle className="flex items-center gap-2 text-xl font-semibold text-[hsl(var(--color-text-primary))]">

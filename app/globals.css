@@ -657,15 +657,6 @@
     color: hsl(var(--color-text-tertiary));
   }
 
-  /* 统一卡片阴影工具类，替代 inline style boxShadow 写法 */
-  .card-shadow-medium {
-    box-shadow: var(--shadow-medium);
-  }
-
-  .card-shadow-light {
-    box-shadow: var(--shadow-light);
-  }
-
   /* Skeleton / 淡入动画延迟：使用 CSS 变量统一 */
   .skel-delay {
     animation-delay: var(--skel-delay, 0ms);

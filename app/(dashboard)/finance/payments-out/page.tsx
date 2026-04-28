@@ -1,25 +1,21 @@
-import type { Prisma } from '@prisma/client';
 import type { Metadata } from 'next';
 
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { buildPaymentOutWhereConditions } from '@/lib/services/payment-out-query-service';
 import {
   PAYMENT_OUT_SORT_OPTIONS,
   type PaymentOutMethod,
   type PaymentOutRecordDetail,
   type PaymentOutStatus,
 } from '@/lib/types/payable';
-import { parseLocalDateString } from '@/lib/utils/datetime';
 // ✅ P0修复: 导入统一的付款方式常量和查询参数校验 Schema
 import {
   PAYMENT_OUT_METHODS,
   paymentOutRecordQuerySchema,
 } from '@/lib/validations/payable';
-
 // ✅ P0修复: 使用统一的付款方式常量，避免多处定义导致漂移
-const ALLOWED_PAYMENT_OUT_METHODS: PaymentOutMethod[] = [
-  ...PAYMENT_OUT_METHODS,
-];
+const ALLOWED_PAYMENT_OUT_METHODS: PaymentOutMethod[] = [...PAYMENT_OUT_METHODS];
 
 type PaymentOutSortField = 'createdAt' | 'paymentAmount' | 'paymentDate';
 
@@ -76,48 +72,15 @@ async function getPaymentsOutData(searchParams: {
 
   // ✅ P0修复: 移除重复的参数解析逻辑，直接使用校验后的值
 
-  // 构建查询条件
-  const whereConditions: Prisma.PaymentOutRecordWhereInput = {};
-
-  if (search) {
-    whereConditions.OR = [
-      { paymentNumber: { contains: search } },
-      { voucherNumber: { contains: search } },
-      { remarks: { contains: search } },
-      { supplier: { name: { contains: search } } },
-      {
-        payableRecord: {
-          OR: [
-            { payableNumber: { contains: search } },
-            { sourceNumber: { contains: search } },
-          ],
-        },
-      },
-    ];
-  }
-
-  if (status) {
-    whereConditions.status = status;
-  }
-
-  if (paymentMethod) {
-    whereConditions.paymentMethod = paymentMethod;
-  }
-
-  // ✅ P0修复: 使用校验后的 startDate 和 endDate
-  if (startDate || endDate) {
-    const paymentDateFilter: { gte?: Date; lte?: Date } = {};
-    if (startDate) {
-      paymentDateFilter.gte =
-        parseLocalDateString(startDate) ?? new Date(startDate);
-    }
-    if (endDate) {
-      const endDateObj = parseLocalDateString(endDate) ?? new Date(endDate);
-      endDateObj.setHours(23, 59, 59, 999);
-      paymentDateFilter.lte = endDateObj;
-    }
-    whereConditions.paymentDate = paymentDateFilter;
-  }
+  const whereConditions = buildPaymentOutWhereConditions({
+    page,
+    limit,
+    search,
+    status,
+    paymentMethod,
+    startDate,
+    endDate,
+  });
 
   // 查询付款记录
   // ✅ 优化：减少 DB 往返次数（保持语义不变）

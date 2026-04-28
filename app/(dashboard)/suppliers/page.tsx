@@ -13,8 +13,8 @@ import type { Supplier, SupplierQueryParams } from '@/lib/types/supplier';
 import { SupplierQuerySchema } from '@/lib/validations/supplier';
 
 export const metadata: Metadata = {
-  title: '供应商管理',
-  description: '管理供应商信息',
+  title: '供应商档案',
+  description: '维护供应商基础资料、供货记录和应付账款',
 };
 
 /**

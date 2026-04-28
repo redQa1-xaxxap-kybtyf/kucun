@@ -122,7 +122,8 @@ export function ERPReturnOrderList({
     onSuccess: () => {
       toast({
         title: '退货已完成',
-        description: '这张退货单已经处理完成，库存已回补。如需退款，请继续登记退款。',
+        description:
+          '这张退货单已经处理完成，库存已回补。如需退款，请继续登记退款。',
         variant: 'success',
       });
       queryClient.invalidateQueries({ queryKey: queryKeys.returnOrders.all });
@@ -131,7 +132,10 @@ export function ERPReturnOrderList({
     onError: (error: Error) => {
       toast({
         title: '处理失败',
-        description: getFriendlyErrorMessage(error, '退货状态暂时无法更新，请稍后重试'),
+        description: getFriendlyErrorMessage(
+          error,
+          '退货状态暂时无法更新，请稍后重试'
+        ),
         variant: 'destructive',
       });
       setConfirmingId(null);
@@ -288,7 +292,10 @@ export function ERPReturnOrderList({
     onError: (error: Error) => {
       toast({
         title: '暂时无法取消',
-        description: getFriendlyErrorMessage(error, '这张退货单暂时无法取消，请稍后重试'),
+        description: getFriendlyErrorMessage(
+          error,
+          '这张退货单暂时无法取消，请稍后重试'
+        ),
         variant: 'destructive',
       });
     },
@@ -385,27 +392,6 @@ export function ERPReturnOrderList({
     },
     [getPendingSearch, onFilter, syncExternalSearch, updateQueryStringParams]
   );
-
-  const handleIncludeTestToggle = React.useCallback(() => {
-    const nextSearch = getPendingSearch();
-    const nextValue = !(queryParams.includeTest === true);
-    if (onFilter) {
-      syncExternalSearch(nextSearch);
-      onFilter('includeTest', nextValue ? 'true' : undefined);
-    } else {
-      updateQueryStringParams({
-        search: nextSearch,
-        includeTest: nextValue ? true : undefined,
-        page: 1,
-      });
-    }
-  }, [
-    getPendingSearch,
-    onFilter,
-    queryParams.includeTest,
-    syncExternalSearch,
-    updateQueryStringParams,
-  ]);
 
   const handleIncludeVoidedToggle = React.useCallback(() => {
     const nextSearch = getPendingSearch();
@@ -513,7 +499,12 @@ export function ERPReturnOrderList({
         page: page > 1 ? page : undefined,
       });
     },
-    [getPendingSearch, onPageChange, syncExternalSearch, updateQueryStringParams]
+    [
+      getPendingSearch,
+      onPageChange,
+      syncExternalSearch,
+      updateQueryStringParams,
+    ]
   );
 
   // 处理新建
@@ -553,7 +544,7 @@ export function ERPReturnOrderList({
   // ✅ 改进的错误处理：显示错误信息并提供重试功能
   if (error) {
     return (
-      <Card className="shadow-lg shadow-gray-200/50">
+      <Card className="rounded-md border border-border shadow-sm">
         <CardContent className="pt-6">
           <div className="flex flex-col items-center justify-center gap-4 py-8">
             <div className="text-center">
@@ -594,14 +585,13 @@ export function ERPReturnOrderList({
         onStatusChange={handleStatusChange}
         onTypeChange={handleTypeChange}
         onProcessTypeChange={handleProcessTypeChange}
-        onIncludeTestToggle={handleIncludeTestToggle}
         onIncludeVoidedToggle={handleIncludeVoidedToggle}
         onDateRangeChange={handleDateRangeChange}
         onClearFilters={handleClearFilters}
       />
 
       {/* 数据表格 */}
-      <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
+      <div className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>
@@ -692,7 +682,9 @@ export function ERPReturnOrderList({
                     })()}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={getReturnOrderDisplayStatus(returnOrder).variant}>
+                    <Badge
+                      variant={getReturnOrderDisplayStatus(returnOrder).variant}
+                    >
                       {getReturnOrderDisplayStatus(returnOrder).label}
                     </Badge>
                   </TableCell>
@@ -711,32 +703,32 @@ export function ERPReturnOrderList({
                         }
 
                         return (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 px-2 text-xs"
-                          onClick={e => {
-                            e.stopPropagation();
-                            setConfirmingId(returnOrder.id);
-                            updateStatusMutation.mutate({
-                              id: returnOrder.id,
-                              status: actionConfig.nextStatus,
-                            });
-                          }}
-                          disabled={confirmingId === returnOrder.id}
-                        >
-                          {confirmingId === returnOrder.id ? (
-                            <span className="flex items-center gap-1 text-xs">
-                              <CheckCircle2 className="h-3 w-3 animate-spin" />
-                              {actionConfig.loadingLabel}
-                            </span>
-                          ) : (
-                            <span className="flex items-center gap-1 text-xs">
-                              <CheckCircle2 className="h-3 w-3" />
-                              {actionConfig.label}
-                            </span>
-                          )}
-                        </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 px-2 text-xs"
+                            onClick={e => {
+                              e.stopPropagation();
+                              setConfirmingId(returnOrder.id);
+                              updateStatusMutation.mutate({
+                                id: returnOrder.id,
+                                status: actionConfig.nextStatus,
+                              });
+                            }}
+                            disabled={confirmingId === returnOrder.id}
+                          >
+                            {confirmingId === returnOrder.id ? (
+                              <span className="flex items-center gap-1 text-xs">
+                                <CheckCircle2 className="h-3 w-3 animate-spin" />
+                                {actionConfig.loadingLabel}
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1 text-xs">
+                                <CheckCircle2 className="h-3 w-3" />
+                                {actionConfig.label}
+                              </span>
+                            )}
+                          </Button>
                         );
                       })()}
 

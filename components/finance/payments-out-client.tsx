@@ -172,7 +172,9 @@ function PaymentOutStatisticsCards({
           <div className="text-2xl font-bold text-[hsl(var(--color-primary))]">
             {formatCurrency(statistics.confirmedAmount)}
           </div>
-          <p className="text-muted-foreground text-xs">完成率 {confirmedRate}%</p>
+          <p className="text-muted-foreground text-xs">
+            完成率 {confirmedRate}%
+          </p>
         </CardContent>
       </Card>
 
@@ -412,12 +414,12 @@ function PaymentsOutFilters({
         onSearchChange={onSearchChange}
         searchPlaceholder="搜索付款单号、供应商名称或联系人"
         isSearching={isSearching}
-        variant="bordered"
+        variant="pro"
         compact={true}
         filters={[
           {
             key: 'status',
-            label: '状态',
+            label: '付款状态',
             options: [
               { label: '待确认付款', value: 'pending' },
               { label: '已完成付款', value: 'confirmed' },

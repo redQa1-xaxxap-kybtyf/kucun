@@ -14,7 +14,7 @@ interface ERPOutboundRecordsProps {
 /**
  * ERP风格的出库记录组件
  * 采用紧凑布局，符合中国ERP系统用户习惯
- * ✅ 已升级为 v3 PRO 高清筛选中心
+ * 出库记录列表
  */
 export function ERPOutboundRecords({ initialParams }: ERPOutboundRecordsProps) {
   const {
@@ -35,7 +35,7 @@ export function ERPOutboundRecords({ initialParams }: ERPOutboundRecordsProps) {
 
   return (
     <div className="space-y-4">
-      {/* 搜索工具栏 (v3 PRO) */}
+      {/* 搜索工具栏 */}
       <OutboundRecordsSearchToolbar
         searchValue={searchValue}
         typeFilter={filters.type || 'all'}

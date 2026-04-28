@@ -30,9 +30,17 @@ export function useSystemVersion() {
     retryDelay: 1000,
   });
 
+  const configuredSystemName = data?.systemName?.trim();
+  const systemName =
+    configuredSystemName &&
+    configuredSystemName !== '库存管理系统' &&
+    configuredSystemName !== '库存管理工具'
+      ? configuredSystemName
+      : '瓷砖销售 ERP';
+
   return {
     version: data?.systemVersion || '1.0.0',
-    systemName: data?.systemName || '库存管理系统',
+    systemName,
     isLoading,
     error,
   };

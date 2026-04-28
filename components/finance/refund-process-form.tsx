@@ -290,7 +290,7 @@ export function RefundProcessForm({
   // 错误状态
   if (error || !refund) {
     return (
-      <Card className="border border-[hsl(var(--color-error))] shadow-[var(--shadow-light)]">
+      <Card className="rounded-md border border-[hsl(var(--color-error))] shadow-sm">
         <CardContent className="bg-[hsl(var(--color-error-light))] pt-6 text-center">
           {error ? '加载退款详情失败' : '未找到这笔退款'}
         </CardContent>
@@ -308,8 +308,8 @@ export function RefundProcessForm({
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* 退款信息 */}
-        <Card className="shadow-[var(--shadow-medium)]">
-          <CardHeader className="border-b bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
+        <Card className="rounded-md border border-border shadow-sm">
+          <CardHeader className="border-b bg-slate-50">
             <CardTitle className="flex items-center gap-2 text-[hsl(var(--color-text-primary))]">
               <FileText className="h-5 w-5 text-[hsl(var(--color-primary))]" />
               退款信息
@@ -398,8 +398,8 @@ export function RefundProcessForm({
         </Card>
 
         {/* 处理表单 */}
-        <Card className="shadow-[var(--shadow-medium)]">
-          <CardHeader className="border-b bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
+        <Card className="rounded-md border border-border shadow-sm">
+          <CardHeader className="border-b bg-slate-50">
             <CardTitle className="flex items-center gap-2 text-[hsl(var(--color-text-primary))]">
               <ChineseYuan className="h-5 w-5 text-[hsl(var(--color-primary))]" />
               退款处理
@@ -503,7 +503,7 @@ export function RefundProcessForm({
               </div>
 
               {refund.remainingAmount > 0 && (
-                <div className="border-muted-foreground/30 bg-muted/30 rounded-lg border border-dashed p-3">
+                <div className="border-muted-foreground/30 bg-muted/30 rounded-md border border-dashed p-3">
                   <div className="flex items-start gap-3">
                     <Checkbox
                       id="closeRemaining"

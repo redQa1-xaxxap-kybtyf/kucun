@@ -63,37 +63,41 @@ const Calendar = dynamic(
 );
 
 // 创建付款记录表单Schema
-const createPaymentOutSchema = z.object({
-  idempotencyKey: z.string().uuid({ message: '幂等性键格式不正确' }),
-  payableRecordId: z.string().optional(),
-  supplierId: z.string().min(1, { error: '请选择供应商' }),
-  paymentMethod: z.enum(
-    ['cash', 'bank_transfer', 'alipay', 'wechat', 'check', 'other'],
+const createPaymentOutSchema = z
+  .object({
+    idempotencyKey: z.string().uuid({ message: '幂等性键格式不正确' }),
+    payableRecordId: z.string().optional(),
+    supplierId: z.string().min(1, { error: '请选择供应商' }),
+    paymentMethod: z.enum(
+      ['cash', 'bank_transfer', 'alipay', 'wechat', 'check', 'other'],
+      {
+        message: '请选择付款方式',
+      }
+    ),
+    paymentAmount: z.number().min(0.01, { error: '付款金额必须大于0' }),
+    actualPaymentAmount: z.number().min(0, { error: '实际付款金额不能为负' }),
+    roundingAmount: z.number(),
+    paymentDate: z.string().min(1, { error: '请选择付款日期' }),
+    voucherNumber: z.string().optional(),
+    bankInfo: z.string().optional(),
+    remarks: z.string().optional(),
+  })
+  .refine(
+    value =>
+      Math.abs(
+        Number(
+          (
+            value.actualPaymentAmount +
+            value.roundingAmount -
+            value.paymentAmount
+          ).toFixed(2)
+        )
+      ) < 0.01,
     {
-      message: '请选择付款方式',
+      message: '付款金额应等于实际付款金额与抹零金额之和',
+      path: ['actualPaymentAmount'],
     }
-  ),
-  paymentAmount: z.number().min(0.01, { error: '付款金额必须大于0' }),
-  actualPaymentAmount: z.number().min(0, { error: '实际付款金额不能为负' }),
-  roundingAmount: z.number(),
-  paymentDate: z.string().min(1, { error: '请选择付款日期' }),
-  voucherNumber: z.string().optional(),
-  bankInfo: z.string().optional(),
-  remarks: z.string().optional(),
-}).refine(
-  value =>
-    Math.abs(
-      Number(
-        (
-          value.actualPaymentAmount + value.roundingAmount - value.paymentAmount
-        ).toFixed(2)
-      )
-    ) < 0.01,
-  {
-    message: '付款金额应等于实际付款金额与抹零金额之和',
-    path: ['actualPaymentAmount'],
-  }
-);
+  );
 
 type CreatePaymentOutFormData = z.infer<typeof createPaymentOutSchema>;
 
@@ -122,8 +126,8 @@ function PayableInfoSidebar({
   payableRecord: PayableRecord;
 }) {
   return (
-    <Card>
-      <CardHeader className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
+    <Card className="rounded-md border border-border shadow-sm">
+      <CardHeader className="border-b bg-slate-50">
         <CardTitle className="flex items-center gap-2">
           <ChineseYuan className="h-5 w-5" />
           应付款信息
@@ -328,7 +332,7 @@ function PaymentOutFormFields({
                 />
               </FormControl>
               <FormDescription>
-                根据记账金额和实际付款自动计算；正数表示少付结清，负数表示多付。
+                根据记账金额和实际付款自动计算；正数表示少付，负数表示多付。
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -682,8 +686,8 @@ export function CreatePaymentOutFormSection() {
   return (
     <div className="grid gap-6 lg:grid-cols-3">
       <div className="lg:col-span-2">
-        <Card>
-          <CardHeader className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
+        <Card className="rounded-md border border-border shadow-sm">
+          <CardHeader className="border-b bg-slate-50">
             <CardTitle>付款信息</CardTitle>
             <CardDescription>
               请填写付款信息，保存后会直接记为已完成付款；未提交内容会自动暂存在当前设备

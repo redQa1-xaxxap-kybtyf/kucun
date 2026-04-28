@@ -47,32 +47,27 @@ export function CustomerActivityTabs({
 }: CustomerActivityTabsProps) {
   return (
     <Tabs defaultValue="sales" className="w-full">
-      <div className="mb-8 flex items-center justify-between px-2">
-        <TabsList className="h-14 rounded-2xl border border-slate-200/50 bg-slate-100/50 p-1.5">
+      <div className="mb-4 overflow-x-auto">
+        <TabsList className="h-10 rounded-lg border bg-slate-50 p-1">
           <TabsTrigger
             value="sales"
-            className="h-10 rounded-xl px-6 font-semibold transition-all data-[state=active]:bg-white data-[state=active]:shadow-xl"
+            className="h-8 rounded-md px-3 text-sm font-medium data-[state=active]:bg-white"
           >
             销售记录
           </TabsTrigger>
           <TabsTrigger
             value="returns"
-            className="h-10 rounded-xl px-6 font-semibold transition-all data-[state=active]:bg-white data-[state=active]:shadow-xl"
+            className="h-8 rounded-md px-3 text-sm font-medium data-[state=active]:bg-white"
           >
             退货记录
           </TabsTrigger>
           <TabsTrigger
             value="unpaid"
-            className="h-10 rounded-xl px-6 font-semibold transition-all data-[state=active]:bg-rose-500 data-[state=active]:text-white data-[state=active]:shadow-xl"
+            className="h-8 rounded-md px-3 text-sm font-medium data-[state=active]:bg-white"
           >
-            应收账款 ({unpaidOrders.length})
+            待收款 ({unpaidOrders.length})
           </TabsTrigger>
         </TabsList>
-
-        <div className="hidden items-center gap-2 text-xs font-bold text-slate-400 md:flex">
-          <History className="h-3.5 w-3.5" />
-          持续更新
-        </div>
       </div>
 
       <TabsContent value="sales" className="mt-0 focus-visible:outline-none">
@@ -167,16 +162,16 @@ function OrderCard({
 }) {
   return (
     <div
-      className="group relative flex cursor-pointer items-center justify-between rounded-2xl border border-white bg-white/40 p-5 backdrop-blur-md transition-all duration-500 hover:-translate-y-1 hover:bg-white hover:shadow-xl"
+      className="group relative flex cursor-pointer flex-col gap-3 rounded-lg border bg-white p-4 transition-colors hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between"
       onClick={onClick}
     >
-      <div className="flex items-center gap-6">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-50 text-slate-400 transition-all duration-500 group-hover:bg-slate-900 group-hover:text-white">
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
           {icon}
         </div>
-        <div className="space-y-1">
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-semibold tracking-tight text-slate-900 transition-colors group-hover:text-blue-600">
+        <div className="min-w-0 space-y-1">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <span className="truncate text-sm font-medium text-slate-900">
               #{orderNumber}
             </span>
             <div
@@ -190,27 +185,23 @@ function OrderCard({
               {getOrderStatusLabel(status)}
             </div>
           </div>
-          <p className="text-xs font-bold text-slate-500">
-            {formatDateTime(createdAt)}
-          </p>
+          <p className="text-xs text-slate-500">{formatDateTime(createdAt)}</p>
         </div>
       </div>
-      <div className="flex items-center gap-8">
-        <div className="text-right">
+      <div className="flex items-center justify-between gap-4 sm:justify-end">
+        <div className="text-left sm:text-right">
           <p
             className={cn(
-              'text-lg font-semibold tracking-tighter text-slate-900',
+              'text-base font-semibold text-slate-900',
               amountClass
             )}
           >
             {amountPrefix}
             {formatCurrency(amount)}
           </p>
-          <span className="text-xs font-bold text-slate-400">
-            金额
-          </span>
+          <span className="text-xs text-slate-400">金额</span>
         </div>
-        <ChevronRight className="h-5 w-5 text-slate-200 transition-all group-hover:translate-x-1 group-hover:text-slate-900" />
+        <ChevronRight className="h-4 w-4 text-slate-300" />
       </div>
     </div>
   );
@@ -231,40 +222,38 @@ function UnpaidOrderCard({
 }) {
   return (
     <div
-      className="group relative flex cursor-pointer items-center justify-between rounded-2xl border-rose-100 bg-rose-50/20 p-5 backdrop-blur-md transition-all duration-500 hover:-translate-y-1 hover:bg-white hover:shadow-xl"
+      className="group relative flex cursor-pointer flex-col gap-3 rounded-lg border border-rose-100 bg-rose-50 p-4 transition-colors hover:bg-white sm:flex-row sm:items-center sm:justify-between"
       onClick={onClick}
     >
-      <div className="flex items-center gap-6">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-rose-100 text-rose-500 transition-all duration-500 group-hover:bg-rose-500 group-hover:text-white">
-          <AlertCircle className="h-5 w-5" />
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-rose-100 text-rose-500">
+          <AlertCircle className="h-4 w-4" />
         </div>
-        <div className="space-y-1">
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-semibold tracking-tight text-rose-900">
+        <div className="min-w-0 space-y-1">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <span className="truncate text-sm font-medium text-rose-900">
               #{orderNumber}
             </span>
             <div className="rounded-md bg-rose-100 px-2 py-0.5 text-xs font-bold text-rose-700">
               待收款
             </div>
           </div>
-          <p className="text-xs font-bold text-slate-500">
+          <p className="text-xs text-slate-500">
             开单时间：{formatDateTime(createdAt)}
           </p>
         </div>
       </div>
-      <div className="flex items-center gap-8">
-        <div className="text-right">
+      <div className="flex items-center justify-between gap-4 sm:justify-end">
+        <div className="text-left sm:text-right">
           <div className="flex items-baseline justify-end gap-1">
             <span className="text-xs font-semibold text-rose-400">¥</span>
-            <p className="text-lg font-semibold tracking-tighter text-rose-600">
+            <p className="text-base font-semibold text-rose-600">
               {formatCurrency(unpaidAmount).replace('¥', '')}
             </p>
           </div>
-          <p className="text-xs font-bold text-slate-400">
-            待收金额
-          </p>
+          <p className="text-xs text-slate-400">待收金额</p>
         </div>
-        <ChevronRight className="h-5 w-5 text-slate-200 transition-all group-hover:translate-x-1 group-hover:text-slate-900" />
+        <ChevronRight className="h-4 w-4 text-slate-300" />
       </div>
     </div>
   );
@@ -272,11 +261,9 @@ function UnpaidOrderCard({
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-[2.5rem] border border-dashed border-slate-200 bg-slate-50/50 py-20">
+    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 py-10">
       <CheckCircle2 className="mb-4 h-10 w-10 text-slate-200" />
-      <p className="text-sm font-semibold text-slate-400">
-        {message}
-      </p>
+      <p className="text-sm font-medium text-slate-400">{message}</p>
     </div>
   );
 }

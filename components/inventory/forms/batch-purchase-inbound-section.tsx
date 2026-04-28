@@ -182,7 +182,7 @@ export function BatchPurchaseInboundSection({
           return (
             <div
               key={row.id}
-              className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+              className="rounded-md border border-slate-200 bg-white p-4 shadow-sm"
             >
               <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                 <div className="space-y-1">
@@ -327,7 +327,7 @@ export function BatchPurchaseInboundSection({
                 </div>
 
                 {selectedProduct && (
-                  <div className="grid gap-3 rounded-xl border border-emerald-100 bg-emerald-50/70 p-3 text-xs text-slate-600 sm:grid-cols-2 xl:grid-cols-4">
+                  <div className="grid gap-3 rounded-md border border-emerald-100 bg-emerald-50/70 p-3 text-xs text-slate-600 sm:grid-cols-2 xl:grid-cols-4">
                     <div>
                       <span className="text-slate-400">产品编码</span>
                       <p className="mt-1 font-semibold text-slate-900">
@@ -359,7 +359,7 @@ export function BatchPurchaseInboundSection({
                   </div>
                 )}
 
-                <div className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50/80 p-3 xl:grid-cols-3">
+                <div className="grid gap-3 rounded-md border border-slate-200 bg-slate-50/80 p-3 xl:grid-cols-3">
                   <div>
                     <p className="text-xs font-medium text-slate-500">
                       合格入库
@@ -391,7 +391,7 @@ export function BatchPurchaseInboundSection({
                 </div>
 
                 {showAdvancedSection && (
-                  <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/40 p-4">
+                  <div className="rounded-md border border-dashed border-slate-200 bg-slate-50/40 p-4">
                     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                       {row.inputUnit === 'units' ? (
                         <div className="space-y-2">
@@ -415,7 +415,7 @@ export function BatchPurchaseInboundSection({
                           <FieldError message={rowError.piecesPerUnit} />
                         </div>
                       ) : (
-                        <div className="rounded-xl border border-slate-200 bg-white p-3 text-xs leading-5 text-slate-500">
+                        <div className="rounded-md border border-slate-200 bg-white p-3 text-xs leading-5 text-slate-500">
                           当前按片录入，无需填写装箱数；如需按件录入，可把上方录入单位切换为“件”。
                         </div>
                       )}
@@ -516,7 +516,7 @@ export function BatchPurchaseInboundSection({
                           </div>
                         </div>
 
-                        <div className="grid gap-3 self-start rounded-xl border border-slate-200 bg-white p-3 text-sm">
+                        <div className="grid gap-3 self-start rounded-md border border-slate-200 bg-white p-3 text-sm">
                           <div>
                             <p className="text-xs font-bold text-slate-400">
                               合格入库

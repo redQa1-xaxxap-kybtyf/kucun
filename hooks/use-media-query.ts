@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 
 import {
   BREAKPOINT_QUERIES,
@@ -25,34 +25,35 @@ import {
  * const isLandscape = useMediaQuery('(orientation: landscape)');
  */
 export function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(false);
+  const subscribe = useCallback(
+    (callback: () => void) => {
+      if (typeof window === 'undefined') {
+        return () => undefined;
+      }
 
-  useEffect(() => {
-    // 检查是否在客户端环境
+      const mediaQuery = window.matchMedia(query);
+      const handler = () => callback();
+
+      mediaQuery.addEventListener('change', handler);
+
+      return () => {
+        mediaQuery.removeEventListener('change', handler);
+      };
+    },
+    [query]
+  );
+
+  const getSnapshot = useCallback(() => {
     if (typeof window === 'undefined') {
-      return;
+      return false;
     }
 
-    const mediaQuery = window.matchMedia(query);
-
-    // 设置初始值
-    setMatches(mediaQuery.matches);
-
-    // 监听变化
-    const handler = (event: MediaQueryListEvent) => {
-      setMatches(event.matches);
-    };
-
-    // 添加监听器
-    mediaQuery.addEventListener('change', handler);
-
-    // 清理函数
-    return () => {
-      mediaQuery.removeEventListener('change', handler);
-    };
+    return window.matchMedia(query).matches;
   }, [query]);
 
-  return matches;
+  const getServerSnapshot = useCallback(() => false, []);
+
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
 /**

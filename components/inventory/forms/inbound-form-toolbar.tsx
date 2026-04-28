@@ -26,7 +26,7 @@ interface InboundFormToolbarProps {
 
 /**
  * 产品入库表单工具栏组件
- * ✅ 符合产品模块UI风格规范
+ * 产品入库表单工具栏。
  */
 export function InboundFormToolbar({
   isSubmitting,
@@ -41,15 +41,11 @@ export function InboundFormToolbar({
   const router = useRouter();
 
   return (
-    <Card className="relative overflow-hidden border-slate-200 bg-white/70 shadow-sm backdrop-blur-xl">
-      {/* 背景装饰 */}
-      <div className="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-blue-500/5 blur-3xl" />
-      <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-emerald-500/5 blur-3xl" />
-
-      <CardContent className="relative z-10 p-5 sm:p-6">
+    <Card className="overflow-hidden rounded-md border-slate-200 bg-white shadow-sm">
+      <CardContent className="p-5 sm:p-6">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex items-center gap-4 sm:gap-5">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 shadow-xl shadow-blue-500/10">
+            <div className="flex h-14 w-14 items-center justify-center rounded-md bg-blue-600">
               <PackageCheck className="h-7 w-7 text-white" />
             </div>
             <div className="min-w-0 space-y-1">
@@ -66,7 +62,7 @@ export function InboundFormToolbar({
               type="button"
               variant="outline"
               size="lg"
-              className="h-11 border-slate-200 bg-white px-5 text-slate-600 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-900"
+              className="h-11 border-slate-200 bg-white px-5 text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900"
               onClick={() => {
                 if (onBack) {
                   onBack();
@@ -85,7 +81,7 @@ export function InboundFormToolbar({
               size="lg"
               onClick={onReset}
               disabled={isSubmitting}
-              className="h-11 border-slate-200 bg-white px-5 text-slate-600 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-900"
+              className="h-11 border-slate-200 bg-white px-5 text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900"
             >
               <RotateCcw className="mr-2 h-4 w-4" />
               重新填写
@@ -96,7 +92,7 @@ export function InboundFormToolbar({
               size="lg"
               disabled={isSubmitting}
               onClick={formId ? undefined : onSubmit}
-              className="h-11 bg-blue-600 px-6 text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-700"
+              className="h-11 bg-blue-600 px-6 text-white shadow-sm hover:bg-blue-700"
             >
               {isSubmitting ? (
                 <>

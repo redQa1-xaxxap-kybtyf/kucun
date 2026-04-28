@@ -77,11 +77,11 @@ export default async function CreateSalesOrderPage({
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="space-y-4 sm:space-y-6">
         {/* 页面标题卡片 */}
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-4 sm:p-6">
+        <Card className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] shadow-sm">
+          <CardContent className="bg-[hsl(var(--color-bg-secondary))] p-4 sm:p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3 sm:gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30 sm:h-12 sm:w-12">
+                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-blue-600 text-white shadow-sm sm:h-12 sm:w-12">
                   <ShoppingCart className="h-5 w-5 text-white sm:h-6 sm:w-6" />
                 </div>
                 <div>
@@ -97,7 +97,7 @@ export default async function CreateSalesOrderPage({
                 variant="outline"
                 size="lg"
                 asChild
-                className="h-10 shadow-md transition-all hover:scale-105 hover:shadow-lg sm:h-11"
+                className="h-10 shadow-sm sm:h-11"
               >
                 <Link href={cancelHref}>
                   <ArrowLeft className="mr-2 h-4 w-4" />

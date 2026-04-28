@@ -39,7 +39,7 @@ export default function EditSupplierPage({ params }: EditSupplierPageProps) {
       variant="outline"
       size="lg"
       asChild
-      className="h-11 gap-2 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:border-[hsl(var(--color-border-strong))] hover:shadow-[var(--shadow-medium)]"
+      className="h-10 gap-2 rounded-md"
     >
       <Link href="/suppliers">
         <ArrowLeft className="h-4 w-4" />

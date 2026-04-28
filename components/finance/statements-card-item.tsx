@@ -1,4 +1,10 @@
-import { ChevronRight, History, TrendingDown, User, Wallet } from 'lucide-react';
+import {
+  ChevronRight,
+  History,
+  TrendingDown,
+  User,
+  Wallet,
+} from 'lucide-react';
 import Link from 'next/link';
 
 import { RelativeTime } from '@/components/common/relative-time';
@@ -20,19 +26,19 @@ type StatementCardItemProps = {
 export function StatementCardItem({ statement }: StatementCardItemProps) {
   const balance = statement.currentBalance ?? 0;
   const balanceLabel =
-    balance > 0 ? '待收余额' : balance < 0 ? '待付余额' : '已结清';
+    balance > 0 ? '待收余额' : balance < 0 ? '待付余额' : '无余额';
   const paymentRate =
     Math.abs(statement.totalAmount) > 0
       ? (Math.abs(statement.paidAmount) / Math.abs(statement.totalAmount)) * 100
       : 0;
 
   return (
-    <div className="rounded-xl border border-[hsl(var(--color-border-secondary))] bg-white p-5 shadow-[var(--shadow-light)]">
+    <div className="rounded-md border border-[hsl(var(--color-border-secondary))] bg-white p-5 shadow-sm">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-center">
         <div className="flex min-w-0 flex-1 items-center gap-4">
           <div
             className={cn(
-              'flex h-12 w-12 items-center justify-center rounded-xl text-white',
+              'flex h-12 w-12 items-center justify-center rounded-md text-white',
               statement.type === 'customer'
                 ? 'bg-[hsl(var(--color-primary))]'
                 : 'bg-[hsl(var(--color-text-secondary))]'
@@ -51,23 +57,22 @@ export function StatementCardItem({ statement }: StatementCardItemProps) {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="outline">{TYPE_LABEL_MAP[statement.type]}</Badge>
-              <Badge variant="secondary">{STATUS_LABEL_MAP[statement.status]}</Badge>
+              <Badge variant="secondary">
+                {STATUS_LABEL_MAP[statement.status]}
+              </Badge>
             </div>
           </div>
         </div>
 
         <div className="grid flex-1 gap-4 sm:grid-cols-3">
-          <MetricBlock
-            label="业务笔数"
-            value={`${statement.totalOrders} 笔`}
-          />
+          <MetricBlock label="业务笔数" value={`${statement.totalOrders} 笔`} />
           <MetricBlock
             label="累计往来金额"
             value={formatCurrency(Math.abs(statement.totalAmount))}
           />
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs text-[hsl(var(--color-text-secondary))]">
-              <span>结算进度</span>
+              <span>收付进度</span>
               <span className="font-medium text-[hsl(var(--color-primary))]">
                 {paymentRate.toFixed(1)}%
               </span>
@@ -141,13 +146,7 @@ export function StatementCardItem({ statement }: StatementCardItemProps) {
   );
 }
 
-function MetricBlock({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function MetricBlock({ label, value }: { label: string; value: string }) {
   return (
     <div className="space-y-1">
       <div className="text-xs text-[hsl(var(--color-text-secondary))]">

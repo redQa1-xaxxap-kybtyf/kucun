@@ -39,6 +39,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useToast } from '@/components/ui/use-toast';
+import { useIsMobile } from '@/hooks/use-media-query';
 import {
   useCustomerPriceHistory,
   type PriceType,
@@ -201,7 +202,7 @@ function InventoryBlockingEntryButton({
     <button
       type="button"
       onClick={() => onLocate(entry)}
-      className="block w-full rounded px-2 py-1 text-left leading-5 text-slate-700 transition-colors hover:bg-white/80 hover:text-slate-900"
+      className="block w-full rounded px-2 py-1 text-left leading-5 text-slate-700 transition-colors hover:bg-white hover:text-slate-900"
     >
       <div>{entry.message}</div>
       <div className="text-[11px] text-red-700">查看 {rowLabel}</div>
@@ -403,6 +404,7 @@ export function ERPSalesOrderForm({
   const router = useRouter();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const prefillSourceOrder =
     mode === 'edit' ? initialData : duplicateSourceOrder;
   const fallbackPrefillCustomer = prefillCustomer ?? undefined;
@@ -762,10 +764,12 @@ export function ERPSalesOrderForm({
     name: 'items',
     defaultValue: form.getValues('items'),
   }) ?? EMPTY_SALES_ORDER_ITEMS) as SalesOrderItemFormData[];
+  const deferredWatchedItems = React.useDeferredValue(watchedItems);
+  const summaryItems = isMobile ? deferredWatchedItems : watchedItems;
 
   const inventoryCheckItems = React.useMemo(
     () =>
-      watchedItems.map(item => {
+      summaryItems.map(item => {
         const quantity = Number(item.quantity ?? 0);
         const safeQuantity = Number.isFinite(quantity) ? quantity : 0;
         const productId = (item.productId ?? '').toString().trim();
@@ -777,7 +781,7 @@ export function ERPSalesOrderForm({
           batchNumber,
         };
       }),
-    [watchedItems]
+    [summaryItems]
   );
 
   // 优化：使用 ref 跟踪上一次的 orderType，避免不必要的 setValue 调用
@@ -876,7 +880,7 @@ export function ERPSalesOrderForm({
 
   const totalAmount = React.useMemo(
     () =>
-      watchedItems.reduce((sum, item) => {
+      summaryItems.reduce((sum, item) => {
         // 计算片单价（如果当前显示单位是件，需要转换为片单价）
         // 修复: 避免在单价换算时提前四舍五入导致的合计误差。
         // 统一与每行金额相同的计算方式：若显示单位为“件”，用 (片数/每件片数)*件单价；否则用 片数*片单价。
@@ -888,13 +892,13 @@ export function ERPSalesOrderForm({
         // 金额 = 系统数量（片数） × 片单价
         return sum + coerceNumeric(item.quantity) * piecePriceForCalculation;
       }, 0),
-    [watchedItems]
+    [summaryItems]
   );
 
   const totalQuantityPieces = React.useMemo(
     () =>
-      watchedItems.reduce((sum, item) => sum + coerceNumeric(item.quantity), 0),
-    [watchedItems]
+      summaryItems.reduce((sum, item) => sum + coerceNumeric(item.quantity), 0),
+    [summaryItems]
   );
 
   const orderTotalWithFees =
@@ -902,24 +906,24 @@ export function ERPSalesOrderForm({
 
   const totalLocalQuantity = React.useMemo(
     () =>
-      watchedItems.reduce(
+      summaryItems.reduce(
         (sum, item) => sum + coerceNumeric(item.localQuantity),
         0
       ),
-    [watchedItems]
+    [summaryItems]
   );
   const totalTransferQuantity = React.useMemo(
     () =>
-      watchedItems.reduce(
+      summaryItems.reduce(
         (sum, item) => sum + coerceNumeric(item.transferQuantity),
         0
       ),
-    [watchedItems]
+    [summaryItems]
   );
 
   const totalTransferCost = React.useMemo(
     () =>
-      watchedItems.reduce((sum, item) => {
+      summaryItems.reduce((sum, item) => {
         const unitCost = coerceNumeric(item.unitCost);
         const effectiveQuantity =
           transferMode === 'MIXED'
@@ -927,7 +931,7 @@ export function ERPSalesOrderForm({
             : coerceNumeric(item.quantity);
         return sum + unitCost * effectiveQuantity;
       }, 0),
-    [watchedItems, transferMode]
+    [summaryItems, transferMode]
   );
 
   const formatCurrency = (value: number) =>
@@ -958,7 +962,7 @@ export function ERPSalesOrderForm({
 
   const totalWeight = React.useMemo(
     () =>
-      watchedItems.reduce((sum, item, index) => {
+      summaryItems.reduce((sum, item, index) => {
         const quantityPieces = Number(item.quantity ?? 0);
         if (!Number.isFinite(quantityPieces) || quantityPieces <= 0) {
           return sum;
@@ -1054,18 +1058,18 @@ export function ERPSalesOrderForm({
 
         return sum + weightKg;
       }, 0),
-    [watchedItems, productMap]
+    [summaryItems, productMap]
   );
 
   const inventoryBlockingSummary = React.useMemo(
     () =>
       buildSalesOrderInventoryBlockingSummary({
-        items: watchedItems,
+        items: summaryItems,
         orderType,
         transferMode,
         productMap,
       }),
-    [orderType, transferMode, watchedItems, productMap]
+    [orderType, transferMode, summaryItems, productMap]
   );
   const inventoryBlockingEntries = React.useMemo(
     () => [
@@ -1686,15 +1690,15 @@ export function ERPSalesOrderForm({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <Form {...form}>
-        <form onSubmit={handleFormSubmit} className="space-y-4">
+        <form onSubmit={handleFormSubmit} className="space-y-3">
           {/* ERP标准布局：基本信息区域 */}
           <div className="bg-card rounded-lg border shadow-sm">
-            <div className="border-b bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-bg-secondary))] px-4 py-2.5">
+            <div className="bg-muted/30 border-b px-3 py-2">
               <h3 className="text-sm font-semibold text-gray-700">基本信息</h3>
             </div>
-            <div className="p-4">
+            <div className="p-3 sm:p-4">
               {/* 第一行：订单号、销售日期和创建日期 */}
               <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {/* 订单号 */}
@@ -1710,9 +1714,7 @@ export function ERPSalesOrderForm({
                     </div>
                   </div>
                   <p className="text-xs text-gray-500">
-                    {mode === 'edit'
-                      ? '编辑现有订单'
-                      : '保存时自动生成订单号'}
+                    {mode === 'edit' ? '编辑现有订单' : '保存时自动生成订单号'}
                   </p>
                 </div>
 
@@ -1833,7 +1835,7 @@ export function ERPSalesOrderForm({
                 control={form.control}
                 name="isSampleOrder"
                 render={({ field }) => (
-                  <FormItem className="mb-4 rounded-xl border border-amber-200 bg-amber-50/70 p-4">
+                  <FormItem className="mb-4 rounded-lg border border-amber-200 bg-amber-50/70 p-3">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="space-y-1">
                         <FormLabel className="text-sm font-semibold text-amber-900">
@@ -1844,7 +1846,7 @@ export function ERPSalesOrderForm({
                         </p>
                       </div>
                       <FormControl>
-                        <div className="flex items-center gap-3 rounded-full bg-white px-3 py-2 shadow-sm">
+                        <div className="flex items-center gap-3 rounded-md bg-white px-3 py-2 shadow-sm">
                           <span className="text-xs font-semibold text-slate-500">
                             {field.value ? '已启用' : '普通订单'}
                           </span>
@@ -1865,7 +1867,7 @@ export function ERPSalesOrderForm({
                   control={form.control}
                   name="sampleSettlementType"
                   render={({ field }) => (
-                    <FormItem className="mb-4 rounded-2xl border border-amber-200/80 bg-gradient-to-r from-amber-50 via-white to-orange-50 p-4">
+                    <FormItem className="mb-4 rounded-lg border border-amber-200/80 bg-amber-50/70 p-3">
                       <div className="mb-3">
                         <FormLabel className="text-sm font-semibold text-slate-800">
                           样品结算方式
@@ -1878,9 +1880,9 @@ export function ERPSalesOrderForm({
                         <RadioGroup
                           value={field.value ?? DEFAULT_SAMPLE_SETTLEMENT_TYPE}
                           onValueChange={field.onChange}
-                          className="grid gap-3 xl:grid-cols-2"
+                          className="grid gap-2 xl:grid-cols-2"
                         >
-                          <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50/80 p-4 shadow-sm">
+                          <div className="flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50/80 p-3 shadow-sm">
                             <RadioGroupItem
                               value="FREE"
                               id="sample-free"
@@ -1898,7 +1900,7 @@ export function ERPSalesOrderForm({
                               </span>
                             </Label>
                           </div>
-                          <div className="flex items-start gap-3 rounded-xl border border-sky-200 bg-sky-50/80 p-4 shadow-sm">
+                          <div className="flex items-start gap-3 rounded-lg border border-sky-200 bg-sky-50/80 p-3 shadow-sm">
                             <RadioGroupItem
                               value="CHARGEABLE"
                               id="sample-chargeable"
@@ -1987,7 +1989,7 @@ export function ERPSalesOrderForm({
                               }
                               className="grid gap-3 xl:grid-cols-2"
                             >
-                              <div className="border-border flex items-start gap-2 rounded-md border bg-white/80 p-3 shadow-sm">
+                              <div className="border-border flex items-start gap-2 rounded-md border bg-white p-3 shadow-sm">
                                 <RadioGroupItem
                                   value="SUPPLIER_ONLY"
                                   id="transfer-mode-supplier"
@@ -2005,7 +2007,7 @@ export function ERPSalesOrderForm({
                                   </p>
                                 </div>
                               </div>
-                              <div className="border-border flex items-start gap-2 rounded-md border bg-white/80 p-3 shadow-sm">
+                              <div className="border-border flex items-start gap-2 rounded-md border bg-white p-3 shadow-sm">
                                 <RadioGroupItem
                                   value="MIXED"
                                   id="transfer-mode-mixed"
@@ -2100,6 +2102,7 @@ export function ERPSalesOrderForm({
             priceHistory={priceHistoryData?.data}
             priceType={priceType}
             toast={toast}
+            showInlineInventoryStatus={!isMobile}
           />
 
           {/* 费用项管理 */}
@@ -2265,7 +2268,7 @@ export function ERPSalesOrderForm({
           </div>
 
           {/* 库存检查 */}
-          {watchedItems.length > 0 && (
+          {!isMobile && watchedItems.length > 0 && (
             <InventoryChecker
               items={inventoryCheckItems}
               products={availableProducts}
@@ -2276,15 +2279,42 @@ export function ERPSalesOrderForm({
           )}
 
           {/* ERP标准布局：操作按钮 */}
-          <div className="bg-card sticky bottom-0 rounded border p-3">
-            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div className="bg-card sticky bottom-0 z-20 rounded-md border p-2 shadow-md">
+            <div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
+              <div className="grid grid-cols-3 gap-2 text-xs sm:grid-cols-4 xl:w-auto">
+                <div className="rounded-md bg-slate-50 px-2 py-1.5">
+                  <div className="text-slate-500">产品</div>
+                  <div className="font-semibold text-slate-900">
+                    {fields.length} 种
+                  </div>
+                </div>
+                <div className="rounded-md bg-slate-50 px-2 py-1.5">
+                  <div className="text-slate-500">数量</div>
+                  <div className="font-semibold text-slate-900">
+                    {totalQuantityPieces.toLocaleString('zh-CN')} 片
+                  </div>
+                </div>
+                <div className="rounded-md bg-orange-50 px-2 py-1.5">
+                  <div className="text-orange-700">合计</div>
+                  <div className="font-semibold text-orange-700">
+                    ￥{formatCurrency(orderTotalWithFees)}
+                  </div>
+                </div>
+                <div className="hidden rounded-md bg-slate-50 px-2 py-1.5 sm:block">
+                  <div className="text-slate-500">状态</div>
+                  <div className="font-semibold text-slate-900">
+                    {form.watch('customerId') ? '可保存' : '待选客户'}
+                  </div>
+                </div>
+              </div>
+
               <div className="flex w-full justify-end xl:w-auto xl:justify-start">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handleCancel}
                   disabled={isSubmitting}
-                  className="h-8 w-full text-xs sm:w-auto"
+                  className="h-9 w-full text-xs sm:w-auto"
                 >
                   取消
                 </Button>
@@ -2301,7 +2331,7 @@ export function ERPSalesOrderForm({
                       fields.length === 0 ||
                       !form.watch('customerId')
                     }
-                    className="h-8 w-full text-xs"
+                    className="h-9 w-full text-xs"
                     onClick={() => submitWithStatus('confirmed')}
                   >
                     {isSubmitting ? (
@@ -2319,7 +2349,7 @@ export function ERPSalesOrderForm({
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 shrink-0 text-red-600 hover:bg-red-50 hover:text-red-700"
+                            className="h-9 w-9 shrink-0 text-red-600 hover:bg-red-50 hover:text-red-700"
                             aria-label="查看无法确认的原因"
                             title="查看无法确认的原因"
                           >
@@ -2377,7 +2407,7 @@ export function ERPSalesOrderForm({
                   type="button"
                   variant="default"
                   disabled={isSubmitting || !form.watch('customerId')}
-                  className="h-8 w-full text-xs"
+                  className="h-9 w-full text-xs"
                   onClick={() => submitWithStatus('draft')}
                 >
                   {isSubmitting ? (
@@ -2412,12 +2442,6 @@ export function ERPSalesOrderForm({
                 </div>
               </div>
             )}
-
-            <div className="mt-2 text-center">
-              <p className="text-xs text-gray-500">
-                保存订单：先保存为可继续修改状态；保存并确认：确认后进入发货、收款等正式流程
-              </p>
-            </div>
           </div>
         </form>
       </Form>

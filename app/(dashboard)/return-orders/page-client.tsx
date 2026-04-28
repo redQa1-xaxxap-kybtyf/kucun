@@ -46,6 +46,7 @@ export function ReturnOrdersPageClient({
   initialParams,
 }: ReturnOrdersPageClientProps) {
   const router = useRouter();
+  const [isRoutePending, startRouteTransition] = React.useTransition();
 
   // 构建查询参数
   const queryParams: ReturnOrderQueryParams = {
@@ -68,6 +69,7 @@ export function ReturnOrdersPageClient({
   const {
     data: queryData,
     isLoading,
+    isFetching,
     error,
     refetch,
   } = useQuery({
@@ -104,27 +106,34 @@ export function ReturnOrdersPageClient({
       const params = new URLSearchParams(window.location.search);
       updater(params);
       const query = params.toString();
-      router.replace(query ? `/return-orders?${query}` : '/return-orders', {
-        scroll: false,
+      startRouteTransition(() => {
+        router.replace(query ? `/return-orders?${query}` : '/return-orders', {
+          scroll: false,
+        });
       });
     },
     [router]
   );
 
-  const { searchInput, isSearching: isSearchPending, handleSearchChange } =
-    useListSearchController({
-      committedValue: initialParams?.search,
-      onCommit: search => {
-        updateUrlParams(params => {
-          if (search) {
-            params.set('search', search);
-          } else {
-            params.delete('search');
-          }
-          params.delete('page');
-        });
-      },
-    });
+  const {
+    searchInput,
+    isSearching: isSearchPending,
+    handleSearchChange,
+  } = useListSearchController({
+    committedValue: initialParams?.search,
+    onCommit: search => {
+      updateUrlParams(params => {
+        if (search) {
+          params.set('search', search);
+        } else {
+          params.delete('search');
+        }
+        params.delete('page');
+      });
+    },
+  });
+  const isListRefreshing =
+    !isLoading && (isFetching || isSearchPending || isRoutePending);
 
   // 导航相关处理
   const handleSearch = React.useCallback(
@@ -210,18 +219,6 @@ export function ReturnOrdersPageClient({
     });
   }, [updateUrlParams]);
 
-  const handleIncludeTestToggle = React.useCallback(() => {
-    updateUrlParams(params => {
-      const next = params.get('includeTest') !== 'true';
-      if (next) {
-        params.set('includeTest', 'true');
-      } else {
-        params.delete('includeTest');
-      }
-      params.delete('page');
-    });
-  }, [updateUrlParams]);
-
   const handleIncludeVoidedToggle = React.useCallback(() => {
     updateUrlParams(params => {
       const next = params.get('includeVoided') !== 'true';
@@ -261,7 +258,7 @@ export function ReturnOrdersPageClient({
                 variant="outline"
                 size="lg"
                 asChild
-                className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+                className="h-11 shadow-sm"
               >
                 <Link href="/return-orders/export">
                   <Download className="mr-2 h-4 w-4" />
@@ -271,7 +268,7 @@ export function ReturnOrdersPageClient({
               <Button
                 size="lg"
                 asChild
-                className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+                className="h-11 shadow-sm"
               >
                 <Link href="/return-orders/create">
                   <Plus className="mr-2 h-4 w-4" />
@@ -293,17 +290,17 @@ export function ReturnOrdersPageClient({
             startDate: initialParams?.startDate,
             endDate: initialParams?.endDate,
           }}
-          isSearching={isLoading || isSearchPending}
+          isSearching={isLoading || isFetching || isSearchPending}
           onSearch={handleSearch}
           onStatusChange={handleStatusChange}
           onTypeChange={handleTypeChange}
           onProcessTypeChange={handleProcessTypeChange}
-          onIncludeTestToggle={handleIncludeTestToggle}
           onIncludeVoidedToggle={handleIncludeVoidedToggle}
           onDateRangeChange={handleDateRangeChange}
           onClearFilters={handleClearFilters}
           orders={orders}
           isLoading={isLoading}
+          isRefreshing={isListRefreshing}
           error={error}
           pagination={paginationInfo}
           onPageChange={handlePageChange}

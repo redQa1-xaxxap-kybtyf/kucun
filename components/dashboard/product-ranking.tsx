@@ -28,12 +28,12 @@ function RankingItem({ item }: { item: ProductSalesRanking }) {
   return (
     <Link
       href={`/products/${item.productId}`}
-      className="group relative flex items-center gap-4 rounded-2xl border border-border bg-card p-3 transition-all duration-300 hover:-translate-x-1 hover:border-slate-200 hover:bg-card hover:shadow-lg hover:shadow-slate-100"
+      className="group relative flex items-center gap-4 rounded-md border border-border bg-card p-3 transition-colors hover:border-slate-300"
     >
       {/* 排名 */}
       <div
         className={cn(
-          'flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl font-semibold shadow-sm transition-all group-hover:scale-110',
+          'flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md font-semibold shadow-sm',
           colors.bg,
           colors.text
         )}
@@ -78,7 +78,7 @@ function EmptyState({ source }: { source: 'warehouse' | 'factory' }) {
       <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-50">
         <Icon className="h-8 w-8 text-slate-200" />
       </div>
-      <p className="text-xs font-semibold tracking-[0.2em] text-slate-400">
+      <p className="text-xs font-medium text-slate-400">
         当前暂无销售数据
       </p>
     </div>
@@ -97,12 +97,12 @@ export function ProductRanking({
   }
 
   return (
-    <div className="group relative flex flex-col rounded-md border border-border bg-card p-4 shadow-sm transition-all duration-500 hover:shadow-xl hover:shadow-slate-200/50">
+    <div className="relative flex flex-col rounded-md border border-border bg-card p-4 shadow-sm">
       <div className="mb-8 space-y-1">
         <div className="flex items-center gap-2">
           <div className="h-1.5 w-1.5 rounded-full bg-slate-900" />
           <p className="text-xs font-semibold text-slate-500">
-            Leaderboard / 热销排行
+            热销排行
           </p>
         </div>
         <p className="text-xl font-semibold tracking-tight text-slate-900">
@@ -111,16 +111,16 @@ export function ProductRanking({
       </div>
 
       <Tabs defaultValue="warehouse" className="w-full">
-        <TabsList className="grid h-11 w-full grid-cols-2 rounded-2xl border border-slate-200/50 bg-slate-100/50 p-1">
+        <TabsList className="grid h-10 w-full grid-cols-2 rounded-md border bg-slate-100 p-1">
           <TabsTrigger
             value="warehouse"
-            className="rounded-xl text-xs font-semibold data-[state=active]:bg-slate-900 data-[state=active]:text-white"
+            className="rounded text-xs font-medium data-[state=active]:bg-slate-900 data-[state=active]:text-white"
           >
             本地仓库
           </TabsTrigger>
           <TabsTrigger
             value="factory"
-            className="rounded-xl text-xs font-semibold data-[state=active]:bg-slate-900 data-[state=active]:text-white"
+            className="rounded text-xs font-medium data-[state=active]:bg-slate-900 data-[state=active]:text-white"
           >
             厂家直发
           </TabsTrigger>
@@ -146,9 +146,6 @@ export function ProductRanking({
           )}
         </TabsContent>
       </Tabs>
-
-      {/* 背景装饰轨迹 */}
-      <div className="absolute -right-4 -bottom-4 h-32 w-32 rounded-full bg-slate-900 opacity-5 blur-3xl transition-all group-hover:opacity-10" />
     </div>
   );
 }

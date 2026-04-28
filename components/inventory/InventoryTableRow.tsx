@@ -289,7 +289,7 @@ function InventoryRowView({
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 w-8 rounded-xl p-0 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600"
+              className="h-8 w-8 rounded-md p-0 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600"
             >
               <span className="sr-only">打开菜单</span>
               <MoreHorizontal className="h-4 w-4" />

@@ -178,7 +178,7 @@ function ProductInfoCard({ form, isEdit, isLoading }: ProductInfoCardProps) {
             isLoading={isLoading}
             isCreateMode={!isEdit}
             onCategoryChange={(categoryId, categoryName) => {
-              // 🎯 只保存分类名称，供提交时使用（如果产品名称为空）
+              // 只保存分类名称，供提交时使用（如果产品名称为空）
               if (categoryId && categoryId !== 'uncategorized') {
                 form.setValue('_categoryName' as any, categoryName);
               } else {
@@ -251,7 +251,7 @@ function ProductFormFooter({
   return (
     <div
       className={cn(
-        'bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky bottom-0 z-10 border-t backdrop-blur',
+        'bg-background sticky bottom-0 z-10 border-t',
         '-mx-6 px-6 py-4'
       )}
     >

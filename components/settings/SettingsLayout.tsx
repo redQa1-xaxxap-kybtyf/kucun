@@ -35,7 +35,7 @@ export function SettingsLayout({
 }: SettingsLayoutProps) {
   return (
     <div className={cn('min-h-full w-full space-y-10 p-6 lg:p-10', className)}>
-      {/* 页面标题区 - 保持全站统一的 v3 PRO 通透感 */}
+      {/* 页面标题区 */}
       <div className="mx-auto max-w-[1440px] px-2">
         <div className="space-y-2">
           <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
@@ -80,7 +80,7 @@ export interface SettingsSectionProps {
 
 /**
  * 设置章节组件
- * 为设置表单提供逻辑清晰的高清分区
+ * 为设置表单提供逻辑清晰的分区
  */
 export function SettingsSection({
   title,
@@ -91,7 +91,7 @@ export function SettingsSection({
   return (
     <div
       className={cn(
-        'rounded-2xl border border-slate-100 bg-slate-50/50 p-6',
+        'rounded-md border border-slate-100 bg-slate-50/50 p-6',
         className
       )}
     >
@@ -115,7 +115,7 @@ export function SettingsSection({
 
 /**
  * 设置卡片组件
- * 为设置页面提供统一的高清卡片样式
+ * 为设置页面提供统一的卡片样式
  */
 export function SettingsCard({
   title,
@@ -127,14 +127,14 @@ export function SettingsCard({
   return (
     <Card
       className={cn(
-        'overflow-hidden border-slate-200/60 shadow-sm transition-all hover:shadow-md',
+        'overflow-hidden rounded-md border-slate-200/60 shadow-sm',
         className
       )}
     >
       <CardHeader className="border-b border-slate-50 bg-slate-50/30 pb-4">
         <div className="flex items-center gap-3">
           {IconComponent && (
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-blue-100/50 bg-blue-50 text-blue-600">
+            <div className="flex h-9 w-9 items-center justify-center rounded-md border border-blue-100/50 bg-blue-50 text-blue-600">
               <IconComponent className="h-5 w-5" />
             </div>
           )}

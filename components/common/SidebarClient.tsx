@@ -131,7 +131,7 @@ function SidebarHeader({ state }: { state: SidebarState }) {
           <div className="bg-primary flex h-8 w-8 items-center justify-center rounded">
             <Package className="text-primary-foreground h-4 w-4" />
           </div>
-          <span className="text-lg font-semibold">库存管理</span>
+          <span className="text-lg font-semibold">瓷砖销售 ERP</span>
         </div>
       )}
 

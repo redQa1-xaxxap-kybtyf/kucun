@@ -439,7 +439,7 @@ export function CustomerSalesOrderSelector({
                             {hasMatch && (
                               <div className="flex items-center gap-1 text-xs">
                                 <span className="text-yellow-600 dark:text-yellow-400">
-                                  ✨ 匹配: {formatMatchedInfo(matchedItems)}
+                                  匹配：{formatMatchedInfo(matchedItems)}
                                 </span>
                               </div>
                             )}

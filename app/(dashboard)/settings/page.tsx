@@ -23,10 +23,10 @@ const LoginRequiredView = () => (
   <div className="flex h-full flex-col overflow-hidden p-6">
     <div className="space-y-6">
       {/* 页面标题卡片 */}
-      <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-        <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
+      <Card className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] shadow-sm">
+        <CardContent className="bg-[hsl(var(--color-bg-secondary))] p-6">
           <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-600 shadow-lg shadow-gray-600/30">
+            <div className="flex h-12 w-12 items-center justify-center rounded-md bg-gray-600 shadow-sm">
               <Settings className="h-6 w-6 text-white" />
             </div>
             <div>
@@ -39,7 +39,7 @@ const LoginRequiredView = () => (
         </CardContent>
       </Card>
 
-      <Card className="border-amber-200 bg-amber-50 shadow-lg shadow-amber-200/50">
+      <Card className="rounded-md border-amber-200 bg-amber-50 shadow-sm">
         <CardHeader>
           <CardTitle className="text-amber-800">需要登录</CardTitle>
           <CardDescription className="text-amber-700">
@@ -84,10 +84,10 @@ const SettingsPage = () => {
       <div className="flex h-full flex-col overflow-hidden p-6">
         <div className="space-y-6">
           {/* 页面标题卡片 */}
-          <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-            <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
+          <Card className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] shadow-sm">
+            <CardContent className="bg-[hsl(var(--color-bg-secondary))] p-6">
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-600 shadow-lg shadow-gray-600/30">
+                <div className="flex h-12 w-12 items-center justify-center rounded-md bg-gray-600 shadow-sm">
                   <Settings className="h-6 w-6 text-white" />
                 </div>
                 <div>
@@ -100,7 +100,7 @@ const SettingsPage = () => {
             </CardContent>
           </Card>
 
-          <Card className="border-amber-200 bg-amber-50 shadow-lg shadow-amber-200/50">
+          <Card className="rounded-md border-amber-200 bg-amber-50 shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center text-amber-800">
                 <Settings className="mr-2 h-5 w-5" />
@@ -120,10 +120,10 @@ const SettingsPage = () => {
     <div className="flex h-full flex-col overflow-hidden p-6">
       <div className="space-y-6">
         {/* 页面标题卡片 */}
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
+        <Card className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] shadow-sm">
+          <CardContent className="bg-[hsl(var(--color-bg-secondary))] p-6">
             <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-600 shadow-lg shadow-gray-600/30">
+              <div className="flex h-12 w-12 items-center justify-center rounded-md bg-gray-600 shadow-sm">
                 <Settings className="h-6 w-6 text-white" />
               </div>
               <div>

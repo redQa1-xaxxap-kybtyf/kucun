@@ -120,7 +120,7 @@ const CARD_VARIANTS = {
   bordered: 'border border-[hsl(var(--color-border-primary))]',
   elevated:
     'border border-[hsl(var(--color-border-primary))] shadow-[var(--shadow-light)]',
-  pro: 'border-white bg-white/60 backdrop-blur-xl shadow-sm rounded-[2.5rem]',
+  pro: 'rounded-lg border border-[hsl(var(--color-border-primary))] bg-white shadow-sm',
 } as const;
 
 function formatDateRangeSummary(
@@ -276,12 +276,12 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
       actionButtons.length >= 2 ? 'grid-cols-2' : 'grid-cols-1';
 
     return (
-      <Card
-        className={cn(CARD_VARIANTS[variant], isPro ? 'p-1' : '', className)}
-      >
+      <Card className={cn(CARD_VARIANTS[variant], className)}>
         <CardContent
           className={cn(
-            isPro ? 'bg-transparent p-6' : 'bg-[hsl(var(--color-bg-card))] pt-6'
+            isPro
+              ? 'bg-transparent p-3 sm:p-4'
+              : 'bg-[hsl(var(--color-bg-card))] pt-6'
           )}
         >
           {!isPro && (
@@ -312,10 +312,10 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
                   onChange={event => onSearchChange(event.target.value)}
                   disabled={!isHydrated}
                   className={cn(
-                    'h-11 rounded-xl pl-10',
+                    'h-11 rounded-lg pl-10',
                     searchValue && 'pr-10',
                     isPro &&
-                      'border-white bg-white/40 font-bold backdrop-blur-md'
+                      'border-[hsl(var(--color-border-primary))] bg-white font-medium'
                   )}
                 />
                 {searchValue && (
@@ -345,7 +345,7 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
                         activeFilterItems.length > 0 ? 'default' : 'outline'
                       }
                       disabled={!isHydrated}
-                      className="h-11 shrink-0 rounded-xl px-3"
+                      className="h-11 shrink-0 rounded-lg px-3"
                     >
                       <SlidersHorizontal className="mr-1.5 h-4 w-4" />
                       {activeFilterItems.length > 0
@@ -355,11 +355,11 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
                   </SheetTrigger>
                   <SheetContent
                     side="bottom"
-                    className="max-h-[85vh] overflow-y-auto rounded-t-3xl px-4 pb-6"
+                    className="max-h-[85vh] overflow-y-auto rounded-t-lg px-4 pb-6"
                   >
                     <SheetHeader>
                       <SheetTitle>筛选条件</SheetTitle>
-                      <SheetDescription>
+                      <SheetDescription className="sr-only">
                         只保留手机上常用的搜索和筛选入口，减少首屏占用。
                       </SheetDescription>
                     </SheetHeader>
@@ -399,7 +399,7 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
                                 );
                               }}
                               disabled={!isHydrated}
-                              className="border-input bg-background ring-offset-background focus:ring-ring h-11 w-full rounded-xl border px-3 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden"
+                              className="border-input bg-background ring-offset-background focus:ring-ring h-11 w-full rounded-lg border px-3 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden"
                             >
                               {includeAllOption ? (
                                 <option value="all">全部{filter.label}</option>
@@ -435,6 +435,7 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
                             showPresets={dateRangeFilter.showPresets ?? true}
                             disabled={!isHydrated}
                             className={cn('w-full', dateRangeFilter.className)}
+                            triggerClassName="h-11 w-full rounded-lg"
                           />
                         </div>
                       )}
@@ -449,7 +450,7 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
                       )}
                     </div>
 
-                    <div className="sticky bottom-0 mt-6 flex gap-2 border-t bg-white/95 pt-4 backdrop-blur">
+                    <div className="sticky bottom-0 mt-6 flex gap-2 border-t bg-white pt-4">
                       {showClearButton && hasFilters && onClearFilters && (
                         <Button
                           type="button"
@@ -489,7 +490,7 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
                     variant="outline"
                     size="sm"
                     data-active={toggle.active || undefined}
-                    className="h-9 shrink-0 rounded-xl data-[active=true]:border-[hsl(var(--color-primary))] data-[active=true]:bg-[hsl(var(--color-primary-light))] data-[active=true]:text-[hsl(var(--color-primary))]"
+                    className="h-9 shrink-0 rounded-lg data-[active=true]:border-[hsl(var(--color-primary))] data-[active=true]:bg-[hsl(var(--color-primary-light))] data-[active=true]:text-[hsl(var(--color-primary))]"
                     onClick={toggle.onClick}
                     disabled={!isHydrated}
                   >
@@ -508,7 +509,7 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
                     type="button"
                     variant={action.variant || 'default'}
                     className={cn(
-                      'h-11 w-full justify-center rounded-xl',
+                      'h-11 w-full justify-center rounded-lg',
                       action.className
                     )}
                     onClick={action.onClick}
@@ -526,7 +527,7 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
                 {activeFilterItems.map(item => (
                   <span
                     key={item.key}
-                    className="inline-flex max-w-full items-center rounded-full bg-[hsl(var(--color-bg-tertiary))] px-3 py-1 text-xs text-[hsl(var(--color-text-secondary))]"
+                    className="inline-flex max-w-full items-center rounded-md bg-[hsl(var(--color-bg-tertiary))] px-2.5 py-1 text-xs text-[hsl(var(--color-text-secondary))]"
                   >
                     <span className="mr-1 shrink-0 font-medium text-[hsl(var(--color-text-primary))]">
                       {item.label}:
@@ -580,11 +581,13 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
                       disabled={!isHydrated}
                       className={cn(
                         'w-full min-w-0 md:w-[280px] xl:w-auto xl:min-w-[220px]',
-                        isPro
-                          ? 'h-14 rounded-2xl border-white bg-white/40 font-bold backdrop-blur-md'
-                          : '',
                         dateRangeFilter.className
                       )}
+                      triggerClassName={
+                        isPro
+                          ? 'h-11 rounded-lg border-[hsl(var(--color-border-primary))] bg-white px-3 text-sm font-medium text-[hsl(var(--color-text-primary))]'
+                          : undefined
+                      }
                     />
                   )}
 
@@ -599,9 +602,9 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
                       onClick={handleClearFilters}
                       disabled={!isHydrated}
                       className={cn(
-                        'h-8 w-full justify-center gap-1.5 self-end transition-all md:w-auto',
+                        'h-10 w-full justify-center gap-1.5 self-end rounded-lg transition-all md:w-auto',
                         isPro
-                          ? 'font-semibold text-slate-400 hover:bg-white/50 hover:text-slate-900'
+                          ? 'px-3 font-medium text-[hsl(var(--color-text-secondary))] hover:bg-[hsl(var(--color-primary-light))] hover:text-[hsl(var(--color-primary))]'
                           : 'hover:border-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-light))]'
                       )}
                     >

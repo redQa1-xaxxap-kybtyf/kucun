@@ -39,7 +39,7 @@ export const StorageTestConnection = ({
   // 正在测试中
   if (isTesting) {
     return (
-      <div className="animate-pulse rounded-3xl border border-slate-100 bg-white/60 p-8 shadow-sm">
+      <div className="animate-pulse rounded-md border border-slate-100 bg-white p-8 shadow-sm">
         <div className="flex flex-col items-center justify-center space-y-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50">
             <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
@@ -62,10 +62,10 @@ export const StorageTestConnection = ({
     const errorMessage = testError || testResult?.message || '连接测试失败';
 
     return (
-      <div className="rounded-3xl border border-rose-100 bg-rose-50/20 p-8 shadow-sm">
+      <div className="rounded-md border border-rose-100 bg-rose-50/20 p-8 shadow-sm">
         <div className="flex flex-col gap-6">
           <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-rose-500 shadow-lg shadow-rose-500/20">
+            <div className="flex h-12 w-12 items-center justify-center rounded-md bg-rose-500 shadow-sm">
               <XCircle className="h-6 w-6 text-white" />
             </div>
             <div className="space-y-0.5">
@@ -78,7 +78,7 @@ export const StorageTestConnection = ({
             </div>
           </div>
 
-          <div className="rounded-2xl border border-rose-100/50 bg-white/80 p-5">
+          <div className="rounded-md border border-rose-100/50 bg-white p-5">
             <span className="mb-2 block text-xs font-semibold text-rose-500">
               问题说明
             </span>
@@ -113,7 +113,7 @@ export const StorageTestConnection = ({
                 <Button
                   variant="outline"
                   onClick={onRetry}
-                  className="h-10 rounded-xl border-rose-100 bg-white px-6 text-xs font-semibold text-rose-600 transition-all hover:bg-rose-50 active:scale-95"
+                  className="h-10 rounded-md border-rose-100 bg-white px-6 text-xs font-semibold text-rose-600 hover:bg-rose-50"
                 >
                   重新检查
                 </Button>
@@ -128,11 +128,11 @@ export const StorageTestConnection = ({
   // 测试成功
   if (testResult && testResult.success) {
     return (
-      <div className="rounded-3xl border border-emerald-100 bg-emerald-50/20 p-8 shadow-sm">
+      <div className="rounded-md border border-emerald-100 bg-emerald-50/20 p-8 shadow-sm">
         <div className="flex flex-col gap-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500 shadow-lg shadow-emerald-500/20">
+              <div className="flex h-12 w-12 items-center justify-center rounded-md bg-emerald-500 shadow-sm">
                 <CheckCircle className="h-6 w-6 text-white" />
               </div>
               <div className="space-y-0.5">
@@ -167,7 +167,7 @@ export const StorageTestConnection = ({
               ].map((info, i) => (
                 <div
                   key={i}
-                  className="rounded-2xl border border-emerald-100/50 bg-white/60 p-4 transition-all hover:shadow-md"
+                  className="rounded-md border border-emerald-100/50 bg-white p-4 shadow-sm"
                 >
                   <span className="mb-1 block text-[10px] font-semibold text-emerald-400">
                     {info.label}
@@ -180,7 +180,7 @@ export const StorageTestConnection = ({
             </div>
           )}
 
-          <div className="flex items-start gap-3 rounded-2xl border border-emerald-100/30 bg-emerald-50/50 p-4">
+          <div className="flex items-start gap-3 rounded-md border border-emerald-100/30 bg-emerald-50/50 p-4">
             <Info className="mt-0.5 h-4 w-4 text-emerald-500" />
             <div className="space-y-1">
               <p className="text-[11px] font-semibold text-emerald-900">

@@ -177,25 +177,25 @@ function BatchSummaryCards({
 }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+      <div className="rounded-md border border-slate-200 bg-slate-50/80 p-3">
         <div className="text-xs text-slate-500">导入批次号</div>
         <div className="mt-1 font-mono text-sm font-bold text-slate-900">
           {detail.batchId}
         </div>
       </div>
-      <div className="rounded-xl border border-blue-200 bg-blue-50/80 p-3">
+      <div className="rounded-md border border-blue-200 bg-blue-50/80 p-3">
         <div className="text-xs text-blue-700">本批次数量</div>
         <div className="mt-1 text-lg font-semibold text-blue-700">
           {detail.totalCount}
         </div>
       </div>
-      <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-3">
+      <div className="rounded-md border border-emerald-200 bg-emerald-50/80 p-3">
         <div className="text-xs text-emerald-700">可批量更正</div>
         <div className="mt-1 text-lg font-semibold text-emerald-700">
           {detail.records.filter(record => record.canCorrect).length}
         </div>
       </div>
-      <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3">
+      <div className="rounded-md border border-amber-200 bg-amber-50/80 p-3">
         <div className="text-xs text-amber-700">存在限制</div>
         <div className="mt-1 text-lg font-semibold text-amber-700">
           {
@@ -656,7 +656,7 @@ export function OpeningBalanceImportBatchActions({
                 </Alert>
               ) : null}
 
-              <div className="flex flex-wrap items-center gap-2 rounded-xl border border-dashed border-blue-200 bg-blue-50/40 p-3">
+              <div className="flex flex-wrap items-center gap-2 rounded-md border border-dashed border-blue-200 bg-blue-50/40 p-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="text-xs font-medium text-slate-600">
                     当前数量是按什么存的
@@ -725,7 +725,7 @@ export function OpeningBalanceImportBatchActions({
                 </div>
               </div>
 
-              <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+              <div className="rounded-md border border-slate-200 bg-slate-50/70 p-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
@@ -844,7 +844,7 @@ export function OpeningBalanceImportBatchActions({
                 ) : null}
               </div>
 
-              <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <div className="overflow-x-auto rounded-md border border-slate-200">
                 <Table>
                   <TableHeader>
                     <TableRow>

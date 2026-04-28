@@ -339,7 +339,7 @@ export function FactoryShipmentsPageClient({
                 size="lg"
                 onClick={handleExport}
                 disabled={isExporting}
-                className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                className="h-11 shadow-sm"
               >
                 <Download className="mr-2 h-4 w-4" />
                 {isExporting ? '导出中...' : '导出'}
@@ -347,7 +347,7 @@ export function FactoryShipmentsPageClient({
               <Button
                 size="lg"
                 asChild
-                className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                className="h-11 shadow-sm"
               >
                 <Link href="/factory-shipments/create">
                   <Plus className="mr-2 h-4 w-4" />

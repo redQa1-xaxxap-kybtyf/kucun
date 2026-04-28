@@ -97,7 +97,7 @@ export default function InventoryAdjustPage() {
               </Button>
               <Button
                 size="lg"
-                className="h-11 gap-2 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+                className="h-11 gap-2 shadow-sm"
                 onClick={openAdjustDialog}
               >
                 <Plus className="h-4 w-4" />
@@ -117,7 +117,7 @@ export default function InventoryAdjustPage() {
         ) : null}
 
         {/* 当前库存列表 */}
-        <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
+        <div className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm">
           <div className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-4 py-3">
             <h2 className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
               当前库存状态

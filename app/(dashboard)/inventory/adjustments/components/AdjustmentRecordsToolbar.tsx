@@ -1,6 +1,6 @@
 /**
  * 调整记录工具栏组件
- * 现代化设计风格，与其他模块保持一致
+ * 调整记录工具栏。
  */
 
 'use client';
@@ -19,10 +19,10 @@ export function AdjustmentRecordsToolbar({
   onAdjust,
 }: AdjustmentRecordsToolbarProps) {
   return (
-    <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] p-6">
+    <div className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] p-6 shadow-sm">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="card-shadow-light flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))]">
+          <div className="flex h-12 w-12 items-center justify-center rounded-md bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))]">
             <FileText className="h-6 w-6" />
           </div>
           <div>
@@ -49,7 +49,7 @@ export function AdjustmentRecordsToolbar({
           {onAdjust && (
             <Button
               size="lg"
-              className="card-shadow-light h-11 gap-2 transition-transform duration-150 hover:scale-[1.02]"
+              className="h-11 gap-2 shadow-sm"
               onClick={onAdjust}
             >
               <Edit className="h-4 w-4" />

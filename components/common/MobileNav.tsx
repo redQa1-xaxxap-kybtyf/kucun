@@ -193,10 +193,10 @@ const MobileNavSheetContent = ({
     <SheetHeader className="border-b px-6 py-4">
       <div className="flex items-center justify-between">
         <SheetTitle className="flex items-center space-x-2">
-          <div className="bg-primary flex h-8 w-8 items-center justify-center rounded">
+          <div className="bg-primary flex h-8 w-8 items-center justify-center rounded-md">
             <Package className="text-primary-foreground h-4 w-4" />
           </div>
-          <span className="text-lg font-semibold">库存管理</span>
+          <span className="text-lg font-semibold">瓷砖销售 ERP</span>
         </SheetTitle>
       </div>
     </SheetHeader>
@@ -303,8 +303,8 @@ const MobileNavItem = React.memo(
           href={item.href}
           onClick={onClick}
           className={cn(
-            'block rounded-lg transition-all duration-200',
-            isPressed && 'scale-95'
+            'block rounded-md transition-colors duration-150',
+            isPressed && 'bg-slate-50'
           )}
           onTouchStart={() => setIsPressed(true)}
           onTouchEnd={() => setIsPressed(false)}
@@ -314,9 +314,9 @@ const MobileNavItem = React.memo(
           <Button
             variant={isActive ? 'secondary' : 'ghost'}
             className={cn(
-              'h-12 w-full justify-start px-4 transition-all duration-200',
+              'h-12 w-full justify-start rounded-md px-4 transition-colors duration-150',
               isActive && 'bg-secondary font-medium shadow-xs',
-              'touch-manipulation active:scale-95'
+              'touch-manipulation'
             )}
             disabled={item.disabled}
             asChild
@@ -336,10 +336,10 @@ const MobileNavItem = React.memo(
         <Button
           variant={isActive || hasActiveChild ? 'secondary' : 'ghost'}
           className={cn(
-            'h-12 w-full justify-start px-4 transition-all duration-200',
+            'h-12 w-full justify-start rounded-md px-4 transition-colors duration-150',
             (isActive || hasActiveChild) &&
               'bg-secondary font-medium shadow-xs',
-            'touch-manipulation active:scale-95'
+            'touch-manipulation'
           )}
           disabled={item.disabled}
           onClick={handleClick}

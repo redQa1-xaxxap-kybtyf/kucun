@@ -239,7 +239,7 @@ export function DashboardLayoutClient({
       {/* 跳过导航链接 - WCAG 2.4.1 合规 */}
       <a
         href="#main-content"
-        className="focus:bg-background focus:ring-ring sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:rounded-md focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:shadow-lg focus:ring-2 focus:ring-offset-2"
+        className="focus:bg-background focus:ring-ring sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:rounded-md focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:shadow-md focus:ring-2 focus:ring-offset-2"
       >
         跳过导航，直达主要内容
       </a>
@@ -278,7 +278,7 @@ export function DashboardLayoutClient({
             id="main-content"
             tabIndex={-1}
             className={cn(
-              'flex flex-1 flex-col overflow-y-auto transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] focus:outline-none',
+              'flex flex-1 flex-col overflow-y-auto transition-all duration-200 focus:outline-none',
               showSidebar &&
                 sidebarSettings.isOpen &&
                 (sidebarSettings.isCollapsed ? 'md:ml-20' : 'md:ml-72')
@@ -291,7 +291,7 @@ export function DashboardLayoutClient({
             {showBreadcrumb && (
               <div
                 className={cn(
-                  'sticky top-0 z-40 flex-shrink-0 border-b border-slate-50 bg-white/40 backdrop-blur-md transition-all',
+                  'sticky top-0 z-40 flex-shrink-0 border-b border-slate-200 bg-white transition-colors',
                   'px-4 py-3 md:px-8'
                 )}
               >

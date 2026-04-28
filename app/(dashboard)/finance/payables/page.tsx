@@ -8,6 +8,7 @@ import type { Metadata } from 'next';
 
 import { prisma } from '@/lib/db';
 import { queryKeys } from '@/lib/queryKeys';
+import { buildPayableWhereConditions } from '@/lib/services/payable-query-service';
 import {
   PAYABLE_SORT_OPTIONS,
   type PayableRecordDetail,
@@ -27,8 +28,8 @@ type PayableSortField =
 import { PayablesPageClient } from './page-client';
 
 export const metadata: Metadata = {
-  title: '供应商待付款 - 财务管理',
-  description: '查看供应商待付款余额与结算进度',
+  title: '应付账款 - 财务管理',
+  description: '查看供应商待付余额与付款进度',
 };
 
 // ✅ Next.js 15 Route Segment Config
@@ -151,7 +152,7 @@ async function getPayablesData(searchParams: {
   const page = parseInt(searchParams.page || '1', 10);
   const limit = parseInt(searchParams.limit || '20', 10);
   const skip = (page - 1) * limit;
-  const search = searchParams.search || '';
+  const search = searchParams.search?.trim() || '';
   const statusParam = searchParams.status;
   const allowedStatuses: PayableStatus[] = [
     'pending',
@@ -180,36 +181,15 @@ async function getPayablesData(searchParams: {
   const startDateParam = searchParams.startDate;
   const endDateParam = searchParams.endDate;
 
-  // 构建查询条件
-  const whereConditions: Record<string, unknown> = {};
-
-  if (search) {
-    whereConditions.OR = [
-      { payableNumber: { contains: search } },
-      { supplier: { name: { contains: search } } },
-    ];
-  }
-
-  if (status) {
-    whereConditions.status = status;
-  }
-
-  if (sourceType) {
-    whereConditions.sourceType = sourceType;
-  }
-
-  if (startDateParam || endDateParam) {
-    const createdAtFilter: { gte?: Date; lte?: Date } = {};
-    if (startDateParam) {
-      createdAtFilter.gte = new Date(startDateParam);
-    }
-    if (endDateParam) {
-      const endDate = new Date(endDateParam);
-      endDate.setHours(23, 59, 59, 999);
-      createdAtFilter.lte = endDate;
-    }
-    whereConditions.createdAt = createdAtFilter;
-  }
+  const whereConditions = buildPayableWhereConditions({
+    page,
+    limit,
+    search,
+    status,
+    sourceType: sourceType as PayableSourceType | undefined,
+    startDate: startDateParam,
+    endDate: endDateParam,
+  });
 
   // 查询应付款记录与统计数据
   const [payables, total, amountSummary, statusSummary] = await Promise.all([

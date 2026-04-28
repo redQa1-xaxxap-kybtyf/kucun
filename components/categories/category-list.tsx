@@ -225,7 +225,7 @@ export function CategoryList({
 
   if (categories.length === 0) {
     return (
-      <Card className="shadow-lg shadow-gray-200/50">
+      <Card className="rounded-md border border-[hsl(var(--color-border-primary))] shadow-sm">
         <CardHeader>
           <CardTitle>分类列表</CardTitle>
         </CardHeader>
@@ -261,7 +261,7 @@ export function CategoryList({
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
+    <div className="overflow-hidden rounded-md border bg-white shadow-sm">
       <div className="flex flex-col gap-3 border-b bg-gray-50/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-sm font-medium text-gray-700">分类列表</div>
         <Button
@@ -401,7 +401,7 @@ function CategoryMobileCard({
       : '添加子分类';
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">

@@ -23,7 +23,7 @@ import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = {
-  title: '帮助中心 - 库存管理工具',
+  title: '帮助中心 - 瓷砖销售 ERP',
   description: '系统使用指南、常见问题解答和人工支持方式',
 };
 
@@ -37,7 +37,7 @@ const helpCategories = [
     description: '了解系统基本功能和操作流程',
     icon: BookOpen,
     items: [
-      { title: '系统概览', description: '了解库存管理工具的核心功能' },
+      { title: '系统概览', description: '了解瓷砖销售 ERP 的核心功能' },
       { title: '用户登录', description: '如何登录系统' },
       { title: '界面导航', description: '熟悉系统界面和导航结构' },
       { title: '基本设置', description: '配置个人资料和系统偏好' },
@@ -69,8 +69,8 @@ const helpCategories = [
   },
   {
     id: 'customer-management',
-    title: '客户管理',
-    description: '客户信息维护和关系管理',
+    title: '客户档案',
+    description: '客户资料维护和往来跟进',
     icon: Phone,
     items: [
       { title: '客户资料', description: '新建和维护客户基本信息' },
@@ -146,15 +146,15 @@ export default function HelpPage() {
   return (
     <div className="flex h-full flex-col overflow-y-auto bg-slate-50/50 p-4 lg:p-10 xl:p-14">
       <div className="mx-auto w-full max-w-[1680px] space-y-12">
-        {/* 1. Identity Header: 帮助门户标头 */}
+        {/* 帮助中心标题 */}
         <div className="flex flex-col gap-6 px-2 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-6">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-900 shadow-xl ring-4 shadow-slate-900/10 ring-white">
+            <div className="flex h-16 w-16 items-center justify-center rounded-md bg-slate-900 shadow-sm ring-4 ring-white">
               <HelpCircle className="h-8 w-8 text-white" />
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-semibold tracking-tighter text-slate-900">
+                <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
                   帮助中心
                 </h1>
                 <Badge className="bg-slate-900 px-2.5 py-1 text-[10px] font-semibold text-white hover:bg-slate-800">
@@ -169,7 +169,7 @@ export default function HelpPage() {
           <div className="flex items-center gap-3">
             <Button
               variant="outline"
-              className="h-11 rounded-xl border-slate-200 bg-white px-6 text-xs font-semibold text-slate-900 shadow-sm transition-all hover:bg-slate-50 active:scale-95"
+              className="h-11 rounded-md border-slate-200 bg-white px-6 text-xs font-semibold text-slate-900 shadow-sm hover:bg-slate-50"
             >
               <Mail className="mr-2 h-4 w-4 text-slate-400" />
               提交问题反馈
@@ -177,7 +177,7 @@ export default function HelpPage() {
           </div>
         </div>
 
-        {/* 2. Service Matrix: 快速响应矩阵 */}
+        {/* 快速入口 */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {[
             {
@@ -207,9 +207,9 @@ export default function HelpPage() {
           ].map((service, i) => (
             <div
               key={i}
-              className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-8 shadow-sm transition-all hover:border-blue-100 hover:shadow-lg"
+              className="group relative overflow-hidden rounded-md border border-slate-100 bg-white p-8 shadow-sm hover:border-blue-100"
             >
-              <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-50 transition-transform group-hover:scale-110">
+              <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-md bg-slate-50">
                 <service.icon className={cn('h-6 w-6', service.color)} />
               </div>
               <h3 className="mb-2 text-lg font-semibold text-slate-900">
@@ -221,7 +221,7 @@ export default function HelpPage() {
               <Button
                 variant="ghost"
                 className={cn(
-                  'h-9 rounded-xl p-0 text-xs font-semibold transition-all hover:bg-transparent',
+                  'h-9 rounded-md p-0 text-xs font-semibold hover:bg-transparent',
                   service.color
                 )}
               >
@@ -238,7 +238,7 @@ export default function HelpPage() {
         </div>
 
         <div className="grid gap-12 lg:grid-cols-[2.5fr_1fr]">
-          {/* 3. Main Guide Area: 结构化指南聚合 */}
+          {/* 操作指南 */}
           <div className="space-y-10">
             <section className="space-y-6">
               <div className="flex flex-col gap-1 px-1">
@@ -250,7 +250,7 @@ export default function HelpPage() {
                 </p>
               </div>
 
-              <div className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm shadow-slate-200/50 transition-all hover:shadow-md">
+              <div className="overflow-hidden rounded-md border border-slate-100 bg-white shadow-sm">
                 <div className="divide-y divide-slate-50">
                   {helpCategories.map(category => {
                     const IconComponent = category.icon;
@@ -260,7 +260,7 @@ export default function HelpPage() {
                         className="p-8 transition-colors hover:bg-slate-50/30"
                       >
                         <div className="mb-8 flex items-center gap-4">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-100">
                             <IconComponent className="h-5 w-5 text-slate-600" />
                           </div>
                           <div>
@@ -276,7 +276,7 @@ export default function HelpPage() {
                           {category.items.map((item, index) => (
                             <button
                               key={index}
-                              className="group flex flex-col items-start rounded-2xl border border-slate-50 bg-white p-5 text-left transition-all hover:border-blue-100 hover:shadow-sm"
+                              className="group flex flex-col items-start rounded-md border border-slate-50 bg-white p-5 text-left hover:border-blue-100 hover:shadow-sm"
                             >
                               <span className="text-sm font-semibold text-slate-700 transition-colors group-hover:text-blue-600">
                                 {item.title}
@@ -295,14 +295,14 @@ export default function HelpPage() {
             </section>
           </div>
 
-          {/* 4. Support Sidebar: 精捷支持模块 */}
+          {/* 支持信息 */}
           <div className="space-y-10">
             {/* 常见问题模块 */}
             <section className="space-y-6">
               <h3 className="px-1 text-[11px] font-semibold text-slate-400">
                 常见问题
               </h3>
-              <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+              <div className="rounded-md border border-slate-100 bg-white p-6 shadow-sm">
                 <div className="space-y-6">
                   {faqItems.map((faq, index) => (
                     <div key={index} className="group space-y-2">
@@ -319,12 +319,12 @@ export default function HelpPage() {
               </div>
             </section>
 
-            {/* 专业支持渠道 */}
+            {/* 支持渠道 */}
             <section className="space-y-6">
               <h3 className="px-1 text-[11px] font-semibold text-slate-400">
                 联系支持
               </h3>
-              <div className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm">
+              <div className="overflow-hidden rounded-md border border-slate-100 bg-white shadow-sm">
                 <div className="divide-y divide-slate-50">
                   {contactMethods.map((method, index) => {
                     const IconComponent = method.icon;
@@ -335,7 +335,7 @@ export default function HelpPage() {
                         className="group flex items-center justify-between p-5 transition-all hover:bg-slate-50"
                       >
                         <div className="flex items-center gap-4">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 transition-colors group-hover:bg-white">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-50 transition-colors group-hover:bg-white">
                             <IconComponent className="h-5 w-5 text-slate-400 group-hover:text-slate-900" />
                           </div>
                           <div className="space-y-0.5">
@@ -360,14 +360,14 @@ export default function HelpPage() {
               <h3 className="px-1 text-[11px] font-semibold text-slate-400">
                 系统服务状态
               </h3>
-              <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+              <div className="rounded-md border border-slate-100 bg-white p-6 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col gap-1">
                     <span className="text-xs font-semibold text-slate-900">
                       核心引擎状态
                     </span>
                     <p className="text-[10px] font-medium text-slate-400">
-                      所有数据中心均处于最优负载
+                      系统服务运行正常
                     </p>
                   </div>
                   <Badge className="flex items-center gap-2 border-none bg-emerald-50 px-3 py-1 font-semibold text-emerald-600">

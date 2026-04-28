@@ -330,29 +330,26 @@ export default function CustomerStatementDetailPage() {
   const { summary, transactions } = statementDetail;
 
   return (
-    <div className="min-h-screen bg-slate-50/50">
-      <div className="mx-auto max-w-[1680px] space-y-12 p-4 transition-all duration-500 lg:p-10 xl:p-14">
+    <div className="min-h-full bg-transparent">
+      <div className="mx-auto max-w-[1680px] space-y-4 p-4 sm:p-6">
         {/* Identity Wall Header */}
-        <div className="relative overflow-hidden rounded-[2.5rem] border border-white bg-white/60 p-8 shadow-sm backdrop-blur-xl transition-all duration-500 hover:shadow-xl">
-          <div className="absolute -top-20 -right-20 h-64 w-64 rounded-full bg-blue-50/50 opacity-40 blur-3xl" />
-          <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-indigo-50/30 opacity-40 blur-3xl" />
-
-          <div className="relative flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-6">
+        <div className="rounded-md border border-border bg-card p-4 shadow-sm sm:p-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => router.back()}
-                className="h-14 w-14 rounded-2xl bg-white shadow-sm transition-all hover:bg-slate-900 hover:text-white active:scale-90"
+                className="h-10 w-10 rounded-md border bg-white transition-colors hover:bg-slate-900 hover:text-white"
               >
-                <ArrowLeft className="h-6 w-6" />
+                <ArrowLeft className="h-5 w-5" />
               </Button>
               <div className="space-y-2">
                 <div className="flex flex-wrap items-center gap-4">
-                  <h1 className="text-4xl font-semibold tracking-tighter text-slate-900">
+                  <h1 className="text-2xl font-semibold text-slate-900">
                     {statementDetail.customerName}
                   </h1>
-                  <Badge className="rounded-full border-none bg-emerald-500/10 px-4 py-1.5 text-[10px] font-semibold text-emerald-600 ring-1 ring-emerald-500/20">
+                  <Badge className="rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
                     <ShieldCheck className="mr-1.5 h-3.5 w-3.5" />
                     往来客户
                   </Badge>
@@ -382,26 +379,26 @@ export default function CustomerStatementDetailPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <Button
                 variant="ghost"
-                size="lg"
+                size="sm"
                 disabled={isFetching}
                 onClick={() => refetch()}
-                className="h-14 rounded-2xl border border-white bg-white/60 px-8 font-semibold text-slate-900 shadow-sm transition-all hover:bg-white active:scale-95"
+                className="h-10 rounded-md border bg-white px-4 font-semibold text-slate-900 transition-colors hover:bg-slate-50"
               >
                 <RefreshCw
-                  className={cn('mr-2 h-5 w-5', isFetching && 'animate-spin')}
+                  className={cn('mr-2 h-4 w-4', isFetching && 'animate-spin')}
                 />
                 刷新对账单
               </Button>
               <Button
-                size="lg"
+                size="sm"
                 disabled={isExporting}
                 onClick={handleExport}
-                className="h-14 rounded-2xl bg-slate-900 px-10 font-semibold text-white shadow-xl transition-all hover:shadow-slate-200 active:scale-95"
+                className="h-10 rounded-md bg-slate-900 px-4 font-semibold text-white"
               >
-                <Download className="mr-2 h-5 w-5" />
+                <Download className="mr-2 h-4 w-4" />
                 {isExporting ? '正在生成...' : '导出当前对账单'}
               </Button>
             </div>
@@ -409,14 +406,14 @@ export default function CustomerStatementDetailPage() {
         </div>
 
         {/* Audit Control Bar */}
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="group max-w-2xl flex-1">
-            <div className="mb-4 flex items-center gap-2 px-1 text-[10px] font-semibold tracking-[0.2em] text-slate-300">
+            <div className="mb-2 flex items-center gap-2 px-1 text-xs font-medium text-slate-500">
               <Calendar className="h-3 w-3" />
               对账日期范围
             </div>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
-              <div className="flex-1 rounded-[1.5rem] border border-white bg-white/60 px-4 py-1 shadow-sm backdrop-blur-md transition-all group-hover:bg-white/80 group-hover:shadow-md">
+              <div className="flex-1 rounded-md border border-border bg-card px-3 py-1 shadow-sm">
                 <DateRangePicker
                   value={{
                     startDate: dateRange.startDate,
@@ -437,14 +434,14 @@ export default function CustomerStatementDetailPage() {
               </div>
               <Button
                 variant="ghost"
-                size="lg"
+                size="sm"
                 onClick={() =>
                   setDateRange({
                     startDate: defaultStartDate,
                     endDate: defaultEndDate,
                   })
                 }
-                className="h-14 rounded-[1.5rem] border border-white bg-white/60 px-10 font-semibold text-slate-400 shadow-sm transition-all hover:border-slate-900 hover:bg-slate-900 hover:text-white active:scale-95"
+                className="h-10 rounded-md border bg-white px-6 font-semibold text-slate-600 shadow-sm transition-colors hover:border-slate-900 hover:bg-slate-900 hover:text-white"
               >
                 清空
               </Button>
@@ -493,20 +490,18 @@ export default function CustomerStatementDetailPage() {
           ].map(metric => (
             <div
               key={metric.label}
-              className="group relative overflow-hidden rounded-[2rem] border border-white bg-white/60 p-6 backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:bg-white hover:shadow-2xl"
+              className="rounded-md border border-border bg-card p-4 shadow-sm"
             >
-              <div className="relative z-10 space-y-3">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-semibold text-slate-400">
+                  <span className="text-xs font-medium text-slate-500">
                     {metric.label}
                   </span>
-                  <metric.icon
-                    className={cn('h-4 w-4', `text-${metric.color}-500/50`)}
-                  />
+                  <metric.icon className="h-4 w-4 text-slate-400" />
                 </div>
                 <div
                   className={cn(
-                    'text-2xl font-semibold tracking-tighter',
+                    'text-2xl font-semibold',
                     metric.color === 'emerald'
                       ? 'text-emerald-600'
                       : metric.color === 'rose'
@@ -516,34 +511,28 @@ export default function CustomerStatementDetailPage() {
                 >
                   {formatCurrency(metric.value)}
                 </div>
-                <div className="text-[10px] font-bold text-slate-400">
+                <div className="text-xs font-medium text-slate-500">
                   {metric.subValue}
                 </div>
               </div>
-              <div
-                className={cn(
-                  'absolute -right-6 -bottom-6 h-20 w-20 rounded-full opacity-10 blur-[30px] transition-opacity group-hover:opacity-20',
-                  `bg-${metric.color}-400`
-                )}
-              />
             </div>
           ))}
         </div>
 
         {/* Audit Stream */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           <div className="flex items-center justify-between px-2">
-            <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
+            <h2 className="text-xl font-semibold text-slate-900">
               账务流水明细
             </h2>
-            <div className="flex items-center gap-2 text-[10px] font-semibold text-slate-300">
+            <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
               <Clock className="h-3 w-3" />
               共查得 {transactions.length} 条记录
             </div>
           </div>
 
           {transactions.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-[2.5rem] border border-dashed border-slate-200 bg-white/20 py-24">
+            <div className="flex flex-col items-center justify-center rounded-md border border-dashed border-slate-200 bg-card py-16">
               <FileText className="mb-4 h-12 w-12 text-slate-200" />
               <p className="text-sm font-semibold text-slate-400">
                 当前期间暂无往来记录
@@ -554,15 +543,15 @@ export default function CustomerStatementDetailPage() {
               {transactions.map((tx: CustomerStatementTransaction) => (
                 <div
                   key={tx.id}
-                  className="group relative overflow-hidden rounded-2xl border border-white bg-white/60 p-5 backdrop-blur-md transition-all duration-300 hover:bg-white hover:shadow-lg"
+                  className="group rounded-md border border-border bg-card p-4 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50/50"
                 >
                   <div className="flex flex-col gap-6 lg:flex-row lg:items-center">
                     <div className="flex items-center gap-4 lg:min-w-[200px]">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-100 bg-slate-50 transition-colors group-hover:border-slate-800 group-hover:bg-slate-900">
-                        <Layers className="h-6 w-6 text-slate-400 group-hover:text-white" />
+                      <div className="flex h-10 w-10 items-center justify-center rounded-md border border-slate-100 bg-slate-50 transition-colors group-hover:border-slate-300">
+                        <Layers className="h-5 w-5 text-slate-400" />
                       </div>
                       <div className="space-y-0.5">
-                        <div className="text-xs font-semibold text-slate-400">
+                        <div className="text-xs font-medium text-slate-500">
                           {typeLabelMap[tx.transactionType] ||
                             tx.transactionType}
                         </div>
@@ -579,7 +568,7 @@ export default function CustomerStatementDetailPage() {
                         </span>
                         <Badge
                           variant="secondary"
-                          className="bg-slate-100/50 py-0.5 text-[9px] font-semibold hover:bg-slate-100"
+                          className="rounded-md bg-slate-100 py-0.5 text-xs font-medium hover:bg-slate-100"
                         >
                           {formatTransactionStatus(tx.status)}
                         </Badge>
@@ -591,7 +580,7 @@ export default function CustomerStatementDetailPage() {
 
                     <div className="grid grid-cols-2 gap-8 lg:min-w-[360px] lg:border-l lg:border-slate-100 lg:pl-10">
                       <div className="space-y-1">
-                        <span className="text-[9px] font-semibold text-slate-300">
+                        <span className="text-xs font-medium text-slate-500">
                           本次变动
                         </span>
                         <div className="flex items-baseline gap-2">
@@ -614,7 +603,7 @@ export default function CustomerStatementDetailPage() {
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <span className="text-[9px] font-semibold text-slate-300">
+                        <span className="text-xs font-medium text-slate-500">
                           余额
                         </span>
                         <div className="text-sm font-semibold text-slate-900">

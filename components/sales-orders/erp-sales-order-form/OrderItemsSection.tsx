@@ -18,6 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { Toast } from '@/components/ui/use-toast';
+import { useIsMobile } from '@/hooks/use-media-query';
 import {
   getLatestPrice,
   type CustomerProductPrice,
@@ -59,6 +60,21 @@ const OrderItemRow = dynamic(
   }
 );
 
+const OrderItemMobileCard = dynamic(
+  () =>
+    import('@/components/sales-orders/order-item-row/OrderItemMobileCard').then(
+      mod => mod.OrderItemMobileCard
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-xl border border-[hsl(var(--color-border-primary))] px-3 py-4 text-center text-xs text-[hsl(var(--color-text-secondary))]">
+        加载明细中...
+      </div>
+    ),
+  }
+);
+
 interface OrderItemsSectionProps {
   fields: FieldArrayWithId<SalesOrderCreateFormData, 'items', 'id'>[];
   remove: UseFieldArrayRemove;
@@ -77,6 +93,7 @@ interface OrderItemsSectionProps {
   priceType: PriceType;
   // 与 useToast().toast 保持一致的参数类型（支持 title / description 等）
   toast: (props: Toast) => void;
+  showInlineInventoryStatus?: boolean;
 }
 
 function populateProductSelection({
@@ -111,7 +128,10 @@ function populateProductSelection({
     `items.${index}.piecesPerUnit`,
     product.piecesPerUnit ?? undefined
   );
-  form.setValue(`items.${index}.displayUnit`, toPieceOrSheetLabel(product.unit));
+  form.setValue(
+    `items.${index}.displayUnit`,
+    toPieceOrSheetLabel(product.unit)
+  );
   form.setValue(`items.${index}.displayQuantity`, 1);
   form.setValue(`items.${index}.quantity`, 1);
   form.setValue(`items.${index}.remarks`, '');
@@ -146,7 +166,9 @@ export function OrderItemsSection({
   priceHistory,
   priceType,
   toast,
+  showInlineInventoryStatus = true,
 }: OrderItemsSectionProps) {
+  const isMobile = useIsMobile();
   const [showHistoricalDialog, setShowHistoricalDialog] = React.useState(false);
 
   const handleProductChange = React.useCallback(
@@ -235,8 +257,8 @@ export function OrderItemsSection({
 
   return (
     <>
-      <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] shadow-md">
-        <CardContent className="space-y-4 p-6">
+      <Card className="overflow-hidden rounded-lg border-[hsl(var(--color-border-primary))] shadow-sm">
+        <CardContent className="space-y-3 p-3 sm:p-4">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex items-center gap-2 text-sm font-medium text-[hsl(var(--color-text-primary))]">
               <Package className="h-4 w-4" />
@@ -249,7 +271,7 @@ export function OrderItemsSection({
                   variant="outline"
                   size="sm"
                   onClick={() => setShowHistoricalDialog(true)}
-                  className="h-8 w-full gap-1 sm:w-auto"
+                  className="h-9 w-full gap-1 sm:w-auto"
                   disabled={isSubmitting}
                 >
                   <Clock className="h-3 w-3" />
@@ -261,7 +283,7 @@ export function OrderItemsSection({
                 variant="outline"
                 size="sm"
                 onClick={onAddItem}
-                className="h-8 w-full gap-1 sm:w-auto"
+                className="h-9 w-full gap-1 sm:w-auto"
                 disabled={
                   isSubmitting || (orderType === 'TRANSFER' && !supplierId)
                 }
@@ -290,62 +312,14 @@ export function OrderItemsSection({
               </div>
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
-              <Table
-                className={
-                  orderType === 'TRANSFER' ? 'min-w-[1680px]' : 'min-w-[1360px]'
-                }
-              >
-                <TableHeader>
-                  <TableRow className="bg-muted/40">
-                    <TableHead className="min-w-[200px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
-                      产品编码
-                    </TableHead>
-                    <TableHead className="min-w-[140px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
-                      产品名称
-                    </TableHead>
-                    <TableHead className="min-w-[90px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
-                      装箱数
-                    </TableHead>
-                    <TableHead className="min-w-[180px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
-                      批次号
-                    </TableHead>
-                    <TableHead className="min-w-[150px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
-                      规格
-                    </TableHead>
-                    <TableHead className="min-w-[80px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
-                      单位
-                    </TableHead>
-                    <TableHead className="min-w-[100px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
-                      数量
-                    </TableHead>
-                    <TableHead className="min-w-[100px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
-                      销售单价
-                    </TableHead>
-                    {orderType === 'TRANSFER' && (
-                      <>
-                        <TableHead className="min-w-[100px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
-                          成本单价
-                        </TableHead>
-                        <TableHead className="min-w-[120px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
-                          调货信息
-                        </TableHead>
-                      </>
-                    )}
-                    <TableHead className="min-w-[100px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
-                      金额
-                    </TableHead>
-                    <TableHead className="min-w-[150px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
-                      备注
-                    </TableHead>
-                    <TableHead className="min-w-[80px] px-3 text-center text-[hsl(var(--color-text-secondary))]">
-                      操作
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+            <>
+              {isMobile ? (
+                <div
+                  className="space-y-3"
+                  data-testid="sales-order-mobile-item-list"
+                >
                   {fields.map((field, index) => (
-                    <OrderItemRow
+                    <OrderItemMobileCard
                       key={field.id}
                       index={index}
                       isHighlighted={highlightedRowIndexes?.has(index) ?? false}
@@ -354,11 +328,87 @@ export function OrderItemsSection({
                       onProductChange={handleProductChange}
                       orderType={orderType as 'NORMAL' | 'TRANSFER'}
                       transferMode={transferMode}
+                      showInlineInventoryStatus={showInlineInventoryStatus}
                     />
                   ))}
-                </TableBody>
-              </Table>
-            </div>
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
+                  <Table
+                    className={
+                      orderType === 'TRANSFER'
+                        ? 'min-w-[1480px]'
+                        : 'min-w-[1220px]'
+                    }
+                  >
+                    <TableHeader>
+                      <TableRow className="bg-muted/40">
+                        <TableHead className="min-w-[180px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
+                          产品编码
+                        </TableHead>
+                        <TableHead className="min-w-[140px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
+                          产品名称
+                        </TableHead>
+                        <TableHead className="min-w-[80px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
+                          装箱数
+                        </TableHead>
+                        <TableHead className="min-w-[160px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
+                          批次号
+                        </TableHead>
+                        <TableHead className="min-w-[140px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
+                          规格
+                        </TableHead>
+                        <TableHead className="min-w-[70px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
+                          单位
+                        </TableHead>
+                        <TableHead className="min-w-[90px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
+                          数量
+                        </TableHead>
+                        <TableHead className="min-w-[90px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
+                          销售单价
+                        </TableHead>
+                        {orderType === 'TRANSFER' && (
+                          <>
+                            <TableHead className="min-w-[100px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
+                              成本单价
+                            </TableHead>
+                            <TableHead className="min-w-[120px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
+                              调货信息
+                            </TableHead>
+                          </>
+                        )}
+                        <TableHead className="min-w-[100px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
+                          金额
+                        </TableHead>
+                        <TableHead className="min-w-[120px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
+                          备注
+                        </TableHead>
+                        <TableHead className="min-w-[70px] px-3 text-center text-[hsl(var(--color-text-secondary))]">
+                          操作
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {fields.map((field, index) => (
+                        <OrderItemRow
+                          key={field.id}
+                          index={index}
+                          isHighlighted={
+                            highlightedRowIndexes?.has(index) ?? false
+                          }
+                          products={products}
+                          onRemove={remove}
+                          onProductChange={handleProductChange}
+                          orderType={orderType as 'NORMAL' | 'TRANSFER'}
+                          transferMode={transferMode}
+                          showInlineInventoryStatus={showInlineInventoryStatus}
+                        />
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>

@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useWatch } from 'react-hook-form';
+import { useFormContext, useWatch } from 'react-hook-form';
 
 import type { Product } from '@/lib/types/product';
 import type { TransferFulfillmentMode } from '@/lib/types/sales-order';
@@ -27,6 +27,35 @@ interface OrderItemWatchers {
   manualProductName?: string;
   batchNumber?: string;
   remarks?: string;
+}
+
+export interface OrderItemControllerData {
+  form: OrderFormInstance;
+  index: number;
+  isManualProduct: boolean;
+  resolvedProduct: Product | null;
+  availableBatches: Array<{
+    batchNumber: string;
+    quantity: number;
+    reservedQuantity?: number;
+    piecesPerUnit?: number;
+    weight?: number | null;
+  }>;
+  localQuantityDisplay: number;
+  transferQuantityDisplay: number;
+  itemAmount: number;
+  formatQuantity: (value: number) => string;
+  watchedProductId?: string;
+  onProductOverride: (product: Product | null) => void;
+  watchers: OrderItemWatchers;
+}
+
+export interface UseOrderItemControllerParams {
+  index: number;
+  products: Product[];
+  onProductChange?: (index: number, product: Product | null) => void;
+  orderType: 'NORMAL' | 'TRANSFER';
+  transferMode?: TransferFulfillmentMode;
 }
 
 function useOrderItemManualFlag(
@@ -484,6 +513,102 @@ export function useAutoRemarks(
       // ignore
     }
   }, [form, index, quantity, piecesPerUnit, remarks]);
+}
+
+export function useOrderItemController({
+  index,
+  products,
+  onProductChange,
+  orderType,
+  transferMode,
+}: UseOrderItemControllerParams): OrderItemControllerData {
+  const form = useFormContext<SalesOrderCreateFormData>();
+
+  const watchers = useOrderItemWatchers(form, index);
+  const { isManualProduct } = watchers;
+
+  const { resolvedProduct, handleProductOverride } = useResolvedProductState(
+    products,
+    watchers.productId,
+    index,
+    onProductChange
+  );
+
+  const availableBatches = useAvailableBatches(
+    resolvedProduct,
+    watchers.batchNumber
+  );
+
+  useBatchPiecesPerUnitSync(
+    form,
+    index,
+    resolvedProduct,
+    watchers.batchNumber,
+    isManualProduct
+  );
+
+  useDisplayQuantitySync(
+    form,
+    index,
+    watchers.displayUnit,
+    watchers.displayQuantity,
+    watchers.piecesPerUnit,
+    watchers.quantity
+  );
+
+  useTransferQuantitySync(
+    form,
+    index,
+    orderType,
+    transferMode,
+    watchers.quantity,
+    watchers.localQuantity,
+    watchers.transferQuantity
+  );
+
+  useAutoRemarks(
+    form,
+    index,
+    watchers.quantity,
+    watchers.piecesPerUnit,
+    watchers.remarks
+  );
+
+  const piecePrice =
+    watchers.displayUnit === '件' &&
+    watchers.unitPrice &&
+    watchers.piecesPerUnit > 0
+      ? watchers.unitPrice / watchers.piecesPerUnit
+      : watchers.unitPrice || 0;
+
+  const itemAmount = (watchers.quantity || 0) * piecePrice;
+  const localQuantityDisplay = Math.max(watchers.localQuantity || 0, 0);
+  const transferQuantityDisplay = Math.max(watchers.transferQuantity || 0, 0);
+
+  const formatQuantity = React.useCallback((value: number) => {
+    if (!Number.isFinite(value)) {
+      return '0';
+    }
+    return value.toLocaleString('zh-CN', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    });
+  }, []);
+
+  return {
+    form,
+    index,
+    isManualProduct,
+    resolvedProduct,
+    availableBatches,
+    localQuantityDisplay,
+    transferQuantityDisplay,
+    itemAmount,
+    formatQuantity,
+    watchedProductId: watchers.productId,
+    onProductOverride: handleProductOverride,
+    watchers,
+  };
 }
 
 export function buildAutoRemarksText(

@@ -71,7 +71,7 @@ export function CategoryEditFormCard({
   onParentSearchChange,
 }: CategoryEditFormCardProps) {
   return (
-    <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+    <Card className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] shadow-sm">
       <CategoryFormCardHeader />
       <CategoryFormGuidance />
       <CardContent className="p-6">
@@ -94,7 +94,7 @@ export function CategoryEditFormCard({
 
 function CategoryFormCardHeader() {
   return (
-    <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
+    <CardHeader className="border-b bg-[hsl(var(--color-bg-secondary))]">
       <CardTitle className="flex items-center text-gray-900">
         <FolderTree className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
         分类信息
@@ -110,7 +110,9 @@ function CategoryFormGuidance() {
   return (
     <div className="border-b bg-[hsl(var(--color-info-light))] px-6 py-3">
       <div className="flex items-start gap-2 text-sm">
-        <span className="text-[hsl(var(--color-info))]">ℹ️</span>
+        <span className="text-xs font-semibold text-[hsl(var(--color-info))]">
+          说明
+        </span>
         <div className="flex-1 text-[hsl(var(--color-info))]">
           <strong>分类层级规则：</strong>
           <ul className="mt-1 ml-4 list-disc space-y-1 text-xs">
@@ -375,9 +377,6 @@ function CategoryParentField({
                 <SelectContent>
                   <SelectItem value="none">
                     <div className="flex items-center gap-2">
-                      <span className="text-[hsl(var(--color-primary))]">
-                        🏠
-                      </span>
                       <span>无（顶级分类）</span>
                     </div>
                   </SelectItem>
@@ -477,7 +476,7 @@ function CategoryFormActions({
         variant="outline"
         size="lg"
         onClick={onCancel}
-        className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+        className="h-11 shadow-sm"
       >
         <X className="mr-2 h-4 w-4" />
         取消
@@ -486,7 +485,7 @@ function CategoryFormActions({
         type="submit"
         size="lg"
         disabled={isSubmitting}
-        className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+        className="h-11 shadow-sm"
       >
         {isSubmitting ? (
           <>

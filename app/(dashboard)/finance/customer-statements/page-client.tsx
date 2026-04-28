@@ -251,16 +251,16 @@ export function CustomerStatementsPageClient({
         </div>
 
         {/* 统计卡片 */}
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-          <div className="group relative overflow-hidden rounded-[2rem] border border-white bg-white/60 p-8 text-emerald-600 backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:bg-white hover:shadow-2xl">
-            <div className="relative z-10 space-y-4">
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-md border border-border bg-card p-4 text-emerald-600 shadow-sm">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-bold text-slate-500">
                   应收账款余额
                 </h3>
                 <TrendingUp className="h-5 w-5" />
               </div>
-              <div className="text-3xl font-semibold tracking-tighter text-slate-900">
+              <div className="text-2xl font-semibold text-slate-900">
                 {statisticsLoading
                   ? '---'
                   : formatCurrency(totalReceivableBalance)}
@@ -269,18 +269,17 @@ export function CustomerStatementsPageClient({
                 待回收货款总额
               </p>
             </div>
-            <div className="absolute -right-8 -bottom-8 h-24 w-24 rounded-full bg-emerald-400 opacity-10 blur-[40px] transition-opacity group-hover:opacity-20" />
           </div>
 
-          <div className="group relative overflow-hidden rounded-[2rem] border border-white bg-white/60 p-8 text-rose-600 backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:bg-white hover:shadow-2xl">
-            <div className="relative z-10 space-y-4">
+          <div className="rounded-md border border-border bg-card p-4 text-rose-600 shadow-sm">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-bold text-slate-500">
                   应付账款余额
                 </h3>
                 <TrendingDown className="h-5 w-5" />
               </div>
-              <div className="text-3xl font-semibold tracking-tighter text-slate-900">
+              <div className="text-2xl font-semibold text-slate-900">
                 {statisticsLoading
                   ? '---'
                   : formatCurrency(totalPayableBalance)}
@@ -289,18 +288,17 @@ export function CustomerStatementsPageClient({
                 待支付货款总额
               </p>
             </div>
-            <div className="absolute -right-8 -bottom-8 h-24 w-24 rounded-full bg-rose-400 opacity-10 blur-[40px] transition-opacity group-hover:opacity-20" />
           </div>
 
-          <div className="group relative overflow-hidden rounded-[2rem] border border-white bg-white/60 p-8 text-amber-600 backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:bg-white hover:shadow-2xl">
-            <div className="relative z-10 space-y-4">
+          <div className="rounded-md border border-border bg-card p-4 text-amber-600 shadow-sm">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-bold text-slate-500">
                   总应退金额
                 </h3>
                 <History className="h-5 w-5" />
               </div>
-              <div className="text-3xl font-semibold tracking-tighter text-slate-900">
+              <div className="text-2xl font-semibold text-slate-900">
                 {statisticsLoading
                   ? '---'
                   : formatCurrency(totalPendingRefundBalance)}
@@ -309,25 +307,23 @@ export function CustomerStatementsPageClient({
                 已处理退款 {formatCurrency(totalRefundPaidAmount)}
               </div>
             </div>
-            <div className="absolute -right-8 -bottom-8 h-24 w-24 rounded-full bg-amber-400 opacity-10 blur-[40px] transition-opacity group-hover:opacity-20" />
           </div>
 
-          <div className="group relative overflow-hidden rounded-[2rem] border border-white bg-white/60 p-8 text-slate-900 backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:bg-white hover:shadow-2xl">
-            <div className="relative z-10 space-y-4">
+          <div className="rounded-md border border-border bg-card p-4 text-slate-900 shadow-sm">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-bold text-slate-500">
                   往来净额
                 </h3>
                 <Wallet className="h-5 w-5 text-slate-400" />
               </div>
-              <div className="text-3xl font-semibold tracking-tighter text-slate-900">
+              <div className="text-2xl font-semibold text-slate-900">
                 {statisticsLoading ? '---' : formatCurrency(totalNetBalance)}
               </div>
               <p className="text-xs font-medium tracking-normal text-slate-500">
                 应收减应付结余
               </p>
             </div>
-            <div className="absolute -right-8 -bottom-8 h-24 w-24 rounded-full bg-slate-900 opacity-5 blur-[40px] transition-opacity group-hover:opacity-10" />
           </div>
         </div>
 
@@ -344,7 +340,7 @@ export function CustomerStatementsPageClient({
           </div>
 
           {isLoading ? (
-            <div className="flex min-h-[400px] items-center justify-center rounded-[2.5rem] border border-white bg-white/40 backdrop-blur-md">
+            <div className="flex min-h-[320px] items-center justify-center rounded-md border border-border bg-card">
               <div className="flex flex-col items-center gap-4">
                 <div className="relative h-16 w-16">
                   <div className="absolute inset-0 rounded-full border-4 border-slate-100" />
@@ -356,7 +352,7 @@ export function CustomerStatementsPageClient({
               </div>
             </div>
           ) : statements.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-[2.5rem] border border-dashed border-slate-200 bg-white/20 py-24">
+            <div className="flex flex-col items-center justify-center rounded-md border border-dashed border-slate-200 bg-card py-16">
               <FileText className="mb-4 h-12 w-12 text-slate-200" />
               <p className="text-sm font-medium text-slate-500">
                 暂无客户往来记录
@@ -379,24 +375,24 @@ export function CustomerStatementsPageClient({
                         `/finance/customer-statements/${statement.customerId}`
                       )
                     }
-                    className="group relative cursor-pointer overflow-hidden rounded-[2rem] border border-white bg-white/60 p-6 backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:bg-white hover:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.08)]"
+                    className="group cursor-pointer rounded-md border border-border bg-card p-4 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50/50"
                   >
-                    <div className="flex flex-col gap-8 lg:flex-row lg:items-center">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
                       {/* Left: Identity */}
-                      <div className="flex min-w-[300px] items-center gap-5">
-                        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-xl transition-transform duration-500 group-hover:scale-110">
-                          <User className="h-8 w-8" />
+                      <div className="flex items-center gap-3 lg:min-w-[260px]">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-700">
+                          <User className="h-5 w-5" />
                         </div>
                         <div className="space-y-1.5">
-                          <h3 className="text-xl font-semibold tracking-tight text-slate-900 transition-colors group-hover:text-blue-600">
+                          <h3 className="text-base font-semibold text-slate-900 transition-colors group-hover:text-blue-600">
                             {statement.customerName}
                           </h3>
-                          <div className="flex items-center gap-3">
-                            <div className="wy-1 flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-100 px-2 text-xs font-bold text-slate-600">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <div className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-medium text-slate-600">
                               <Wallet className="h-3 w-3" />
                               {statement.customerPhone || '未留联系方式'}
                             </div>
-                            <span className="text-xs font-bold tracking-normal text-slate-400">
+                            <span className="text-xs font-medium tracking-normal text-slate-400">
                               客户编号: {statement.customerId.slice(-6)}
                             </span>
                           </div>
@@ -404,7 +400,7 @@ export function CustomerStatementsPageClient({
                       </div>
 
                       {/* Middle: Financial Insight Grid */}
-                      <div className="grid flex-1 grid-cols-2 gap-6 border-slate-100 lg:border-x lg:px-8 xl:grid-cols-4">
+                      <div className="grid flex-1 grid-cols-2 gap-3 border-slate-100 lg:border-x lg:px-6 xl:grid-cols-4">
                         <div className="space-y-1">
                           <span className="text-xs font-bold text-slate-500">
                             应收金额
@@ -460,21 +456,21 @@ export function CustomerStatementsPageClient({
                       </div>
 
                       {/* Right: Reconciliation Detail Tooltip Area */}
-                      <div className="flex items-center gap-6 lg:min-w-[240px] lg:justify-end">
-                        <div className="flex flex-col items-end gap-1.5 rounded-2xl border border-slate-100 bg-slate-50/50 px-4 py-3 text-sm transition-all group-hover:border-slate-800 group-hover:bg-slate-900">
+                      <div className="flex items-center gap-3 lg:min-w-[240px] lg:justify-end">
+                        <div className="flex flex-col items-end gap-1.5 rounded-md border border-slate-100 bg-slate-50 px-3 py-2 text-sm">
                           <div className="flex w-full items-center justify-between gap-4">
-                            <span className="font-bold text-slate-500 transition-colors group-hover:text-slate-400">
+                            <span className="font-medium text-slate-500">
                               净销售额
                             </span>
-                            <span className="font-semibold text-slate-700 transition-colors group-hover:text-white">
+                            <span className="font-semibold text-slate-700">
                               {formatCurrency(receivableOverview.netSales)}
                             </span>
                           </div>
-                          <div className="flex w-full items-center justify-between gap-4 border-t border-slate-200/50 pt-1 group-hover:border-slate-700">
-                            <span className="font-bold text-slate-500 transition-colors group-hover:text-slate-400">
+                          <div className="flex w-full items-center justify-between gap-4 border-t border-slate-200/50 pt-1">
+                            <span className="font-medium text-slate-500">
                               净收款
                             </span>
-                            <span className="font-semibold text-slate-700 transition-colors group-hover:text-white">
+                            <span className="font-semibold text-slate-700">
                               {formatCurrency(receivableOverview.netReceipts)}
                             </span>
                           </div>
@@ -483,7 +479,7 @@ export function CustomerStatementsPageClient({
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-10 w-10 rounded-xl text-slate-300 transition-all group-hover:text-slate-900 active:scale-90"
+                          className="h-9 w-9 rounded-md text-slate-400 transition-colors group-hover:text-slate-900"
                         >
                           <ChevronRight className="h-6 w-6" />
                         </Button>
@@ -491,18 +487,18 @@ export function CustomerStatementsPageClient({
                     </div>
 
                     {/* Footer: Metadata & Audit Indicators */}
-                    <div className="mt-8 flex items-center justify-between border-t border-slate-50 pt-5">
-                      <div className="flex items-center gap-6">
-                        <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
+                      <div className="flex flex-wrap items-center gap-4">
+                        <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
                           <History className="h-3.5 w-3.5 text-slate-400" />
                           最后交易时间{' '}
                           <span className="ml-1 text-slate-900">
                             {statement.lastTransactionDate
                               ? formatDate(statement.lastTransactionDate)
-                              : '--'}
+                            : '--'}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+                        <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
                           <ArrowUpRight className="h-3.5 w-3.5 text-slate-400" />
                           交易笔数{' '}
                           <span className="ml-1 text-blue-600">
@@ -512,7 +508,7 @@ export function CustomerStatementsPageClient({
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-400">
+                        <span className="text-xs font-medium text-slate-400">
                           数据已更新
                         </span>
                         <div className="flex h-3 w-3 items-center justify-center rounded-sm bg-emerald-500/20">
@@ -529,7 +525,7 @@ export function CustomerStatementsPageClient({
 
         {/* 分页 */}
         {pagination && pagination.totalPages > 1 && (
-          <div className="flex flex-col items-center justify-between gap-6 border-t border-slate-100 pt-8 sm:flex-row">
+          <div className="flex flex-col items-center justify-between gap-4 border-t border-slate-100 pt-6 sm:flex-row">
             <div className="text-xs font-bold text-slate-500">
               第 <span className="text-slate-900">{pagination.page}</span> 页 /
               共 {pagination.totalPages} 页 — {pagination.total} 条记录
@@ -540,7 +536,7 @@ export function CustomerStatementsPageClient({
                 size="lg"
                 disabled={pagination.page === 1}
                 onClick={() => handlePageChange(pagination.page - 1)}
-                className="h-12 rounded-xl border-none bg-white font-semibold text-slate-900 shadow-sm transition-all hover:bg-slate-900 hover:text-white disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-slate-900"
+                className="h-10 rounded-md border bg-white font-semibold text-slate-900 shadow-sm transition-colors hover:bg-slate-900 hover:text-white disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-slate-900"
               >
                 上一页
               </Button>
@@ -549,7 +545,7 @@ export function CustomerStatementsPageClient({
                 size="lg"
                 disabled={pagination.page === pagination.totalPages}
                 onClick={() => handlePageChange(pagination.page + 1)}
-                className="h-12 rounded-xl border-none bg-white font-semibold text-slate-900 shadow-sm transition-all hover:bg-slate-900 hover:text-white disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-slate-900"
+                className="h-10 rounded-md border bg-white font-semibold text-slate-900 shadow-sm transition-colors hover:bg-slate-900 hover:text-white disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-slate-900"
               >
                 下一页
               </Button>

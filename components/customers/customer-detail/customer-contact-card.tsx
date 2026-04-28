@@ -37,13 +37,13 @@ export function CustomerContactCard({
   formatDateTime,
 }: CustomerContactCardProps) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* 核心联系人信息分区 */}
-      <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+      <section className="rounded-lg border bg-white p-4 sm:p-5">
         <div className="mb-4">
-          <h3 className="text-sm font-bold text-slate-900">联系信息</h3>
+          <h3 className="text-sm font-semibold text-slate-900">联系信息</h3>
         </div>
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <SectionItem
             icon={
               <IconBadge
@@ -84,30 +84,25 @@ export function CustomerContactCard({
           />
         </div>
 
-        {address && (
-          <div className="mt-8 flex items-start gap-3 border-t border-slate-50 pt-6">
-            <IconBadge
-              color="slate"
-              icon={<MapPin className="h-3.5 w-3.5" />}
-            />
-            <div className="flex-1">
-              <p className="text-xs font-bold text-slate-500">
-                地址
-              </p>
-              <p className="mt-1 text-sm font-bold text-slate-700">{address}</p>
-            </div>
+        <div className="mt-5 flex items-start gap-3 border-t pt-4">
+          <IconBadge color="slate" icon={<MapPin className="h-3.5 w-3.5" />} />
+          <div className="flex-1">
+            <p className="text-xs font-medium text-slate-500">地址</p>
+            <p className="mt-1 text-sm font-medium text-slate-700">
+              {address || '未填写'}
+            </p>
           </div>
-        )}
+        </div>
       </section>
 
       {/* 属性与财务分区 */}
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2">
         {/* 客户画像属性 */}
-        <section className="rounded-2xl border border-slate-100 bg-slate-50/50 p-6">
-          <div className="mb-6">
-            <h3 className="text-sm font-bold text-slate-900">客户信息</h3>
+        <section className="rounded-lg border bg-white p-4 sm:p-5">
+          <div className="mb-4">
+            <h3 className="text-sm font-semibold text-slate-900">客户信息</h3>
           </div>
-          <div className="grid gap-6">
+          <div className="grid gap-4">
             <SectionItem
               icon={
                 <IconBadge
@@ -156,11 +151,11 @@ export function CustomerContactCard({
         </section>
 
         {/* 财务授信用档案 */}
-        <section className="rounded-2xl border border-slate-100 bg-slate-50/50 p-6">
-          <div className="mb-6">
-            <h3 className="text-sm font-bold text-slate-900">结算信息</h3>
+        <section className="rounded-lg border bg-white p-4 sm:p-5">
+          <div className="mb-4">
+            <h3 className="text-sm font-semibold text-slate-900">结算信息</h3>
           </div>
-          <div className="grid gap-6">
+          <div className="grid gap-4">
             <SectionItem
               icon={
                 <IconBadge
@@ -208,30 +203,26 @@ export function CustomerContactCard({
       </div>
 
       {/* 备注与时间印戳 */}
-      <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+      <section className="rounded-lg border bg-white p-4 sm:p-5">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-2xl flex-1">
             <div className="mb-4">
-              <h3 className="text-sm font-bold text-slate-900">补充备注</h3>
+              <h3 className="text-sm font-semibold text-slate-900">补充备注</h3>
             </div>
-            <p className="text-sm leading-relaxed font-medium text-slate-600 italic">
-              {extendedInfo.notes || '暂无补充说明。'}
+            <p className="text-sm leading-relaxed text-slate-600">
+              {extendedInfo.notes || '暂无补充说明'}
             </p>
           </div>
-          <div className="flex shrink-0 flex-col gap-4 border-l border-slate-50 pl-6">
+          <div className="flex shrink-0 flex-col gap-3 border-t pt-4 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-5">
             <div className="space-y-1">
-              <p className="text-xs font-bold text-slate-500">
-                创建时间
-              </p>
-              <p className="font-mono text-xs font-bold text-slate-700">
+              <p className="text-xs font-medium text-slate-500">创建时间</p>
+              <p className="font-mono text-xs text-slate-700">
                 {formatDateTime(createdAt)}
               </p>
             </div>
             <div className="space-y-1">
-              <p className="text-xs font-bold text-slate-500">
-                最后更新
-              </p>
-              <p className="font-mono text-xs font-bold text-slate-700">
+              <p className="text-xs font-medium text-slate-500">最后更新</p>
+              <p className="font-mono text-xs text-slate-700">
                 {formatDateTime(updatedAt)}
               </p>
             </div>
@@ -243,11 +234,11 @@ export function CustomerContactCard({
 }
 
 function getCustomerTypeLabel(type?: string) {
-  if (!type) return '个人/通用';
+  if (!type) return '普通客户';
   const mapping: Record<string, string> = {
-    company: '合伙/公司',
-    store: '零售/门店',
-    individual: '自然人',
+    company: '公司客户',
+    store: '门店客户',
+    individual: '个人客户',
   };
   return mapping[type] || type;
 }
@@ -265,10 +256,8 @@ function SectionItem({
     <div className="flex items-center gap-3">
       {icon}
       <div className="space-y-0.5">
-        <p className="text-xs font-bold text-slate-500">
-          {label}
-        </p>
-        <div className="text-sm font-bold text-slate-700">{value}</div>
+        <p className="text-xs font-medium text-slate-500">{label}</p>
+        <div className="text-sm font-medium text-slate-700">{value}</div>
       </div>
     </div>
   );
@@ -303,7 +292,7 @@ function IconBadge({
   return (
     <div
       className={cn(
-        'flex h-9 w-9 items-center justify-center rounded-xl border shadow-sm transition-transform hover:scale-110',
+        'flex h-8 w-8 items-center justify-center rounded-lg border',
         styles[color]
       )}
     >

@@ -16,12 +16,11 @@ import type {
 import { cn } from '@/lib/utils';
 
 const DashboardTrendChart = dynamic(
-  () =>
-    import('./dashboard-trend-chart').then(mod => mod.DashboardTrendChart),
+  () => import('./dashboard-trend-chart').then(mod => mod.DashboardTrendChart),
   {
     ssr: false,
     loading: () => (
-      <div className="h-[280px] w-full animate-pulse rounded-md bg-card" />
+      <div className="bg-card h-[280px] w-full animate-pulse rounded-md" />
     ),
   }
 );
@@ -35,7 +34,7 @@ const StatCardsGrid = dynamic(
         {Array.from({ length: 4 }).map((_, idx) => (
           <div
             key={`stat-skeleton-${idx}`}
-            className="h-[88px] animate-pulse rounded-md bg-card"
+            className="bg-card h-[88px] animate-pulse rounded-md"
           />
         ))}
       </div>
@@ -52,7 +51,7 @@ const DashboardTodoBar = dynamic(
         {Array.from({ length: 2 }).map((_, idx) => (
           <div
             key={`todo-skeleton-${idx}`}
-            className="h-[60px] animate-pulse rounded-md bg-card"
+            className="bg-card h-[60px] animate-pulse rounded-md"
           />
         ))}
       </div>
@@ -65,7 +64,7 @@ const ProductRanking = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-[360px] w-full animate-pulse rounded-md bg-card" />
+      <div className="bg-card h-[360px] w-full animate-pulse rounded-md" />
     ),
   }
 );
@@ -145,8 +144,8 @@ export function ERPDashboard({
   }
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto bg-slate-50/50 p-4 lg:p-10 xl:p-14">
-      <div className="mx-auto w-full max-w-[1680px] space-y-12">
+    <div className="flex h-full flex-col overflow-y-auto bg-slate-50/50 p-3 sm:p-4 lg:p-6">
+      <div className="mx-auto w-full max-w-[1680px] space-y-5">
         <DashboardHeader
           userName={userName}
           selectedPeriod={selectedPeriod}
@@ -167,20 +166,20 @@ export function ERPDashboard({
           onViewOrders={() => router.push('/sales-orders?status=pending')}
         />
 
-        <div className="space-y-10">
+        <div className="space-y-5">
           {/* 核心指标卡片 */}
           {dashboardApiData && (
             <StatCardsGrid overview={dashboardApiData} loading={false} />
           )}
 
-          <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.8fr_1fr]">
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.8fr_1fr]">
             {/* 销售趋势图 */}
-            <div className="space-y-10">
+            <div className="space-y-5">
               {salesTrend && <DashboardTrendChart data={salesTrend} />}
             </div>
 
             {/* 产品销售排行 */}
-            <div className="space-y-10">
+            <div className="space-y-5">
               <ProductRanking
                 warehouse={productRankingData?.warehouse || []}
                 factory={productRankingData?.factory || []}
@@ -219,12 +218,12 @@ function DashboardHeader({
   // 根据时间生成问候语
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 6) return '披星戴月，';
-    if (hour < 9) return '早安，';
+    if (hour < 6) return '夜间好，';
+    if (hour < 9) return '早上好，';
     if (hour < 12) return '上午好，';
-    if (hour < 14) return '午安，';
+    if (hour < 14) return '中午好，';
     if (hour < 18) return '下午好，';
-    return '晚安，';
+    return '晚上好，';
   };
 
   const quickActions = [
@@ -234,28 +233,28 @@ function DashboardHeader({
   ];
 
   return (
-    <div className="flex flex-col gap-8 px-2 md:flex-row md:items-end md:justify-between">
+    <div className="flex flex-col gap-4 px-1 md:flex-row md:items-end md:justify-between">
       <div className="space-y-2">
-        <h2 className="text-3xl font-semibold tracking-tighter text-slate-900">
+        <h2 className="text-xl font-semibold text-slate-900 sm:text-2xl">
           经营看板
         </h2>
-        <p className="text-sm font-bold text-slate-400">
+        <p className="text-sm font-medium text-slate-500">
           {getGreeting()}{' '}
           <span className="text-slate-900">{userName || '管理员'}</span>
-          。这是系统为您汇总的实时业务动态。
+          。这里汇总当前业务数据。
         </p>
       </div>
 
-      <div className="flex w-full flex-col gap-3 md:w-auto md:flex-row md:flex-wrap md:items-center md:gap-4">
+      <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:flex-wrap md:items-center md:gap-3">
         {/* 快捷操作按钮组 */}
-        <div className="grid w-full grid-cols-2 gap-2 rounded-2xl bg-white p-2 shadow-sm ring-1 ring-slate-100 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:gap-2 sm:p-1.5">
+        <div className="grid w-full grid-cols-2 gap-2 rounded-lg bg-white p-1.5 shadow-sm ring-1 ring-slate-100 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
           {quickActions.map(({ label, action, icon: Icon }, index) => (
             <Button
               key={label}
               size="sm"
               variant="ghost"
               className={cn(
-                'h-10 w-full justify-center rounded-xl px-4 font-bold text-slate-500 transition-all hover:bg-slate-900 hover:text-white active:scale-95 sm:w-auto sm:justify-start',
+                'h-9 w-full justify-center rounded-md px-3 font-medium text-slate-600 transition-colors hover:bg-slate-900 hover:text-white sm:w-auto sm:justify-start',
                 quickActions.length % 2 === 1 &&
                   index === quickActions.length - 1 &&
                   'col-span-2 sm:col-span-1'
@@ -268,11 +267,11 @@ function DashboardHeader({
           ))}
         </div>
 
-        <div className="flex w-full items-center gap-2 rounded-2xl bg-white p-1.5 shadow-sm ring-1 ring-slate-100 sm:w-auto">
+        <div className="flex w-full items-center gap-2 rounded-lg bg-white p-1.5 shadow-sm ring-1 ring-slate-100 sm:w-auto">
           <select
             value={selectedPeriod}
             onChange={e => onPeriodChange(e.target.value)}
-            className="ring-offset-background focus:ring-slate-900 h-10 min-w-0 flex-1 rounded-xl border-none bg-transparent px-3 py-2 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-offset-2 focus:outline-hidden sm:w-[120px] sm:flex-none"
+            className="ring-offset-background h-9 min-w-0 flex-1 rounded-md border-none bg-transparent px-3 py-2 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 focus:outline-hidden sm:w-[120px] sm:flex-none"
             aria-label="时间范围"
           >
             <option value="1d">今天</option>
@@ -286,8 +285,8 @@ function DashboardHeader({
           <Button
             variant="ghost"
             size="icon"
-            aria-label="刷新仪表盘"
-            className="h-10 w-10 shrink-0 rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-900"
+            aria-label="刷新首页数据"
+            className="h-9 w-9 shrink-0 rounded-md text-slate-500 hover:bg-slate-50 hover:text-slate-900"
             onClick={onRefresh}
             disabled={isRefreshing}
           >

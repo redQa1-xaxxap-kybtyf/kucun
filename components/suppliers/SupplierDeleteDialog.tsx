@@ -28,13 +28,13 @@ export function SupplierDeleteDialog({
 }) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="rounded-[2.5rem] border-none p-8 shadow-2xl">
+      <AlertDialogContent className="rounded-md p-6 shadow-md">
         <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-3 text-2xl font-semibold tracking-tighter text-slate-900">
-            <AlertCircle className="h-6 w-6 text-rose-500" />
+          <AlertDialogTitle className="flex items-center gap-3 text-lg font-semibold text-slate-900">
+            <AlertCircle className="h-5 w-5 text-rose-500" />
             删除供应商
           </AlertDialogTitle>
-          <AlertDialogDescription className="py-4 leading-relaxed font-bold text-slate-500">
+          <AlertDialogDescription className="py-3 leading-relaxed text-slate-500">
             您正在删除供应商 &quot;{supplierName}&quot;。
             <br />
             删除后，这家供应商会从日常列表中移除，历史交易记录仍会保留，方便后续查询。该操作暂时不能直接恢复。
@@ -42,7 +42,7 @@ export function SupplierDeleteDialog({
         </AlertDialogHeader>
         <AlertDialogFooter className="gap-3 pt-4">
           <AlertDialogCancel
-            className="h-12 rounded-2xl border-none bg-slate-100 font-semibold text-slate-600 hover:bg-slate-200"
+            className="h-10 rounded-md font-medium"
             disabled={isDeleting}
           >
             取消并返回
@@ -50,7 +50,7 @@ export function SupplierDeleteDialog({
           <AlertDialogAction
             onClick={onConfirm}
             disabled={isDeleting}
-            className="h-12 rounded-2xl border-none bg-rose-600 font-semibold text-white shadow-xl shadow-rose-200 hover:bg-rose-700"
+            className="h-10 rounded-md bg-rose-600 font-medium text-white hover:bg-rose-700"
           >
             {isDeleting ? '删除中...' : '确认删除'}
           </AlertDialogAction>

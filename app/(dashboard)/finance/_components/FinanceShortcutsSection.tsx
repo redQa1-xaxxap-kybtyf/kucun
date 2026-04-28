@@ -25,7 +25,7 @@ export function FinanceShortcutsSection() {
                   <Link
                     key={item.id}
                     href={item.href}
-                    className="group rounded-xl border border-[hsl(var(--color-border-secondary))] p-4 transition-colors hover:border-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-light))]"
+                    className="group rounded-md border border-[hsl(var(--color-border-secondary))] p-4 transition-colors hover:border-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-light))]"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="space-y-1">

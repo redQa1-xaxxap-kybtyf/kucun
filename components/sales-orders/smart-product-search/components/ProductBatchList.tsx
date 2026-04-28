@@ -39,7 +39,7 @@ export function ProductBatchList({
                 event.stopPropagation();
                 onSelectBatch(productId, batch.batchNumber);
               }}
-              className="flex items-center gap-1.5 rounded-md border-2 border-[hsl(var(--color-primary-light))] bg-[hsl(var(--color-primary-light))] px-3 py-1.5 text-xs whitespace-nowrap transition-all hover:border-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-light))] hover:shadow-md active:scale-95"
+              className="flex items-center gap-1.5 rounded-md border-2 border-[hsl(var(--color-primary-light))] bg-[hsl(var(--color-primary-light))] px-3 py-1.5 text-xs whitespace-nowrap hover:border-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-light))] hover:shadow-sm"
             >
               <span className="font-mono font-semibold text-[hsl(var(--color-primary))]">
                 {batch.batchNumber}

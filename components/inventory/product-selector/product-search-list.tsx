@@ -2,15 +2,10 @@
 
 import React from 'react';
 
-import { InlineLoading } from '@/components/common/loading';
-import { ProductOptionItem } from '@/components/inventory/product-selector/product-option-item';
+import { ProductSearchResults } from '@/components/inventory/product-selector/product-search-results';
 import {
   Command,
-  CommandEmpty,
-  CommandGroup,
   CommandInput,
-  CommandItem,
-  CommandList,
 } from '@/components/ui/command';
 import type { ProductOption } from '@/lib/types/inbound';
 
@@ -22,14 +17,6 @@ interface ProductSearchListProps {
   error: Error | null;
   onSearchChange: (query: string) => void;
   onSelect: (value: string) => void;
-}
-
-function LoadingState() {
-  return (
-    <div className="p-4">
-      <InlineLoading text="搜索产品中..." />
-    </div>
-  );
 }
 
 function ErrorState({ error }: { error: Error }) {
@@ -54,36 +41,18 @@ export function ProductSearchList({
   }
 
   return (
-    <Command shouldFilter={false}>
+    <Command filter={() => 1}>
       <CommandInput
         value={searchValue}
         placeholder="搜索产品名称或编码..."
         onValueChange={onSearchChange}
       />
-      <CommandList>
-        {isLoading ? (
-          <LoadingState />
-        ) : (
-          <>
-            <CommandEmpty>未找到相关产品</CommandEmpty>
-            <CommandGroup>
-              {products.map(product => (
-                <CommandItem
-                  key={product.value}
-                  value={`${product.code}-${product.value}`}
-                  onSelect={onSelect}
-                  className="cursor-pointer"
-                >
-                  <ProductOptionItem
-                    product={product}
-                    isSelected={selectedProduct?.value === product.value}
-                  />
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </>
-        )}
-      </CommandList>
+      <ProductSearchResults
+        products={products}
+        selectedProduct={selectedProduct}
+        isLoading={isLoading}
+        onSelect={onSelect}
+      />
     </Command>
   );
 }

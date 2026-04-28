@@ -120,7 +120,7 @@ export function AdjustmentRecordsPageClient({
                 </Button>
                 <Button
                   size="lg"
-                  className="h-11 gap-2 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+                  className="h-11 gap-2 shadow-sm"
                   onClick={handleOpenAdjust}
                 >
                   <Edit className="h-4 w-4" />
@@ -129,7 +129,7 @@ export function AdjustmentRecordsPageClient({
               </>
             }
           />
-          <div className="card-shadow-light rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-error-light))] p-6 text-center">
+          <div className="rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-error-light))] p-6 text-center shadow-sm">
             <div className="text-sm text-[hsl(var(--color-error))]">
               加载调整记录失败，请稍后重试
             </div>
@@ -161,7 +161,7 @@ export function AdjustmentRecordsPageClient({
               </Button>
               <Button
                 size="lg"
-                className="h-11 gap-2 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+                className="h-11 gap-2 shadow-sm"
                 onClick={handleOpenAdjust}
               >
                 <Edit className="h-4 w-4" />

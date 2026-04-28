@@ -34,7 +34,7 @@ const ProfitLossTrendChart = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-[360px] w-full animate-pulse rounded-2xl bg-slate-50" />
+      <div className="h-[360px] w-full animate-pulse rounded-md bg-slate-50" />
     ),
   }
 );
@@ -195,28 +195,28 @@ export function ProfitLossClient() {
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="space-y-4 sm:space-y-6">
         {/* 页面标题卡片 */}
-        <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
-          <CardContent className="bg-gradient-to-r from-slate-900 to-slate-800 p-4 sm:p-6">
+        <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+          <CardContent className="bg-card p-4 sm:p-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-start gap-3 sm:items-center sm:gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500 shadow-[0_10px_24px_rgba(59,130,246,0.3)] sm:h-12 sm:w-12">
+                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-blue-600 sm:h-12 sm:w-12">
                   <TrendingUp className="h-5 w-5 text-white sm:h-6 sm:w-6" />
                 </div>
                 <div>
-                  <h1 className="text-lg font-bold tracking-tight text-white sm:text-2xl">
+                  <h1 className="text-lg font-bold tracking-tight text-[hsl(var(--color-text-primary))] sm:text-2xl">
                     盈亏分析
                   </h1>
-                  <p className="mt-1 text-xs text-slate-300 sm:text-sm">
+                  <p className="mt-1 text-xs text-[hsl(var(--color-text-secondary))] sm:text-sm">
                     查看一段时间内的收入、成本、费用和利润变化
                   </p>
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button
-                  variant="secondary"
+                  variant="outline"
                   size="sm"
                   onClick={() => handleExportImage()}
-                  className="border-white/10 bg-white/10 text-white hover:bg-white/20"
+                  className="shadow-sm"
                 >
                   <Receipt className="mr-2 h-4 w-4" />
                   导出图片
@@ -315,8 +315,8 @@ export function ProfitLossClient() {
           </CardContent>
         </Card>
 
-        {/* 盈亏状态“超级卡片” (Status Hub) */}
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        {/* 盈亏状态 */}
+        <section className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
           <div className="flex flex-col md:flex-row">
             <div
               className={cn(
@@ -334,7 +334,7 @@ export function ProfitLossClient() {
               <div className="flex items-center gap-3">
                 <div
                   className={cn(
-                    'flex h-12 w-12 items-center justify-center rounded-full shadow-lg',
+                    'flex h-12 w-12 items-center justify-center rounded-md shadow-sm',
                     analysis.status === 'profit'
                       ? 'bg-emerald-500 text-white'
                       : analysis.status === 'loss'
@@ -358,7 +358,7 @@ export function ProfitLossClient() {
                       : '盈亏平衡'}
                 </div>
               </div>
-              <div className="mt-6 font-mono text-3xl font-semibold tracking-tighter lg:text-4xl">
+              <div className="mt-6 font-mono text-3xl font-semibold tracking-tight lg:text-4xl">
                 {formatCurrency(Math.abs(analysis.profit.netProfit))}
               </div>
               <div className="mt-2 flex items-center gap-2 text-sm font-bold opacity-70">
@@ -443,10 +443,10 @@ export function ProfitLossClient() {
           </div>
         </section>
 
-        {/* 核心指标高清晰分区 */}
+        {/* 核心指标 */}
         <div className="grid gap-6 lg:grid-cols-2">
-          {/* 收入流深度分析 */}
-          <section className="rounded-2xl border border-slate-100 bg-slate-50/50 p-6">
+          {/* 收入构成 */}
+          <section className="rounded-md border border-slate-100 bg-slate-50/50 p-6">
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="h-4 w-1 rounded-full bg-blue-500" />
@@ -492,13 +492,13 @@ export function ProfitLossClient() {
             </div>
           </section>
 
-          {/* 费用成本结构 */}
-          <section className="rounded-2xl border border-slate-100 bg-slate-50/50 p-6">
+          {/* 成本费用构成 */}
+          <section className="rounded-md border border-slate-100 bg-slate-50/50 p-6">
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="h-4 w-1 rounded-full bg-amber-500" />
                 <h2 className="text-sm font-semibold text-slate-900">
-                  支出成本结构透视
+                  成本费用构成
                 </h2>
               </div>
               <RefreshCw className="h-4 w-4 text-slate-300" />
@@ -535,11 +535,11 @@ export function ProfitLossClient() {
           </section>
         </div>
 
-        {/* 费用细分看板 (v3 紧凑式) */}
-        <section className="rounded-2xl border border-slate-100 p-6 shadow-sm">
+        {/* 费用明细 */}
+        <section className="rounded-md border border-slate-100 p-6 shadow-sm">
           <div className="mb-6 flex items-center justify-between border-b border-slate-50 pb-4">
-            <h2 className="text-sm font-semibold text-slate-900 italic">
-              费用开支明细账目
+            <h2 className="text-sm font-semibold text-slate-900">
+              费用明细
             </h2>
             <div className="text-xs font-bold text-slate-400">
               数据更新于: {new Date().toLocaleDateString()}
@@ -559,7 +559,7 @@ export function ProfitLossClient() {
             ].map(item => (
               <div
                 key={item.label}
-                className="flex flex-col rounded-xl bg-slate-50/50 p-4 transition-colors hover:bg-slate-100"
+                className="flex flex-col rounded-md bg-slate-50/50 p-4 transition-colors hover:bg-slate-100"
               >
                 <span className="text-xs font-semibold text-slate-400">
                   {item.label}
@@ -580,34 +580,34 @@ export function ProfitLossClient() {
           </div>
         </section>
 
-        {/* 利润深度透视 */}
+        {/* 利润分析 */}
         <div className="grid gap-6 lg:grid-cols-2">
-          <section className="rounded-2xl border border-slate-100 bg-emerald-50/20 p-6">
+          <section className="rounded-md border border-slate-100 bg-emerald-50/20 p-6">
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="h-4 w-1 rounded-full bg-emerald-500" />
                 <h2 className="font-mono text-sm font-semibold text-slate-900">
-                  核心盈利能力评估
+                  利润指标
                 </h2>
               </div>
               <TrendingUp className="h-4 w-4 text-emerald-400" />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <StatCard
-                title="经营毛利润清单"
+                title="经营毛利润"
                 value={analysis.profit.grossProfit}
                 icon={<ChineseYuan className="h-4 w-4" />}
                 variant="success"
                 subtitle={`毛利率: ${analysis.profit.grossProfitMargin.toFixed(2)}%`}
               />
               <StatCard
-                title="营业核心利润"
+                title="营业利润"
                 value={analysis.profit.operatingProfit}
                 icon={<RefreshCw className="h-4 w-4" />}
                 variant="success"
               />
               <StatCard
-                title="结算净利润额"
+                title="净利润"
                 value={analysis.profit.netProfit}
                 icon={<Receipt className="h-4 w-4" />}
                 variant="primary"
@@ -617,7 +617,7 @@ export function ProfitLossClient() {
             </div>
           </section>
 
-          <section className="rounded-2xl border border-slate-100 bg-blue-50/20 p-6">
+          <section className="rounded-md border border-slate-100 bg-blue-50/20 p-6">
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="h-4 w-1 rounded-full bg-blue-500" />
@@ -665,11 +665,11 @@ export function ProfitLossClient() {
 
         {/* 预警信息 */}
         {analysis.alerts && analysis.alerts.length > 0 && (
-          <Card className="rounded-2xl border-rose-100 bg-rose-50/10">
+          <Card className="rounded-md border-rose-100 bg-rose-50/10">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-rose-900">
                 <AlertCircle className="h-5 w-5" />
-                异常监控预警
+                风险提示
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -678,7 +678,7 @@ export function ProfitLossClient() {
                   <div
                     key={index}
                     className={cn(
-                      'rounded-xl border p-4 shadow-sm transition-all hover:shadow-md',
+                      'rounded-md border p-4 shadow-sm',
                       alert.type === 'danger'
                         ? 'border-rose-200 bg-white text-rose-700'
                         : alert.type === 'warning'
@@ -714,7 +714,7 @@ export function ProfitLossClient() {
   );
 }
 
-// 统计卡片组件 (v3: 高清晰专业版，同步自报表系统)
+// 统计卡片组件
 interface StatCardProps {
   title: string;
   value: number;
@@ -772,7 +772,7 @@ function StatCard({
   return (
     <Card
       className={cn(
-        'group hover:border-opacity-50 relative overflow-hidden border transition-all duration-300 hover:shadow-md',
+        'group hover:border-opacity-50 relative overflow-hidden rounded-md border shadow-sm',
         themeStyles[variant],
         size === 'lg' ? 'md:col-span-2 lg:col-span-1' : ''
       )}
@@ -799,7 +799,7 @@ function StatCard({
         </div>
         <div
           className={cn(
-            'rounded-lg p-2 transition-transform duration-300 group-hover:scale-110',
+            'rounded-md p-2',
             iconStyles[variant]
           )}
         >

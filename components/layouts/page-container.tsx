@@ -91,7 +91,7 @@ export function PageContainer({
       {footer && (
         <div
           className={cn(
-            'sticky bottom-0 z-20 border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]/95 backdrop-blur-md',
+            'sticky bottom-0 z-20 border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]',
             footerClassName
           )}
         >

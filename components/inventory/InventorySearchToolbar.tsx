@@ -5,7 +5,15 @@
 
 'use client';
 
-import { AlertTriangle, Download, Package, Rows } from 'lucide-react';
+import {
+  AlertTriangle,
+  Download,
+  Loader2,
+  Package,
+  Rows,
+  Search,
+  X,
+} from 'lucide-react';
 import * as React from 'react';
 
 import { SearchFilterCard } from '@/components/common/search-filter-card';
@@ -13,7 +21,10 @@ import type {
   ActionButton,
   FilterConfig,
 } from '@/components/common/unified-search-bar';
+import { Button } from '@/components/ui/button';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
+import { Input } from '@/components/ui/input';
 import {
   buildInventorySortMode,
   DEFAULT_INVENTORY_SORT_MODE,
@@ -23,6 +34,7 @@ import {
   parseInventorySortMode,
 } from '@/lib/configs/filter-configs';
 import type { InventoryQueryParams } from '@/lib/types/inventory';
+import { cn } from '@/lib/utils';
 
 interface InventorySearchToolbarProps {
   queryParams: InventoryQueryParams;
@@ -172,8 +184,13 @@ export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
       [density, isExporting, onDensityChange, onExport]
     );
 
+    const desktopSearchValue = searchValue ?? (queryParams.search || '');
+
+    const desktopFieldClassName =
+      'h-10 w-full rounded-lg border border-[hsl(var(--color-border-primary))] bg-white px-3 text-sm font-normal text-[hsl(var(--color-text-primary))] transition-colors outline-hidden focus:border-[hsl(var(--color-primary))] focus:ring-2 focus:ring-[hsl(var(--color-primary))] focus:ring-offset-2';
+
     const sharedCardProps = {
-      searchValue: searchValue ?? (queryParams.search || ''),
+      searchValue: desktopSearchValue,
       onSearchChange: onSearch,
       searchPlaceholder: INVENTORY_FILTER_CONFIG.searchPlaceholder,
       isSearching,
@@ -200,7 +217,7 @@ export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
             actionButtons={[]}
             variant="elevated"
             compact
-            className="overflow-hidden rounded-2xl border border-[hsl(var(--color-border-primary))] bg-white shadow-sm"
+            className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-white shadow-sm"
           />
           <p className="px-1 pt-2 text-xs text-[hsl(var(--color-text-secondary))]">
             {INVENTORY_SEARCH_HINT}
@@ -211,12 +228,160 @@ export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
           className="hidden sm:block"
           data-testid="inventory-desktop-search-toolbar"
         >
-          <SearchFilterCard
-            {...sharedCardProps}
-            actionButtons={desktopActionButtons}
-            variant="pro"
-            compact
-          />
+          <div className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-white p-3 shadow-sm">
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  {desktopActionButtons.map((action, index) => (
+                    <Button
+                      key={action.key || action.label || `action-${index}`}
+                      type="button"
+                      variant={action.variant || 'outline'}
+                      onClick={action.onClick}
+                      disabled={action.disabled}
+                      className={cn(
+                        'h-10 rounded-lg px-3 font-medium',
+                        action.className
+                      )}
+                    >
+                      {action.icon}
+                      {action.label}
+                    </Button>
+                  ))}
+                </div>
+
+                <div className="ml-auto flex min-w-0 flex-1 flex-wrap items-center justify-end gap-2">
+                  <div className="relative min-w-[260px] flex-1 xl:max-w-[480px]">
+                    {isSearching ? (
+                      <Loader2 className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 animate-spin" />
+                    ) : (
+                      <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                    )}
+                    <Input
+                      data-testid="inventory-desktop-search-input"
+                      type="search"
+                      inputMode="search"
+                      enterKeyHint="search"
+                      autoCapitalize="off"
+                      autoCorrect="off"
+                      placeholder={INVENTORY_FILTER_CONFIG.searchPlaceholder}
+                      value={desktopSearchValue}
+                      onChange={event => onSearch(event.target.value)}
+                      className={cn(
+                        desktopFieldClassName,
+                        'w-full pl-10',
+                        desktopSearchValue && 'pr-10'
+                      )}
+                    />
+                    {desktopSearchValue ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute top-1/2 right-1 h-8 w-8 -translate-y-1/2 rounded-md p-0"
+                        onClick={() => onSearch('')}
+                        aria-label="清空库存搜索"
+                      >
+                        <X className="text-muted-foreground h-4 w-4" />
+                      </Button>
+                    ) : null}
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {toggleButtons.map(toggle => (
+                      <Button
+                        key={toggle.key}
+                        type="button"
+                        variant="outline"
+                        data-active={toggle.active || undefined}
+                        className="h-10 rounded-lg px-3 font-medium data-[active=true]:border-[hsl(var(--color-primary))] data-[active=true]:bg-[hsl(var(--color-primary-light))] data-[active=true]:text-[hsl(var(--color-primary))]"
+                        onClick={toggle.onClick}
+                      >
+                        {toggle.icon}
+                        {toggle.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-2 lg:grid-cols-2 xl:grid-cols-[minmax(260px,360px)_200px_minmax(360px,1fr)_auto] xl:items-center">
+                <div className="min-w-0">
+                  <select
+                    data-testid="inventory-desktop-category-filter"
+                    aria-label="分类"
+                    value={filterValues.categoryId || 'all'}
+                    onChange={event =>
+                      logic.handleToolbarFilterChange(
+                        'categoryId',
+                        event.target.value === 'all'
+                          ? undefined
+                          : event.target.value
+                      )
+                    }
+                    className={desktopFieldClassName}
+                  >
+                    <option value="all">全部分类</option>
+                    {categoryOptions.map(category => (
+                      <option key={category.id} value={category.id}>
+                        {category.fullPath ?? category.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="min-w-0">
+                  <select
+                    data-testid="inventory-desktop-sort-filter"
+                    aria-label="排序"
+                    value={filterValues.sortMode || DEFAULT_INVENTORY_SORT_MODE}
+                    onChange={event =>
+                      logic.handleToolbarFilterChange(
+                        'sortMode',
+                        event.target.value
+                      )
+                    }
+                    className={desktopFieldClassName}
+                  >
+                    {INVENTORY_SORT_MODE_OPTIONS.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="min-w-0">
+                  <DateRangePicker
+                    value={dateRangeFilter.value}
+                    onChange={dateRangeFilter.onChange}
+                    label=""
+                    placeholder={INVENTORY_FILTER_CONFIG.dateRangePlaceholder}
+                    showPresets={true}
+                    className="w-full"
+                    triggerClassName={cn(
+                      desktopFieldClassName,
+                      'justify-start'
+                    )}
+                  />
+                </div>
+
+                {logic.hasActiveFilters ? (
+                  <div className="lg:col-span-2 xl:col-span-1 xl:justify-self-end">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={logic.handleClearFilters}
+                      className="h-10 rounded-lg px-3 text-[hsl(var(--color-text-secondary))] hover:bg-[hsl(var(--color-primary-light))]"
+                    >
+                      清空条件
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );

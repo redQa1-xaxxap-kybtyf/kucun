@@ -29,7 +29,7 @@ import { getInventoryStatus } from '@/lib/types/inventory-status';
 import { PRODUCT_UNIT_LABELS } from '@/lib/types/product';
 import { formatCostPrice } from '@/lib/utils/cost-price';
 import { formatCurrency } from '@/lib/utils/format';
-import { formatInventoryGroupSummary } from '@/lib/utils/inventory-group-display';
+import { groupInventoriesByProductCode } from '@/lib/utils/inventory-product-grouping';
 import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 
 interface InventoryGroupedTableProps {
@@ -40,70 +40,6 @@ interface InventoryGroupedTableProps {
   hasActiveFilters?: boolean;
   onClearFilters?: () => void;
   density: 'compact' | 'comfortable';
-}
-
-interface ProductGroup {
-  productCode: string;
-  productName: string;
-  specification: string;
-  thumbnailUrl?: string; // 产品缩略图URL
-  items: Inventory[];
-  totalPieces: number; // 总片数
-  totalQuantityDisplay: string;
-  totalAvailablePieces: number;
-  totalAvailableDisplay: string;
-}
-
-/**
- * 将库存数据按产品编码分组，并计算总计
- */
-function groupByProduct(inventories: Inventory[]): ProductGroup[] {
-  const groups = new Map<string, ProductGroup>();
-
-  inventories.forEach(inventory => {
-    const code = inventory.product?.code || '未知';
-
-    const existingGroup = groups.get(code);
-
-    if (!existingGroup) {
-      groups.set(code, {
-        productCode: code,
-        productName: inventory.product?.name || '-',
-        specification: formatSpecification(inventory.product?.specification),
-        thumbnailUrl: inventory.product?.thumbnailUrl,
-        items: [inventory],
-        totalPieces: 0,
-        totalQuantityDisplay: '0片',
-        totalAvailablePieces: 0,
-        totalAvailableDisplay: '0片',
-      });
-    } else {
-      existingGroup.items.push(inventory);
-    }
-  });
-
-  // 计算每个分组的总计
-  groups.forEach(group => {
-    const totalPieces = group.items.reduce(
-      (sum, item) => sum + item.quantity,
-      0
-    );
-    group.totalPieces = totalPieces;
-    group.totalQuantityDisplay = formatInventoryGroupSummary(
-      group.items,
-      'quantity'
-    );
-    group.totalAvailablePieces = group.items.reduce((sum, item) => {
-      const available = Math.max(item.quantity - (item.reservedQuantity ?? 0), 0);
-      return sum + available;
-    }, 0);
-    group.totalAvailableDisplay = formatInventoryGroupSummary(
-      group.items,
-      'available'
-    );
-  });
-
-  return Array.from(groups.values());
 }
 
 /**
@@ -140,7 +76,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
     onClearFilters,
     density,
   }) => {
-    const groups = React.useMemo(() => groupByProduct(data), [data]);
+    const groups = React.useMemo(() => groupInventoriesByProductCode(data), [data]);
     const { data: session } = useSession();
 
     // 检查用户是否有财务查看权限
@@ -162,7 +98,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
             : ''
         }`}
       >
-        <TableHeader className="card-shadow-light sticky top-0 z-20 bg-white/95 backdrop-blur-md">
+        <TableHeader className="sticky top-0 z-20 bg-white shadow-sm">
           <TableRow className="border-b border-slate-200 hover:bg-transparent">
             <TableHead className="w-16">
               预览图
@@ -295,7 +231,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     {/* 产品预览区 */}
                     <TableCell className="whitespace-nowrap">
                       {isFirstInGroup ? (
-                        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm transition-transform group-hover:scale-105">
+                        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md border border-slate-100 bg-white shadow-sm">
                           {group.thumbnailUrl ? (
                             <Image
                               src={group.thumbnailUrl}
@@ -341,7 +277,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     <TableCell className="min-w-[180px]">
                       <div className="flex flex-col gap-1">
                         <div className="max-w-[150px] truncate text-xs font-medium text-slate-500">
-                          {group.specification}
+                          {formatSpecification(group.specification)}
                         </div>
                         <div className="flex items-center gap-1.5">
                           <Badge
@@ -455,7 +391,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 w-8 rounded-xl text-slate-400 hover:bg-indigo-50 hover:text-indigo-600"
+                        className="h-8 w-8 rounded-md text-slate-400 hover:bg-indigo-50 hover:text-indigo-600"
                         onClick={e => {
                           e.stopPropagation();
                           onAdjust(item.id);

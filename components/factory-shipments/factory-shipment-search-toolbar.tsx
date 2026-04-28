@@ -182,7 +182,7 @@ function FactoryShipmentToolbarView({
       filters={[
         {
           key: 'status',
-          label: '状态',
+          label: '发货状态',
           options: Object.entries(FACTORY_SHIPMENT_STATUS_LABELS).map(
             ([value, label]) => ({
               label,

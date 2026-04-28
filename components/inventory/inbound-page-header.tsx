@@ -24,14 +24,10 @@ export function InboundPageHeader() {
 
   return (
     <>
-      <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white/70 shadow-sm backdrop-blur-xl">
-        {/* 背景装饰 */}
-        <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-blue-500/5 blur-3xl" />
-        <div className="absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-emerald-500/5 blur-3xl" />
-
-        <div className="relative z-10 flex flex-col gap-6 p-6 sm:p-8 xl:flex-row xl:items-center xl:justify-between">
+      <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
+        <div className="flex flex-col gap-6 p-6 sm:p-8 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex items-start gap-5 sm:items-center">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 shadow-xl shadow-blue-500/10">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-md bg-blue-600">
               <PackageCheck className="h-8 w-8 text-white" />
             </div>
             <div className="space-y-1.5">
@@ -39,7 +35,7 @@ export function InboundPageHeader() {
                 入库记录
               </h1>
               <p className="text-sm font-medium text-slate-500">
-                统一查看仓库入库流水 · 确保库存账实相符
+                查看仓库入库流水，核对库存账实是否相符
               </p>
             </div>
           </div>
@@ -76,7 +72,7 @@ export function InboundPageHeader() {
             {/* 新增入库按钮 */}
             <Button
               size="lg"
-              className="h-12 w-full bg-blue-600 text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-700"
+              className="h-12 w-full bg-blue-600 text-white shadow-sm hover:bg-blue-700"
               onClick={() => router.push('/inventory/inbound/create')}
             >
               <Plus className="mr-2 h-4 w-4" />

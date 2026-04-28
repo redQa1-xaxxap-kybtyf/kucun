@@ -11,8 +11,8 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: '库存管理工具',
-  description: '专为瓷砖行业设计的库存管理工具',
+  title: '瓷砖销售 ERP',
+  description: '面向瓷砖门店和批发业务的进销存、销售、库存与财务系统',
   icons: {
     icon: '/favicon.ico',
   },

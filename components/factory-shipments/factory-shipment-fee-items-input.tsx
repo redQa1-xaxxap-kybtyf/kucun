@@ -278,7 +278,7 @@ export const FactoryShipmentFeeItemsInput =
               ))}
 
               {/* 费用合计 */}
-              <div className="flex items-center justify-between rounded-lg border border-[hsl(var(--color-border-primary))] bg-gradient-to-r from-amber-50/60 to-orange-50/40 p-4">
+              <div className="flex items-center justify-between rounded-md border border-[hsl(var(--color-border-primary))] bg-amber-50 p-4">
                 <div>
                   <span className="text-sm font-medium text-[hsl(var(--color-text-secondary))]">
                     费用合计

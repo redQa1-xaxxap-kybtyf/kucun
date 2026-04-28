@@ -24,7 +24,7 @@ export function FeeItemsCard({
     .reduce((sum, fee) => sum + (fee.feeAmount || 0), 0);
 
   return (
-    <Card className="overflow-hidden rounded-2xl border-slate-100 shadow-sm ring-1 ring-slate-100/50">
+    <Card className="overflow-hidden rounded-md border border-border shadow-sm">
       <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4">
         <CardTitle className="flex items-center justify-between text-sm font-semibold text-slate-900">
           <div className="flex items-center">
@@ -32,14 +32,14 @@ export function FeeItemsCard({
             业务附加费用明细
           </div>
           <span className="text-[10px] font-bold text-slate-400">
-            RECORDED {feeItems.length} ITEMS
+            共 {feeItems.length} 项
           </span>
         </CardTitle>
       </CardHeader>
       <CardContent className="bg-white p-0">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="border-b border-slate-100 bg-slate-50/80 text-table-header backdrop-blur-md">
+            <thead className="border-b border-slate-100 bg-slate-50 text-table-header">
               <tr>
                 <th className="h-11 px-4 py-3 text-center align-middle font-semibold leading-none">
                   #
@@ -73,7 +73,7 @@ export function FeeItemsCard({
                     </span>
                   </td>
                   <td className="px-4 py-3.5">
-                    <span className="inline-flex rounded-lg border border-slate-100 bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+                    <span className="inline-flex rounded-md border border-slate-100 bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-600">
                       {fee.feeType}
                     </span>
                   </td>
@@ -89,7 +89,7 @@ export function FeeItemsCard({
                   </td>
                   <td className="px-4 py-3.5 text-center">
                     <span
-                      className={`inline-flex items-center rounded-lg px-2 py-0.5 text-[10px] font-bold ${
+                      className={`inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold ${
                         fee.paidBy === 'company'
                           ? 'bg-amber-100/50 text-amber-600 ring-1 ring-amber-600/10'
                           : 'bg-emerald-100/50 text-emerald-600 ring-1 ring-emerald-600/10'
@@ -140,7 +140,7 @@ export function FeeItemsCard({
                       业务应收总额
                     </span>
                     <span className="text-[10px] font-medium text-slate-400">
-                      (PROD {formatCurrency(productSubtotal)} + FEES{' '}
+                      (产品 {formatCurrency(productSubtotal)} + 费用{' '}
                       {formatCurrency(order.additionalFees)})
                     </span>
                   </div>

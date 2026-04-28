@@ -97,11 +97,11 @@ export function PendingOrders({ orders, loading }: PendingOrdersProps) {
   }
 
   return (
-    <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] shadow-[var(--shadow-light)] transition-shadow hover:shadow-[var(--shadow-medium)]">
+    <Card className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] shadow-sm">
       <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-warning-light))] px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--color-warning))] text-[hsl(var(--color-text-on-primary))] shadow-[var(--shadow-light)]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-[hsl(var(--color-warning))] text-[hsl(var(--color-text-on-primary))] shadow-sm">
               <AlertCircle className="h-5 w-5" />
             </div>
             <div>
@@ -133,12 +133,12 @@ export function PendingOrders({ orders, loading }: PendingOrdersProps) {
           const daysOld = getDaysOld(order.createdAt);
 
           const containerClasses = urgent
-            ? 'group flex items-center gap-4 rounded-lg border border-[hsl(var(--color-error))] bg-[hsl(var(--color-error-light))] p-4 transition-all hover:border-[hsl(var(--color-error))] hover:bg-[hsl(var(--color-error-light))] hover:shadow-[var(--shadow-light)]'
-            : 'group flex items-center gap-4 rounded-lg border border-[hsl(var(--color-warning))] bg-[hsl(var(--color-warning-light))] p-4 transition-all hover:border-[hsl(var(--color-warning))] hover:bg-[hsl(var(--color-warning-light))] hover:shadow-[var(--shadow-light)]';
+            ? 'group flex items-center gap-4 rounded-md border border-[hsl(var(--color-error))] bg-[hsl(var(--color-error-light))] p-4 hover:border-[hsl(var(--color-error))] hover:bg-[hsl(var(--color-error-light))]'
+            : 'group flex items-center gap-4 rounded-md border border-[hsl(var(--color-warning))] bg-[hsl(var(--color-warning-light))] p-4 hover:border-[hsl(var(--color-warning))] hover:bg-[hsl(var(--color-warning-light))]';
 
           const iconClasses = urgent
-            ? 'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--color-error))] text-[hsl(var(--color-text-on-primary))] shadow-[var(--shadow-light)] transition-transform group-hover:scale-110'
-            : 'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--color-warning))] text-[hsl(var(--color-text-on-primary))] shadow-[var(--shadow-light)] transition-transform group-hover:scale-110';
+            ? 'flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-[hsl(var(--color-error))] text-[hsl(var(--color-text-on-primary))] shadow-sm'
+            : 'flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-[hsl(var(--color-warning))] text-[hsl(var(--color-text-on-primary))] shadow-sm';
 
           const orderLinkHover = urgent
             ? 'hover:text-[hsl(var(--color-error))]'

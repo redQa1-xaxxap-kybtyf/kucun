@@ -42,7 +42,7 @@ const PurchaseOrderShippingDialog = dynamic(
     ssr: false,
     loading: () => (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-        <div className="w-full max-w-sm rounded-lg bg-[hsl(var(--color-bg-card))] p-6 shadow-lg">
+        <div className="w-full max-w-sm rounded-md bg-[hsl(var(--color-bg-card))] p-6 shadow-md">
           <div className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
             正在加载...
           </div>

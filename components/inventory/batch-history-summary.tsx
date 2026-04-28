@@ -65,7 +65,7 @@ export function BatchHistorySummary({
       />
 
       {/* 变动汇总 */}
-      <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="relative overflow-hidden rounded-md border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-3">
           <span className="text-xs font-semibold text-slate-400">
             流水汇总
@@ -110,7 +110,7 @@ function SummaryItem({
 
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:shadow-md ${emphasis ? 'ring-2 ring-emerald-500/20' : ''}`}
+      className={`relative overflow-hidden rounded-md border border-slate-200 bg-white p-5 shadow-sm ${emphasis ? 'ring-2 ring-emerald-500/20' : ''}`}
     >
       <div className="flex items-start justify-between">
         <div className="flex flex-col gap-1">
@@ -130,7 +130,7 @@ function SummaryItem({
           </div>
         </div>
         <div
-          className={`flex h-10 w-10 items-center justify-center rounded-xl ${iconBg} shadow-inner`}
+          className={`flex h-10 w-10 items-center justify-center rounded-md ${iconBg}`}
         >
           {icon}
         </div>

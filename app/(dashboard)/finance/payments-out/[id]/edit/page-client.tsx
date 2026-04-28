@@ -110,11 +110,11 @@ export function EditPaymentOutClient({
     <div className="flex h-full flex-col overflow-hidden p-4 sm:p-6">
       <div className="space-y-4 sm:space-y-6">
         {/* 页面标题卡片 */}
-        <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
-          <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-4 sm:p-6">
+        <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+          <CardContent className="bg-card p-4 sm:p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-[0_10px_24px_rgba(9,88,217,0.22)]">
+                <div className="flex h-12 w-12 items-center justify-center rounded-md bg-[hsl(var(--color-primary))]">
                   <ChineseYuan className="h-6 w-6 text-white" />
                 </div>
                 <div>
@@ -131,7 +131,7 @@ export function EditPaymentOutClient({
                   variant="outline"
                   size="lg"
                   asChild
-                  className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
+                  className="h-11 shadow-sm"
                 >
                   <Link href="/finance/payments-out">
                     <ArrowLeft className="mr-2 h-4 w-4" />

@@ -101,7 +101,7 @@ function FilterControls({
       <SearchFilterCard
         searchValue={filters.search || ''}
         onSearchChange={value => onSearch?.(value)}
-        searchPlaceholder="搜索客户、供应商、联系人或编号"
+        searchPlaceholder="搜索客户、供应商、联系人、编号"
         isSearching={isSearching}
         filters={[
           {
@@ -153,7 +153,7 @@ function FilterControls({
         onClearFilters={onClearFilters ?? fallbackClearFilters}
         hasActiveFilters={hasActiveFilters}
         compact
-        variant="bordered"
+        variant="pro"
       />
     </div>
   );

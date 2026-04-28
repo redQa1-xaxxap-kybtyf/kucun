@@ -47,8 +47,8 @@ export function ReceivablesPageClient({
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="space-y-4 sm:space-y-6">
         <PageHeader
-          title="客户待收款"
-          description="按客户跟进未回款订单，查看待收余额和收款进度。"
+          title="应收账款"
+          description="按客户和订单查看待收余额、已收金额和收款进度。"
           icon={<TrendingUp className="h-6 w-6 text-white" />}
           iconBgColor="hsl(var(--color-primary))"
           actions={
@@ -59,27 +59,13 @@ export function ReceivablesPageClient({
                   size="lg"
                   disabled={isExporting}
                   onClick={() => handleExport('excel')}
-                  className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+                  className="h-11 rounded-lg"
                 >
                   <Download className="mr-2 h-4 w-4" />
-                  {isExporting ? '导出中...' : '导出 Excel'}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  disabled={isExporting}
-                  onClick={() => handleExport('csv')}
-                  className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  {isExporting ? '导出中...' : '导出文本表格'}
+                  {isExporting ? '导出中...' : '导出'}
                 </Button>
               </div>
-              <Button
-                size="lg"
-                asChild
-                className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
-              >
+              <Button size="lg" asChild className="h-11 rounded-lg">
                 <Link href="/sales-orders/create">
                   <Plus className="mr-2 h-4 w-4" />
                   新建销售订单

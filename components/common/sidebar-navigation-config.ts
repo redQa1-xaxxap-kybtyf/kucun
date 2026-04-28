@@ -40,13 +40,13 @@ import type { NavigationItem } from '@/lib/types/layout';
 export const navigationItems: NavigationItem[] = [
   {
     id: 'dashboard',
-    title: '仪表盘',
+    title: '首页',
     href: '/dashboard',
     icon: LayoutDashboard,
   },
   {
     id: 'business',
-    title: '业务管理',
+    title: '销售业务',
     href: '/sales-orders',
     icon: Briefcase,
     children: [
@@ -64,19 +64,19 @@ export const navigationItems: NavigationItem[] = [
       },
       {
         id: 'factory-shipments',
-        title: '厂家发货',
+        title: '厂家直发',
         href: '/factory-shipments',
         icon: Truck,
         children: [
           {
             id: 'factory-shipments-factory',
-            title: '厂家发货',
+            title: '厂家直发',
             href: '/factory-shipments?mode=factory',
             icon: Truck,
           },
           {
             id: 'factory-shipments-warehouse-inbound',
-            title: '仓库进货',
+            title: '采购进货',
             href: '/purchase-orders',
             icon: Warehouse,
           },
@@ -98,7 +98,7 @@ export const navigationItems: NavigationItem[] = [
       },
       {
         id: 'inventory-inbound-create',
-        title: '手工采购入库',
+        title: '采购入库',
         href: '/inventory/inbound/create',
         icon: Plus,
       },
@@ -140,7 +140,7 @@ export const navigationItems: NavigationItem[] = [
       },
       {
         id: 'inventory-temporary-products',
-        title: '调货产品库',
+        title: '调货产品',
         href: '/inventory/temporary-products',
         icon: FileText,
       },
@@ -154,7 +154,7 @@ export const navigationItems: NavigationItem[] = [
   },
   {
     id: 'product-center',
-    title: '产品中心',
+    title: '产品资料',
     href: '/products',
     icon: Package,
     children: [
@@ -174,19 +174,19 @@ export const navigationItems: NavigationItem[] = [
   },
   {
     id: 'partners',
-    title: '客户供应商',
+    title: '往来单位',
     href: '/customers',
     icon: Users,
     children: [
       {
         id: 'customers',
-        title: '客户管理',
+        title: '客户档案',
         href: '/customers',
         icon: Users,
       },
       {
         id: 'suppliers',
-        title: '供应商管理',
+        title: '供应商档案',
         href: '/suppliers',
         icon: Truck,
       },
@@ -194,7 +194,7 @@ export const navigationItems: NavigationItem[] = [
   },
   {
     id: 'finance',
-    title: '财务管理',
+    title: '财务账款',
     href: '/finance',
     icon: ChineseYuan,
     children: [
@@ -218,31 +218,31 @@ export const navigationItems: NavigationItem[] = [
       },
       {
         id: 'finance-receivables',
-        title: '客户待收款',
+        title: '应收账款',
         href: '/finance/receivables',
         icon: TrendingUp,
       },
       {
         id: 'finance-payables',
-        title: '供应商待付款',
+        title: '应付账款',
         href: '/finance/payables',
         icon: TrendingDown,
       },
       {
         id: 'finance-refunds',
-        title: '退款处理',
+        title: '退款单',
         href: '/finance/refunds',
         icon: RotateCcw,
       },
       {
         id: 'finance-payments',
-        title: '收款管理',
+        title: '收款单',
         href: '/finance/payments',
         icon: CreditCard,
       },
       {
         id: 'finance-payments-out',
-        title: '付款管理',
+        title: '付款单',
         href: '/finance/payments-out',
         icon: ArrowUpRight,
       },
@@ -254,13 +254,13 @@ export const navigationItems: NavigationItem[] = [
       },
       {
         id: 'finance-customer-statements',
-        title: '客户往来明细',
+        title: '客户明细账',
         href: '/finance/customer-statements',
         icon: FileText,
       },
       {
         id: 'finance-expenses',
-        title: '费用管理',
+        title: '费用支出',
         href: '/finance/expenses',
         icon: Receipt,
       },
@@ -285,7 +285,7 @@ export const navigationItems: NavigationItem[] = [
         title: '数据管理',
         href: '/settings/data-management',
         icon: Trash2,
-        requiredRoles: ['admin', 'finance'],
+        requiredRoles: ['admin'],
       },
       {
         id: 'settings-users',

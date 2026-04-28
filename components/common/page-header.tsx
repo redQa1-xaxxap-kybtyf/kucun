@@ -3,12 +3,10 @@
  * 用于所有列表页面的标题区域
  * 遵循ERP色彩系统规范
  *
- * 优化特性:
- * - 增强的视觉层次和阴影效果
- * - 优化的图标设计和微动画
- * - 改进的排版和间距
- * - 响应式布局优化
- * - 统一的边框和背景样式
+ * 设计原则:
+ * - 使用克制的后台标题区
+ * - 保持清晰的标题、描述和操作入口
+ * - 避免营销化渐变、大阴影和过度装饰
  */
 
 import * as React from 'react';
@@ -67,7 +65,7 @@ export function PageHeader({
   return (
     <Card
       className={cn(
-        'card-shadow-medium overflow-hidden',
+        'overflow-hidden rounded-md shadow-sm',
         showBorder
           ? 'border border-[hsl(var(--color-border-primary))]'
           : 'border-none',
@@ -77,8 +75,7 @@ export function PageHeader({
       <CardContent
         className={cn(
           'p-4 sm:p-6',
-          variant === 'gradient' &&
-            'bg-gradient-to-r from-[hsl(var(--color-primary-light))] via-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]',
+          variant === 'gradient' && 'bg-[hsl(var(--color-bg-secondary))]',
           variant === 'solid' && 'bg-[hsl(var(--color-bg-secondary))]'
         )}
       >
@@ -89,7 +86,7 @@ export function PageHeader({
                 className={cn(
                   'flex h-10 w-10 flex-shrink-0 sm:h-12 sm:w-12',
                   'items-center justify-center',
-                  'card-shadow-light rounded-xl text-white'
+                  'rounded-md text-white shadow-sm'
                 )}
                 style={{
                   backgroundColor: iconBgColor,

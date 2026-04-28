@@ -246,11 +246,11 @@ export function MonthlyReportClient() {
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="space-y-4 sm:space-y-6">
         {/* 页面标题卡片 */}
-        <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
-          <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-4 sm:p-6">
+        <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+          <CardContent className="bg-card p-4 sm:p-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between xl:items-center">
               <div className="flex items-start gap-3 sm:gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-[0_10px_24px_rgba(9,88,217,0.22)] sm:h-12 sm:w-12">
+                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-[hsl(var(--color-primary))] sm:h-12 sm:w-12">
                   <Calendar className="h-5 w-5 text-white sm:h-6 sm:w-6" />
                 </div>
                 <div>
@@ -268,7 +268,7 @@ export function MonthlyReportClient() {
                   size="lg"
                   onClick={handleGenerateReport}
                   disabled={isGenerating}
-                  className="h-11 justify-center shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)] sm:min-w-[140px]"
+                  className="h-11 justify-center shadow-sm sm:min-w-[140px]"
                 >
                   <Receipt className="mr-2 h-4 w-4" />
                   {isGenerating ? '刷新中...' : '刷新报表'}
@@ -278,7 +278,7 @@ export function MonthlyReportClient() {
                   size="lg"
                   onClick={handleExportImage}
                   disabled={isExporting}
-                  className="h-11 justify-center shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)] sm:min-w-[140px]"
+                  className="h-11 justify-center shadow-sm sm:min-w-[140px]"
                 >
                   <Receipt className="mr-2 h-4 w-4" />
                   {isExporting ? '导出中...' : '导出图片'}
@@ -443,8 +443,8 @@ export function MonthlyReportClient() {
           </CardContent>
         </Card>
 
-        {/* 收入与支出明细 - 高清晰分组区 */}
-        <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 sm:p-6">
+        {/* 收入与支出明细 */}
+        <div className="rounded-md border border-slate-100 bg-slate-50/80 p-4 sm:p-6">
           <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-800">
               <TrendingUp className="h-4 w-4 text-emerald-500" />
@@ -509,21 +509,21 @@ export function MonthlyReportClient() {
               />
             ))}
           </div>
-          <div className="mt-4 rounded-xl border border-slate-200 bg-white/80 px-4 py-3 text-xs leading-5 text-slate-500">
+          <div className="mt-4 rounded-md border border-slate-200 bg-white px-4 py-3 text-xs leading-5 text-slate-500">
             说明：这里只统计已经审核入账的费用；关联采购的费用已经计入库存或成本，不会重复记到当期费用。
           </div>
         </div>
 
         {/* 资产回收与供应链 - 分组区 */}
         <div className="grid gap-6 xl:grid-cols-2">
-          {/* 资金回收看板 */}
-          <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-6">
+          {/* 资金回收 */}
+          <div className="rounded-md border border-slate-100 bg-white p-4 shadow-sm sm:p-6">
             <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-800">
               <ChineseYuan className="h-4 w-4 text-blue-500" />
-              资金回收看板
+              资金回收
             </h2>
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-xl border border-blue-100/50 bg-blue-50/50 p-4">
+              <div className="rounded-md border border-blue-100/50 bg-blue-50/50 p-4">
                 <div className="text-[10px] font-bold text-blue-600">
                   累计应收 (回款率)
                 </div>
@@ -551,7 +551,7 @@ export function MonthlyReportClient() {
                   />
                 </div>
               </div>
-              <div className="rounded-xl border border-slate-200/50 bg-slate-50 p-4">
+              <div className="rounded-md border border-slate-200/50 bg-slate-50 p-4">
                 <div className="text-[10px] font-bold text-slate-500">
                   业务应付 (结算进度)
                 </div>
@@ -591,7 +591,7 @@ export function MonthlyReportClient() {
           </div>
 
           {/* 供应链与直发分析 */}
-          <div className="rounded-2xl border border-slate-100 bg-white p-4 text-sm shadow-sm sm:p-6">
+          <div className="rounded-md border border-slate-100 bg-white p-4 text-sm shadow-sm sm:p-6">
             <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-800">
               <RefreshCw className="h-4 w-4 text-emerald-500" />
               效率与直发绩效
@@ -619,7 +619,7 @@ export function MonthlyReportClient() {
               ].map(item => (
                 <div
                   key={item.label}
-                  className="flex items-center justify-between rounded-xl border border-dashed border-slate-200 p-3"
+                  className="flex items-center justify-between rounded-md border border-dashed border-slate-200 p-3"
                 >
                   <div className="flex items-center gap-2 font-bold text-slate-600">
                     {item.icon}
@@ -636,7 +636,7 @@ export function MonthlyReportClient() {
 
         {/* 经营提醒 */}
         {report.alerts && report.alerts.length > 0 && (
-          <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 sm:p-6">
+          <div className="rounded-md border border-amber-100 bg-amber-50 p-4 sm:p-6">
             <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-amber-800">
               <Receipt className="h-4 w-4" />
               经营提醒
@@ -645,7 +645,7 @@ export function MonthlyReportClient() {
               {report.alerts.map((alert, index) => (
                 <div
                   key={index}
-                  className="flex flex-col gap-2 rounded-xl border border-amber-200/50 bg-white p-4 shadow-sm"
+                  className="flex flex-col gap-2 rounded-md border border-amber-200/50 bg-white p-4 shadow-sm"
                 >
                   <div className="flex items-center justify-between">
                     <span
@@ -675,7 +675,7 @@ export function MonthlyReportClient() {
   );
 }
 
-// 统计卡片组件 (v3: 高清晰专业版)
+// 统计卡片组件
 interface StatCardProps {
   title: string;
   value: number;
@@ -734,7 +734,7 @@ function StatCard({
   return (
     <Card
       className={cn(
-        'group hover:border-opacity-50 relative overflow-hidden border transition-all duration-300 hover:shadow-md',
+        'group hover:border-opacity-50 relative overflow-hidden rounded-md border shadow-sm',
         themeStyles[variant],
         size === 'lg' ? 'md:col-span-2 xl:col-span-1' : ''
       )}
@@ -755,7 +755,7 @@ function StatCard({
         </div>
         <div
           className={cn(
-            'rounded-lg p-2 transition-transform group-hover:scale-110',
+            'rounded-md p-2',
             iconStyles[variant]
           )}
         >

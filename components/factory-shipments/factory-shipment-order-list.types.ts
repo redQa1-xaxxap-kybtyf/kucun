@@ -15,6 +15,7 @@ export interface FactoryShipmentOrderListViewProps {
   onClearFilters: () => void;
   orders: FactoryShipmentOrder[];
   isLoading: boolean;
+  isRefreshing?: boolean;
   error: unknown;
   pagination?: {
     page: number;

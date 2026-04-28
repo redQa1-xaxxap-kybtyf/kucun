@@ -13,7 +13,7 @@ export function ErrorStateCard({
   label = '厂家发货订单',
 }: ErrorStateCardProps) {
   return (
-    <Card className="card-shadow-light overflow-hidden border border-[hsl(var(--color-border-primary))]">
+    <Card className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] shadow-sm">
       <CardContent className="space-y-4 bg-[hsl(var(--color-error-light))] py-8 text-center">
         <div className="text-[hsl(var(--color-error))]">
           加载{label}失败，请稍后重试

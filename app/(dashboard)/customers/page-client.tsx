@@ -1,6 +1,6 @@
 'use client';
 
-import { Download, Plus, Users } from 'lucide-react';
+import { Plus, Users } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -94,22 +94,29 @@ export function CustomersPageClient({
   }, [initialParams, isSortField]);
 
   const queryParams = React.useMemo(
-    () => ({
-      page: initialParams.page ?? 1,
-      limit: initialParams.limit ?? 10,
-      search: normalizeSearch(committedSearch),
-      sortBy,
-      sortOrder,
-      parentCustomerId: initialParams.parentCustomerId,
-      region: initialParams.region,
-    }) satisfies CustomerQueryParams,
+    () =>
+      ({
+        page: initialParams.page ?? 1,
+        limit: initialParams.limit ?? 10,
+        search: normalizeSearch(committedSearch),
+        sortBy,
+        sortOrder,
+        parentCustomerId: initialParams.parentCustomerId,
+        region: initialParams.region,
+      }) satisfies CustomerQueryParams,
     [committedSearch, initialParams, sortBy, sortOrder]
   );
 
-  const { data, isLoading, isError, error } = useCustomersQuery(queryParams);
+  const { data, isLoading, isFetching, isError, error } = useCustomersQuery(
+    queryParams,
+    {
+      placeholderData: previousData => previousData,
+    }
+  );
 
   const customers = data?.data ?? [];
   const pagination = data?.pagination;
+  const isListRefreshing = !isLoading && isFetching;
 
   const syncUrl = React.useCallback(
     ({
@@ -218,44 +225,27 @@ export function CustomersPageClient({
 
   return (
     <PageContainer
-      title="客户管理"
-      description="统一维护客户资料，查看销售、退货和往来情况。"
+      title="客户档案"
+      description="维护客户名称、电话、地址，快速查看销售、退货和应收情况。"
       icon={<Users className="h-6 w-6 text-white" />}
       actions={
-        <>
-          <Button
-            variant="ghost"
-            size="lg"
-            asChild
-            className="h-12 rounded-2xl border-none bg-white px-6 font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-900 hover:text-white active:scale-95"
-          >
-            <Link href="/customers/export">
-              <Download className="mr-2 h-4 w-4" />
-              导出客户列表
-            </Link>
-          </Button>
-          <Button
-            size="lg"
-            asChild
-            className="h-12 rounded-2xl border-none bg-slate-900 px-6 font-semibold text-white shadow-xl transition-all hover:shadow-slate-200 active:scale-95"
-          >
-            <Link href="/customers/create">
-              <Plus className="mr-2 h-4 w-4" />
-              新建客户
-            </Link>
-          </Button>
-        </>
+        <Button size="lg" asChild className="h-11 rounded-lg px-5">
+          <Link href="/customers/create">
+            <Plus className="mr-2 h-4 w-4" />
+            新建客户
+          </Link>
+        </Button>
       }
       banner={
         <FilterBar
           searchValue={searchInput}
           onSearchChange={handleSearchChange}
-          searchPlaceholder="搜索客户名称、电话或地址..."
-          isSearching={isSearching}
+          searchPlaceholder="搜索客户名称、电话、地址"
+          isSearching={isSearching || isFetching}
           filters={[
             {
               key: 'sortBy',
-              label: '排序依据',
+              label: '排序字段',
               options: CUSTOMER_SORT_OPTIONS.map(option => ({ ...option })),
               width: 'w-36',
               includeAllOption: false,
@@ -263,7 +253,7 @@ export function CustomersPageClient({
             },
             {
               key: 'sortOrder',
-              label: '排序方式',
+              label: '排序顺序',
               options: [
                 { label: '升序', value: 'asc' },
                 { label: '降序', value: 'desc' },
@@ -288,27 +278,29 @@ export function CustomersPageClient({
         />
       }
       maxWidthClassName="max-w-[1680px]"
-      headerClassName="lg:px-10 lg:pt-10 xl:px-14 xl:pt-14"
+      headerVariant="solid"
+      headerClassName="lg:px-8 lg:pt-8 xl:px-10 xl:pt-10"
       bannerClassName="lg:px-10 xl:px-14"
       bodyClassName="space-y-6 lg:px-10 lg:pb-10 xl:px-14 xl:pb-14"
     >
       <div className="relative">
-          {isError && (
-            <div className="animate-in fade-in slide-in-from-top-4 mb-8 flex items-center gap-3 rounded-2xl border border-rose-100 bg-rose-50/50 px-6 py-4 text-sm font-bold text-rose-600 duration-500">
-              <div className="h-2 w-2 animate-pulse rounded-full bg-rose-500" />
-              加载客户数据失败：
-              {getFriendlyErrorMessage(error, '请稍后重试')}
-            </div>
-          )}
+        {isError && (
+          <div className="mb-6 flex items-center gap-3 rounded-md border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-600">
+            <div className="h-2 w-2 animate-pulse rounded-full bg-rose-500" />
+            加载客户数据失败：
+            {getFriendlyErrorMessage(error, '请稍后重试')}
+          </div>
+        )}
 
-          <ERPCustomerList
-            customers={customers}
-            pagination={pagination}
-            isLoading={isLoading}
-            onViewDetail={handleViewDetail}
-            onDelete={handleDelete}
-            onPageChange={handlePageChange}
-          />
+        <ERPCustomerList
+          customers={customers}
+          pagination={pagination}
+          isLoading={isLoading}
+          isRefreshing={isListRefreshing}
+          onViewDetail={handleViewDetail}
+          onDelete={handleDelete}
+          onPageChange={handlePageChange}
+        />
       </div>
 
       <CustomerDeleteDialog

@@ -1,7 +1,6 @@
 'use client';
 
-import { DollarSign } from 'lucide-react';
-
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -36,10 +35,10 @@ export function FeeItemsSection({ feeItems }: FeeItemsSectionProps) {
   // 如果没有费用项，显示空状态
   if (!feeItems || feeItems.length === 0) {
     return (
-      <Card className="card-shadow-medium border border-[hsl(var(--color-border-primary))]">
+      <Card className="rounded-md border border-[hsl(var(--color-border-primary))] shadow-sm">
         <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] py-3">
           <CardTitle className="flex items-center gap-2 text-sm font-medium">
-            <DollarSign className="h-4 w-4 text-[hsl(var(--color-primary))]" />
+            <ChineseYuan className="h-4 w-4 text-[hsl(var(--color-primary))]" />
             费用明细
           </CardTitle>
         </CardHeader>
@@ -64,11 +63,11 @@ export function FeeItemsSection({ feeItems }: FeeItemsSectionProps) {
   const totalFees = customerFees + companyFees;
 
   return (
-    <Card className="card-shadow-medium border border-[hsl(var(--color-border-primary))]">
+    <Card className="rounded-md border border-[hsl(var(--color-border-primary))] shadow-sm">
       <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] py-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-sm font-medium">
-            <DollarSign className="h-4 w-4 text-[hsl(var(--color-primary))]" />
+            <ChineseYuan className="h-4 w-4 text-[hsl(var(--color-primary))]" />
             费用明细
           </CardTitle>
           <Badge variant="outline" className="text-xs">

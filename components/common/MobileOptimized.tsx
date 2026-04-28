@@ -59,7 +59,7 @@ export function MobileCard({
       className={cn(
         'touch-manipulation transition-all duration-200',
         onClick &&
-          'cursor-pointer hover:[box-shadow:var(--shadow-medium)] active:scale-95',
+          'cursor-pointer hover:shadow-sm',
         className
       )}
       onClick={onClick}
@@ -265,7 +265,7 @@ export function MobileToolbar({
   return (
     <div
       className={cn(
-        'bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-40 flex items-center justify-between border-b p-4 backdrop-blur-sm md:static',
+        'bg-background sticky top-0 z-40 flex items-center justify-between border-b p-4 md:static',
         className
       )}
     >
@@ -411,7 +411,7 @@ export function MobileBottomBar({ actions, className }: MobileBottomBarProps) {
   return (
     <div
       className={cn(
-        'bg-background/95 supports-backdrop-filter:bg-background/60 fixed right-0 bottom-0 left-0 z-50 border-t p-4 backdrop-blur-sm md:hidden',
+        'bg-background fixed right-0 bottom-0 left-0 z-50 border-t p-4 md:hidden',
         className
       )}
     >

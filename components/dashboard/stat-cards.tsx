@@ -116,9 +116,8 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
     const cardContent = (
       <Card
         className={cn(
-          'group relative overflow-hidden transition-all duration-300',
-          href &&
-            'cursor-pointer hover:scale-[1.02] hover:shadow-lg hover:shadow-black/5',
+          'group relative overflow-hidden shadow-sm',
+          href && 'cursor-pointer hover:shadow-sm',
           className
         )}
         ref={ref}
@@ -175,7 +174,7 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
 
             <div
               className={cn(
-                'flex h-14 w-14 items-center justify-center rounded-xl border-2 shadow-sm transition-transform duration-300 group-hover:scale-110',
+                'flex h-14 w-14 items-center justify-center rounded-md border-2 shadow-sm',
                 colorClasses.bg,
                 colorClasses.border
               )}

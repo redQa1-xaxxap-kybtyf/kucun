@@ -14,6 +14,7 @@ import {
   StatsCardsSkeleton,
   TableSkeleton,
 } from '@/components/ui/skeleton-compositions';
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 import type {
   ExpenseQueryParams,
   ExpenseStatisticsParams,
@@ -47,6 +48,7 @@ interface ExpensesPageClientProps {
   initialParams: {
     page: number;
     pageSize: number;
+    search?: string;
     expenseType?: string;
     startDate?: string;
     endDate?: string;
@@ -58,16 +60,25 @@ interface ExpensesPageClientProps {
   };
 }
 
+function normalizeSearch(value?: string) {
+  const trimmed = value?.trim() ?? '';
+  return trimmed ? trimmed : undefined;
+}
+
 export function ExpensesPageClient({
   initialParams,
   hasManagePermission,
 }: ExpensesPageClientProps) {
   const router = useRouter();
+  const [committedSearch, setCommittedSearch] = React.useState(
+    initialParams.search || ''
+  );
 
   // 查询参数状态
   const [filters, setFilters] = React.useState<ExpenseQueryParams>({
     page: initialParams.page,
     pageSize: initialParams.pageSize,
+    search: initialParams.search?.trim() || undefined,
     expenseType: initialParams.expenseType as ExpenseType | undefined,
     startDate: initialParams.startDate,
     endDate: initialParams.endDate,
@@ -122,6 +133,9 @@ export function ExpensesPageClient({
       if (newFilters.pageSize && newFilters.pageSize !== 20) {
         params.set('pageSize', newFilters.pageSize.toString());
       }
+      if (newFilters.search) {
+        params.set('search', newFilters.search);
+      }
       if (newFilters.expenseType) {
         params.set('expenseType', newFilters.expenseType);
       }
@@ -155,11 +169,42 @@ export function ExpensesPageClient({
     [router]
   );
 
+  const {
+    searchInput,
+    isSearching,
+    handleSearchChange,
+    cancelPendingCommit,
+    setSearchInput,
+  } = useListSearchController({
+    committedValue: committedSearch,
+    onCommit: search => {
+      const nextSearch = search ?? '';
+      const updatedFilters = {
+        ...filters,
+        search,
+        page: 1,
+      };
+
+      setCommittedSearch(nextSearch);
+      setFilters(updatedFilters);
+      updateURL(updatedFilters);
+    },
+  });
+
+  const syncPendingSearch = React.useCallback(() => {
+    cancelPendingCommit();
+    const nextSearch = normalizeSearch(searchInput);
+    setCommittedSearch(nextSearch ?? '');
+    return nextSearch;
+  }, [cancelPendingCommit, searchInput]);
+
   // 处理筛选变化
   const handleFilterChange = React.useCallback(
     (newFilters: Partial<ExpenseQueryParams>) => {
+      const nextSearch = syncPendingSearch();
       const updatedFilters = {
         ...filters,
+        search: nextSearch,
         ...newFilters,
         page: 1, // 重置到第一页
       };
@@ -235,31 +280,57 @@ export function ExpensesPageClient({
         });
       }
     },
-    [filters, getDefaultDateRange, updateURL]
+    [filters, getDefaultDateRange, syncPendingSearch, updateURL]
   );
+
+  const handleClearFilters = React.useCallback(() => {
+    cancelPendingCommit();
+    setSearchInput('');
+    setCommittedSearch('');
+
+    const updatedFilters: ExpenseQueryParams = {
+      page: 1,
+      pageSize: 20,
+      sortBy: 'expenseDate',
+      sortOrder: 'desc',
+    };
+
+    setFilters(updatedFilters);
+    updateURL(updatedFilters);
+
+    const defaultRange = getDefaultDateRange();
+    setStatisticsParams({
+      startDate: defaultRange.startDate,
+      endDate: defaultRange.endDate,
+      groupBy: 'type',
+    });
+  }, [cancelPendingCommit, getDefaultDateRange, setSearchInput, updateURL]);
 
   // 处理分页变化
   const handlePageChange = React.useCallback(
     (page: number) => {
-      const updatedFilters = { ...filters, page };
+      const nextSearch = syncPendingSearch();
+      const updatedFilters = { ...filters, search: nextSearch, page };
       setFilters(updatedFilters);
       updateURL(updatedFilters);
     },
-    [filters, updateURL]
+    [filters, syncPendingSearch, updateURL]
   );
 
   // 处理排序变化
   const handleSortChange = React.useCallback(
     (sortBy: string, sortOrder: 'asc' | 'desc') => {
+      const nextSearch = syncPendingSearch();
       const updatedFilters = {
         ...filters,
+        search: nextSearch,
         sortBy: sortBy as 'expenseDate' | 'expenseAmount' | 'createdAt',
         sortOrder,
       };
       setFilters(updatedFilters);
       updateURL(updatedFilters);
     },
-    [filters, updateURL]
+    [filters, syncPendingSearch, updateURL]
   );
 
   return (
@@ -294,7 +365,11 @@ export function ExpensesPageClient({
           <CardContent className="pt-6">
             <ExpenseFilters
               filters={filters}
+              searchValue={searchInput}
+              onSearchChange={handleSearchChange}
+              isSearching={isSearching}
               onFilterChange={handleFilterChange}
+              onClearFilters={handleClearFilters}
             />
           </CardContent>
         </Card>

@@ -496,19 +496,19 @@ export const FactoryShipmentsSkeleton = () => (
 
 /** @deprecated 请使用 ListSkeleton 替代 */
 export const SalesOrdersSkeleton = () => (
-  <ListSkeleton columns={8} filters={4} />
+  <ListSkeleton columns={7} filters={4} />
 );
 
 /** @deprecated 请使用 ListSkeleton 替代 */
 export const ReturnOrdersSkeleton = () => (
-  <ListSkeleton columns={9} filters={4} />
+  <ListSkeleton columns={8} filters={4} />
 );
 
 /** @deprecated 请使用 ListSkeleton 替代 */
 export const SuppliersSkeleton = () => <ListSkeleton columns={6} filters={3} />;
 
 /** @deprecated 请使用 ListSkeleton 替代 */
-export const ProductsSkeleton = () => <ListSkeleton columns={7} filters={3} />;
+export const ProductsSkeleton = () => <ListSkeleton columns={9} filters={3} />;
 
 /** @deprecated 请使用 ListSkeleton 替代 */
 export const InventoryListSkeleton = () => (

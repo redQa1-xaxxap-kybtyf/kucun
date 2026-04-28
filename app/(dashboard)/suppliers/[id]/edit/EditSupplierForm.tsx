@@ -96,8 +96,8 @@ export function EditSupplierForm({ id, supplier }: EditSupplierFormProps) {
 
   return (
     <>
-      <Card className="overflow-hidden">
-        <CardHeader className="border-b bg-gradient-to-r from-[hsl(var(--color-bg-secondary))] to-[hsl(var(--color-bg-tertiary))]">
+      <Card className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] shadow-sm">
+        <CardHeader className="border-b bg-[hsl(var(--color-bg-secondary))]">
           <CardTitle className="flex items-center text-[hsl(var(--color-text-primary))]">
             <Building2 className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
             基本信息
@@ -213,7 +213,7 @@ export function EditSupplierForm({ id, supplier }: EditSupplierFormProps) {
               size="lg"
               onClick={() => router.push('/suppliers')}
               disabled={isLoading}
-              className="h-11 gap-2 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:border-[hsl(var(--color-border-strong))] hover:shadow-[var(--shadow-medium)]"
+              className="h-10 gap-2 rounded-md"
             >
               <ArrowLeft className="h-4 w-4" />
               取消
@@ -223,7 +223,7 @@ export function EditSupplierForm({ id, supplier }: EditSupplierFormProps) {
               form={supplierFormId}
               size="lg"
               disabled={isLoading}
-              className="h-11 gap-2 bg-[hsl(var(--color-primary))] text-white shadow-[var(--shadow-medium)] transition-transform hover:-translate-y-0.5 hover:bg-[hsl(var(--color-primary-hover))] hover:shadow-[var(--shadow-heavy)] focus-visible:ring-[hsl(var(--color-primary))]"
+              className="h-10 gap-2 rounded-md bg-[hsl(var(--color-primary))] text-white hover:bg-[hsl(var(--color-primary-hover))] focus-visible:ring-[hsl(var(--color-primary))]"
             >
               {isLoading ? (
                 <>

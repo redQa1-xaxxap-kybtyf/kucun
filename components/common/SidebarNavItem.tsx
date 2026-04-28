@@ -54,12 +54,12 @@ const SubMenuItem = React.memo(
       setIsExpanded(prev => !prev);
     }, []);
 
-    // v3 PRO 子菜单项样式
+    // 业务系统侧边栏：低干扰选中态，方便长时间扫菜单
     const itemClasses = cn(
-      'group relative flex h-9 w-full items-center justify-start rounded-xl px-4 text-[13px] font-bold transition-all duration-300 active:scale-95',
+      'group relative flex h-8 w-full items-center justify-start rounded-md px-3 text-[13px] font-medium transition-colors duration-150',
       isActive
-        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/20'
-        : 'text-slate-400 hover:bg-slate-50 hover:text-slate-900'
+        ? 'border border-blue-100 bg-blue-50 text-blue-700'
+        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
     );
 
     if (!hasChildren) {
@@ -71,8 +71,8 @@ const SubMenuItem = React.memo(
               className={cn(
                 'h-1 w-1 rounded-full transition-all duration-300',
                 isActive
-                  ? 'scale-125 bg-white'
-                  : 'bg-slate-200 group-hover:bg-slate-400'
+                  ? 'scale-125 bg-blue-600'
+                  : 'bg-slate-300 group-hover:bg-slate-500'
               )}
             />
             <span className="flex-1 text-left">{item.title}</span>
@@ -86,7 +86,7 @@ const SubMenuItem = React.memo(
         <button
           className={cn(
             itemClasses,
-            (isActive || hasActiveChild) && 'text-slate-900'
+            (isActive || hasActiveChild) && 'bg-blue-50 text-blue-700'
           )}
           onClick={handleToggle}
           aria-expanded={isExpanded}
@@ -224,14 +224,14 @@ export const SidebarNavItem = React.memo(
         setIsExpanded(prev => !prev);
       }, []);
 
-      // v3 PRO 主导航项样式: Active Pill 2.0
+      // 业务系统侧边栏：表格式后台更适合克制的选中态
       const commonClasses = cn(
-        'group relative flex w-full items-center rounded-2xl transition-all duration-500 active:scale-95 outline-none',
-        isCollapsed ? 'h-14 justify-center' : 'h-12 px-4 gap-4',
+        'group relative flex w-full items-center rounded-md border border-transparent outline-none transition-colors duration-150',
+        isCollapsed ? 'h-12 justify-center' : 'h-10 px-3 gap-3',
         isActive
-          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xl shadow-blue-500/30'
-          : 'text-slate-400 hover:bg-slate-50 hover:text-slate-900',
-        isFocused && 'ring-2 ring-blue-500/20 ring-offset-2'
+          ? 'border-blue-200 bg-blue-50 text-blue-700'
+          : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950',
+        isFocused && 'ring-2 ring-blue-500/20 ring-offset-1'
       );
 
       if (!item.children || item.children.length === 0) {
@@ -250,8 +250,8 @@ export const SidebarNavItem = React.memo(
                   'transition-all duration-500',
                   isCollapsed ? 'h-6 w-6' : 'h-5 w-5',
                   isActive
-                    ? 'text-white'
-                    : 'text-slate-400 group-hover:scale-110 group-hover:text-slate-900'
+                    ? 'text-blue-700'
+                    : 'text-slate-500 group-hover:text-slate-900'
                 )}
               />
             )}
@@ -259,7 +259,7 @@ export const SidebarNavItem = React.memo(
               <span
                 className={cn(
                   'flex-1 truncate text-left text-sm',
-                  isActive ? 'font-semibold' : 'font-bold'
+                  isActive ? 'font-semibold' : 'font-medium'
                 )}
               >
                 {item.title}
@@ -283,8 +283,8 @@ export const SidebarNavItem = React.memo(
                   className={cn(
                     'h-6 w-6 transition-all duration-500',
                     isActive || hasActiveChild
-                      ? 'text-white'
-                      : 'text-slate-400 group-hover:scale-110 group-hover:text-slate-900'
+                      ? 'text-blue-700'
+                      : 'text-slate-500 group-hover:text-slate-900'
                   )}
                 />
               )}
@@ -296,7 +296,7 @@ export const SidebarNavItem = React.memo(
                   commonClasses,
                   (isActive || hasActiveChild) &&
                     !isActive &&
-                    'border border-blue-100 bg-blue-50 text-blue-600 shadow-none hover:bg-blue-100'
+                    'border-blue-100 bg-blue-50 text-blue-700 hover:bg-blue-100'
                 )}
                 onClick={handleSubMenuToggle}
                 aria-label={item.title}
@@ -306,24 +306,24 @@ export const SidebarNavItem = React.memo(
                 {Icon && (
                   <Icon
                     className={cn(
-                      'h-5 w-5 transition-all duration-500',
+                      'h-5 w-5 transition-colors duration-150',
                       isActive || hasActiveChild
-                        ? 'text-white'
-                        : 'text-slate-400 group-hover:text-slate-900'
+                        ? 'text-blue-700'
+                        : 'text-slate-500 group-hover:text-slate-900'
                     )}
                   />
                 )}
                 <span
                   className={cn(
                     'flex-1 truncate text-left text-sm',
-                    isActive || hasActiveChild ? 'font-semibold' : 'font-bold'
+                    isActive || hasActiveChild ? 'font-semibold' : 'font-medium'
                   )}
                 >
                   {item.title}
                 </span>
                 <ChevronDown
                   className={cn(
-                    'h-4 w-4 transition-all duration-500',
+                    'h-4 w-4 transition-transform duration-150',
                     isExpanded ? 'rotate-180 opacity-100' : 'opacity-40'
                   )}
                 />

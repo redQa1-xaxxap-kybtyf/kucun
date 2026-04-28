@@ -10,7 +10,7 @@ interface Props {
 }
 
 /**
- * 🚀 性能优化的 SessionProvider
+ * 性能优化的 SessionProvider
  * - refetchInterval: 禁用自动刷新，避免不必要的网络请求
  * - refetchOnWindowFocus: 禁用窗口聚焦刷新，减少后台请求
  */

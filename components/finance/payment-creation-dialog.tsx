@@ -9,7 +9,6 @@
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { DollarSign } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import {
   useForm,
@@ -24,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { useToast } from '@/components/ui/use-toast';
 import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import { invalidateFinanceCaches } from '@/lib/cache/invalidation-helpers';
@@ -285,8 +285,8 @@ export function PaymentCreationDialog({
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-r from-[hsl(var(--color-primary))] to-[hsl(var(--color-primary))]/90">
-              <DollarSign className="h-5 w-5 text-white" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-[hsl(var(--color-primary))]">
+              <ChineseYuan className="h-5 w-5 text-white" />
             </div>
             登记待确认收款
           </DialogTitle>

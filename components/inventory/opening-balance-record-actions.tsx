@@ -374,7 +374,7 @@ export function OpeningBalanceRecordActions({
               </AlertDescription>
             </Alert>
 
-            <div className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 text-sm sm:grid-cols-2">
+            <div className="grid gap-3 rounded-md border border-slate-200 bg-slate-50/70 p-4 text-sm sm:grid-cols-2">
               <div>
                 <div className="text-xs text-slate-500">单据编号</div>
                 <div className="mt-1 font-semibold text-slate-900">
@@ -435,7 +435,7 @@ export function OpeningBalanceRecordActions({
               </div>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+            <div className="rounded-md border border-slate-200 bg-slate-50/70 p-3">
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="text-xs font-medium text-slate-600">
@@ -489,7 +489,7 @@ export function OpeningBalanceRecordActions({
             </div>
 
             <div
-              className={`rounded-xl border px-3 py-2 text-sm ${
+              className={`rounded-md border px-3 py-2 text-sm ${
                 correctionPreview.error
                   ? 'border-rose-200 bg-rose-50 text-rose-700'
                   : 'border-emerald-200 bg-emerald-50 text-emerald-700'

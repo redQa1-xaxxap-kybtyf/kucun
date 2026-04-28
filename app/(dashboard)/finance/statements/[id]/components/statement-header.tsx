@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, Download, FileText, Receipt } from 'lucide-react';
+import { ArrowLeft, Download, FileText } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import { Badge } from '@/components/ui/badge';
@@ -25,7 +25,7 @@ const STATUS_BADGE_MAP: Record<
   { label: string; variant: 'outline' | 'secondary' | 'destructive' }
 > = {
   active: { label: '正常', variant: 'outline' },
-  settled: { label: '已结清', variant: 'secondary' },
+  settled: { label: '无余额', variant: 'secondary' },
   suspended: { label: '已暂停', variant: 'destructive' },
 };
 
@@ -40,20 +40,16 @@ export function StatementHeader({
   const statusInfo = STATUS_BADGE_MAP[status] ?? STATUS_BADGE_MAP.active;
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white/70 shadow-sm backdrop-blur-xl">
-      {/* 装饰背景 - 调淡 */}
-      <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-blue-500/5 blur-3xl" />
-      <div className="absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-indigo-500/5 blur-3xl" />
-
-      <CardContent className="relative z-10 p-6 sm:p-8">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-start gap-5 sm:items-center">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 shadow-xl shadow-blue-500/10">
-              <FileText className="h-8 w-8 text-white" />
+    <div className="rounded-lg border bg-white">
+      <CardContent className="p-4 sm:p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-4 sm:items-center">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[hsl(var(--color-primary))]">
+              <FileText className="h-6 w-6 text-white" />
             </div>
             <div className="space-y-1.5">
               <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+                <h1 className="text-xl font-semibold text-slate-900 sm:text-2xl">
                   往来对账明细
                 </h1>
                 <Badge className="border-blue-100 bg-blue-50 text-blue-600 hover:bg-blue-100">
@@ -89,35 +85,25 @@ export function StatementHeader({
                       ? '（应收）'
                       : currentBalance < 0
                         ? '（应付）'
-                        : '（结清）'}
+                        : '（无余额）'}
                   </span>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
             <Button
               variant="outline"
-              size="lg"
               onClick={() => router.back()}
-              className="h-12 border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900"
+              className="h-10 rounded-lg"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               返回
             </Button>
-            <div className="hidden h-8 w-px bg-slate-200 sm:block" />
-            <Button
-              variant="outline"
-              size="lg"
-              className="h-12 border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900"
-            >
+            <Button variant="outline" className="h-10 rounded-lg">
               <Download className="mr-2 h-4 w-4" />
               导出对账单
-            </Button>
-            <Button className="h-12 bg-blue-600 text-white shadow-lg shadow-blue-500/20 transition-all hover:scale-105 hover:bg-blue-700 active:scale-95">
-              <Receipt className="mr-2 h-4 w-4" />
-              结清处理
             </Button>
           </div>
         </div>

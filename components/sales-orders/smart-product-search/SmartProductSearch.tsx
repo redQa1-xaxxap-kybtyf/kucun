@@ -18,6 +18,15 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
+import { useIsMobile } from '@/hooks/use-media-query';
 import { cn } from '@/lib/utils';
 import { logger } from '@/lib/utils/console-logger';
 
@@ -36,6 +45,7 @@ const AddTemporaryProductDialog = dynamic(
 );
 
 export function SmartProductSearch(props: SmartProductSearchProps) {
+  const isMobile = useIsMobile();
   const {
     open,
     setOpen: setPopoverOpen,
@@ -123,62 +133,77 @@ export function SmartProductSearch(props: SmartProductSearchProps) {
 
   return (
     <>
-      <Popover open={open} onOpenChange={handleOpenChange}>
-        <PopoverTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className={cn(
-              'w-full justify-between text-left font-normal',
-              !selectedProduct && 'text-muted-foreground',
-              className
-            )}
-            disabled={disabled}
-            onBlur={notifyBlur}
-          >
-            <SmartProductSearchTriggerContent
+      {isMobile ? (
+        <Sheet open={open} onOpenChange={handleOpenChange}>
+          <SheetTrigger asChild>
+            <SmartProductSearchTriggerButton
+              open={open}
               selectedProduct={selectedProduct}
               selectedSpecification={selectedSpecification}
               placeholder={placeholder}
               simple={simple}
+              disabled={disabled}
+              className={className}
+              onBlur={notifyBlur}
             />
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[620px] p-0" align="start">
-          <Command shouldFilter={false}>
-            <CommandInput
-              placeholder="输入产品名称、编码或规格搜索..."
-              value={searchValue}
-              onValueChange={handleSearchValueChange}
-              className="h-10"
+          </SheetTrigger>
+          <SheetContent
+            side="bottom"
+            className="flex h-[85vh] flex-col gap-0 rounded-t-3xl p-0"
+          >
+            <SheetHeader className="border-b px-4 py-3 text-left">
+              <SheetTitle>选择产品</SheetTitle>
+              <SheetDescription>
+                支持按编码、名称、规格搜索，也可以直接补录临时产品。
+              </SheetDescription>
+            </SheetHeader>
+            <SmartProductSearchPanel
+              searchValue={searchValue}
+              onSearchValueChange={handleSearchValueChange}
+              isSearchingResults={isSearchingResults}
+              hasResults={hasResults}
+              filteredProducts={filteredProducts}
+              selectedValue={props.value}
+              searchQuery={displaySearchValue}
+              onSelectProduct={handleProductSelectWithBlur}
+              onSelectBatch={handleBatchSelectWithBlur}
+              allowTemporaryProducts={allowTemporaryProducts}
+              onAddTemporaryProduct={handleAddTemporaryProduct}
+              listClassName="max-h-none flex-1"
             />
-            <CommandList className="max-h-[400px]">
-              {isSearchingResults && <ProductSearchLoadingIndicator />}
-              {hasResults ? (
-                <ProductSearchResults
-                  products={filteredProducts}
-                  selectedValue={props.value}
-                  searchQuery={displaySearchValue}
-                  onSelectProduct={handleProductSelectWithBlur}
-                  onSelectBatch={handleBatchSelectWithBlur}
-                />
-              ) : (
-                <CommandEmpty>
-                  <ProductSearchEmptyState
-                    searchValue={displaySearchValue}
-                    isSearching={isSearchingResults}
-                    allowTemporaryProducts={allowTemporaryProducts}
-                    onAddTemporaryProduct={handleAddTemporaryProduct}
-                  />
-                </CommandEmpty>
-              )}
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <Popover open={open} onOpenChange={handleOpenChange}>
+          <PopoverTrigger asChild>
+            <SmartProductSearchTriggerButton
+              open={open}
+              selectedProduct={selectedProduct}
+              selectedSpecification={selectedSpecification}
+              placeholder={placeholder}
+              simple={simple}
+              disabled={disabled}
+              className={className}
+              onBlur={notifyBlur}
+            />
+          </PopoverTrigger>
+          <PopoverContent className="w-[620px] p-0" align="start">
+            <SmartProductSearchPanel
+              searchValue={searchValue}
+              onSearchValueChange={handleSearchValueChange}
+              isSearchingResults={isSearchingResults}
+              hasResults={hasResults}
+              filteredProducts={filteredProducts}
+              selectedValue={props.value}
+              searchQuery={displaySearchValue}
+              onSelectProduct={handleProductSelectWithBlur}
+              onSelectBatch={handleBatchSelectWithBlur}
+              allowTemporaryProducts={allowTemporaryProducts}
+              onAddTemporaryProduct={handleAddTemporaryProduct}
+            />
+          </PopoverContent>
+        </Popover>
+      )}
       {showAddDialog && (
         <AddTemporaryProductDialog
           open={showAddDialog}
@@ -189,6 +214,120 @@ export function SmartProductSearch(props: SmartProductSearchProps) {
         />
       )}
     </>
+  );
+}
+
+interface SmartProductSearchTriggerButtonProps
+  extends React.ComponentPropsWithoutRef<typeof Button>,
+    TriggerContentProps {
+  open: boolean;
+  onBlur: () => void;
+}
+
+const SmartProductSearchTriggerButton = React.forwardRef<
+  React.ElementRef<typeof Button>,
+  SmartProductSearchTriggerButtonProps
+>(
+  (
+    {
+      open,
+      selectedProduct,
+      selectedSpecification,
+      placeholder,
+      simple,
+      disabled,
+      className,
+      onBlur,
+      ...props
+    },
+    ref
+  ) => (
+    <Button
+      {...props}
+      ref={ref}
+      type="button"
+      variant="outline"
+      role="combobox"
+      aria-expanded={open}
+      className={cn(
+        'w-full justify-between text-left font-normal',
+        !selectedProduct && 'text-muted-foreground',
+        className
+      )}
+      disabled={disabled}
+      onBlur={onBlur}
+    >
+      <SmartProductSearchTriggerContent
+        selectedProduct={selectedProduct}
+        selectedSpecification={selectedSpecification}
+        placeholder={placeholder}
+        simple={simple}
+      />
+      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+    </Button>
+  )
+);
+SmartProductSearchTriggerButton.displayName = 'SmartProductSearchTriggerButton';
+
+interface SmartProductSearchPanelProps {
+  searchValue: string;
+  onSearchValueChange: (value: string) => void;
+  isSearchingResults: boolean;
+  hasResults: boolean;
+  filteredProducts: ProductWithInventory[];
+  selectedValue?: string;
+  searchQuery: string;
+  onSelectProduct: (productId: string) => void;
+  onSelectBatch: (productId: string, batchNumber: string) => void;
+  allowTemporaryProducts: boolean;
+  onAddTemporaryProduct: () => void;
+  listClassName?: string;
+}
+
+function SmartProductSearchPanel({
+  searchValue,
+  onSearchValueChange,
+  isSearchingResults,
+  hasResults,
+  filteredProducts,
+  selectedValue,
+  searchQuery,
+  onSelectProduct,
+  onSelectBatch,
+  allowTemporaryProducts,
+  onAddTemporaryProduct,
+  listClassName,
+}: SmartProductSearchPanelProps) {
+  return (
+    <Command shouldFilter={false} className="flex h-full flex-col">
+      <CommandInput
+        placeholder="输入产品名称、编码或规格搜索..."
+        value={searchValue}
+        onValueChange={onSearchValueChange}
+        className="h-10"
+      />
+      <CommandList className={cn('max-h-[400px]', listClassName)}>
+        {isSearchingResults ? <ProductSearchLoadingIndicator /> : null}
+        {hasResults ? (
+          <ProductSearchResults
+            products={filteredProducts}
+            selectedValue={selectedValue}
+            searchQuery={searchQuery}
+            onSelectProduct={onSelectProduct}
+            onSelectBatch={onSelectBatch}
+          />
+        ) : (
+          <CommandEmpty>
+            <ProductSearchEmptyState
+              searchValue={searchQuery}
+              isSearching={isSearchingResults}
+              allowTemporaryProducts={allowTemporaryProducts}
+              onAddTemporaryProduct={onAddTemporaryProduct}
+            />
+          </CommandEmpty>
+        )}
+      </CommandList>
+    </Command>
   );
 }
 

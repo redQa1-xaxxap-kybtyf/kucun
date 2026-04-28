@@ -40,7 +40,7 @@ const CategoryEditFormCard = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
+      <div className="rounded-md border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
         表单加载中...
       </div>
     ),
@@ -480,11 +480,11 @@ function useUpdateCategoryMutation({
 
 function CategoryEditHeader({ onBack }: { onBack: () => void }) {
   return (
-    <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-      <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
+    <Card className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] shadow-sm">
+      <CardContent className="bg-[hsl(var(--color-bg-secondary))] p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
+            <div className="flex h-12 w-12 items-center justify-center rounded-md bg-blue-600 text-white shadow-sm">
               <FolderTree className="h-6 w-6 text-white" />
             </div>
             <div>
@@ -499,7 +499,7 @@ function CategoryEditHeader({ onBack }: { onBack: () => void }) {
             variant="outline"
             size="lg"
             onClick={onBack}
-            className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+            className="h-11 shadow-sm"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             返回

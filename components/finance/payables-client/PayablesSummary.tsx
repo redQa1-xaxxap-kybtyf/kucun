@@ -64,7 +64,7 @@ export function PayablesSummary({ filters, initialStatistics }: Props) {
             共 {totalTrackedCount} 个应付订单
           </p>
           <p className="text-muted-foreground text-xs">
-            待付款 {displayStatistics.pendingCount} · 部分结清{' '}
+            待付款 {displayStatistics.pendingCount} · 部分付款{' '}
             {displayStatistics.partialCount}
           </p>
         </CardContent>

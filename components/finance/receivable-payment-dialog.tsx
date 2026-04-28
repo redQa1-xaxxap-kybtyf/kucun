@@ -220,8 +220,7 @@ export function ReceivablePaymentDialog({
         refreshRelatedQueries(receivable.id);
         toast({
           title: '已登记待确认收款',
-          description:
-            '这笔收款已经登记成功，请到“收款管理”里确认到账。',
+          description: '这笔收款已经登记成功，请到“收款管理”里确认到账。',
           variant: 'success',
         });
         forceClose(false);
@@ -445,7 +444,7 @@ export function ReceivablePaymentDialog({
                           />
                         </FormControl>
                         <FormDescription>
-                          根据上面两个金额自动算出；正数表示少收结清，负数表示多收。
+                          根据上面两个金额自动算出；正数表示少收，负数表示多收。
                         </FormDescription>
                         <FormMessage />
                       </FormItem>

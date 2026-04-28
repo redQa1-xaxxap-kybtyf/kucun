@@ -4,7 +4,6 @@ import {
   AlertCircle,
   BarChart3,
   ClipboardList,
-  DollarSign,
   FileText,
   Package,
 } from 'lucide-react';
@@ -29,6 +28,7 @@ import {
 import { InboundFormToolbar } from '@/components/inventory/forms/inbound-form-toolbar';
 import { InboundProductSection } from '@/components/inventory/forms/inbound-product-section';
 import { OpeningBalanceConfirmDialog } from '@/components/inventory/opening-balance-confirm-dialog';
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
@@ -511,7 +511,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
     }
   );
 
-  const handleProductSelectWithPrompt = (product: ProductOption) => {
+  const handleProductSelectWithPrompt = (product: ProductOption | null) => {
     setShowProductPrompt(false);
     handleProductSelect(product);
   };
@@ -635,7 +635,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
         )}
 
         {/* 表单内容区域 */}
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
           <div className="p-6">
             <Form {...form}>
               <form
@@ -655,7 +655,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                 {/* 1️⃣ 入库类型 */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-500 shadow-inner">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-50 text-slate-500">
                       <ClipboardList className="h-5 w-5" />
                     </div>
                     <div className="space-y-0.5">
@@ -667,7 +667,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                       </p>
                     </div>
                   </div>
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50/30 p-6">
+                  <div className="rounded-md border border-slate-100 bg-slate-50/30 p-6">
                     {watchedReason === 'purchase' && (
                       <div className="space-y-4">
                         <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
@@ -783,7 +783,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                 {/* 2️⃣ 供应商与产品 */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-500 shadow-inner">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-50 text-slate-500">
                       <Package className="h-5 w-5" />
                     </div>
                     <div className="space-y-0.5">
@@ -795,7 +795,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                       </p>
                     </div>
                   </div>
-                  <div className="space-y-6 rounded-2xl border border-slate-100 bg-slate-50/30 p-6">
+                  <div className="space-y-6 rounded-md border border-slate-100 bg-slate-50/30 p-6">
                     <InboundSupplierField form={form} />
                     <div className="border-t border-slate-100/50 pt-6">
                       {isBatchPurchaseMode ? (
@@ -823,7 +823,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                 {!isBatchPurchaseMode && (
                   <div className="space-y-4">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-500 shadow-inner">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-50 text-slate-500">
                         <BarChart3 className="h-5 w-5" />
                       </div>
                       <div className="space-y-0.5">
@@ -835,7 +835,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                         </p>
                       </div>
                     </div>
-                    <div className="space-y-6 rounded-2xl border border-slate-100 bg-slate-50/30 p-6">
+                    <div className="space-y-6 rounded-md border border-slate-100 bg-slate-50/30 p-6">
                       <FormField
                         control={form.control}
                         name="batchNumber"
@@ -863,7 +863,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                         <InboundQuantityFields form={form} />
                       </div>
 
-                      <div className="rounded-2xl border border-dashed border-slate-200 bg-white/70 p-4">
+                      <div className="rounded-md border border-dashed border-slate-200 bg-white p-4">
                         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                           <div>
                             <p className="text-sm font-semibold text-slate-800">
@@ -901,7 +901,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                 {shouldShowPurchaseDamageTools && (
                   <div className="space-y-4">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600 shadow-inner">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-md bg-amber-50 text-amber-600">
                         <AlertCircle className="h-5 w-5" />
                       </div>
                       <div className="space-y-0.5">
@@ -913,7 +913,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                         </p>
                       </div>
                     </div>
-                    <div className="rounded-2xl border border-amber-100 bg-amber-50/40 p-4">
+                    <div className="rounded-md border border-amber-100 bg-amber-50/40 p-4">
                       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                         <div>
                           <p className="text-sm font-semibold text-amber-900">
@@ -956,8 +956,8 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                 {!isBatchPurchaseMode && (
                   <div className="space-y-4">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-500 shadow-inner">
-                        <DollarSign className="h-5 w-5" />
+                      <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-50 text-slate-500">
+                        <ChineseYuan className="h-5 w-5" />
                       </div>
                       <div className="space-y-0.5">
                         <h3 className="text-base font-semibold tracking-tight text-slate-900">
@@ -970,7 +970,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                         </p>
                       </div>
                     </div>
-                    <div className="rounded-2xl border border-slate-100 bg-slate-50/30 p-6">
+                    <div className="rounded-md border border-slate-100 bg-slate-50/30 p-6">
                       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
                         <InboundCostField form={form} />
                         <InboundTotalCostField form={form} />
@@ -982,7 +982,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                 {/* 5️⃣ / 6️⃣ 备注 */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-500 shadow-inner">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-50 text-slate-500">
                       <FileText className="h-5 w-5" />
                     </div>
                     <div className="space-y-0.5">
@@ -1000,7 +1000,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                       </p>
                     </div>
                   </div>
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50/30 p-6">
+                  <div className="rounded-md border border-slate-100 bg-slate-50/30 p-6">
                     <FormField
                       control={form.control}
                       name="remarks"

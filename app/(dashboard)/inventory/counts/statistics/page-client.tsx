@@ -14,9 +14,9 @@ const CountStatisticsClient = dynamic(
     ssr: false,
     loading: () => (
       <>
-        <div className="h-[220px] w-full animate-pulse rounded-xl bg-slate-100" />
-        <div className="h-[160px] w-full animate-pulse rounded-xl bg-slate-100" />
-        <div className="h-[280px] w-full animate-pulse rounded-xl bg-slate-100" />
+        <div className="h-[220px] w-full animate-pulse rounded-md bg-slate-100" />
+        <div className="h-[160px] w-full animate-pulse rounded-md bg-slate-100" />
+        <div className="h-[280px] w-full animate-pulse rounded-md bg-slate-100" />
       </>
     ),
   }

@@ -68,7 +68,7 @@ const TABLE_HEADERS: Array<{
   { key: 'payableAmount', label: '应付金额', align: 'right' },
   { key: 'paidAmount', label: '已付款金额', align: 'right' },
   { key: 'remainingAmount', label: '待付金额', align: 'right' },
-  { key: 'paymentStatus', label: '结清进度' },
+  { key: 'paymentStatus', label: '付款进度' },
   { key: 'dueDate', label: '到期日' },
   { key: 'createdAt', label: '创建时间' },
   { key: 'actions', label: '操作', align: 'center' },
@@ -104,7 +104,7 @@ const getPaymentStatusBadge = (payable: PayableRecordDetail) => {
         variant="outline"
         className="border-[hsl(var(--color-success))] bg-[hsl(var(--color-success-light))] text-xs font-medium text-[hsl(var(--color-success))]"
       >
-        已结清
+        已付款
       </Badge>
     );
   }
@@ -116,7 +116,7 @@ const getPaymentStatusBadge = (payable: PayableRecordDetail) => {
         className="gap-1 border-yellow-300 bg-yellow-50 text-yellow-700"
       >
         <Clock className="h-3 w-3" />
-        部分结清
+        部分付款
       </Badge>
     );
   }
@@ -126,7 +126,7 @@ const getPaymentStatusBadge = (payable: PayableRecordDetail) => {
       variant="outline"
       className="border-[hsl(var(--color-error))] bg-[hsl(var(--color-error-light))] text-xs font-medium text-[hsl(var(--color-error))]"
     >
-      未结清
+      未付款
     </Badge>
   );
 };
@@ -655,7 +655,7 @@ export function PayableTableList({
   return (
     <>
       {/* 桌面端：宽表格 + 横向滚动 */}
-      <div className="hidden overflow-x-auto rounded-md border 2xl:block">
+      <div className="hidden overflow-x-auto rounded-md border lg:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -689,8 +689,8 @@ export function PayableTableList({
         </Table>
       </div>
 
-      {/* 移动端：卡片列表 */}
-      <div className="grid gap-3 xl:grid-cols-2 2xl:hidden">
+      {/* 小屏端：卡片列表 */}
+      <div className="grid gap-3 lg:hidden">
         {items.map(payable => (
           <PayableCard
             key={payable.id}

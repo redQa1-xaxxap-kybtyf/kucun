@@ -33,7 +33,7 @@ export default function FactoryShipmentsError({
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-16">
-      <Card className="card-shadow-light border border-[hsl(var(--color-error))] bg-[hsl(var(--color-error-light))]">
+      <Card className="rounded-md border border-[hsl(var(--color-error))] bg-[hsl(var(--color-error-light))] shadow-sm">
         <CardContent className="flex flex-col items-center justify-center space-y-6 p-12 text-center">
           <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[hsl(var(--color-error-light))]">
             <AlertCircle className="h-12 w-12 text-[hsl(var(--color-error))]" />

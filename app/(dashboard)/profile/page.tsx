@@ -314,11 +314,11 @@ export default function ProfilePage() {
   return (
     <div className="flex h-full flex-col overflow-y-auto bg-slate-50/50 p-4 lg:p-10 xl:p-14">
       <div className="mx-auto w-full max-w-[1680px] space-y-10">
-        {/* 1. Identity Header: 简化并增强对齐 */}
+        {/* 个人资料标题 */}
         <div className="flex flex-col gap-6 px-2 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-6">
             <div className="relative">
-              <Avatar className="h-20 w-20 shadow-xl ring-4 ring-white">
+              <Avatar className="h-20 w-20 shadow-sm ring-4 ring-white">
                 <AvatarFallback className="bg-slate-900 text-2xl font-semibold text-white">
                   {displayUser ? getInitials(displayUser.name) : '用户'}
                 </AvatarFallback>
@@ -329,7 +329,7 @@ export default function ProfilePage() {
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-semibold tracking-tighter text-slate-900">
+                <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
                   {displayUser?.name || '我的资料'}
                 </h1>
                 <Badge className="bg-slate-900 px-2.5 py-1 text-[10px] font-semibold text-white hover:bg-slate-800">
@@ -346,7 +346,7 @@ export default function ProfilePage() {
         </div>
 
         <div className="grid gap-12 lg:grid-cols-[2fr_1fr]">
-          {/* 左侧：聚合基本信息表单 (Main Container) */}
+          {/* 基本信息表单 */}
           <div className="space-y-8">
             <section className="space-y-4">
               <div className="flex flex-col gap-1 px-1">
@@ -361,7 +361,7 @@ export default function ProfilePage() {
               <Form {...profileForm}>
                 <form
                   onSubmit={handleProfileSubmit}
-                  className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition-all hover:shadow-md"
+                  className="overflow-hidden rounded-md border border-slate-100 bg-white shadow-sm"
                 >
                   <div className="divide-y divide-slate-100">
                     {/* 姓名行 */}
@@ -505,7 +505,7 @@ export default function ProfilePage() {
                     </p>
                     <Button
                       type="submit"
-                      className="h-11 rounded-2xl bg-slate-900 px-8 text-xs font-semibold shadow-lg shadow-slate-900/10 transition-all hover:bg-slate-800 active:scale-95"
+                      className="h-11 rounded-md bg-slate-900 px-8 text-xs font-semibold shadow-sm hover:bg-slate-800"
                       disabled={isLoadingProfile || isSavingProfile}
                     >
                       {isSavingProfile ? (
@@ -521,7 +521,7 @@ export default function ProfilePage() {
             </section>
           </div>
 
-          {/* 右侧：安全设置与日志 (Sidebar Container) */}
+          {/* 安全设置与日志 */}
           <div className="space-y-8">
             <section className="space-y-4">
               <div className="flex flex-col gap-1 px-1">
@@ -533,7 +533,7 @@ export default function ProfilePage() {
                 </p>
               </div>
 
-              <div className="overflow-hidden rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition-all hover:shadow-md">
+              <div className="overflow-hidden rounded-md border border-slate-100 bg-white p-6 shadow-sm">
                 <Form {...passwordForm}>
                   <form onSubmit={handlePasswordSubmit} className="space-y-6">
                     <FormField
@@ -641,7 +641,7 @@ export default function ProfilePage() {
                     <Button
                       type="submit"
                       variant="outline"
-                      className="h-12 w-full rounded-2xl border-slate-200 text-xs font-semibold text-slate-900 transition-all hover:bg-slate-50 active:scale-[0.98]"
+                      className="h-12 w-full rounded-md border-slate-200 text-xs font-semibold text-slate-900 hover:bg-slate-50"
                       disabled={isChangingPassword}
                     >
                       {isChangingPassword ? (
@@ -661,7 +661,7 @@ export default function ProfilePage() {
               <h3 className="px-1 text-[11px] font-semibold text-slate-400">
                 最近登录记录
               </h3>
-              <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white/60 p-2">
+              <div className="overflow-hidden rounded-md border border-slate-100 bg-white p-2">
                 <div className="space-y-1">
                   {isLoadingLogs ? (
                     <div className="py-6 text-center text-slate-300">
@@ -675,15 +675,15 @@ export default function ProfilePage() {
                     loginLogs.slice(0, 3).map((log, index) => (
                       <div
                         key={index}
-                        className="group flex items-center justify-between rounded-xl p-3 transition-all hover:bg-white"
+                        className="group flex items-center justify-between rounded-md p-3 hover:bg-white"
                       >
                         <div className="flex items-center gap-3">
                           <div
                             className={cn(
                               'h-2 w-2 rounded-full',
                               log.type === 'success'
-                                ? 'bg-emerald-500 shadow-lg shadow-emerald-500/30'
-                                : 'bg-rose-500 shadow-lg shadow-rose-500/30'
+                                ? 'bg-emerald-500 shadow-sm'
+                                : 'bg-rose-500 shadow-sm'
                             )}
                           />
                           <div className="flex flex-col">

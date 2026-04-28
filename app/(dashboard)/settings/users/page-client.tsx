@@ -393,7 +393,7 @@ export default function UsersSettingsPageClient({
   if (!isAdmin) {
     return (
       <div className="flex h-[80vh] flex-col items-center justify-center space-y-4 p-6 text-center">
-        <div className="flex h-20 w-20 items-center justify-center rounded-3xl border border-rose-100 bg-rose-50 text-rose-500 shadow-sm">
+        <div className="flex h-20 w-20 items-center justify-center rounded-md border border-rose-100 bg-rose-50 text-rose-500 shadow-sm">
           <Users className="h-10 w-10" />
         </div>
         <div className="space-y-2">

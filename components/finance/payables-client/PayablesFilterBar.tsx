@@ -41,13 +41,13 @@ export function PayablesFilterBar({
     <SearchFilterCard
       searchValue={searchValue}
       onSearchChange={onSearch}
-      searchPlaceholder="搜索应付款单号或供应商名称..."
+      searchPlaceholder="搜索应付单号、供应商名称"
       isSearching={isSearching}
       // 筛选器配置
       filters={[
         {
           key: 'status',
-          label: '状态',
+          label: '付款状态',
           options: [
             { label: PAYABLE_STATUS_LABELS.pending, value: 'pending' },
             { label: PAYABLE_STATUS_LABELS.partial, value: 'partial' },
@@ -58,7 +58,7 @@ export function PayablesFilterBar({
         },
         {
           key: 'sourceType',
-          label: '来源类型',
+          label: '业务来源',
           options: [
             { label: '采购订单', value: 'purchase_order' },
             { label: '厂家发货', value: 'factory_shipment' },

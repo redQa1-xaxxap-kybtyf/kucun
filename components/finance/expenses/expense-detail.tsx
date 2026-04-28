@@ -41,7 +41,7 @@ const ExpenseRecordActionDialog = dynamic(
     ssr: false,
     loading: () => (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-        <div className="w-full max-w-sm rounded-lg bg-[hsl(var(--color-bg-card))] p-6 shadow-lg">
+        <div className="w-full max-w-sm rounded-md bg-[hsl(var(--color-bg-card))] p-6 shadow-sm">
           <div className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
             正在加载...
           </div>
@@ -182,7 +182,7 @@ export function ExpenseDetailClient({
                 onClick={() =>
                   router.push(`/finance/expenses/${expense.id}/edit`)
                 }
-                className="shadow-[var(--shadow-light)] transition-all hover:shadow-[var(--shadow-medium)]"
+                className="shadow-sm"
               >
                 <Edit className="mr-2 h-4 w-4" />
                 编辑
@@ -194,7 +194,7 @@ export function ExpenseDetailClient({
                 size="sm"
                 onClick={() => setActionDialogOpen(true)}
                 disabled={removeMutation.isPending}
-                className="shadow-[var(--shadow-light)] transition-all hover:shadow-[var(--shadow-medium)]"
+                className="shadow-sm"
               >
                 <Trash2 className="mr-2 h-4 w-4" />
                 删除
@@ -206,7 +206,7 @@ export function ExpenseDetailClient({
                 size="sm"
                 onClick={() => setActionDialogOpen(true)}
                 disabled={removeMutation.isPending}
-                className="shadow-[var(--shadow-light)] transition-all hover:shadow-[var(--shadow-medium)]"
+                className="shadow-sm"
               >
                 <Ban className="mr-2 h-4 w-4" />
                 作废
@@ -217,7 +217,7 @@ export function ExpenseDetailClient({
       </div>
 
       {/* 基本信息卡片 */}
-      <Card className="card-shadow-medium border border-[hsl(var(--color-border-primary))]">
+      <Card className="rounded-md border border-[hsl(var(--color-border-primary))] shadow-sm">
         <CardHeader className="bg-[hsl(var(--color-bg-secondary))]">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="text-xl font-bold text-[hsl(var(--color-text-primary))]">
@@ -237,7 +237,7 @@ export function ExpenseDetailClient({
         </CardHeader>
         <CardContent className="space-y-4 pt-4 sm:space-y-6 sm:pt-6">
           {/* 费用金额 - 突出显示 */}
-          <div className="rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 p-4 sm:p-6 dark:from-green-950/20 dark:to-emerald-950/20">
+          <div className="rounded-md border border-green-100 bg-green-50 p-4 sm:p-6">
             <div className="mb-2 text-sm font-medium text-[hsl(var(--color-text-secondary))]">
               费用金额
             </div>

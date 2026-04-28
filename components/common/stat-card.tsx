@@ -86,7 +86,7 @@ export function StatCard({
         </div>
         <div
           className={cn(
-            'rounded-lg p-2 transition-transform group-hover:scale-110',
+            'rounded-md p-2',
             iconStyles[variant]
           )}
         >

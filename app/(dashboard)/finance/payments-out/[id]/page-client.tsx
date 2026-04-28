@@ -395,13 +395,13 @@ export function PaymentOutDetailClient({
         </AlertDialog>
 
         {/* 顶部核心信息卡片 */}
-        <Card className="overflow-hidden border border-[hsl(var(--color-border-secondary))] shadow-lg">
+        <Card className="overflow-hidden rounded-md border border-[hsl(var(--color-border-secondary))] shadow-sm">
           <CardContent className="p-0">
-            <div className="border-b border-[hsl(var(--color-border-secondary))]/50 bg-gradient-to-br from-[hsl(var(--color-bg-secondary))] via-[hsl(var(--color-bg-tertiary))] to-white px-4 py-4 sm:px-6">
+            <div className="border-b border-[hsl(var(--color-border-secondary))]/50 bg-slate-50 px-4 py-4 sm:px-6">
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="flex items-start gap-3 sm:gap-4">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-md sm:h-12 sm:w-12">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-blue-600 sm:h-12 sm:w-12">
                       <ChineseYuan className="h-5 w-5 text-white sm:h-6 sm:w-6" />
                     </div>
                     <div className="min-w-0">
@@ -419,7 +419,7 @@ export function PaymentOutDetailClient({
                   </div>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-xl border border-[hsl(var(--color-border-secondary))]/60 bg-white/80 px-4 py-3 shadow-sm">
+                  <div className="rounded-md border border-[hsl(var(--color-border-secondary))]/60 bg-white px-4 py-3 shadow-sm">
                     <p className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                       记账金额
                     </p>
@@ -427,7 +427,7 @@ export function PaymentOutDetailClient({
                       {formatCurrency(payment.paymentAmount)}
                     </p>
                   </div>
-                  <div className="rounded-xl border border-[hsl(var(--color-border-secondary))]/60 bg-white/80 px-4 py-3 shadow-sm">
+                  <div className="rounded-md border border-[hsl(var(--color-border-secondary))]/60 bg-white px-4 py-3 shadow-sm">
                     <p className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                       实际付款
                     </p>
@@ -435,7 +435,7 @@ export function PaymentOutDetailClient({
                       {formatCurrency(payment.actualPaymentAmount)}
                     </p>
                   </div>
-                  <div className="rounded-xl border border-[hsl(var(--color-border-secondary))]/60 bg-white/80 px-4 py-3 shadow-sm">
+                  <div className="rounded-md border border-[hsl(var(--color-border-secondary))]/60 bg-white px-4 py-3 shadow-sm">
                     <p className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                       抹零金额
                     </p>

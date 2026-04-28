@@ -69,7 +69,7 @@ export default function CustomerEditPage({ params }: CustomerEditPageProps) {
       variant="outline"
       size="lg"
       asChild
-      className="h-11 gap-2 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:border-[hsl(var(--color-border-strong))] hover:shadow-[var(--shadow-medium)]"
+      className="h-10 gap-2 rounded-md"
     >
       <Link href="/customers">
         <ArrowLeft className="h-4 w-4" />
@@ -88,16 +88,16 @@ export default function CustomerEditPage({ params }: CustomerEditPageProps) {
         actions={backAction}
         bodyClassName="space-y-6"
       >
-          <Card className="overflow-hidden">
-            <CardContent className="p-12">
-              <div className="flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-[hsl(var(--color-primary))]" />
-                <span className="ml-3 text-base text-[hsl(var(--color-text-secondary))]">
-                  加载客户信息中...
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+        <Card className="overflow-hidden">
+          <CardContent className="p-12">
+            <div className="flex items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-[hsl(var(--color-primary))]" />
+              <span className="ml-3 text-base text-[hsl(var(--color-text-secondary))]">
+                加载客户信息中...
+              </span>
+            </div>
+          </CardContent>
+        </Card>
       </PageContainer>
     );
   }
@@ -112,24 +112,24 @@ export default function CustomerEditPage({ params }: CustomerEditPageProps) {
         actions={backAction}
         bodyClassName="space-y-6"
       >
-          <Card className="overflow-hidden">
-            <CardContent className="p-12">
-              <div className="text-center">
-                <p className="text-base text-[hsl(var(--color-error))]">
-                  加载客户信息失败:{' '}
-                  {error instanceof Error ? error.message : '未知错误'}
-                </p>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="mt-6"
-                  onClick={handleBack}
-                >
-                  返回客户列表
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        <Card className="overflow-hidden">
+          <CardContent className="p-12">
+            <div className="text-center">
+              <p className="text-base text-[hsl(var(--color-error))]">
+                加载客户信息失败:{' '}
+                {error instanceof Error ? error.message : '未知错误'}
+              </p>
+              <Button
+                variant="outline"
+                size="lg"
+                className="mt-6 rounded-md"
+                onClick={handleBack}
+              >
+                返回客户列表
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </PageContainer>
     );
   }
@@ -144,23 +144,23 @@ export default function CustomerEditPage({ params }: CustomerEditPageProps) {
         actions={backAction}
         bodyClassName="space-y-6"
       >
-          <Card className="overflow-hidden">
-            <CardContent className="p-12">
-              <div className="text-center">
-                <p className="text-base text-[hsl(var(--color-text-secondary))]">
-                  客户不存在
-                </p>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="mt-6"
-                  onClick={handleBack}
-                >
-                  返回客户列表
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        <Card className="overflow-hidden">
+          <CardContent className="p-12">
+            <div className="text-center">
+              <p className="text-base text-[hsl(var(--color-text-secondary))]">
+                客户不存在
+              </p>
+              <Button
+                variant="outline"
+                size="lg"
+                className="mt-6 rounded-md"
+                onClick={handleBack}
+              >
+                返回客户列表
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </PageContainer>
     );
   }

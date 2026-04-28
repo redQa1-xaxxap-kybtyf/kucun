@@ -110,7 +110,7 @@ export function FactoryShipmentOrderDetail({
 
   if (error || !order) {
     return (
-      <Card className="card-shadow-light overflow-hidden border border-[hsl(var(--color-border-primary))]">
+      <Card className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] shadow-sm">
         <CardContent className="bg-[hsl(var(--color-error-light))] pt-6">
           <div className="text-center text-[hsl(var(--color-error))]">
             {error ? '加载订单详情失败' : '订单不存在'}
@@ -133,8 +133,8 @@ export function FactoryShipmentOrderDetail({
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* 页面标题和操作 */}
-      <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
-        <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-4 sm:p-5">
+      <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+        <CardContent className="bg-card p-4 sm:p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3 sm:gap-4">
               <Button
@@ -243,7 +243,7 @@ export function FactoryShipmentOrderDetail({
       {/* 合并基本信息和客户信息 */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* 基本信息 */}
-        <Card className="card-shadow-medium border border-[hsl(var(--color-border-primary))]">
+        <Card className="rounded-md border border-[hsl(var(--color-border-primary))] shadow-sm">
           <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] py-3">
             <CardTitle className="flex items-center gap-2 text-sm font-medium">
               <Truck className="h-4 w-4 text-[hsl(var(--color-primary))]" />
@@ -321,7 +321,7 @@ export function FactoryShipmentOrderDetail({
         </Card>
 
         {/* 客户信息 */}
-        <Card className="card-shadow-medium border border-[hsl(var(--color-border-primary))]">
+        <Card className="rounded-md border border-[hsl(var(--color-border-primary))] shadow-sm">
           <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] py-3">
             <CardTitle className="flex items-center gap-2 text-sm font-medium">
               <User className="h-4 w-4 text-[hsl(var(--color-primary))]" />
@@ -363,7 +363,7 @@ export function FactoryShipmentOrderDetail({
       <FeeItemsSection feeItems={order.feeItems} />
 
       {/* 金额信息 */}
-      <Card className="card-shadow-medium border border-[hsl(var(--color-border-primary))]">
+      <Card className="rounded-md border border-[hsl(var(--color-border-primary))] shadow-sm">
         <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] py-3">
           <CardTitle className="flex items-center gap-2 text-sm font-medium">
             <ChineseYuan className="h-4 w-4 text-[hsl(var(--color-primary))]" />
@@ -467,7 +467,7 @@ export function FactoryShipmentOrderDetail({
       </Card>
 
       {/* 产品明细 */}
-      <Card className="card-shadow-medium border border-[hsl(var(--color-border-primary))]">
+      <Card className="rounded-md border border-[hsl(var(--color-border-primary))] shadow-sm">
         <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] py-3">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-sm font-medium">
@@ -599,7 +599,7 @@ export function FactoryShipmentOrderDetail({
                     </TableRow>
                   ))}
                   {order.items && order.items.length > 0 && (
-                    <TableRow className="border-t border-[hsl(var(--color-border-primary))] bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-indigo-50">
+                    <TableRow className="border-t border-[hsl(var(--color-border-primary))] bg-slate-50">
                       <TableCell
                         colSpan={11}
                         className="py-3 text-right text-sm font-semibold text-[hsl(var(--color-text-primary))]"

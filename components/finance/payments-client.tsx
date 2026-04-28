@@ -654,7 +654,7 @@ function PaymentFilters({
       filters={[
         {
           key: 'status',
-          label: '状态',
+          label: '收款状态',
           options: [
             { label: '待确认到账', value: 'pending' },
             { label: '已到账', value: 'confirmed' },
@@ -680,7 +680,7 @@ function PaymentFilters({
         placeholder: '选择收款日期范围',
       }}
       onClearFilters={onClearFilters}
-      variant="bordered"
+      variant="pro"
       compact={true}
     />
   );

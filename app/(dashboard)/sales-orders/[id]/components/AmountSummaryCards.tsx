@@ -35,24 +35,20 @@ export function AmountSummaryCards({
 
   return (
     <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
-      <Card className="overflow-hidden rounded-xl border-slate-100 bg-white shadow-sm ring-1 ring-slate-100/50">
+      <Card className="overflow-hidden rounded-md border border-border bg-card shadow-sm">
         <CardContent className="p-4 sm:p-5">
-          <div className="text-[10px] font-bold text-slate-500">
-            订单总金额
-          </div>
-          <div className="mt-2 font-mono text-2xl font-semibold tracking-tighter text-slate-900">
+          <div className="text-[10px] font-bold text-slate-500">订单总金额</div>
+          <div className="mt-2 font-mono text-2xl font-semibold text-slate-900">
             {formatCurrency(order.totalAmount)}
           </div>
         </CardContent>
       </Card>
 
       {order.roundingAdjustment !== 0 && (
-        <Card className="relative overflow-hidden rounded-xl border-slate-100 bg-white shadow-sm ring-1 ring-slate-100/50">
+        <Card className="relative overflow-hidden rounded-md border border-border bg-card shadow-sm">
           <CardContent className="p-4 sm:p-5">
-            <div className="text-[10px] font-bold text-slate-500">
-              订单抹零
-            </div>
-            <div className="mt-2 font-mono text-2xl font-semibold tracking-tighter text-amber-600">
+            <div className="text-[10px] font-bold text-slate-500">订单抹零</div>
+            <div className="mt-2 font-mono text-2xl font-semibold text-amber-600">
               -{formatCurrency(Math.abs(order.roundingAdjustment))}
             </div>
             <div className="mt-1 text-[10px] font-medium text-slate-400">
@@ -63,12 +59,10 @@ export function AmountSummaryCards({
       )}
 
       {order.paymentRounding !== 0 && (
-        <Card className="relative overflow-hidden rounded-xl border-slate-100 bg-white shadow-sm ring-1 ring-slate-100/50">
+        <Card className="relative overflow-hidden rounded-md border border-border bg-card shadow-sm">
           <CardContent className="p-4 sm:p-5">
-            <div className="text-[10px] font-bold text-slate-500">
-              抹零金额
-            </div>
-            <div className="mt-2 font-mono text-2xl font-semibold tracking-tighter text-indigo-600">
+            <div className="text-[10px] font-bold text-slate-500">抹零金额</div>
+            <div className="mt-2 font-mono text-2xl font-semibold text-indigo-600">
               {order.paymentRounding > 0 ? '+' : '-'}
               {formatCurrency(Math.abs(order.paymentRounding))}
             </div>
@@ -79,12 +73,10 @@ export function AmountSummaryCards({
         </Card>
       )}
 
-      <Card className="relative overflow-hidden rounded-xl border-slate-100 bg-white shadow-sm ring-1 ring-slate-100/50">
+      <Card className="relative overflow-hidden rounded-md border border-border bg-card shadow-sm">
         <CardContent className="p-4 sm:p-5">
-          <div className="text-[10px] font-bold text-slate-500">
-            已收金额
-          </div>
-          <div className="mt-2 font-mono text-2xl font-semibold tracking-tighter text-emerald-600">
+          <div className="text-[10px] font-bold text-slate-500">已收金额</div>
+          <div className="mt-2 font-mono text-2xl font-semibold text-emerald-600">
             {formatCurrency(order.actualPaidAmount)}
           </div>
           <div className="mt-1 text-[10px] font-medium text-slate-400">
@@ -95,31 +87,27 @@ export function AmountSummaryCards({
         </CardContent>
       </Card>
 
-      <Card className="relative overflow-hidden rounded-xl border-slate-100 bg-white shadow-sm ring-1 ring-slate-100/50">
+      <Card className="relative overflow-hidden rounded-md border border-border bg-card shadow-sm">
         <CardContent className="p-4 sm:p-5">
-          <div className="text-[10px] font-bold text-slate-500">
-            待收金额
-          </div>
-          <div className="mt-2 font-mono text-2xl font-semibold tracking-tighter text-rose-600">
+          <div className="text-[10px] font-bold text-slate-500">待收金额</div>
+          <div className="mt-2 font-mono text-2xl font-semibold text-rose-600">
             {formatCurrency(receivableEnabled ? order.remainingAmount : 0)}
           </div>
           <div className="mt-1 text-[10px] font-medium text-slate-400">
             {!receivableEnabled
               ? '免费样品不挂应收'
               : receivableTotal > 0 && order.remainingAmount > 0
-                ? '待核销'
+                ? '待收款'
                 : '结清'}
           </div>
         </CardContent>
       </Card>
 
       {customerFees > 0 && (
-        <Card className="relative overflow-hidden rounded-xl border-slate-100 bg-white shadow-sm ring-1 ring-slate-100/50">
+        <Card className="relative overflow-hidden rounded-md border border-border bg-card shadow-sm">
           <CardContent className="p-4 sm:p-5">
-            <div className="text-[10px] font-bold text-slate-500">
-              代垫费用
-            </div>
-            <div className="mt-2 font-mono text-2xl font-semibold tracking-tighter text-slate-700">
+            <div className="text-[10px] font-bold text-slate-500">代垫费用</div>
+            <div className="mt-2 font-mono text-2xl font-semibold text-slate-700">
               {formatCurrency(customerFees)}
             </div>
             <div className="mt-1 text-[10px] font-medium text-slate-400">
@@ -130,12 +118,12 @@ export function AmountSummaryCards({
       )}
 
       {companyFees > 0 && (
-        <Card className="relative overflow-hidden rounded-xl border-slate-100 bg-white shadow-sm ring-1 ring-slate-100/50">
+        <Card className="relative overflow-hidden rounded-md border border-border bg-card shadow-sm">
           <CardContent className="p-4 sm:p-5">
             <div className="text-[10px] font-bold text-slate-500">
               经营成本项
             </div>
-            <div className="mt-2 font-mono text-2xl font-semibold tracking-tighter text-slate-800">
+            <div className="mt-2 font-mono text-2xl font-semibold text-slate-800">
               {formatCurrency(companyFees)}
             </div>
             <div className="mt-1 text-[10px] font-medium text-slate-400">
@@ -146,12 +134,10 @@ export function AmountSummaryCards({
       )}
 
       {order.orderType === 'TRANSFER' && (
-        <Card className="relative overflow-hidden rounded-xl border-slate-100 bg-white shadow-sm ring-1 ring-slate-100/50">
+        <Card className="relative overflow-hidden rounded-md border border-border bg-card shadow-sm">
           <CardContent className="p-4 sm:p-5">
-            <div className="text-[10px] font-bold text-slate-500">
-              调货毛利
-            </div>
-            <div className="mt-2 font-mono text-2xl font-semibold tracking-tighter text-sky-600">
+            <div className="text-[10px] font-bold text-slate-500">调货毛利</div>
+            <div className="mt-2 font-mono text-2xl font-semibold text-sky-600">
               {formatCurrency(pureTransferProfit)}
             </div>
             <div className="mt-1 text-[10px] font-bold text-sky-600/80">

@@ -5,7 +5,7 @@
  * 使用统一的 SearchFilterCard 组件
  */
 
-import { Ban, Clock3, Eye, Wallet } from 'lucide-react';
+import { Ban, Clock3, Wallet } from 'lucide-react';
 import * as React from 'react';
 
 import { SearchFilterCard } from '@/components/common/search-filter-card';
@@ -32,7 +32,6 @@ interface ReturnOrderSearchToolbarProps {
   onStatusChange: (value: ReturnOrderUiStatus | 'all') => void;
   onTypeChange: (value: ReturnOrderType | 'all') => void;
   onProcessTypeChange: (value: ReturnProcessType | 'all') => void;
-  onIncludeTestToggle: () => void;
   onIncludeVoidedToggle: () => void;
   onDateRangeChange: (range: DateRangeValue) => void;
   onClearFilters: () => void;
@@ -53,7 +52,6 @@ export const ReturnOrderSearchToolbar =
       onStatusChange,
       onTypeChange,
       onProcessTypeChange,
-      onIncludeTestToggle,
       onIncludeVoidedToggle,
       onDateRangeChange,
       onClearFilters,
@@ -84,7 +82,6 @@ export const ReturnOrderSearchToolbar =
           isSearching={isSearching}
           dateRange={dateRange}
           onSearch={onSearch}
-          onIncludeTestToggle={onIncludeTestToggle}
           onIncludeVoidedToggle={onIncludeVoidedToggle}
           {...logic}
         />
@@ -188,7 +185,6 @@ type ReturnOrderToolbarViewProps = {
   dateRange: DateRangeValue;
   isSearching?: boolean;
   onSearch: (value: string) => void;
-  onIncludeTestToggle: () => void;
   onIncludeVoidedToggle: () => void;
   handleFilterChange: (key: string, value: string | undefined) => void;
   toggleStatus: (status: ReturnOrderUiStatus) => () => void;
@@ -207,7 +203,6 @@ function ReturnOrderToolbarView({
   dateRange,
   isSearching,
   onSearch,
-  onIncludeTestToggle,
   onIncludeVoidedToggle,
   handleFilterChange,
   toggleStatus,
@@ -238,13 +233,6 @@ function ReturnOrderToolbarView({
           onClick: toggleStatus('awaiting_refund'),
         },
         {
-          key: 'includeTest',
-          label: '显示测试',
-          icon: <Eye className="h-3.5 w-3.5" />,
-          active: !!includeTest,
-          onClick: onIncludeTestToggle,
-        },
-        {
           key: 'includeVoided',
           label: '显示作废',
           icon: <Ban className="h-3.5 w-3.5" />,
@@ -256,7 +244,7 @@ function ReturnOrderToolbarView({
       filters={[
         {
           key: 'uiStatus',
-          label: '状态',
+          label: '退货状态',
           options: Object.entries(RETURN_ORDER_UI_STATUS_LABELS).map(
             ([value, label]) => ({
               label,

@@ -47,12 +47,12 @@ function PaymentItem({ payment }: { payment: PaymentRecord }) {
     STATUS_MAP[payment.status as keyof typeof STATUS_MAP] ?? STATUS_MAP.pending;
 
   return (
-    <div className="group flex flex-col gap-4 rounded-xl border border-slate-100 bg-white p-5 transition-all hover:bg-slate-50/50 hover:shadow-sm sm:flex-row sm:items-center sm:justify-between">
+    <div className="group flex flex-col gap-4 rounded-md border border-slate-100 bg-white p-4 transition-colors hover:bg-slate-50/50 sm:flex-row sm:items-center sm:justify-between">
       <div className="space-y-2">
         <div className="flex flex-wrap items-center gap-3">
           <Badge
             variant={status.variant}
-            className="rounded-lg px-2 py-0.5 font-bold"
+            className="rounded-md px-2 py-0.5 font-bold"
           >
             {status.label}
           </Badge>
@@ -91,7 +91,7 @@ function ReceivableConfirmationNote({
   isSettled: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 p-4">
+    <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -100,7 +100,7 @@ function ReceivableConfirmationNote({
             </span>
             <Badge
               variant="outline"
-              className="rounded-lg border-slate-300 bg-white px-2 py-0.5 font-bold text-slate-600"
+              className="rounded-md border-slate-300 bg-white px-2 py-0.5 font-bold text-slate-600"
             >
               系统建账记录
             </Badge>
@@ -118,7 +118,8 @@ function ReceivableConfirmationNote({
             </p>
           )}
           <p className="text-[10px] text-slate-400">
-            登记时间：{payment.paymentDate ? formatDateTime(payment.paymentDate) : '—'}
+            登记时间：
+            {payment.paymentDate ? formatDateTime(payment.paymentDate) : '—'}
           </p>
           {payment.remarks && (
             <p className="text-[10px] text-slate-400 italic">
@@ -143,14 +144,12 @@ function PaymentsSummary({ order }: { order: SalesOrderDetail }) {
     .reduce((sum, record) => sum + Number(record.paymentAmount), 0);
 
   return (
-    <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-5 shadow-sm">
+    <div className="rounded-md border border-slate-100 bg-slate-50 p-4 shadow-sm">
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-4">
           <div className="space-y-1">
-            <p className="text-[10px] font-bold text-slate-500">
-              业务应收总计
-            </p>
-            <p className="font-mono text-xl font-semibold tracking-tighter text-slate-900 sm:text-2xl">
+            <p className="text-[10px] font-bold text-slate-500">业务应收总计</p>
+            <p className="font-mono text-xl font-semibold text-slate-900 sm:text-2xl">
               {formatCurrency(receivableTotal)}
             </p>
             {!receivableEnabled && order.isSampleOrder && (
@@ -165,9 +164,7 @@ function PaymentsSummary({ order }: { order: SalesOrderDetail }) {
             )}
           </div>
           <div className="space-y-1 text-right">
-            <p className="text-[10px] font-bold text-slate-500">
-              账务结算
-            </p>
+            <p className="text-[10px] font-bold text-slate-500">账务结算</p>
             <p className="text-xl font-semibold text-slate-900">
               {progress.toFixed(0)}%
             </p>
@@ -176,10 +173,8 @@ function PaymentsSummary({ order }: { order: SalesOrderDetail }) {
 
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-4">
-            <p className="text-[10px] font-bold text-slate-500">
-              已核销金额
-            </p>
-            <p className="font-mono text-lg font-semibold tracking-tighter text-emerald-600">
+            <p className="text-[10px] font-bold text-slate-500">已结算金额</p>
+            <p className="font-mono text-lg font-semibold text-emerald-600">
               {formatCurrency(Number(order.paidAmount))}
             </p>
           </div>
@@ -221,23 +216,23 @@ export function PaymentsCard({ order }: { order: SalesOrderDetail }) {
   const receivableEnabled = shouldCreateReceivableForOrder(order);
 
   return (
-    <Card className="overflow-hidden rounded-2xl border-slate-100 shadow-sm ring-1 ring-slate-100/50">
+    <Card className="overflow-hidden rounded-md border border-border shadow-sm">
       <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1.5">
             <CardTitle className="flex items-center gap-2.5 text-sm font-semibold text-slate-900">
               <Receipt className="h-4 w-4 text-blue-600" />
-              真实收款与核销明细
+              收款明细
             </CardTitle>
             <p className="text-[11px] font-medium text-slate-500">
               {receivableEnabled
-                ? '这里只显示实际收款和预收抵扣，应收登记会单独提示。'
+                ? '这里只显示实际收款和预收抵扣，应收登记单独提示。'
                 : `${SAMPLE_ORDER_LABEL}当前按免费结算，不会进入客户应收。`}
             </p>
           </div>
           <Badge
             variant="secondary"
-            className="hidden rounded-lg px-2.5 py-1 font-semibold sm:inline-flex"
+            className="hidden rounded-md px-2.5 py-1 font-semibold sm:inline-flex"
           >
             合计：{formatCurrency(Number(order.paidAmount))}
           </Badge>
@@ -254,7 +249,7 @@ export function PaymentsCard({ order }: { order: SalesOrderDetail }) {
         )}
 
         {!hasPayments ? (
-          <div className="text-muted-foreground flex flex-col items-center justify-center rounded-2xl border border-dashed border-blue-200 bg-slate-50 py-12 text-center text-sm">
+          <div className="text-muted-foreground flex flex-col items-center justify-center rounded-md border border-dashed border-blue-200 bg-slate-50 py-10 text-center text-sm">
             <Wallet className="mb-2 h-10 w-10 text-blue-500" />
             {receivableEnabled
               ? order.receivableConfirmationRecord

@@ -7,7 +7,6 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Command,
-  CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
@@ -38,6 +37,17 @@ interface RelatedRecordInfo {
   number: string;
   date?: string;
   amount?: number;
+}
+
+function buildRelatedRecordSearchValue(record: RelatedRecordInfo) {
+  return [
+    record.number,
+    record.date,
+    record.amount !== undefined ? record.amount.toFixed(2) : undefined,
+    record.id,
+  ]
+    .filter((value): value is string => Boolean(value && value.trim()))
+    .join(' ');
 }
 
 /**
@@ -104,7 +114,7 @@ export function RelatedRecordSelector({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[400px] p-0" align="start">
-        <Command>
+        <Command filter={() => 1}>
           <CommandInput
             placeholder={`搜索${placeholder}...`}
             value={searchTerm}
@@ -120,31 +130,47 @@ export function RelatedRecordSelector({
               </div>
             ) : (
               <>
-                <CommandEmpty>{emptyText}</CommandEmpty>
-                <CommandGroup>
-                  {records.map(record => (
-                    <CommandItem
-                      key={record.id}
-                      value={record.id}
-                      onSelect={handleSelect}
-                    >
-                      <Check
-                        className={cn(
-                          'mr-2 h-4 w-4',
-                          value === record.id ? 'opacity-100' : 'opacity-0'
+                {records.length > 0 ? (
+                  <CommandGroup>
+                    {records.map(record => (
+                      <CommandItem
+                        key={record.id}
+                        value={buildRelatedRecordSearchValue(record)}
+                        keywords={[
+                          record.number,
+                          record.date,
+                          record.amount !== undefined
+                            ? record.amount.toFixed(2)
+                            : undefined,
+                          record.id,
+                        ].filter(
+                          (keyword): keyword is string =>
+                            Boolean(keyword && keyword.trim())
                         )}
-                      />
-                      <div className="flex flex-1 flex-col">
-                        <span className="font-medium">{record.number}</span>
-                        <span className="text-muted-foreground text-xs">
-                          {record.date && `日期: ${record.date}`}
-                          {record.amount !== undefined &&
-                            ` | 金额: ¥${record.amount.toFixed(2)}`}
-                        </span>
-                      </div>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
+                        onSelect={() => handleSelect(record.id)}
+                      >
+                        <Check
+                          className={cn(
+                            'mr-2 h-4 w-4',
+                            value === record.id ? 'opacity-100' : 'opacity-0'
+                          )}
+                        />
+                        <div className="flex flex-1 flex-col">
+                          <span className="font-medium">{record.number}</span>
+                          <span className="text-muted-foreground text-xs">
+                            {record.date && `日期: ${record.date}`}
+                            {record.amount !== undefined &&
+                              ` | 金额: ¥${record.amount.toFixed(2)}`}
+                          </span>
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                ) : (
+                  <div className="text-muted-foreground py-6 text-center text-sm">
+                    {emptyText}
+                  </div>
+                )}
               </>
             )}
           </CommandList>

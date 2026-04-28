@@ -51,7 +51,7 @@ export function CountRecordsFilters({
       filters={[
         {
           key: 'status',
-          label: '状态',
+          label: '盘点状态',
           options: COUNT_STATUS_OPTIONS,
           width: 'w-36',
         },
@@ -77,7 +77,7 @@ export function CountRecordsFilters({
             })
           }
           placeholder="输入库位/存放区域"
-          className="h-14 w-full rounded-2xl border-white bg-white/40 font-bold shadow-sm backdrop-blur-md hover:bg-white sm:w-48"
+          className="h-11 w-full rounded-lg border-[hsl(var(--color-border-primary))] bg-white font-medium sm:w-48"
         />
       }
       // 日期范围筛选

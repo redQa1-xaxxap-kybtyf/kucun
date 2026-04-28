@@ -91,7 +91,7 @@ function SidebarComponent({
   return (
     <div
       className={cn(
-        'relative flex h-full flex-col border-r border-slate-100 bg-white/80 backdrop-blur-xl transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]',
+        'relative flex h-full flex-col border-r border-slate-200 bg-white transition-all duration-200',
         state.isCollapsed ? 'w-20' : 'w-72',
         className
       )}
@@ -99,27 +99,27 @@ function SidebarComponent({
       {/* 侧边栏头部: Identity Area */}
       <div
         className={cn(
-          'flex items-center border-b border-slate-50 px-4 transition-all duration-500',
-          state.isCollapsed ? 'h-24 justify-center' : 'h-24 justify-between'
+          'flex items-center border-b border-slate-200 px-4 transition-all duration-200',
+          state.isCollapsed ? 'h-16 justify-center' : 'h-16 justify-between'
         )}
       >
         {!state.isCollapsed ? (
           <div className="flex items-center gap-3 px-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 shadow-lg ring-4 shadow-slate-900/10 ring-white">
+            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-slate-900">
               <Package className="h-5 w-5 text-white" />
             </div>
             <div className="flex flex-col">
-              <span className="text-base font-semibold tracking-tighter text-slate-900">
-                库存管理
+              <span className="text-base font-semibold text-slate-900">
+                瓷砖销售 ERP
               </span>
               <span className="text-xs font-semibold text-slate-500">
-                Control Center
+                进销存工作台
               </span>
             </div>
           </div>
         ) : (
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900 shadow-xl ring-4 shadow-slate-900/20 ring-white">
-            <Package className="h-6 w-6 text-white" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-900">
+            <Package className="h-5 w-5 text-white" />
           </div>
         )}
 
@@ -128,7 +128,7 @@ function SidebarComponent({
             variant="ghost"
             size="sm"
             onClick={state.toggle}
-            className="h-8 w-8 rounded-lg border border-slate-100 bg-white p-0 text-slate-400 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-900 active:scale-90"
+            className="h-8 w-8 rounded-md border border-slate-200 bg-white p-0 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-900"
             aria-label="收起侧边栏"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -140,14 +140,14 @@ function SidebarComponent({
       {state.isCollapsed && (
         <button
           onClick={state.toggle}
-          className="absolute top-28 -right-4 z-50 flex h-8 w-8 items-center justify-center rounded-full border border-slate-100 bg-white text-slate-400 shadow-md transition-all hover:scale-110 hover:text-slate-900 active:scale-95"
+          className="absolute top-20 -right-4 z-50 flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 shadow-sm transition-colors hover:text-slate-900"
         >
           <ChevronRight className="h-4 w-4" />
         </button>
       )}
 
       {/* 主导航区域 */}
-      <ScrollArea className="flex-1 px-4 py-8">
+      <ScrollArea className="flex-1 px-3 py-4">
         <nav className="space-y-1.5" role="navigation" aria-label="主导航">
           {accessibleNavItems.map((item, index) => (
             <SidebarNavItem

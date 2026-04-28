@@ -37,11 +37,11 @@ export default function CreatePurchaseOrderPage() {
   return (
     <div className="flex h-full flex-col overflow-hidden p-6">
       <div className="space-y-6">
-        <Card className="card-shadow-medium overflow-hidden border border-[hsl(var(--color-border-primary))]">
+        <Card className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] shadow-sm">
           <CardContent className="bg-[hsl(var(--color-bg-secondary))] p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="card-shadow-light flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))]">
+                <div className="flex h-12 w-12 items-center justify-center rounded-md bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))] shadow-sm">
                   <Warehouse className="h-6 w-6" />
                 </div>
                 <div>
@@ -57,7 +57,7 @@ export default function CreatePurchaseOrderPage() {
                 variant="outline"
                 size="lg"
                 asChild
-                className="h-11 transition-transform duration-150 hover:scale-[1.02]"
+                className="h-11 shadow-sm"
               >
                 <Link href="/purchase-orders">
                   <ArrowLeft className="mr-2 h-4 w-4" />

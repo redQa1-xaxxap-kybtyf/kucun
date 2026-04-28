@@ -7,8 +7,8 @@ import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { Suspense } from 'react';
 
+import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import { FinanceListSkeleton } from '@/components/ui/skeleton-compositions';
 import { useFinanceExport } from '@/hooks/use-finance-export';
@@ -509,48 +509,32 @@ export function PayablesPageClient({
   return (
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="space-y-4 sm:space-y-6">
-        {/* 页面标题卡片 */}
-        <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
-          <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-4 sm:p-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-start gap-3 sm:items-center sm:gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-[0_10px_24px_rgba(9,88,217,0.22)] sm:h-12 sm:w-12">
-                  <CreditCard className="h-5 w-5 text-white sm:h-6 sm:w-6" />
-                </div>
-                <div>
-                  <h1 className="text-lg font-semibold tracking-tight text-[hsl(var(--color-text-primary))] sm:text-2xl sm:font-bold">
-                    供应商待付款
-                  </h1>
-                  <p className="mt-1 text-xs text-[hsl(var(--color-text-secondary))] sm:text-sm">
-                    查看采购和其他业务产生的待付款余额，及时完成结算
-                  </p>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2 sm:items-center sm:justify-end">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={handleExport}
-                  disabled={isExporting}
-                  className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  {isExporting ? '导出中...' : '导出'}
-                </Button>
-                <Button
-                  size="lg"
-                  asChild
-                  className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
-                >
-                  <Link href="/finance/payables/create">
-                    <Plus className="mr-2 h-4 w-4" />
-                    登记应付款
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <PageHeader
+          title="应付账款"
+          description="查看采购和其他业务产生的待付余额，及时完成付款。"
+          icon={<CreditCard className="h-6 w-6 text-white" />}
+          iconBgColor="hsl(var(--color-primary))"
+          actions={
+            <>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={handleExport}
+                disabled={isExporting}
+                className="h-11 rounded-lg"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                {isExporting ? '导出中...' : '导出'}
+              </Button>
+              <Button size="lg" asChild className="h-11 rounded-lg">
+                <Link href="/finance/payables/create">
+                  <Plus className="mr-2 h-4 w-4" />
+                  登记应付款
+                </Link>
+              </Button>
+            </>
+          }
+        />
 
         {/* 客户端交互组件 */}
         <Suspense fallback={<FinanceListSkeleton />}>

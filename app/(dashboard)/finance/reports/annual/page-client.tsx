@@ -30,9 +30,9 @@ const AnnualReportCharts = dynamic(
     ssr: false,
     loading: () => (
       <div className="grid gap-6 xl:grid-cols-2">
-        <div className="h-[360px] w-full animate-pulse rounded-2xl bg-slate-50" />
-        <div className="h-[360px] w-full animate-pulse rounded-2xl bg-slate-50" />
-        <div className="h-[320px] w-full animate-pulse rounded-2xl bg-slate-50 xl:col-span-2" />
+        <div className="h-[360px] w-full animate-pulse rounded-md bg-slate-50" />
+        <div className="h-[360px] w-full animate-pulse rounded-md bg-slate-50" />
+        <div className="h-[320px] w-full animate-pulse rounded-md bg-slate-50 xl:col-span-2" />
       </div>
     ),
   }
@@ -248,11 +248,11 @@ export function AnnualReportClient() {
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="space-y-4 sm:space-y-6">
         {/* 页面标题卡片 */}
-        <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
-          <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-4 sm:p-6">
+        <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+          <CardContent className="bg-card p-4 sm:p-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between xl:items-center">
               <div className="flex items-start gap-3 sm:gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-[0_10px_24px_rgba(9,88,217,0.22)] sm:h-12 sm:w-12">
+                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-[hsl(var(--color-primary))] sm:h-12 sm:w-12">
                   <Calendar className="h-5 w-5 text-white sm:h-6 sm:w-6" />
                 </div>
                 <div>
@@ -270,7 +270,7 @@ export function AnnualReportClient() {
                   size="lg"
                   onClick={handleGenerateReport}
                   disabled={isGenerating}
-                  className="h-11 justify-center shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)] sm:min-w-[140px]"
+                  className="h-11 justify-center shadow-sm sm:min-w-[140px]"
                 >
                   <Receipt className="mr-2 h-4 w-4" />
                   {isGenerating ? '刷新中...' : '刷新报表'}
@@ -280,7 +280,7 @@ export function AnnualReportClient() {
                   size="lg"
                   onClick={handleExportImage}
                   disabled={isExporting}
-                  className="h-11 justify-center shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)] sm:min-w-[140px]"
+                  className="h-11 justify-center shadow-sm sm:min-w-[140px]"
                 >
                   <Receipt className="mr-2 h-4 w-4" />
                   {isExporting ? '导出中...' : '导出图片'}
@@ -436,12 +436,12 @@ export function AnnualReportClient() {
           />
         </div>
 
-        {/* 经营绩效与效率 - 高清晰分组区 */}
-        <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 sm:p-6">
+        {/* 经营绩效与效率 */}
+        <div className="rounded-md border border-slate-100 bg-slate-50/80 p-4 sm:p-6">
           <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-800">
               <TrendingUp className="h-4 w-4 text-emerald-500" />
-              年度经营效率看板
+              年度经营效率
             </h2>
             <div className="flex items-center gap-4 text-xs font-bold">
               <div className="flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-emerald-700">
@@ -488,7 +488,7 @@ export function AnnualReportClient() {
         </div>
 
         <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-          <div className="rounded-2xl border border-amber-100 bg-amber-50/60 p-4 sm:p-6">
+          <div className="rounded-md border border-amber-100 bg-amber-50/60 p-4 sm:p-6">
             <div className="mb-4 flex items-center gap-2">
               <div className="h-4 w-1 rounded-full bg-amber-500" />
               <h2 className="text-sm font-semibold text-slate-900">
@@ -527,7 +527,7 @@ export function AnnualReportClient() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-6">
+          <div className="rounded-md border border-slate-100 bg-white p-4 shadow-sm sm:p-6">
             <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="text-sm font-semibold text-slate-900">
                 样品客户排行
@@ -541,7 +541,7 @@ export function AnnualReportClient() {
                 {report.sample.topCustomers.map((customer, index) => (
                   <div
                     key={customer.customerId}
-                    className="grid grid-cols-[36px_minmax(0,1fr)] gap-3 rounded-xl border border-slate-100 px-3 py-3 sm:grid-cols-[40px_minmax(0,1fr)_auto_auto] sm:items-center"
+                    className="grid grid-cols-[36px_minmax(0,1fr)] gap-3 rounded-md border border-slate-100 px-3 py-3 sm:grid-cols-[40px_minmax(0,1fr)_auto_auto] sm:items-center"
                   >
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
                       {index + 1}
@@ -570,7 +570,7 @@ export function AnnualReportClient() {
                 ))}
               </div>
             ) : (
-              <div className="rounded-xl border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400">
+              <div className="rounded-md border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400">
                 本年度暂无样品记录
               </div>
             )}
@@ -583,7 +583,7 @@ export function AnnualReportClient() {
   );
 }
 
-// 统计卡片组件 (v3: 高清晰专业版，同步自月度报表)
+// 统计卡片组件
 interface StatCardProps {
   title: string;
   value: number;
@@ -641,7 +641,7 @@ function StatCard({
   return (
     <Card
       className={cn(
-        'group hover:border-opacity-50 relative overflow-hidden border transition-all duration-300 hover:shadow-md',
+        'group hover:border-opacity-50 relative overflow-hidden rounded-md border shadow-sm',
         themeStyles[variant],
         size === 'lg' ? 'md:col-span-2 xl:col-span-1' : ''
       )}
@@ -664,7 +664,7 @@ function StatCard({
         </div>
         <div
           className={cn(
-            'rounded-lg p-2 transition-transform duration-300 group-hover:scale-110',
+            'rounded-md p-2',
             iconStyles[variant]
           )}
         >

@@ -25,17 +25,14 @@ export function SupplierRowActions({
         <Button
           variant="ghost"
           size="icon"
-          className="h-10 w-10 rounded-2xl"
+          className="h-9 w-9 rounded-md"
           onClick={event => event.stopPropagation()}
         >
           <MoreHorizontal className="h-5 w-5" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        className="rounded-2xl border-none p-2 shadow-2xl"
-      >
-        <DropdownMenuItem className="rounded-xl py-2.5 font-bold" asChild>
+      <DropdownMenuContent align="end" className="rounded-md p-1.5 shadow-md">
+        <DropdownMenuItem className="rounded-md py-2 font-medium" asChild>
           <Link
             href={`/suppliers/${supplierId}`}
             onClick={event => event.stopPropagation()}
@@ -43,7 +40,7 @@ export function SupplierRowActions({
             <TrendingUp className="mr-2 h-4 w-4" /> 查看详情
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem className="rounded-xl py-2.5 font-bold" asChild>
+        <DropdownMenuItem className="rounded-md py-2 font-medium" asChild>
           <Link
             href={`/suppliers/${supplierId}/edit`}
             onClick={event => event.stopPropagation()}
@@ -52,7 +49,7 @@ export function SupplierRowActions({
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem
-          className="rounded-xl py-2.5 font-bold text-rose-600 focus:bg-rose-500 focus:text-white"
+          className="rounded-md py-2 font-medium text-rose-600 focus:bg-rose-50 focus:text-rose-700"
           onClick={event => {
             event.stopPropagation();
             onDelete();

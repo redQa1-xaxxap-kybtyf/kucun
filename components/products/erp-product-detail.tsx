@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Edit, Trash2 } from 'lucide-react';
+import { ArrowLeft, Edit, Route, Trash2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -21,7 +21,7 @@ interface ERPProductDetailProps {
 
 function ProductImageGallerySkeleton() {
   return (
-    <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
+    <div className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm">
       <div className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] px-4 py-2">
         <div className="h-4 w-24 animate-pulse rounded bg-[hsl(var(--color-bg-tertiary))]" />
       </div>
@@ -56,7 +56,7 @@ const ProductDeleteDialog = dynamic(
     ssr: false,
     loading: () => (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-        <div className="w-full max-w-sm rounded-lg bg-[hsl(var(--color-bg-card))] p-6 shadow-lg">
+        <div className="w-full max-w-sm rounded-md bg-[hsl(var(--color-bg-card))] p-6 shadow-md">
           <div className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
             正在加载...
           </div>
@@ -167,12 +167,12 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
     <div className="flex h-full flex-col overflow-auto p-6">
       <div className="space-y-6">
         {/* 页面标题卡片 */}
-        <Card className="card-shadow-medium overflow-hidden border border-[hsl(var(--color-border-primary))]">
-          <CardContent className="bg-[hsl(var(--color-bg-secondary))] p-6">
+        <Card className="overflow-hidden border border-border shadow-sm">
+          <CardContent className="bg-card p-4 sm:p-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="card-shadow-light flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))]">
-                  <Edit className="h-6 w-6" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))]">
+                  <Edit className="h-5 w-5" />
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
@@ -198,10 +198,21 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
                   variant="default"
                   size="lg"
                   onClick={() => router.push(`/products/${product.id}/edit`)}
-                  className="card-shadow-light h-11 gap-2 transition-transform duration-150 hover:scale-[1.02]"
+                  className="h-11 gap-2 rounded-md"
                 >
                   <Edit className="h-4 w-4" />
                   编辑
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() =>
+                    router.push(`/products/${product.id}/tracking`)
+                  }
+                  className="h-11 gap-2"
+                >
+                  <Route className="h-4 w-4" />
+                  流向跟踪
                 </Button>
                 <Button
                   variant="destructive"
@@ -219,7 +230,7 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
         </Card>
 
         {/* 基本信息区域 */}
-        <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
+        <div className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm">
           <div className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-6 py-4">
             <h4 className="font-semibold text-[hsl(var(--color-text-primary))]">
               基本信息

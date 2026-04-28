@@ -41,10 +41,10 @@ export default async function ExpenseEditPage({
   return (
     <div className="flex h-full flex-col overflow-hidden p-6">
       <div className="space-y-6">
-        <div className="overflow-hidden rounded-lg border bg-gradient-to-r from-amber-50 to-orange-50 p-6 shadow-sm dark:from-amber-950/20 dark:to-orange-950/20">
+        <div className="overflow-hidden rounded-md border bg-card p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-500 shadow-lg">
+              <div className="flex h-12 w-12 items-center justify-center rounded-md bg-orange-500">
                 <Pencil className="h-6 w-6 text-white" />
               </div>
               <div>
@@ -57,7 +57,7 @@ export default async function ExpenseEditPage({
               </div>
             </div>
             <Link href={`/finance/expenses/${expense.id}`}>
-              <button className="bg-background hover:bg-accent hover:text-accent-foreground inline-flex h-11 items-center justify-center gap-2 rounded-md border px-4 py-2 text-sm font-medium shadow-sm transition-all">
+              <button className="bg-background hover:bg-accent hover:text-accent-foreground inline-flex h-11 items-center justify-center gap-2 rounded-md border px-4 py-2 text-sm font-medium shadow-sm">
                 <ArrowLeft className="h-4 w-4" />
                 返回详情
               </button>

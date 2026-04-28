@@ -316,7 +316,7 @@ export function CountList({ filters }: CountListProps) {
         {counts.map((count: CountListItem) => (
           <div
             key={count.id}
-            className="card-shadow-light rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4"
+            className="rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4 shadow-sm"
           >
             <div className="flex items-start justify-between gap-3">
               <div>

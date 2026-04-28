@@ -17,17 +17,11 @@ export function InventoryAdjustHeader({
   onNewAdjust,
 }: InventoryAdjustHeaderProps) {
   return (
-    <div
-      className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] p-6"
-      style={{
-        background:
-          'linear-gradient(to right, hsl(var(--color-success-light)), hsl(var(--color-success-light) / 0.5))',
-      }}
-    >
+    <div className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] bg-card p-6 shadow-sm">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div
-            className="card-shadow-light flex h-12 w-12 items-center justify-center rounded-xl text-white"
+            className="flex h-12 w-12 items-center justify-center rounded-md text-white"
             style={{
               backgroundColor: 'hsl(var(--color-success))',
             }}
@@ -47,7 +41,7 @@ export function InventoryAdjustHeader({
           <Button
             variant="outline"
             size="lg"
-            className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+            className="h-11 shadow-sm"
             onClick={onBack}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -55,7 +49,7 @@ export function InventoryAdjustHeader({
           </Button>
           <Button
             size="lg"
-            className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+            className="h-11 shadow-sm"
             onClick={onNewAdjust}
           >
             <Plus className="mr-2 h-4 w-4" />

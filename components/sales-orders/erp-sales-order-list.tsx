@@ -10,8 +10,8 @@ import {
   Download,
   Edit,
   Eye,
+  Loader2,
   MoreHorizontal,
-  Package,
   Trash2,
   Truck,
   Undo2,
@@ -21,9 +21,7 @@ import * as React from 'react';
 
 import { CopyableText } from '@/components/common/copyable-text';
 import { EmptyState } from '@/components/common/empty-state';
-import { RelativeTime } from '@/components/common/relative-time';
-import { SearchFilterCard } from '@/components/common/search-filter-card';
-import { CustomerSelector } from '@/components/sales-orders/customer-selector';
+import { SalesOrderSearchToolbar } from '@/components/sales-orders/sales-order-search-toolbar';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -68,6 +66,7 @@ import {
   type SalesOrderStatus,
 } from '@/lib/types/sales-order';
 import { formatDate, formatDateTime } from '@/lib/utils/datetime';
+import { cn } from '@/lib/utils';
 import {
   getCurrentPathWithSearch,
   withReturnTo,
@@ -132,8 +131,7 @@ export function ERPSalesOrderList({
   const { exportToImage, isExportingImage } = useSalesOrderExport();
 
   const isHistoryView = initialParams?.recordScope === 'history';
-  const statusFilterValue = initialParams?.status ?? undefined;
-  const normalizedStatus = statusFilterValue;
+  const normalizedStatus = initialParams?.status;
   const isPrioritySorted = React.useMemo(() => {
     if (isHistoryView) {
       return false;
@@ -142,44 +140,10 @@ export function ERPSalesOrderList({
     const sortBy = initialParams?.sortBy || 'orderDate';
 
     return (
-      sortBy === 'orderDate' &&
+      (sortBy === 'orderDate' || sortBy === 'createdAt') &&
       (!normalizedStatus || normalizedStatus === 'pending')
     );
   }, [initialParams?.sortBy, isHistoryView, normalizedStatus]);
-
-  // 检查是否有活跃筛选条件
-  // ✅ P1修复: 将搜索词纳入活跃筛选判断
-  const hasActiveFilters = React.useMemo(
-    () =>
-      Boolean(
-        normalizedStatus ||
-          initialParams?.customerId ||
-          initialParams?.startDate ||
-          initialParams?.endDate ||
-          initialParams?.orderType ||
-          initialParams?.isSampleOrder ||
-          initialParams?.hasReturns ||
-          (!isHistoryView && initialParams?.includeTest) ||
-          initialParams?.includeVoided ||
-          // ✅ P1修复: 搜索词也算活跃筛选
-          initialParams?.search ||
-          searchValue
-      ),
-    [
-      normalizedStatus,
-      initialParams?.customerId,
-      initialParams?.startDate,
-      initialParams?.endDate,
-      initialParams?.orderType,
-      initialParams?.isSampleOrder,
-      initialParams?.hasReturns,
-      isHistoryView,
-      initialParams?.includeTest,
-      initialParams?.includeVoided,
-      initialParams?.search,
-      searchValue,
-    ]
-  );
 
   // 清空所有筛选条件
   // ✅ P1修复: 清空筛选时也清空搜索词
@@ -212,51 +176,6 @@ export function ERPSalesOrderList({
     }
   }, [externalOnClearFilters, externalOnFilter, externalOnSearch]);
 
-  // 切换订单类型（调货订单）
-  const handleToggleTransferOrders = React.useCallback(() => {
-    const isTransferActive = initialParams?.orderType === 'TRANSFER';
-    externalOnFilter?.('orderType', isTransferActive ? undefined : 'TRANSFER');
-  }, [externalOnFilter, initialParams?.orderType]);
-
-  // 切换有退货订单
-  const handleToggleHasReturns = React.useCallback(() => {
-    const currentValue = initialParams?.hasReturns === true;
-    const nextValue = !currentValue;
-    externalOnFilter?.('hasReturns', String(nextValue));
-  }, [externalOnFilter, initialParams?.hasReturns]);
-
-  const handleToggleHistoryOrders = React.useCallback(() => {
-    externalOnFilter?.('recordScope', isHistoryView ? undefined : 'history');
-  }, [externalOnFilter, isHistoryView]);
-
-  const handleToggleSampleOrders = React.useCallback(() => {
-    const isSampleActive = initialParams?.isSampleOrder === true;
-    externalOnFilter?.('isSampleOrder', isSampleActive ? undefined : 'true');
-  }, [externalOnFilter, initialParams?.isSampleOrder]);
-
-  const handleToggleIncludeTest = React.useCallback(() => {
-    const currentValue = initialParams?.includeTest === true;
-    const nextValue = !currentValue;
-    externalOnFilter?.('includeTest', nextValue ? 'true' : undefined);
-  }, [externalOnFilter, initialParams?.includeTest]);
-
-  const handleToggleIncludeVoided = React.useCallback(() => {
-    const currentValue = initialParams?.includeVoided === true;
-    const nextValue = !currentValue;
-    externalOnFilter?.('includeVoided', nextValue ? 'true' : undefined);
-  }, [externalOnFilter, initialParams?.includeVoided]);
-
-  const handleCustomerFilterChange = React.useCallback(
-    (customerId: string) => {
-      externalOnFilter?.('customerId', customerId || undefined);
-    },
-    [externalOnFilter]
-  );
-
-  const handleClearCustomerFilter = React.useCallback(() => {
-    externalOnFilter?.('customerId', undefined);
-  }, [externalOnFilter]);
-
   // ✅ 移除内部 queryParams 状态，完全依赖外部传入的 initialParams
   // ✅ 单一数据源原则：状态统一在父组件管理
 
@@ -268,6 +187,7 @@ export function ERPSalesOrderList({
       search: initialParams?.search,
       status: normalizedStatus,
       customerId: initialParams?.customerId,
+      userId: initialParams?.userId,
       sortBy: initialParams?.sortBy || 'orderDate',
       sortOrder: initialParams?.sortOrder || 'desc',
       startDate: initialParams?.startDate,
@@ -285,6 +205,7 @@ export function ERPSalesOrderList({
       initialParams?.search,
       normalizedStatus,
       initialParams?.customerId,
+      initialParams?.userId,
       initialParams?.sortBy,
       initialParams?.sortOrder,
       initialParams?.startDate,
@@ -299,7 +220,7 @@ export function ERPSalesOrderList({
   );
 
   // ✅ 获取销售订单列表数据 - 从 HydrationBoundary 自动获取服务端预取的数据
-  const { data, isLoading, error, isRefetching } = useQuery({
+  const { data, isLoading, isFetching, error } = useQuery({
     queryKey: salesOrderQueryKeys.list(queryParams),
     queryFn: () => getSalesOrders(queryParams),
     // ✅ 移除 initialData - 数据已在 QueryClient 中（通过 HydrationBoundary）
@@ -312,6 +233,7 @@ export function ERPSalesOrderList({
 
   // 区分首次加载和后台刷新
   const isInitialLoading = isLoading && !data;
+  const isListRefreshing = !isInitialLoading && (isFetching || isSearching);
 
   // 搜索处理 - 直接使用外部传入的处理函数
   const handleSearch = React.useCallback(
@@ -457,6 +379,22 @@ export function ERPSalesOrderList({
     []
   );
 
+  const getCancelOrderBlockReason = React.useCallback(
+    (order: SalesOrder) => {
+      if (!isOrderCancelable(order.status)) {
+        return '只有未发货的订单才能取消';
+      }
+      if ((order.paidAmount ?? 0) > 0) {
+        return '订单已存在收款或预收款抵扣，不能直接取消';
+      }
+      if (Number(order.prepaymentAmount ?? 0) > 0) {
+        return '订单已使用预收款抵扣，不能直接取消';
+      }
+      return undefined;
+    },
+    [isOrderCancelable]
+  );
+
   const getWithdrawConfirmationBlockReason = React.useCallback(
     (order: SalesOrder) => {
       if (order.status !== 'confirmed') {
@@ -520,10 +458,11 @@ export function ERPSalesOrderList({
 
   const handleCancelOrderClick = React.useCallback(
     (order: SalesOrder) => {
-      if (!isOrderCancelable(order.status)) {
+      const blockReason = getCancelOrderBlockReason(order);
+      if (blockReason) {
         toast({
           title: '操作受限',
-          description: '只有未发货的订单才能取消',
+          description: blockReason,
           variant: 'destructive',
         });
         return;
@@ -531,7 +470,7 @@ export function ERPSalesOrderList({
       setOrderPendingCancel(order);
       setCancelConfirmOpen(true);
     },
-    [isOrderCancelable, toast]
+    [getCancelOrderBlockReason, toast]
   );
 
   const handleConfirmCancelOrder = React.useCallback(() => {
@@ -863,144 +802,17 @@ export function ERPSalesOrderList({
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* 搜索筛选卡片 */}
-      <SearchFilterCard
-        searchValue={searchValue ?? initialParams?.search ?? ''}
-        onSearchChange={handleSearch}
-        searchPlaceholder="搜索订单号、客户名称、产品编码..."
-        isSearching={isSearching || isRefetching}
-        // 筛选器配置
-        filters={[
-          {
-            key: 'status',
-            label: '订单状态',
-            options: [
-              { label: '待处理', value: 'pending' },
-              { label: '草稿', value: 'draft' },
-              { label: '已确认', value: 'confirmed' },
-              { label: '已发货', value: 'shipped' },
-              { label: '已完成', value: 'completed' },
-              { label: '已取消', value: 'cancelled' },
-            ],
-            width: 'w-[120px]',
-          },
-          {
-            key: 'sortBy',
-            label: '排序方式',
-            options: [
-              { label: '销售日期', value: 'orderDate' },
-              { label: '创建时间', value: 'createdAt' },
-              { label: '订单金额', value: 'totalAmount' },
-              { label: '发货时间', value: 'shippedAt' },
-              { label: '更新时间', value: 'updatedAt' },
-              { label: '订单号', value: 'orderNumber' },
-            ],
-            width: 'w-[120px]',
-          },
-        ]}
-        filterValues={{
-          status: statusFilterValue || 'all',
-          sortBy: initialParams?.sortBy || 'orderDate',
-        }}
-        onFilterChange={handleFilterChange}
-        // 日期范围筛选
-        dateRangeFilter={{
-          key: 'dateRange',
-          label: '订单日期',
-          value: {
-            startDate: initialParams?.startDate,
-            endDate: initialParams?.endDate,
-          },
-          onChange: ({ startDate, endDate }) => {
-            const dateRangeJson = JSON.stringify({ startDate, endDate });
-            externalOnFilter?.('dateRange', dateRangeJson);
-          },
-          placeholder: '选择订单日期',
-        }}
-        customFilters={
-          <div className="w-full min-w-0 space-y-1.5 xl:w-[320px]">
-            <div className="text-muted-foreground text-xs font-medium">
-              客户筛选
-            </div>
-            <div className="flex min-w-0 items-center gap-2">
-              <CustomerSelector
-                value={initialParams?.customerId}
-                onValueChange={handleCustomerFilterChange}
-                placeholder="选择客户筛选订单"
-                allowCreate={false}
-                className="h-11 min-w-0 flex-1"
-              />
-              {initialParams?.customerId && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleClearCustomerFilter}
-                  className="h-11 shrink-0 px-3"
-                >
-                  清空
-                </Button>
-              )}
-            </div>
-          </div>
-        }
-        // Toggle 按钮
-        toggleButtons={[
-          {
-            key: 'historyOrders',
-            label: '历史销售记录',
-            icon: <Clock className="mr-1 h-3 w-3" />,
-            active: isHistoryView,
-            onClick: handleToggleHistoryOrders,
-          },
-          {
-            key: 'transferOrders',
-            label: '调货订单',
-            icon: <Truck className="mr-1 h-3 w-3" />,
-            active: initialParams?.orderType === 'TRANSFER',
-            onClick: handleToggleTransferOrders,
-          },
-          {
-            key: 'sampleOrders',
-            label: '样品单',
-            icon: <Package className="mr-1 h-3 w-3" />,
-            active: !!initialParams?.isSampleOrder,
-            onClick: handleToggleSampleOrders,
-          },
-          {
-            key: 'hasReturns',
-            label: '有退货',
-            icon: <Package className="mr-1 h-3 w-3" />,
-            active: !!initialParams?.hasReturns,
-            onClick: handleToggleHasReturns,
-          },
-          ...(!isHistoryView
-            ? [
-                {
-                  key: 'includeTest',
-                  label: '显示测试',
-                  icon: <Eye className="mr-1 h-3 w-3" />,
-                  active: !!initialParams?.includeTest,
-                  onClick: handleToggleIncludeTest,
-                },
-              ]
-            : []),
-          {
-            key: 'includeVoided',
-            label: '显示作废',
-            icon: <Ban className="mr-1 h-3 w-3" />,
-            active: !!initialParams?.includeVoided,
-            onClick: handleToggleIncludeVoided,
-          },
-        ]}
-        // 清空筛选
+      <SalesOrderSearchToolbar
+        queryParams={queryParams}
+        searchValue={searchValue}
+        onSearch={handleSearch}
+        onFilter={handleFilterChange}
         onClearFilters={handleClearFilters}
-        hasActiveFilters={hasActiveFilters}
-        variant="pro"
-        compact={true}
+        isSearching={isSearching || isFetching}
       />
 
       {isHistoryView && (
-        <div className="rounded-2xl border border-sky-200 bg-sky-50/90 px-4 py-3 text-sky-900 shadow-sm">
+        <div className="rounded-md border border-sky-200 bg-sky-50 px-4 py-3 text-sky-900">
           <div className="flex items-start gap-3">
             <Clock className="mt-0.5 h-4 w-4 shrink-0 text-sky-600" />
             <div className="min-w-0">
@@ -1014,7 +826,7 @@ export function ERPSalesOrderList({
       )}
 
       {!isHistoryView && isPrioritySorted && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-amber-900 shadow-sm">
+        <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
           <div className="flex items-start gap-3">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
             <div className="min-w-0">
@@ -1028,24 +840,36 @@ export function ERPSalesOrderList({
       )}
 
       {/* 数据表格 */}
-      <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
+      <div
+        className="relative overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm"
+        aria-busy={isInitialLoading || isListRefreshing}
+      >
+        {isListRefreshing && (
+          <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-center border-b border-[hsl(var(--color-border-primary))] bg-white/95 px-3 py-2 text-xs font-medium text-[hsl(var(--color-text-secondary))] shadow-sm">
+            <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin text-[hsl(var(--color-primary))]" />
+            正在更新列表...
+          </div>
+        )}
+
         {/* 桌面端：表格视图，支持横向滚动 */}
-        <div className="hidden xl:block">
+        <div
+          className={cn(
+            'hidden transition-opacity lg:block',
+            isListRefreshing && 'opacity-60'
+          )}
+        >
           <div className="overflow-x-auto">
-            <Table className="min-w-[1280px]">
+            <Table className="min-w-[1060px]">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[180px] min-w-[180px] whitespace-nowrap">
                     订单号
                   </TableHead>
-                  <TableHead className="w-[180px] min-w-[180px] whitespace-nowrap">
-                    客户名称
+                  <TableHead className="w-[260px] min-w-[260px] whitespace-nowrap">
+                    客户
                   </TableHead>
-                  <TableHead className="w-[240px] min-w-[240px] whitespace-nowrap">
-                    客户地址
-                  </TableHead>
-                  <TableHead className="w-[180px] min-w-[180px] whitespace-nowrap">
-                    状态
+                  <TableHead className="w-[170px] min-w-[170px] whitespace-nowrap">
+                    订单状态
                   </TableHead>
                   <TableHead className="w-[120px] min-w-[120px] text-right whitespace-nowrap">
                     订单金额
@@ -1053,14 +877,8 @@ export function ERPSalesOrderList({
                   <TableHead className="w-[120px] min-w-[120px] whitespace-nowrap">
                     收款状态
                   </TableHead>
-                  <TableHead className="w-[140px] min-w-[140px] whitespace-nowrap">
-                    发货时间
-                  </TableHead>
-                  <TableHead className="w-[120px] min-w-[120px] whitespace-nowrap">
-                    销售日期
-                  </TableHead>
-                  <TableHead className="w-[120px] min-w-[120px] whitespace-nowrap">
-                    更新时间
+                  <TableHead className="w-[180px] min-w-[180px] whitespace-nowrap">
+                    日期
                   </TableHead>
                   <TableHead className="w-24 min-w-[96px] whitespace-nowrap">
                     操作
@@ -1073,9 +891,6 @@ export function ERPSalesOrderList({
                   Array.from({ length: 10 }).map((_, i) => (
                     <TableRow key={i}>
                       <TableCell className="h-8 text-xs">加载中...</TableCell>
-                      <TableCell className="h-8 text-xs">-</TableCell>
-                      <TableCell className="h-8 text-xs">-</TableCell>
-                      <TableCell className="h-8 text-xs">-</TableCell>
                       <TableCell className="h-8 text-xs">-</TableCell>
                       <TableCell className="h-8 text-xs">-</TableCell>
                       <TableCell className="h-8 text-xs">-</TableCell>
@@ -1137,7 +952,7 @@ export function ERPSalesOrderList({
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="h-8 min-w-[180px] text-xs">
+                      <TableCell className="h-8 min-w-[260px] text-xs">
                         <div className="flex flex-col gap-1">
                           <span className="font-medium text-[hsl(var(--color-text-primary))]">
                             {order.customer?.name || '-'}
@@ -1145,23 +960,17 @@ export function ERPSalesOrderList({
                           <span className="text-[hsl(var(--color-text-tertiary))]">
                             {order.customer?.phone || '-'}
                           </span>
+                          {order.customer?.address && (
+                            <span
+                              className="max-w-[240px] truncate text-[hsl(var(--color-text-tertiary))]"
+                              title={order.customer.address}
+                            >
+                              {order.customer.address}
+                            </span>
+                          )}
                         </div>
                       </TableCell>
-                      <TableCell
-                        className="h-8 max-w-[240px] text-xs text-[hsl(var(--color-text-secondary))]"
-                        title={order.customer?.address || '-'}
-                      >
-                        {order.customer?.address ? (
-                          <span className="block truncate">
-                            {order.customer?.address}
-                          </span>
-                        ) : (
-                          <span className="text-[hsl(var(--color-text-tertiary))]">
-                            -
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="h-8 min-w-[180px] text-xs">
+                      <TableCell className="h-8 min-w-[170px] text-xs">
                         <div className="flex items-center gap-2">
                           {getStatusBadge(order.status)}
                           {order.status === 'confirmed' && (
@@ -1190,21 +999,21 @@ export function ERPSalesOrderList({
                         {getPaymentStatusBadge(order)}
                       </TableCell>
                       <TableCell className="h-8 text-xs whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
-                        {order.shippedAt ? (
-                          <span className="font-medium text-[hsl(var(--color-primary))]">
-                            {formatDateTime(order.shippedAt)}
+                        <div className="flex flex-col gap-1">
+                          <span>
+                            销售：
+                            {formatDate(order.orderDate || order.createdAt)}
                           </span>
-                        ) : (
-                          <span className="text-[hsl(var(--color-text-tertiary))]">
-                            -
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="h-8 text-xs whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
-                        {formatDate(order.orderDate || order.createdAt)}
-                      </TableCell>
-                      <TableCell className="h-8 text-xs whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
-                        <RelativeTime date={order.updatedAt} />
+                          {order.shippedAt ? (
+                            <span className="text-[hsl(var(--color-primary))]">
+                              发货：{formatDate(order.shippedAt)}
+                            </span>
+                          ) : (
+                            <span className="text-[hsl(var(--color-text-tertiary))]">
+                              未发货
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="h-8 text-xs">
                         <DropdownMenu>
@@ -1227,7 +1036,7 @@ export function ERPSalesOrderList({
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={10} className="p-8">
+                    <TableCell colSpan={7} className="p-8">
                       <EmptyState title={emptyStateTitle} compact />
                     </TableCell>
                   </TableRow>
@@ -1238,12 +1047,17 @@ export function ERPSalesOrderList({
         </div>
 
         {/* 移动端：卡片视图 */}
-        <div className="space-y-3 px-3 py-3 xl:hidden">
+        <div
+          className={cn(
+            'space-y-3 px-3 py-3 transition-opacity lg:hidden',
+            isListRefreshing && 'opacity-60'
+          )}
+        >
           {isInitialLoading ? (
             Array.from({ length: 6 }).map((_, index) => (
               <div
                 key={`sales-order-card-skeleton-${index}`}
-                className="card-shadow-light rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3"
+                className="rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3 shadow-sm"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-2">
@@ -1260,132 +1074,134 @@ export function ERPSalesOrderList({
             ))
           ) : data?.data && data.data.length > 0 ? (
             data.data.map(order => (
-                <div
-                  key={order.id}
-                  className="card-shadow-light cursor-pointer rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3"
-                  onClick={() => handleOpenOrder(order)}
-                  onKeyDown={event => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      handleOpenOrder(order);
-                    }
-                  }}
-                  role="button"
-                  tabIndex={0}
-                >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
-                      <div className="font-mono text-xs font-semibold text-[hsl(var(--color-primary))]">
-                        {order.orderNumber}
-                      </div>
-                      <div className="mt-0.5 text-xs text-[hsl(var(--color-text-secondary))]">
-                        客户：{order.customer?.name || '-'}
-                      </div>
-                      <div className="mt-0.5 text-xs text-[hsl(var(--color-text-tertiary))]">
-                        电话：{order.customer?.phone || '-'}
-                      </div>
-                      <div className="mt-0.5 text-xs text-[hsl(var(--color-text-tertiary))]">
-                        地址：{order.customer?.address || '暂无客户地址'}
-                      </div>
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {order.isSampleOrder && (
-                          <Badge
-                            variant="outline"
-                            className="border-amber-200 bg-amber-50 text-xs font-bold text-amber-700"
-                          >
-                            {
-                              SAMPLE_SETTLEMENT_TYPE_LABELS[
-                                order.sampleSettlementType ?? 'FREE'
-                              ]
-                            }
-                          </Badge>
-                        )}
-                        {order.orderType === 'TRANSFER' && (
-                          <Badge variant="info" className="text-xs font-bold">
-                            调货销售
-                          </Badge>
-                        )}
-                        {order.hasReturnOrder && (
-                          <Badge
-                            variant="destructive"
-                            className="text-xs font-bold"
-                          >
-                            已发生退货
-                          </Badge>
-                        )}
-                      </div>
+              <div
+                key={order.id}
+                className="cursor-pointer rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3 shadow-sm"
+                onClick={() => handleOpenOrder(order)}
+                onKeyDown={event => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    handleOpenOrder(order);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <div className="font-mono text-xs font-semibold text-[hsl(var(--color-primary))]">
+                      {order.orderNumber}
                     </div>
-                    <div className="min-w-0 rounded-xl bg-[hsl(var(--color-bg-secondary))] px-3 py-2 text-xs text-[hsl(var(--color-text-secondary))] sm:shrink-0 sm:bg-transparent sm:px-0 sm:py-0 sm:text-right">
-                      <div className="font-semibold text-[hsl(var(--color-success))]">
-                        金额：{formatAmount(order.totalAmount)}
+                    <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
+                      {order.customer?.name || '-'}
+                      {order.customer?.phone
+                        ? ` · ${order.customer.phone}`
+                        : ''}
+                    </div>
+                    {order.customer?.address && (
+                      <div className="mt-0.5 truncate text-xs text-[hsl(var(--color-text-tertiary))]">
+                        {order.customer.address}
                       </div>
-                      <div className="mt-1 flex sm:justify-end">
-                        {getPaymentStatusBadge(order)}
-                      </div>
-                      <div className="mt-1 break-all text-[hsl(var(--color-text-tertiary))] sm:break-normal">
-                        销售日期：
-                        {formatDate(order.orderDate || order.createdAt)}
-                      </div>
+                    )}
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {order.isSampleOrder && (
+                        <Badge
+                          variant="outline"
+                          className="border-amber-200 bg-amber-50 text-xs font-medium text-amber-700"
+                        >
+                          {
+                            SAMPLE_SETTLEMENT_TYPE_LABELS[
+                              order.sampleSettlementType ?? 'FREE'
+                            ]
+                          }
+                        </Badge>
+                      )}
+                      {order.orderType === 'TRANSFER' && (
+                        <Badge variant="info" className="text-xs font-medium">
+                          调货销售
+                        </Badge>
+                      )}
+                      {order.hasReturnOrder && (
+                        <Badge
+                          variant="destructive"
+                          className="text-xs font-medium"
+                        >
+                          已发生退货
+                        </Badge>
+                      )}
                     </div>
                   </div>
-
-                  <div className="mt-2 flex items-center justify-between text-xs font-bold text-slate-500">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[hsl(var(--color-text-tertiary))]">
-                        状态：
-                      </span>
-                      {getStatusBadge(order.status)}
+                  <div className="min-w-0 rounded-lg bg-[hsl(var(--color-bg-secondary))] px-3 py-2 text-xs text-[hsl(var(--color-text-secondary))] sm:shrink-0 sm:bg-transparent sm:px-0 sm:py-0 sm:text-right">
+                    <div className="font-semibold text-[hsl(var(--color-success))]">
+                      金额：{formatAmount(order.totalAmount)}
                     </div>
-                    <div className="flex items-center gap-2">
-                      {order.status === 'confirmed' && (
-                        <Button
-                          variant="default"
-                          size="sm"
-                          className="h-7 px-2 text-xs font-bold"
-                          onClick={e => {
-                            e.stopPropagation();
-                            handleConfirmShipment(order);
-                          }}
-                          disabled={updatingOrderId === order.id}
-                        >
-                          <Truck className="mr-1 h-3 w-3" />
-                          {updatingOrderId === order.id
-                            ? '处理中...'
-                            : '确认发货'}
-                        </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 px-1 text-xs font-bold text-slate-500"
-                        onClick={e => {
-                          e.stopPropagation();
-                          handleOpenOrder(order);
-                        }}
-                      >
-                        <Eye className="mr-1 h-3 w-3" />
-                        查看
-                      </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 px-0 text-slate-500"
-                            onClick={event => event.stopPropagation()}
-                            aria-label="更多操作"
-                          >
-                            <MoreHorizontal className="h-3.5 w-3.5" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-40">
-                          {renderOrderActionMenuItems(order)}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                    <div className="mt-1 flex sm:justify-end">
+                      {getPaymentStatusBadge(order)}
+                    </div>
+                    <div className="mt-1 break-all text-[hsl(var(--color-text-tertiary))] sm:break-normal">
+                      销售日期：
+                      {formatDate(order.orderDate || order.createdAt)}
                     </div>
                   </div>
                 </div>
-              ))
+
+                <div className="mt-2 flex items-center justify-between text-xs font-bold text-slate-500">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[hsl(var(--color-text-tertiary))]">
+                      状态：
+                    </span>
+                    {getStatusBadge(order.status)}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {order.status === 'confirmed' && (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="h-7 px-2 text-xs font-bold"
+                        onClick={e => {
+                          e.stopPropagation();
+                          handleConfirmShipment(order);
+                        }}
+                        disabled={updatingOrderId === order.id}
+                      >
+                        <Truck className="mr-1 h-3 w-3" />
+                        {updatingOrderId === order.id
+                          ? '处理中...'
+                          : '确认发货'}
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-1 text-xs font-bold text-slate-500"
+                      onClick={e => {
+                        e.stopPropagation();
+                        handleOpenOrder(order);
+                      }}
+                    >
+                      <Eye className="mr-1 h-3 w-3" />
+                      查看
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 px-0 text-slate-500"
+                          onClick={event => event.stopPropagation()}
+                          aria-label="更多操作"
+                        >
+                          <MoreHorizontal className="h-3.5 w-3.5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-40">
+                        {renderOrderActionMenuItems(order)}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              </div>
+            ))
           ) : (
             <EmptyState title={emptyStateTitle} compact />
           )}
@@ -1399,6 +1215,7 @@ export function ERPSalesOrderList({
               onPageChange={handlePageChange}
               showRange
               showTotal
+              disabled={isListRefreshing}
             />
           </div>
         )}

@@ -53,7 +53,7 @@ export default async function DashboardPage({
     },
   });
 
-  // 🚀 并行获取所有首屏数据 - 避免瀑布式请求
+  // 并行获取所有首屏数据，避免瀑布式请求
   const [dashboardData, recentOrders, pendingOrders, factoryShipments] =
     await Promise.all([
       // 仪表盘统计数据

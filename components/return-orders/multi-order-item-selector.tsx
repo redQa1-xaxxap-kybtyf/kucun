@@ -431,11 +431,6 @@ function SalesOrderSection({
                         <TableCell className="h-8 px-2">
                           <div className="flex flex-col gap-0.5">
                             <div className="flex items-center gap-1">
-                              {isMatched && (
-                                <span className="text-yellow-600 dark:text-yellow-400">
-                                  ✨
-                                </span>
-                              )}
                               <Package className="text-muted-foreground h-3 w-3" />
                               <span
                                 className={cn(

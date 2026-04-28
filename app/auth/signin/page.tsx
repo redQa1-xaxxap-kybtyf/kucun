@@ -1,3 +1,5 @@
+import { sanitizeInternalPath } from '@/lib/utils/safe-navigation';
+
 import SignInPageClient from './sign-in-page-client';
 
 export const dynamic = 'force-dynamic';
@@ -13,9 +15,10 @@ export default async function SignInPage({
   const rawCallbackUrl = params.callbackUrl;
   const rawError = params.error;
 
-  const callbackUrl = Array.isArray(rawCallbackUrl)
-    ? rawCallbackUrl[0]
-    : rawCallbackUrl || '/dashboard';
+  const callbackUrl = sanitizeInternalPath(
+    Array.isArray(rawCallbackUrl) ? rawCallbackUrl[0] : rawCallbackUrl,
+    '/dashboard'
+  );
   const error = Array.isArray(rawError) ? rawError[0] : rawError;
 
   return <SignInPageClient callbackUrl={callbackUrl} error={error} />;

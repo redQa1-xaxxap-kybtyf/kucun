@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { logClientError } from '@/lib/logger/client';
 
 /**
- * 客户待收款页面错误边界
+ * 应收账款页面错误边界
  *
  * ✅ Next.js 15 最佳实践：错误边界组件
  */
@@ -21,7 +21,7 @@ export default function ReceivablesError({
   reset: () => void;
 }) {
   useEffect(() => {
-    logClientError('finance-receivables', '客户待收款页面错误', error, {
+    logClientError('finance-receivables', '应收账款页面错误', error, {
       digest: error.digest,
       stack: error.stack,
     });
@@ -37,10 +37,10 @@ export default function ReceivablesError({
 
           <div className="space-y-2">
             <h2 className="text-2xl font-bold text-[hsl(var(--color-text-primary))]">
-              加载客户待收款时出错
+              加载应收账款时出错
             </h2>
             <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-              暂时无法加载客户待收款，请稍后重试
+              暂时无法加载应收账款，请稍后重试
             </p>
           </div>
 
@@ -76,4 +76,3 @@ export default function ReceivablesError({
     </div>
   );
 }
-

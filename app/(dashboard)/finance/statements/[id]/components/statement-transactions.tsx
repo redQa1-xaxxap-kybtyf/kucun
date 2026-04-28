@@ -68,15 +68,15 @@ export function StatementTransactions({
             : 'border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
         )}
       >
-        {isPending ? '待入账' : '已结清'}
+        {isPending ? '待入账' : '已入账'}
       </Badge>
     );
   };
 
   return (
-    <Card>
+    <Card className="rounded-md border border-border shadow-sm">
       <CardHeader className="border-b border-slate-200 bg-slate-50 px-6 py-4">
-        <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-500 italic">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-500">
           <FileText className="h-4 w-4" />
           全部业务往来明细
         </CardTitle>
@@ -85,33 +85,15 @@ export function StatementTransactions({
         <Table>
           <TableHeader className="bg-slate-50/50">
             <TableRow className="border-b border-slate-200 hover:bg-transparent">
-              <TableHead>
-                业务类型
-              </TableHead>
-              <TableHead>
-                单据编号
-              </TableHead>
-              <TableHead>
-                科目摘要
-              </TableHead>
-              <TableHead className="text-right">
-                借方 (应收+)
-              </TableHead>
-              <TableHead className="text-right">
-                贷方 (应收-)
-              </TableHead>
-              <TableHead className="text-right">
-                余额 (元)
-              </TableHead>
-              <TableHead>
-                记账时间
-              </TableHead>
-              <TableHead>
-                处理状态
-              </TableHead>
-              <TableHead className="text-right">
-                操作
-              </TableHead>
+              <TableHead>业务类型</TableHead>
+              <TableHead>单据编号</TableHead>
+              <TableHead>科目摘要</TableHead>
+              <TableHead className="text-right">借方 (应收+)</TableHead>
+              <TableHead className="text-right">贷方 (应收-)</TableHead>
+              <TableHead className="text-right">余额 (元)</TableHead>
+              <TableHead>记账时间</TableHead>
+              <TableHead>处理状态</TableHead>
+              <TableHead className="text-right">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -123,12 +105,12 @@ export function StatementTransactions({
               return (
                 <TableRow
                   key={transaction.id}
-                  className="group transition-colors hover:bg-blue-50/30"
+                  className="group transition-colors hover:bg-muted/50"
                 >
                   <TableCell>
                     {getTransactionTypeBadge(transaction.transactionType)}
                   </TableCell>
-                  <TableCell className="font-mono text-xs font-semibold tracking-tighter text-slate-400 group-hover:text-slate-900">
+                  <TableCell className="font-mono text-xs font-semibold text-slate-400 group-hover:text-slate-900">
                     {transaction.referenceNumber || '-'}
                   </TableCell>
                   <TableCell className="max-w-[200px] truncate text-xs font-bold text-slate-500">

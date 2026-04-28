@@ -337,6 +337,18 @@ export function ProductImportDialog({
     }
   };
 
+  const handleSelectFile = React.useCallback(() => {
+    if (isBusy) {
+      return;
+    }
+
+    // 允许重新选择同一个文件名，避免修改后仍复用旧文件对象。
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+      fileInputRef.current.click();
+    }
+  }, [isBusy]);
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const nextFile = event.target.files?.[0] ?? null;
     setResult(null);
@@ -359,6 +371,7 @@ export function ProductImportDialog({
     }
 
     setFile(nextFile);
+    event.target.value = '';
   };
 
   return (
@@ -401,7 +414,7 @@ export function ProductImportDialog({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={handleSelectFile}
                 disabled={isBusy}
               >
                 <Upload className="mr-2 h-4 w-4" />

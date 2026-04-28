@@ -32,7 +32,7 @@ type LatestQueryState = {
 // eslint-disable-next-line max-lines-per-function -- URL sync, selection state, and debounced search are intentionally managed together in this shared hook.
 export function useProductListState(initialParams?: ProductQueryParams) {
   const router = useRouter();
-  const [, startTransition] = useTransition();
+  const [isNavigationPending, startTransition] = useTransition();
 
   // 使用 ref 存储最新的查询参数，避免闭包陷阱
   const latestParamsRef = useRef<LatestQueryState>({
@@ -213,6 +213,7 @@ export function useProductListState(initialParams?: ProductQueryParams) {
     batchDeleteDialog,
     searchInput,
     isSearching,
+    isNavigationPending,
 
     // 状态更新函数
     setDeleteDialog,

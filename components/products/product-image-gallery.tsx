@@ -134,7 +134,7 @@ export function ProductImageGallery({
   // 无图片
   if (totalCount === 0) {
     return (
-      <div className="card-shadow-medium overflow-hidden rounded-lg border-2 border-dashed border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
+      <div className="overflow-hidden rounded-md border-2 border-dashed border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm">
         <div className="border-b-2 border-dashed border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-4 py-2">
           <h4 className="flex items-center gap-2 text-sm font-semibold text-[hsl(var(--color-text-primary))]">
             <ImageIcon className="h-4 w-4 text-[hsl(var(--color-text-tertiary))]" />
@@ -211,7 +211,7 @@ export function ProductImageGallery({
   };
 
   return (
-    <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
+    <div className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm">
       <div className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] px-4 py-2">
         <h4 className="flex items-center gap-2 text-sm font-semibold text-[hsl(var(--color-text-primary))]">
           <ImageIcon className="h-4 w-4 text-[hsl(var(--color-text-tertiary))]" />

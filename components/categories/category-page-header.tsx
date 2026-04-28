@@ -15,11 +15,11 @@ export function CategoryPageHeader() {
   const router = useRouter();
 
   return (
-    <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-      <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
+    <Card className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] shadow-sm">
+      <CardContent className="bg-[hsl(var(--color-bg-secondary))] p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-[var(--shadow-medium)]">
+            <div className="flex h-12 w-12 items-center justify-center rounded-md bg-[hsl(var(--color-primary))] shadow-sm">
               <FolderTree className="h-6 w-6 text-white" />
             </div>
             <div>
@@ -32,7 +32,7 @@ export function CategoryPageHeader() {
           <Button
             size="lg"
             onClick={() => router.push('/categories/create')}
-            className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+            className="h-11 shadow-sm"
           >
             <Plus className="mr-2 h-4 w-4" />
             新建分类

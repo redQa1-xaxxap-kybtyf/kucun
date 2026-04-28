@@ -79,31 +79,31 @@ function InitialStockImportSummary({
 
   return (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-      <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+      <div className="rounded-md border border-slate-200 bg-slate-50/70 p-3">
         <div className="text-xs text-slate-500">总行数</div>
         <div className="text-lg font-semibold text-slate-900">
           {result.totalCount}
         </div>
       </div>
-      <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-3">
+      <div className="rounded-md border border-emerald-200 bg-emerald-50/80 p-3">
         <div className="text-xs text-emerald-700">可导入</div>
         <div className="text-lg font-semibold text-emerald-700">
           {result.validCount}
         </div>
       </div>
-      <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3">
-        <div className="text-xs text-amber-700">跳过行</div>
+      <div className="rounded-md border border-amber-200 bg-amber-50/80 p-3">
+        <div className="text-xs text-amber-700">已跳过</div>
         <div className="text-lg font-semibold text-amber-700">
           {result.duplicateCount}
         </div>
       </div>
-      <div className="rounded-xl border border-rose-200 bg-rose-50/80 p-3">
+      <div className="rounded-md border border-rose-200 bg-rose-50/80 p-3">
         <div className="text-xs text-rose-700">错误行</div>
         <div className="text-lg font-semibold text-rose-700">
           {result.errorCount}
         </div>
       </div>
-      <div className="rounded-xl border border-blue-200 bg-blue-50/80 p-3">
+      <div className="rounded-md border border-blue-200 bg-blue-50/80 p-3">
         <div className="text-xs text-blue-700">实际导入</div>
         <div className="text-lg font-semibold text-blue-700">
           {result.importedCount ?? '--'}
@@ -132,7 +132,7 @@ function InitialStockPreviewTable({
           </div>
         ) : null}
       </div>
-      <div className="max-h-72 overflow-auto rounded-xl border border-slate-200">
+      <div className="max-h-72 overflow-auto rounded-md border border-slate-200">
         <Table>
           <TableHeader>
             <TableRow>
@@ -261,13 +261,13 @@ function getDuplicateSourceLabel(
 ) {
   switch (source) {
     case 'file':
-      return '文件内重复';
+      return '同文件重复';
     case 'opening_balance':
-      return '已有期初库存';
+      return '系统已有期初库存';
     case 'inventory':
-      return '已有库存';
+      return '系统已有现有库存';
     case 'business_inbound':
-      return '已有业务入库';
+      return '系统已有业务入库';
     default:
       return '系统跳过';
   }
@@ -284,15 +284,22 @@ function InitialStockDuplicateTable({
 
   return (
     <div className="space-y-2">
-      <div className="text-sm font-medium text-amber-700">跳过明细</div>
-      <div className="max-h-64 overflow-auto rounded-xl border border-amber-200">
+      <div className="space-y-1">
+        <div className="text-sm font-medium text-amber-700">
+          以下行不会导入
+        </div>
+        <div className="text-xs text-amber-700">
+          系统按“产品编码 + 色号 + 批次号”判断重复；跳过只是不导入，不会自动合并数量。
+        </div>
+      </div>
+      <div className="max-h-64 overflow-auto rounded-md border border-amber-200">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>行号</TableHead>
               <TableHead>产品编码</TableHead>
               <TableHead>批次号</TableHead>
-              <TableHead>来源</TableHead>
+              <TableHead>跳过原因</TableHead>
               <TableHead>说明</TableHead>
             </TableRow>
           </TableHeader>
@@ -327,7 +334,7 @@ function InitialStockErrorTable({
   return (
     <div className="space-y-2">
       <div className="text-sm font-medium text-rose-700">错误明细</div>
-      <div className="max-h-64 overflow-auto rounded-xl border border-rose-200">
+      <div className="max-h-64 overflow-auto rounded-md border border-rose-200">
         <Table>
           <TableHeader>
             <TableRow>
@@ -382,7 +389,7 @@ export function InitialStockImportDialog({
 
       if (previewResult.duplicateCount > 0 || previewResult.errorCount > 0) {
         showWarning('导入检查完成', {
-          description: `可导入 ${previewResult.validCount} 条，跳过 ${previewResult.duplicateCount} 条，错误 ${previewResult.errorCount} 条${quantityUnitHint}`,
+          description: `可导入 ${previewResult.validCount} 条，已跳过 ${previewResult.duplicateCount} 条（不会导入，也不会自动合并数量），错误 ${previewResult.errorCount} 条${quantityUnitHint}`,
         });
         return;
       }
@@ -413,14 +420,14 @@ export function InitialStockImportDialog({
 
       if ((importResult.importedCount ?? 0) === 0) {
         showWarning('导入未完成', {
-          description: `没有成功导入的数据，请检查跳过和错误明细${quantityUnitHint}`,
+          description: `没有成功导入的数据，请检查未导入行和错误明细${quantityUnitHint}`,
         });
         return;
       }
 
       if (importResult.duplicateCount > 0 || importResult.errorCount > 0) {
         showWarning('导入已完成', {
-          description: `成功导入 ${importResult.importedCount ?? 0} 条并已直接写入库存，跳过 ${importResult.duplicateCount} 条，错误 ${importResult.errorCount} 条${quantityUnitHint}`,
+          description: `成功导入 ${importResult.importedCount ?? 0} 条并已直接写入库存，已跳过 ${importResult.duplicateCount} 条（不会导入，也不会自动合并数量），错误 ${importResult.errorCount} 条${quantityUnitHint}`,
         });
         return;
       }
@@ -489,6 +496,18 @@ export function InitialStockImportDialog({
     }
   };
 
+  const handleSelectFile = React.useCallback(() => {
+    if (isBusy) {
+      return;
+    }
+
+    // 允许用户重新选择同一个文件名的 Excel，避免修改后仍沿用旧文件对象。
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+      fileInputRef.current.click();
+    }
+  }, [isBusy]);
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const nextFile = event.target.files?.[0] ?? null;
     setResult(null);
@@ -511,11 +530,12 @@ export function InitialStockImportDialog({
     }
 
     setFile(nextFile);
+    event.target.value = '';
   };
 
   return (
     <Dialog open={open} onOpenChange={handleDialogOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-6xl overflow-y-auto rounded-2xl border-0 bg-white p-0 shadow-2xl">
+      <DialogContent className="max-h-[90vh] max-w-6xl overflow-y-auto rounded-md border bg-white p-0 shadow-md">
         <DialogHeader className="border-b border-slate-200 bg-slate-50/80 px-6 py-5">
           <DialogTitle className="text-xl font-bold text-slate-900">
             期初库存批量导入
@@ -523,7 +543,7 @@ export function InitialStockImportDialog({
           <DialogDescription className="text-sm text-slate-600">
             正式导入只会导入产品库中已存在且检查通过的产品。建议优先下载产品库模板，直接填写批次、装箱数、本批次实际每件重量、数量、数量单位、单位成本、供应商和库位；数量单位填“件”时，数量支持最多
             3
-            位小数，并会按装箱数自动换算成片，单位成本会按件价自动折算成单片成本；旧模板里的“单片成本”列也继续兼容。
+            位小数，并会按装箱数自动换算成片，单位成本会按件价自动折算成单片成本；按片导入时若填写了本批次实际每件重量但当前行未填装箱数，系统会优先尝试使用产品管理里的默认装箱数保存该批次重量；旧模板里的“单片成本”列也继续兼容。
           </DialogDescription>
         </DialogHeader>
 
@@ -535,11 +555,12 @@ export function InitialStockImportDialog({
               + 色号 +
               批次”组合，同编号多个色号或多个批次请拆成多行。数量单位建议明确填写“件”或“片”，其中“件”支持最多
               3
-              位小数，会自动按装箱数换算成片，并把单位成本按件价折算成单片成本；装箱数、本批次实际每件重量不填时默认使用产品管理里的默认值；供应商按名称精确匹配，不填也可导入。遇到重复批次、已有库存或错误行时，系统会自动跳过并给出明细。
+              位小数，会自动按装箱数换算成片，并把单位成本按件价折算成单片成本；按片导入时，如果填写了本批次实际每件重量但当前行未填装箱数，系统会优先尝试使用产品管理里的默认装箱数保存该批次重量，没有默认装箱数时会提示补充装箱数；供应商按名称精确匹配，不填也可导入。遇到重复批次、已有库存或错误行时，系统会自动跳过并给出明细。
+              跳过只是不导入，不会把重复行的数量自动合并。
             </AlertDescription>
           </Alert>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="space-y-1">
                 <div className="text-sm font-medium text-slate-900">
@@ -575,7 +596,7 @@ export function InitialStockImportDialog({
                   type="button"
                   variant="outline"
                   className="border-slate-200"
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={handleSelectFile}
                   disabled={isBusy}
                 >
                   <Upload className="mr-2 h-4 w-4" />
@@ -626,7 +647,7 @@ export function InitialStockImportDialog({
           {result?.importedCount &&
           result.importedCount > 0 &&
           result.importBatchId ? (
-            <div className="rounded-2xl border border-blue-200 bg-blue-50/70 p-4">
+            <div className="rounded-md border border-blue-200 bg-blue-50/70 p-4">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div className="space-y-1">
                   <div className="text-sm font-medium text-blue-900">

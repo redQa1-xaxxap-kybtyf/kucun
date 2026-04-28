@@ -259,13 +259,13 @@ export default function SignInPageClient({
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
       <div className="relative w-full max-w-md space-y-8">
         {(isSuccess || isRedirecting) && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/80 backdrop-blur-xs">
+          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-white">
             <div className="space-y-4 text-center">
               {isRedirecting ? (
                 <>
                   <Loader2 className="mx-auto h-8 w-8 animate-spin text-blue-600" />
                   <p className="text-sm font-medium text-blue-600">
-                    正在跳转到仪表盘...
+                    正在进入首页...
                   </p>
                 </>
               ) : (
@@ -282,7 +282,7 @@ export default function SignInPageClient({
 
         <Card>
           <CardHeader className="space-y-1">
-            <CardTitle className="text-center text-2xl">库存管理系统</CardTitle>
+            <CardTitle className="text-center text-2xl">瓷砖销售 ERP</CardTitle>
             <CardDescription className="text-center">
               请输入您的账户信息登录系统
             </CardDescription>
@@ -300,7 +300,7 @@ export default function SignInPageClient({
               <Alert className="mb-4 border-green-200 bg-green-50 text-green-800">
                 <CheckCircle className="h-4 w-4 text-green-600" />
                 <AlertDescription className="text-green-800">
-                  登录成功！正在为您跳转到仪表盘...
+                  登录成功！正在进入首页...
                 </AlertDescription>
               </Alert>
             )}
@@ -470,7 +470,7 @@ export default function SignInPageClient({
                   {isRedirecting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      正在跳转到仪表盘...
+                      正在进入首页...
                     </>
                   ) : isSuccess ? (
                     <>

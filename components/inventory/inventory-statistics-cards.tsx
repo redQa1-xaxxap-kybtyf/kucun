@@ -2,7 +2,6 @@
 
 import {
   AlertTriangle,
-  DollarSign,
   Download,
   Package,
   TrendingUp,
@@ -11,6 +10,7 @@ import {
 import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { CountUp } from '@/components/ui/count-up';
@@ -28,7 +28,7 @@ interface InventoryStatisticsCardsProps {
 interface StatCard {
   id: string;
   title: string;
-  icon: typeof DollarSign;
+  icon: typeof Package;
   value: React.ReactNode;
   description: string;
   color: string;
@@ -60,7 +60,7 @@ function buildStatCards(
     cards.push({
       id: 'totalValue',
       title: '库存总金额',
-      icon: DollarSign,
+      icon: ChineseYuan,
       value: (
         <CountUp
           end={statistics.totalValue}
@@ -239,8 +239,8 @@ export function InventoryStatisticsCards({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between px-1">
-        <div className="text-sm font-semibold tracking-wide text-slate-400">
-          实时库存指标集
+        <div className="text-sm font-medium text-slate-500">
+          库存统计
         </div>
         <Button
           size="sm"
@@ -250,7 +250,7 @@ export function InventoryStatisticsCards({
           disabled={!statistics}
         >
           <Download className="mr-1.5 h-3.5 w-3.5" />
-          导出统计概览
+          导出库存汇总
         </Button>
       </div>
 
@@ -259,7 +259,7 @@ export function InventoryStatisticsCards({
           ({ id, title, icon: Icon, value, description, color, bgColor }) => (
             <div
               key={id}
-              className="group relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md"
+              className="relative overflow-hidden rounded-lg border border-slate-100 bg-white p-5 shadow-sm"
             >
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
@@ -271,7 +271,7 @@ export function InventoryStatisticsCards({
                   </div>
                 </div>
                 <div
-                  className={`flex h-12 w-12 items-center justify-center rounded-xl ${bgColor} transition-transform group-hover:scale-110`}
+                  className={`flex h-10 w-10 items-center justify-center rounded-lg ${bgColor}`}
                 >
                   <Icon className={`h-6 w-6 ${color}`} />
                 </div>

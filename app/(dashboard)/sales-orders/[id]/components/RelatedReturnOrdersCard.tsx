@@ -46,7 +46,7 @@ export function RelatedReturnOrdersCard({
   };
 
   return (
-    <Card className="overflow-hidden rounded-2xl border-slate-100 shadow-sm ring-1 ring-slate-100/50">
+    <Card className="overflow-hidden rounded-md border border-border shadow-sm">
       <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4">
         <CardTitle className="flex items-center text-sm font-semibold text-slate-900">
           <Receipt className="mr-2.5 h-4 w-4 text-rose-500" />
@@ -56,7 +56,7 @@ export function RelatedReturnOrdersCard({
       <CardContent className="bg-white p-0">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="border-b border-slate-100 bg-slate-50/80 text-table-header backdrop-blur-md">
+            <thead className="border-b border-slate-100 bg-slate-50 text-table-header">
               <tr>
                 <th className="h-11 px-4 py-3 text-left align-middle font-semibold leading-none">
                   退货单号
@@ -89,7 +89,7 @@ export function RelatedReturnOrdersCard({
                     <td className="px-4 py-3.5">
                       <Badge
                         variant={displayStatus.variant}
-                        className="rounded-lg px-2 py-0.5 font-bold tracking-tighter"
+                        className="rounded-md px-2 py-0.5 font-bold"
                       >
                         {displayStatus.label}
                       </Badge>
@@ -101,7 +101,7 @@ export function RelatedReturnOrdersCard({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 rounded-lg font-semibold text-blue-600 hover:bg-blue-50"
+                        className="h-8 rounded-md font-semibold text-blue-600 hover:bg-blue-50"
                         onClick={() =>
                           router.push(`/return-orders/${returnOrder.id}`)
                         }
