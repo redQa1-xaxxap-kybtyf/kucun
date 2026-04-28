@@ -49,22 +49,28 @@ const TableHeaderComponent = React.memo<{ hasFinancePermission: boolean }>(
   ({ hasFinancePermission }) => (
     <TableHeader className="sticky top-0 z-20 bg-[hsl(var(--color-bg-card))] shadow-sm">
       <TableRow>
-        <TableHead className="w-12 whitespace-nowrap">预览图</TableHead>
+        <TableHead className="hidden w-12 whitespace-nowrap 2xl:table-cell">
+          预览图
+        </TableHead>
         <TableHead className="whitespace-nowrap">产品编码</TableHead>
         <TableHead className="whitespace-nowrap">产品名称</TableHead>
         <TableHead className="whitespace-nowrap">规格</TableHead>
-        <TableHead className="whitespace-nowrap">包装信息</TableHead>
+        <TableHead className="hidden whitespace-nowrap 2xl:table-cell">
+          包装信息
+        </TableHead>
         <TableHead className="whitespace-nowrap">批次号</TableHead>
         <TableHead className="text-right whitespace-nowrap">库存总量</TableHead>
         <TableHead className="text-right whitespace-nowrap">预留</TableHead>
         <TableHead className="text-right whitespace-nowrap">可用</TableHead>
         {hasFinancePermission && (
-          <TableHead className="text-right whitespace-nowrap">
+          <TableHead className="hidden text-right whitespace-nowrap 2xl:table-cell">
             单位成本/货值评估
           </TableHead>
         )}
         <TableHead className="whitespace-nowrap">健康度</TableHead>
-        <TableHead className="whitespace-nowrap">最后更新</TableHead>
+        <TableHead className="hidden whitespace-nowrap 2xl:table-cell">
+          最后更新
+        </TableHead>
         <TableHead className="w-20 text-right whitespace-nowrap">
           操作
         </TableHead>
@@ -90,7 +96,7 @@ const InventoryEmptyState = React.memo<{
     return (
       <div className="bg-card rounded border">
         <Table
-          className={`${hasFinancePermission ? 'min-w-[1320px]' : 'min-w-[1160px]'} [&_th]:whitespace-nowrap`}
+          className={`${hasFinancePermission ? 'min-w-[980px] 2xl:min-w-[1320px]' : 'min-w-[900px] 2xl:min-w-[1160px]'} [&_th]:whitespace-nowrap`}
         >
           <TableHeaderComponent hasFinancePermission={hasFinancePermission} />
           <TableBody>
@@ -205,7 +211,7 @@ export const VirtualizedInventoryTable =
               }}
             >
               <Table
-                className={`${hasFinancePermission ? 'min-w-[1320px]' : 'min-w-[1160px]'} [&_th]:whitespace-nowrap ${
+                className={`${hasFinancePermission ? 'min-w-[980px] 2xl:min-w-[1320px]' : 'min-w-[900px] 2xl:min-w-[1160px]'} [&_th]:whitespace-nowrap ${
                   density === 'compact'
                     ? '[&_td]:!px-2 [&_td]:!py-2 [&_th]:!px-2 [&_th]:!py-2'
                     : ''

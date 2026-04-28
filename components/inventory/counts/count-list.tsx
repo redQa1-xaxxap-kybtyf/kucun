@@ -228,7 +228,7 @@ export function CountList({ filters }: CountListProps) {
   return (
     <>
       {/* 桌面端表格视图 */}
-      <div className="hidden overflow-x-auto rounded-md border xl:block">
+      <div className="hidden overflow-x-auto rounded-md border lg:block">
         <Table className="min-w-[960px] [&_th]:whitespace-nowrap">
           <TableHeader>
             <TableRow>
@@ -312,7 +312,7 @@ export function CountList({ filters }: CountListProps) {
       </div>
 
       {/* 移动端卡片视图 */}
-      <div className="space-y-3 xl:hidden">
+      <div className="space-y-3 lg:hidden">
         {counts.map((count: CountListItem) => (
           <div
             key={count.id}
@@ -338,7 +338,10 @@ export function CountList({ filters }: CountListProps) {
               <span>类型：{COUNT_TYPE_LABELS[count.countType]}</span>
               <span>计划：{formatDate(count.planDate)}</span>
               <span>库位/区域：{count.location || '全部库存'}</span>
-              <span>盘点进度：{formatProgress(count.completedItems, count.totalItems)}</span>
+              <span>
+                盘点进度：
+                {formatProgress(count.completedItems, count.totalItems)}
+              </span>
             </div>
             <div className="mt-3 flex justify-end gap-2">
               <Button variant="ghost" size="sm" asChild>

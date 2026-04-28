@@ -204,7 +204,7 @@ function InventoryRowView({
       onDoubleClick={onAdjust}
     >
       {/* 产品缩略图 */}
-      <TableCell className="w-12">
+      <TableCell className="hidden w-12 2xl:table-cell">
         {item.product?.thumbnailUrl ? (
           <div className="relative h-10 w-10 overflow-hidden rounded border border-[hsl(var(--color-border-secondary))] bg-white">
             <Image
@@ -224,13 +224,13 @@ function InventoryRowView({
       <TableCell className="font-medium whitespace-nowrap text-[hsl(var(--color-primary))]">
         {item.product?.code ? <CopyableText text={item.product.code} /> : '-'}
       </TableCell>
-      <TableCell className="max-w-[260px] truncate font-medium">
+      <TableCell className="max-w-[180px] truncate font-medium 2xl:max-w-[260px]">
         {item.product?.name || '-'}
       </TableCell>
       <TableCell className="whitespace-nowrap">
         {formattedSpecification}
       </TableCell>
-      <TableCell className="font-medium whitespace-nowrap">
+      <TableCell className="hidden font-medium whitespace-nowrap 2xl:table-cell">
         <div className="flex flex-col gap-0.5">
           {packaging > 0 ? (
             <>
@@ -264,7 +264,7 @@ function InventoryRowView({
       </TableCell>
       {/* 成本信息（仅财务权限可见）- 合并显示 */}
       {hasFinancePermission && (
-        <TableCell className="text-right whitespace-nowrap tabular-nums">
+        <TableCell className="hidden text-right whitespace-nowrap tabular-nums 2xl:table-cell">
           {item.unitCost !== null && item.unitCost !== undefined ? (
             <div className="space-y-0.5">
               <div className="text-xs text-[hsl(var(--color-text-secondary))]">
@@ -280,7 +280,7 @@ function InventoryRowView({
         </TableCell>
       )}
       <TableCell className="whitespace-nowrap">{stockBadge}</TableCell>
-      <TableCell className="text-xs whitespace-nowrap">
+      <TableCell className="hidden text-xs whitespace-nowrap 2xl:table-cell">
         <RelativeTime date={item.updatedAt} />
       </TableCell>
       <TableCell className="whitespace-nowrap">

@@ -127,25 +127,22 @@ export function AdjustmentRecordsTable({
   return (
     <div className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm">
       {/* 桌面端表格视图 */}
-      <div className="hidden overflow-x-auto xl:block">
-        <Table className="min-w-[1080px] [&_th]:whitespace-nowrap">
+      <div className="hidden overflow-x-auto lg:block">
+        <Table className="min-w-[980px] table-fixed [&_th]:whitespace-nowrap">
           <TableHeader className="shadow-sm">
             <TableRow>
-              <TableHead>产品编码</TableHead>
-              <TableHead>产品名称</TableHead>
-              <TableHead>规格</TableHead>
-              <TableHead>批次号</TableHead>
-              <TableHead>包装信息</TableHead>
-              <TableHead className="text-right">调整数量</TableHead>
-              <TableHead>调整原因</TableHead>
-              <TableHead>操作时间/人员</TableHead>
-              <TableHead>操作</TableHead>
+              <TableHead className="w-[260px]">产品</TableHead>
+              <TableHead className="w-[180px]">批次/包装</TableHead>
+              <TableHead className="w-[220px] text-right">数量变化</TableHead>
+              <TableHead className="w-[120px]">原因</TableHead>
+              <TableHead className="w-[170px]">操作时间/人员</TableHead>
+              <TableHead className="w-[70px] text-right">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {adjustments.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="h-24 text-center">
+                <TableCell colSpan={6} className="h-24 text-center">
                   <div className="text-muted-foreground flex flex-col items-center gap-2">
                     <Package className="h-8 w-8" />
                     <span className="text-sm">暂无调整记录</span>
@@ -158,23 +155,29 @@ export function AdjustmentRecordsTable({
                   key={adjustment.id}
                   className="h-10 border-b border-[hsl(var(--color-border-primary))] transition-colors hover:bg-[hsl(var(--color-primary-light))]"
                 >
-                  <TableCell className="text-xs font-medium whitespace-nowrap text-[hsl(var(--color-text-primary))]">
-                    {adjustment.product?.code || '-'}
+                  <TableCell className="text-xs text-[hsl(var(--color-text-primary))]">
+                    <div className="truncate font-medium">
+                      {adjustment.product?.code || '-'}
+                    </div>
+                    <div className="mt-1 truncate">
+                      {adjustment.product?.name || '未知产品'}
+                    </div>
+                    <div className="mt-1 truncate text-[hsl(var(--color-text-secondary))]">
+                      规格：
+                      {formatSpecification(adjustment.product?.specification) ||
+                        '-'}
+                    </div>
                   </TableCell>
-                  <TableCell className="min-w-[180px] text-xs text-[hsl(var(--color-text-primary))]">
-                    {adjustment.product?.name || '未知产品'}
-                  </TableCell>
-                  <TableCell className="text-xs whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
-                    {formatSpecification(adjustment.product?.specification) ||
-                      '-'}
-                  </TableCell>
-                  <TableCell className="text-xs whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
-                    {adjustment.batchNumber || '-'}
-                  </TableCell>
-                  <TableCell className="text-center text-xs whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
-                    {getPiecesPerUnit(adjustment) > 0
-                      ? `${getPiecesPerUnit(adjustment)}片/件`
-                      : '-'}
+                  <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
+                    <div className="truncate">
+                      {adjustment.batchNumber || '-'}
+                    </div>
+                    <div className="mt-1 whitespace-nowrap">
+                      包装：
+                      {getPiecesPerUnit(adjustment) > 0
+                        ? `${getPiecesPerUnit(adjustment)}片/件`
+                        : '-'}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right text-xs whitespace-nowrap text-[hsl(var(--color-text-primary))]">
                     <div className="flex flex-col items-end gap-0.5">
@@ -211,7 +214,7 @@ export function AdjustmentRecordsTable({
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="text-xs whitespace-nowrap">
+                  <TableCell className="text-right text-xs whitespace-nowrap">
                     {onViewDetail && (
                       <Button
                         variant="ghost"
@@ -231,7 +234,7 @@ export function AdjustmentRecordsTable({
       </div>
 
       {/* 移动端卡片视图 */}
-      <div className="space-y-3 p-3 xl:hidden">
+      <div className="space-y-3 p-3 lg:hidden">
         {adjustments.length === 0 ? (
           <div className="text-muted-foreground flex flex-col items-center gap-2 py-6 text-sm">
             <Package className="h-8 w-8" />

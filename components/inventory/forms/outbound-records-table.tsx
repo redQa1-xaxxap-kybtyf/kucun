@@ -108,34 +108,18 @@ export function OutboundRecordsTable({
       </div>
 
       {/* 桌面端表格视图 */}
-      <div className="hidden overflow-x-auto xl:block">
-        <Table className="min-w-[1120px] [&_th]:whitespace-nowrap">
+      <div className="hidden overflow-x-auto lg:block">
+        <Table className="min-w-[1080px] table-fixed [&_th]:whitespace-nowrap">
           <TableHeader className="shadow-sm">
             <TableRow className="border-b border-slate-200 hover:bg-transparent">
-              <TableHead>
-                单据编号
-              </TableHead>
-              <TableHead>
-                产品编码
-              </TableHead>
-              <TableHead>
-                产品名称
-              </TableHead>
-              <TableHead>
-                批次/规格
-              </TableHead>
-              <TableHead>
-                装箱数
-              </TableHead>
-              <TableHead className="text-right">
-                出库总量
-              </TableHead>
-              <TableHead>
-                业务类型
-              </TableHead>
-              <TableHead>
-                经办时间
-              </TableHead>
+              <TableHead>单据编号</TableHead>
+              <TableHead>产品编码</TableHead>
+              <TableHead>产品名称</TableHead>
+              <TableHead>批次/规格</TableHead>
+              <TableHead>装箱数</TableHead>
+              <TableHead className="text-right">出库总量</TableHead>
+              <TableHead>业务类型</TableHead>
+              <TableHead>经办时间</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -247,7 +231,7 @@ export function OutboundRecordsTable({
       </div>
 
       {/* 移动端卡片视图 */}
-      <div className="space-y-3 p-3 xl:hidden">
+      <div className="space-y-3 p-3 lg:hidden">
         {records.length === 0 ? (
           <EmptyState
             title="暂无出库记录"

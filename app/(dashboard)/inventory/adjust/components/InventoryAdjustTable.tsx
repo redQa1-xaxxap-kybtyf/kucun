@@ -95,7 +95,7 @@ export function InventoryAdjustTable({
   return (
     <>
       {/* 桌面端表格视图 */}
-      <div className="hidden overflow-x-auto xl:block">
+      <div className="hidden overflow-x-auto lg:block">
         <Table className="min-w-[960px] [&_th]:whitespace-nowrap">
           <TableHeader>
             <TableRow>
@@ -174,7 +174,7 @@ export function InventoryAdjustTable({
       </div>
 
       {/* 移动端卡片视图 */}
-      <div className="space-y-3 xl:hidden">
+      <div className="space-y-3 lg:hidden">
         {inventoryRecords.map(record => (
           <div
             key={record.id}
@@ -223,9 +223,9 @@ export function InventoryAdjustTable({
                   <span>批次号：{record.batchNumber || '无批次'}</span>
                   <span>
                     包装：
-                    {(
-                      record.batchPiecesPerUnit ?? record.product?.piecesPerUnit ?? 0
-                    ) > 0
+                    {(record.batchPiecesPerUnit ??
+                      record.product?.piecesPerUnit ??
+                      0) > 0
                       ? `${
                           record.batchPiecesPerUnit ??
                           record.product?.piecesPerUnit ??

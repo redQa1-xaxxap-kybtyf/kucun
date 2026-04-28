@@ -132,7 +132,9 @@ export function ManualDamageLedgerPageClient({
           damageCategory:
             patch.damageCategory ?? current[id]?.damageCategory ?? 'damage',
           damageHandling:
-            patch.damageHandling ?? current[id]?.damageHandling ?? 'internal_loss',
+            patch.damageHandling ??
+            current[id]?.damageHandling ??
+            'internal_loss',
         },
       }));
     },
@@ -164,9 +166,10 @@ export function ManualDamageLedgerPageClient({
           }
         );
 
-        const result = (await response.json().catch(() => null)) as
-          | { success?: boolean; error?: string }
-          | null;
+        const result = (await response.json().catch(() => null)) as {
+          success?: boolean;
+          error?: string;
+        } | null;
 
         if (!response.ok || !result?.success) {
           throw new Error(result?.error || '保存手工报损台账失败');
@@ -191,7 +194,7 @@ export function ManualDamageLedgerPageClient({
   );
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-auto p-4 sm:p-6">
+    <div className="flex h-full flex-col gap-4 overflow-auto p-4 xl:p-6">
       <PageHeader
         title="手工报损台账"
         description="仓内破损、报废、丢失在扣减库存后，会自动登记到这里。后续是内部承担还是找工厂赔付，都在这里跟进。"
@@ -214,7 +217,10 @@ export function ManualDamageLedgerPageClient({
       />
 
       <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-7">
-        <SummaryCard title="报损笔数" value={`${initialSummary.totalCount} 笔`} />
+        <SummaryCard
+          title="报损笔数"
+          value={`${initialSummary.totalCount} 笔`}
+        />
         <SummaryCard
           title="待补充处理"
           value={`${initialSummary.pendingReviewCount} 笔`}
@@ -244,220 +250,421 @@ export function ManualDamageLedgerPageClient({
 
       <ManualDamageFiltersCard initialParams={initialParams} />
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="min-w-[140px]">台账号</TableHead>
-            <TableHead className="min-w-[120px]">关联调整单</TableHead>
-            <TableHead className="min-w-[220px]">产品 / 供应商</TableHead>
-            <TableHead className="min-w-[140px]">批次 / 报损数量</TableHead>
-            <TableHead className="min-w-[130px]">报损类型</TableHead>
-            <TableHead className="min-w-[150px]">处理方式</TableHead>
-            <TableHead className="min-w-[160px]">当前状态</TableHead>
-            <TableHead className="min-w-[120px]">参考金额</TableHead>
-            <TableHead className="min-w-[220px]">跟进备注</TableHead>
-            <TableHead className="min-w-[180px]">最近处理</TableHead>
-            <TableHead className="min-w-[120px] text-right">操作</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {initialData.length === 0 ? (
+      <div className="hidden lg:block">
+        <Table className="min-w-[1080px] table-fixed">
+          <TableHeader>
             <TableRow>
-              <TableCell
-                colSpan={11}
-                className="py-10 text-center text-sm text-[hsl(var(--color-text-secondary))]"
-              >
-                目前没有符合条件的手工报损记录。
-              </TableCell>
+              <TableHead className="w-[220px]">台账/单据</TableHead>
+              <TableHead className="w-[260px]">产品/报损</TableHead>
+              <TableHead className="w-[230px]">类型/处理方式</TableHead>
+              <TableHead className="w-[250px]">状态/备注</TableHead>
+              <TableHead className="w-[120px] text-right">
+                最近处理/操作
+              </TableHead>
             </TableRow>
-          ) : (
-            initialData.map(ledger => {
-              const draft = drafts[ledger.id] ?? {
-                remarks: ledger.remarks ?? '',
-                status: ledger.status,
-                damageCategory: ledger.damageCategory,
-                damageHandling: ledger.damageHandling,
-              };
-              const piecesPerUnit =
-                ledger.batchPiecesPerUnit ?? ledger.product?.piecesPerUnit ?? 0;
-              const selectableStatuses = [
-                ledger.status,
-                ...MANUAL_DAMAGE_LEDGER_ALLOWED_TRANSITIONS[ledger.status],
-              ];
-              const visibleStatusOptions =
-                draft.damageHandling === 'pending_confirm'
-                  ? MANUAL_DAMAGE_LEDGER_STATUS_OPTIONS.filter(
-                      option => option.value === 'pending_review'
-                    )
-                  : MANUAL_DAMAGE_LEDGER_STATUS_OPTIONS.filter(option =>
-                      selectableStatuses.includes(option.value)
-                    );
+          </TableHeader>
+          <TableBody>
+            {initialData.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={5}
+                  className="py-10 text-center text-sm text-[hsl(var(--color-text-secondary))]"
+                >
+                  目前没有符合条件的手工报损记录。
+                </TableCell>
+              </TableRow>
+            ) : (
+              initialData.map(ledger => {
+                const draft = drafts[ledger.id] ?? {
+                  remarks: ledger.remarks ?? '',
+                  status: ledger.status,
+                  damageCategory: ledger.damageCategory,
+                  damageHandling: ledger.damageHandling,
+                };
+                const piecesPerUnit =
+                  ledger.batchPiecesPerUnit ??
+                  ledger.product?.piecesPerUnit ??
+                  0;
+                const selectableStatuses = [
+                  ledger.status,
+                  ...MANUAL_DAMAGE_LEDGER_ALLOWED_TRANSITIONS[ledger.status],
+                ];
+                const visibleStatusOptions =
+                  draft.damageHandling === 'pending_confirm'
+                    ? MANUAL_DAMAGE_LEDGER_STATUS_OPTIONS.filter(
+                        option => option.value === 'pending_review'
+                      )
+                    : MANUAL_DAMAGE_LEDGER_STATUS_OPTIONS.filter(option =>
+                        selectableStatuses.includes(option.value)
+                      );
 
-              return (
-                <TableRow key={ledger.id}>
-                  <TableCell>
-                    <div className="font-medium text-[hsl(var(--color-text-primary))]">
-                      {ledger.ledgerNumber}
-                    </div>
-                    <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
-                      登记于 {formatDateTime(ledger.createdAt)}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {ledger.adjustment ? (
-                      <Link
-                        href={`/inventory/adjustments/${encodeURIComponent(
-                          ledger.adjustment.adjustmentNumber
-                        )}`}
-                        className="text-sm font-medium text-[hsl(var(--color-primary))] hover:underline"
-                      >
-                        {ledger.adjustment.adjustmentNumber}
-                      </Link>
-                    ) : (
-                      '—'
-                    )}
-                    {ledger.adjustment?.notes ? (
-                      <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
-                        {ledger.adjustment.notes}
+                return (
+                  <TableRow key={ledger.id}>
+                    <TableCell>
+                      <div className="font-medium text-[hsl(var(--color-text-primary))]">
+                        {ledger.ledgerNumber}
                       </div>
-                    ) : null}
-                  </TableCell>
-                  <TableCell>
-                    <div className="font-medium text-[hsl(var(--color-text-primary))]">
-                      {ledger.product?.code || '—'}
-                    </div>
-                    <div className="mt-1 text-sm text-[hsl(var(--color-text-secondary))]">
-                      {ledger.product?.name || '未找到产品'}
-                    </div>
-                    <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
-                      供应商：{ledger.supplier?.name || '未自动匹配'}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div>{ledger.batchNumber || '未填写批次'}</div>
-                    <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
-                      {formatPieceSummary(ledger.damagedQuantity, piecesPerUnit, {
-                        fallbackUnit: '片',
-                      })}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Select
-                      value={draft.damageCategory}
-                      onValueChange={value =>
-                        handleDraftChange(ledger.id, {
-                          damageCategory: value as ManualDamageCategory,
-                        })
-                      }
-                    >
-                      <SelectTrigger className="h-9">
-                        <SelectValue placeholder="选择类型" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {MANUAL_DAMAGE_CATEGORY_OPTIONS.map(option => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <div className="mt-2">
-                      <Badge variant="outline">
-                        {MANUAL_DAMAGE_CATEGORY_LABELS[ledger.damageCategory]}
-                      </Badge>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Select
-                      value={draft.damageHandling}
-                      onValueChange={value =>
-                        handleDraftChange(ledger.id, {
-                          damageHandling: value as ManualDamageHandling,
-                          status:
-                            value === 'pending_confirm'
-                              ? 'pending_review'
-                              : draft.status,
-                        })
-                      }
-                    >
-                      <SelectTrigger className="h-9">
-                        <SelectValue placeholder="选择方式" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {MANUAL_DAMAGE_HANDLING_OPTIONS.map(option => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <div className="mt-2">
-                      <Badge variant="outline">
-                        {MANUAL_DAMAGE_HANDLING_LABELS[ledger.damageHandling]}
-                      </Badge>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusBadgeVariant(ledger.status)}>
-                      {MANUAL_DAMAGE_LEDGER_STATUS_LABELS[ledger.status]}
-                    </Badge>
-                    <div className="mt-2">
+                      <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
+                        登记于 {formatDateTime(ledger.createdAt)}
+                      </div>
+                      {ledger.adjustment ? (
+                        <Link
+                          href={`/inventory/adjustments/${encodeURIComponent(
+                            ledger.adjustment.adjustmentNumber
+                          )}`}
+                          className="text-sm font-medium text-[hsl(var(--color-primary))] hover:underline"
+                        >
+                          {ledger.adjustment.adjustmentNumber}
+                        </Link>
+                      ) : (
+                        '—'
+                      )}
+                      {ledger.adjustment?.notes ? (
+                        <div className="mt-1 line-clamp-2 text-xs text-[hsl(var(--color-text-secondary))]">
+                          {ledger.adjustment.notes}
+                        </div>
+                      ) : null}
+                    </TableCell>
+                    <TableCell>
+                      <div className="truncate font-medium text-[hsl(var(--color-text-primary))]">
+                        {ledger.product?.code || '—'}
+                      </div>
+                      <div className="mt-1 truncate text-sm text-[hsl(var(--color-text-secondary))]">
+                        {ledger.product?.name || '未找到产品'}
+                      </div>
+                      <div className="mt-1 truncate text-xs text-[hsl(var(--color-text-secondary))]">
+                        供应商：{ledger.supplier?.name || '未自动匹配'}
+                      </div>
+                      <div className="mt-2 text-xs text-[hsl(var(--color-text-secondary))]">
+                        批次：{ledger.batchNumber || '未填写批次'}
+                      </div>
+                      <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
+                        报损：
+                        {formatPieceSummary(
+                          ledger.damagedQuantity,
+                          piecesPerUnit,
+                          {
+                            fallbackUnit: '片',
+                          }
+                        )}
+                      </div>
+                      <div className="mt-1 text-xs font-medium text-[hsl(var(--color-text-primary))]">
+                        参考金额：{ledger.referenceAmount?.toFixed(2) ?? '—'}
+                      </div>
+                    </TableCell>
+                    <TableCell>
                       <Select
-                        value={draft.status}
+                        value={draft.damageCategory}
                         onValueChange={value =>
                           handleDraftChange(ledger.id, {
-                            status: value as ManualDamageLedgerStatus,
+                            damageCategory: value as ManualDamageCategory,
                           })
                         }
                       >
                         <SelectTrigger className="h-9">
-                          <SelectValue placeholder="选择状态" />
+                          <SelectValue placeholder="选择类型" />
                         </SelectTrigger>
                         <SelectContent>
-                          {visibleStatusOptions.map(option => (
+                          {MANUAL_DAMAGE_CATEGORY_OPTIONS.map(option => (
                             <SelectItem key={option.value} value={option.value}>
                               {option.label}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
+                      <div className="mt-2">
+                        <Badge variant="outline">
+                          {MANUAL_DAMAGE_CATEGORY_LABELS[ledger.damageCategory]}
+                        </Badge>
+                      </div>
+                      <div className="mt-2">
+                        <Select
+                          value={draft.damageHandling}
+                          onValueChange={value =>
+                            handleDraftChange(ledger.id, {
+                              damageHandling: value as ManualDamageHandling,
+                              status:
+                                value === 'pending_confirm'
+                                  ? 'pending_review'
+                                  : draft.status,
+                            })
+                          }
+                        >
+                          <SelectTrigger className="h-9">
+                            <SelectValue placeholder="选择方式" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {MANUAL_DAMAGE_HANDLING_OPTIONS.map(option => (
+                              <SelectItem
+                                key={option.value}
+                                value={option.value}
+                              >
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="mt-2">
+                        <Badge variant="outline">
+                          {MANUAL_DAMAGE_HANDLING_LABELS[ledger.damageHandling]}
+                        </Badge>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getStatusBadgeVariant(ledger.status)}>
+                        {MANUAL_DAMAGE_LEDGER_STATUS_LABELS[ledger.status]}
+                      </Badge>
+                      <div className="mt-2">
+                        <Select
+                          value={draft.status}
+                          onValueChange={value =>
+                            handleDraftChange(ledger.id, {
+                              status: value as ManualDamageLedgerStatus,
+                            })
+                          }
+                        >
+                          <SelectTrigger className="h-9">
+                            <SelectValue placeholder="选择状态" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {visibleStatusOptions.map(option => (
+                              <SelectItem
+                                key={option.value}
+                                value={option.value}
+                              >
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Input
+                        value={draft.remarks}
+                        className="mt-2"
+                        placeholder="例如：已通知工厂，等待确认赔付"
+                        onChange={event =>
+                          handleDraftChange(ledger.id, {
+                            remarks: event.target.value,
+                          })
+                        }
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                        {ledger.lastHandledBy?.name ||
+                          ledger.createdBy?.name ||
+                          '—'}
+                      </div>
+                      <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
+                        {formatDateTime(
+                          ledger.resolvedAt ||
+                            ledger.claimedAt ||
+                            ledger.updatedAt
+                        )}
+                      </div>
+                      <Button
+                        size="sm"
+                        className="mt-2"
+                        onClick={() => void handleSave(ledger)}
+                        disabled={savingId === ledger.id}
+                      >
+                        {savingId === ledger.id ? '保存中...' : '保存'}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="space-y-3 lg:hidden">
+        {initialData.length === 0 ? (
+          <div className="rounded-md border border-[hsl(var(--color-border-primary))] bg-white p-6 text-center text-sm text-[hsl(var(--color-text-secondary))]">
+            目前没有符合条件的手工报损记录。
+          </div>
+        ) : (
+          initialData.map(ledger => {
+            const draft = drafts[ledger.id] ?? {
+              remarks: ledger.remarks ?? '',
+              status: ledger.status,
+              damageCategory: ledger.damageCategory,
+              damageHandling: ledger.damageHandling,
+            };
+            const piecesPerUnit =
+              ledger.batchPiecesPerUnit ?? ledger.product?.piecesPerUnit ?? 0;
+            const selectableStatuses = [
+              ledger.status,
+              ...MANUAL_DAMAGE_LEDGER_ALLOWED_TRANSITIONS[ledger.status],
+            ];
+            const visibleStatusOptions =
+              draft.damageHandling === 'pending_confirm'
+                ? MANUAL_DAMAGE_LEDGER_STATUS_OPTIONS.filter(
+                    option => option.value === 'pending_review'
+                  )
+                : MANUAL_DAMAGE_LEDGER_STATUS_OPTIONS.filter(option =>
+                    selectableStatuses.includes(option.value)
+                  );
+
+            return (
+              <div
+                key={ledger.id}
+                className="rounded-md border border-[hsl(var(--color-border-primary))] bg-white p-3 shadow-sm"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-semibold text-[hsl(var(--color-text-primary))]">
+                      {ledger.ledgerNumber}
                     </div>
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {ledger.referenceAmount?.toFixed(2) ?? '—'}
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      value={draft.remarks}
-                      placeholder="例如：已通知工厂，等待确认赔付"
-                      onChange={event =>
-                        handleDraftChange(ledger.id, {
-                          remarks: event.target.value,
-                        })
-                      }
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <div>{ledger.lastHandledBy?.name || ledger.createdBy?.name || '—'}</div>
                     <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
-                      {formatDateTime(ledger.resolvedAt || ledger.claimedAt || ledger.updatedAt)}
+                      登记于 {formatDateTime(ledger.createdAt)}
                     </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      size="sm"
-                      onClick={() => void handleSave(ledger)}
-                      disabled={savingId === ledger.id}
+                  </div>
+                  <Badge variant={getStatusBadgeVariant(ledger.status)}>
+                    {MANUAL_DAMAGE_LEDGER_STATUS_LABELS[ledger.status]}
+                  </Badge>
+                </div>
+
+                <div className="mt-3 space-y-1 text-xs text-[hsl(var(--color-text-secondary))]">
+                  <div className="font-medium text-[hsl(var(--color-text-primary))]">
+                    {ledger.product?.code || '—'}
+                  </div>
+                  <div>{ledger.product?.name || '未找到产品'}</div>
+                  <div>供应商：{ledger.supplier?.name || '未自动匹配'}</div>
+                  <div>批次：{ledger.batchNumber || '未填写批次'}</div>
+                  <div>
+                    报损：
+                    {formatPieceSummary(ledger.damagedQuantity, piecesPerUnit, {
+                      fallbackUnit: '片',
+                    })}
+                  </div>
+                  <div>
+                    参考金额：{ledger.referenceAmount?.toFixed(2) ?? '—'}
+                  </div>
+                </div>
+
+                <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                  <Badge variant="outline">
+                    {MANUAL_DAMAGE_CATEGORY_LABELS[ledger.damageCategory]}
+                  </Badge>
+                  <Badge variant="outline">
+                    {MANUAL_DAMAGE_HANDLING_LABELS[ledger.damageHandling]}
+                  </Badge>
+                  {ledger.adjustment ? (
+                    <Link
+                      href={`/inventory/adjustments/${encodeURIComponent(
+                        ledger.adjustment.adjustmentNumber
+                      )}`}
+                      className="font-medium text-[hsl(var(--color-primary))] hover:underline"
                     >
-                      {savingId === ledger.id ? '保存中...' : '保存'}
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              );
-            })
-          )}
-        </TableBody>
-      </Table>
+                      调整单 {ledger.adjustment.adjustmentNumber}
+                    </Link>
+                  ) : null}
+                </div>
+
+                <div className="mt-3 grid gap-2">
+                  <Select
+                    value={draft.damageCategory}
+                    onValueChange={value =>
+                      handleDraftChange(ledger.id, {
+                        damageCategory: value as ManualDamageCategory,
+                      })
+                    }
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="选择类型" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MANUAL_DAMAGE_CATEGORY_OPTIONS.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={draft.damageHandling}
+                    onValueChange={value =>
+                      handleDraftChange(ledger.id, {
+                        damageHandling: value as ManualDamageHandling,
+                        status:
+                          value === 'pending_confirm'
+                            ? 'pending_review'
+                            : draft.status,
+                      })
+                    }
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="选择方式" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MANUAL_DAMAGE_HANDLING_OPTIONS.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={draft.status}
+                    onValueChange={value =>
+                      handleDraftChange(ledger.id, {
+                        status: value as ManualDamageLedgerStatus,
+                      })
+                    }
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="选择状态" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {visibleStatusOptions.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    value={draft.remarks}
+                    placeholder="例如：已通知工厂，等待确认赔付"
+                    onChange={event =>
+                      handleDraftChange(ledger.id, {
+                        remarks: event.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="mt-3 flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
+                  <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                    <div>
+                      {ledger.lastHandledBy?.name ||
+                        ledger.createdBy?.name ||
+                        '—'}
+                    </div>
+                    <div>
+                      {formatDateTime(
+                        ledger.resolvedAt ||
+                          ledger.claimedAt ||
+                          ledger.updatedAt
+                      )}
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => void handleSave(ledger)}
+                    disabled={savingId === ledger.id}
+                  >
+                    {savingId === ledger.id ? '保存中...' : '保存'}
+                  </Button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
     </div>
   );
 }
@@ -474,7 +681,9 @@ function SummaryCard({
   return (
     <Card className="border-[hsl(var(--color-border-primary))]">
       <CardContent className="p-4">
-        <div className="text-xs text-[hsl(var(--color-text-secondary))]">{title}</div>
+        <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+          {title}
+        </div>
         <div className="mt-2 text-xl font-semibold text-[hsl(var(--color-text-primary))]">
           {value}
         </div>

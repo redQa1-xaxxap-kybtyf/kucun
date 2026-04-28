@@ -115,7 +115,9 @@ const formatQuantity = (quantity: number, piecesPerUnit?: number | null) =>
 
 // 获取记录实际使用的每件片数（优先使用批次规格参数）
 const getActualPiecesPerUnit = (record: InboundRecordWithProduct) =>
-  record.batchSpecification?.piecesPerUnit ?? record.product?.piecesPerUnit ?? 0;
+  record.batchSpecification?.piecesPerUnit ??
+  record.product?.piecesPerUnit ??
+  0;
 
 // 获取记录的重量（优先使用批次规格参数）
 const getActualWeight = (record: InboundRecordWithProduct) => {
@@ -156,7 +158,7 @@ export function InboundRecordsTable({
     <div className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm">
       <TableHeading count={records.length} />
       {/* 桌面端表格视图 */}
-      <div className="hidden overflow-x-auto xl:block">
+      <div className="hidden overflow-x-auto lg:block">
         <RecordsTable
           records={records}
           canManageOpeningBalance={canManageOpeningBalance}
@@ -164,7 +166,7 @@ export function InboundRecordsTable({
       </div>
 
       {/* 移动端卡片视图 */}
-      <div className="space-y-3 p-3 xl:hidden">
+      <div className="space-y-3 p-3 lg:hidden">
         {records.length === 0 ? (
           <EmptyState
             title="暂无入库记录"
@@ -291,7 +293,7 @@ export function InboundRecordsTable({
 
                 {canManageOpeningBalance &&
                 record.reason === 'opening_balance' ? (
-                    <div className="mt-3 rounded-md border border-amber-100 bg-amber-50/70 p-3">
+                  <div className="mt-3 rounded-md border border-amber-100 bg-amber-50/70 p-3">
                     <div className="mb-2 text-[11px] font-bold text-amber-700">
                       期初纠错
                     </div>
@@ -360,40 +362,20 @@ function RecordsTable({
   const colSpan = canManageOpeningBalance ? 10 : 9;
 
   return (
-    <Table className="min-w-[1220px] [&_th]:whitespace-nowrap">
+    <Table className="min-w-[980px] table-fixed 2xl:min-w-[1220px] [&_th]:whitespace-nowrap">
       <TableHeader className="bg-slate-50">
         <TableRow className="border-b border-slate-200 hover:bg-transparent">
-          <TableHead>
-            单据编号
-          </TableHead>
-          <TableHead>
-            产品编码/名称
-          </TableHead>
-          <TableHead>
-            产品批次
-          </TableHead>
-          <TableHead>
-            规格型号
-          </TableHead>
-          <TableHead>
-            装箱数
-          </TableHead>
-          <TableHead className="text-right">
-            合格入库 / 到货
-          </TableHead>
-          <TableHead>
-            业务类型
-          </TableHead>
-          <TableHead>
-            记账时间
-          </TableHead>
-          <TableHead>
-            备注说明
-          </TableHead>
+          <TableHead>单据编号</TableHead>
+          <TableHead>产品编码/名称</TableHead>
+          <TableHead>产品批次</TableHead>
+          <TableHead className="hidden 2xl:table-cell">规格型号</TableHead>
+          <TableHead className="hidden 2xl:table-cell">装箱数</TableHead>
+          <TableHead className="text-right">合格入库 / 到货</TableHead>
+          <TableHead>业务类型</TableHead>
+          <TableHead>记账时间</TableHead>
+          <TableHead className="hidden 2xl:table-cell">备注说明</TableHead>
           {canManageOpeningBalance ? (
-            <TableHead>
-              期初纠错
-            </TableHead>
+            <TableHead className="hidden 2xl:table-cell">期初纠错</TableHead>
           ) : null}
         </TableRow>
       </TableHeader>
@@ -454,6 +436,14 @@ function InboundRecordRow({
               {record.openingImportBatchId}
             </div>
           ) : null}
+          {canManageOpeningBalance && record.reason === 'opening_balance' ? (
+            <div className="mt-2 space-y-2 rounded-md border border-amber-100 bg-amber-50/70 p-2 2xl:hidden">
+              <div className="text-[11px] font-bold text-amber-700">
+                期初纠错
+              </div>
+              <OpeningBalanceRecordActions record={record} compact />
+            </div>
+          ) : null}
         </div>
       </TableCell>
       <TableCell className="min-w-[180px]">
@@ -463,6 +453,9 @@ function InboundRecordRow({
           </span>
           <span className="mt-1 text-[11px] font-bold text-slate-400">
             {record.product?.name || '未知产品'}
+          </span>
+          <span className="mt-1 text-[11px] font-medium text-slate-500 2xl:hidden">
+            规格：{formatSpecification(record.product?.specification) || '-'}
           </span>
         </div>
       </TableCell>
@@ -477,8 +470,12 @@ function InboundRecordRow({
         ) : (
           <span className="text-slate-300">-</span>
         )}
+        <div className="mt-1 text-[10px] font-medium text-slate-400 2xl:hidden">
+          {piecesPerUnit > 0 ? `${piecesPerUnit}片/件` : '未记录装箱'} ·{' '}
+          {getActualWeight(record)}
+        </div>
       </TableCell>
-      <TableCell className="text-xs font-medium whitespace-nowrap text-slate-500">
+      <TableCell className="hidden text-xs font-medium whitespace-nowrap text-slate-500 2xl:table-cell">
         <div className="flex flex-col gap-1">
           <span>
             {formatSpecification(record.product?.specification) || '-'}
@@ -488,7 +485,7 @@ function InboundRecordRow({
           </span>
         </div>
       </TableCell>
-      <TableCell className="text-xs font-bold whitespace-nowrap text-slate-500">
+      <TableCell className="hidden text-xs font-bold whitespace-nowrap text-slate-500 2xl:table-cell">
         {piecesPerUnit > 0 ? (
           <div className="flex items-center gap-1.5">
             <span className="text-sm font-semibold text-slate-700">
@@ -528,10 +525,7 @@ function InboundRecordRow({
             {getOperationTypeLabel(record.reason)}
           </Badge>
           {showDamage ? (
-            <Badge
-              variant="destructive"
-              className="text-[10px] font-semibold"
-            >
+            <Badge variant="destructive" className="text-[10px] font-semibold">
               有破损
             </Badge>
           ) : null}
@@ -546,11 +540,11 @@ function InboundRecordRow({
           </div>
         </div>
       </TableCell>
-      <TableCell className="max-w-[150px] truncate text-xs text-slate-400 italic">
+      <TableCell className="hidden max-w-[150px] truncate text-xs text-slate-400 italic 2xl:table-cell">
         {record.remarks || '-'}
       </TableCell>
       {canManageOpeningBalance ? (
-        <TableCell className="min-w-[220px]">
+        <TableCell className="hidden min-w-[220px] 2xl:table-cell">
           {record.reason === 'opening_balance' ? (
             <div className="space-y-2">
               <div className="text-[11px] font-bold text-amber-700">
