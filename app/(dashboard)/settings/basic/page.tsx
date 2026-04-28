@@ -59,10 +59,7 @@ const BasicSettingsPage = () => {
   }
 
   return (
-    <SettingsLayout
-      title="基本设置"
-      description="统一设置系统名称、业务规则和提醒阈值，保存后会同步到相关页面。"
-    >
+    <SettingsLayout title="基本设置" description="系统资料和业务规则">
       <div className="w-full pb-20">
         <BasicSettingsForm />
       </div>

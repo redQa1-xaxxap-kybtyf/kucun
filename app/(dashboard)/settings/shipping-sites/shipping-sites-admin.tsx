@@ -336,7 +336,7 @@ export default function ShippingSitesAdmin({
     if (!status || !destination || !estimatedArrival) {
       toast({
         title: '请补全识别规则',
-        description: '请填写状态、目的地和预计到达的页面定位规则',
+        description: '请补全状态、目的地和预计到达',
         variant: 'destructive',
       });
       return;
@@ -390,7 +390,7 @@ export default function ShippingSitesAdmin({
               权限不足
             </CardTitle>
             <CardDescription className="text-amber-700">
-              只有管理员可以访问物流查询站点设置。
+              仅管理员可访问。
             </CardDescription>
           </CardHeader>
         </Card>
@@ -412,9 +412,7 @@ export default function ShippingSitesAdmin({
                 <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
                   运输查询站点管理
                 </h1>
-                <p className="mt-1 text-sm text-slate-500">
-                  统一维护物流查询网站和结果识别规则
-                </p>
+                <p className="mt-1 text-sm text-slate-500">物流查询站点</p>
               </div>
             </div>
             <div className="flex gap-4">
@@ -426,7 +424,7 @@ export default function ShippingSitesAdmin({
                 }
                 className="h-10 gap-2 rounded-md px-4 font-medium"
               >
-                识别规则设置
+                规则工具
               </Button>
               <Button
                 variant="outline"
@@ -445,15 +443,11 @@ export default function ShippingSitesAdmin({
         <div className="rounded-lg border bg-white p-5 shadow-sm">
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
-              <p className="text-xs font-medium text-slate-500">
-                站点维护
-              </p>
+              <p className="text-xs font-medium text-slate-500">站点维护</p>
               <h3 className="text-lg font-semibold tracking-tight text-slate-900">
                 合作站点列表
               </h3>
-              <p className="text-sm text-slate-500">
-                管理查询站点和结果识别规则，方便售后跟进物流状态。
-              </p>
+              <p className="text-sm text-slate-500">查询站点和识别规则</p>
             </div>
             <Button
               onClick={handleCreate}
@@ -482,7 +476,7 @@ export default function ShippingSitesAdmin({
                     </TableHead>
                   )}
                   <TableHead className="text-xs font-semibold text-slate-500">
-                    功能描述
+                    备注
                   </TableHead>
                   <TableHead className="text-xs font-semibold text-slate-500">
                     当前状态
@@ -539,7 +533,7 @@ export default function ShippingSitesAdmin({
                           onClick={() => handleEdit(site)}
                           className="h-9 rounded-md border-slate-100 bg-white font-semibold text-slate-600 shadow-sm hover:bg-slate-50"
                         >
-                          编辑配置
+                          编辑
                         </Button>
                         <Button
                           variant="destructive"
@@ -569,10 +563,10 @@ export default function ShippingSitesAdmin({
                   </div>
                   <div>
                     <DialogTitle className="text-xl font-semibold tracking-tight text-slate-900">
-                      {formMode === 'create' ? '新增站点配置' : '编辑站点配置'}
+                      {formMode === 'create' ? '新增站点' : '编辑站点'}
                     </DialogTitle>
                     <DialogDescription className="text-xs font-bold text-slate-500">
-                      填写站点信息和页面识别规则
+                      站点和识别规则
                     </DialogDescription>
                   </div>
                 </div>
@@ -645,7 +639,7 @@ export default function ShippingSitesAdmin({
                               description: e.target.value,
                             })
                           }
-                          placeholder="简要说明站点用途和特点..."
+                          placeholder="站点备注"
                           rows={2}
                           className="resize-none rounded-md border-slate-100 bg-white font-bold focus:bg-white"
                         />
@@ -658,7 +652,7 @@ export default function ShippingSitesAdmin({
                     <div className="mb-6 flex items-center gap-3 border-b border-slate-100 pb-4">
                       <div className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
                       <h4 className="text-sm font-semibold text-slate-900">
-                        核心页面定位规则
+                        页面定位
                       </h4>
                     </div>
 
@@ -748,14 +742,13 @@ export default function ShippingSitesAdmin({
                               {fieldConfig.label}
                             </h5>
                             <p className="text-xs font-bold text-slate-400">
-                              {fieldConfig.description}
+                              {fieldConfig.key}
                             </p>
                           </div>
 
                           <div className="w-1/2 space-y-2">
                             <Label className="text-[10px] font-semibold text-slate-400">
-                              识别规则{' '}
-                              <span className="text-rose-500">*</span>
+                              识别规则 <span className="text-rose-500">*</span>
                             </Label>
                             <Input
                               value={
@@ -790,7 +783,7 @@ export default function ShippingSitesAdmin({
                   disabled={saveSiteMutation.isPending}
                   className="h-12 rounded-md px-8 font-semibold text-slate-500 hover:bg-slate-200"
                 >
-                  取消配置
+                  取消
                 </Button>
                 <Button
                   onClick={handleSubmit}
@@ -799,10 +792,8 @@ export default function ShippingSitesAdmin({
                 >
                   {saveSiteMutation.isPending ? (
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  ) : (
-                    null
-                  )}
-                  保存站点配置
+                  ) : null}
+                  保存
                 </Button>
               </DialogFooter>
             </div>

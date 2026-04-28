@@ -682,9 +682,6 @@ export function StyleEditor({
               <TabsContent value="page" className="p-4">
                 <div className="space-y-4">
                   <h3 className="font-medium">页面设置</h3>
-                  <p className="text-muted-foreground text-sm">
-                    配置纸张大小、方向和边距
-                  </p>
                   <PageSettingsPanel
                     value={config.page}
                     onChange={updatePageSettings}
@@ -695,9 +692,6 @@ export function StyleEditor({
               <TabsContent value="header" className="p-4">
                 <div className="space-y-4">
                   <h3 className="font-medium">表头设置</h3>
-                  <p className="text-muted-foreground text-sm">
-                    配置公司Logo、名称和标题样式
-                  </p>
                   <HeaderSettingsPanel
                     value={config.header}
                     onChange={updateHeaderSettings}
@@ -708,9 +702,6 @@ export function StyleEditor({
               <TabsContent value="table" className="p-4">
                 <div className="space-y-4">
                   <h3 className="font-medium">表格设置</h3>
-                  <p className="text-muted-foreground text-sm">
-                    配置表格颜色、边框和字体
-                  </p>
                   <TableSettingsPanel
                     value={config.table}
                     onChange={updateTableSettings}
@@ -721,9 +712,6 @@ export function StyleEditor({
               <TabsContent value="other" className="p-4">
                 <div className="space-y-4">
                   <h3 className="font-medium">其他设置</h3>
-                  <p className="text-muted-foreground text-sm">
-                    配置签名区、页脚和汇总区样式
-                  </p>
                   <OtherSettingsPanel
                     summary={config.summary}
                     footer={config.footer}

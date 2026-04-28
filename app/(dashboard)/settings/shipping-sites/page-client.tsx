@@ -23,9 +23,7 @@ function NoAccess() {
     <div className="flex h-full flex-col overflow-hidden p-6">
       <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 shadow-sm">
         <h1 className="text-sm font-semibold text-amber-900">权限不足</h1>
-        <p className="mt-2 text-sm text-amber-800">
-          只有管理员可以访问运输站点管理功能。
-        </p>
+        <p className="mt-2 text-sm text-amber-800">仅管理员可访问。</p>
         <div className="mt-4">
           <Link
             href="/settings"

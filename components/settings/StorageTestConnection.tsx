@@ -70,17 +70,15 @@ export const StorageTestConnection = ({
             </div>
             <div className="space-y-0.5">
               <h4 className="text-base font-semibold text-rose-900">
-                配置验证未通过
+                连接检查未通过
               </h4>
-              <p className="text-xs font-bold text-rose-500">
-                检测未通过
-              </p>
+              <p className="text-xs font-bold text-rose-500">检测未通过</p>
             </div>
           </div>
 
           <div className="rounded-md border border-rose-100/50 bg-white p-5">
             <span className="mb-2 block text-xs font-semibold text-rose-500">
-              问题说明
+              问题
             </span>
             <p className="text-sm leading-relaxed font-bold text-slate-700">
               {errorMessage}
@@ -89,9 +87,7 @@ export const StorageTestConnection = ({
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <h5 className="text-xs font-semibold text-slate-900">
-                处理建议
-              </h5>
+              <h5 className="text-xs font-semibold text-slate-900">处理办法</h5>
               <ul className="space-y-1.5">
                 {[
                   '检查访问密钥是否包含多余空格',
@@ -184,10 +180,10 @@ export const StorageTestConnection = ({
             <Info className="mt-0.5 h-4 w-4 text-emerald-500" />
             <div className="space-y-1">
               <p className="text-[11px] font-semibold text-emerald-900">
-                配置启用说明
+                下一步
               </p>
               <p className="text-[11px] leading-relaxed font-medium text-emerald-600/80">
-                当前链路验证通过。点击上方的“更新存储密钥”即可完成全站文件存储服务的切换。
+                保存后生效。
               </p>
             </div>
           </div>

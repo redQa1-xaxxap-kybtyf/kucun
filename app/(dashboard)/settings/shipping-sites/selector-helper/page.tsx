@@ -397,9 +397,7 @@ export default function SelectorHelperPage() {
                 <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
                   识别规则设置
                 </h1>
-                <p className="mt-1 text-sm text-slate-500">
-                  根据物流网站页面内容生成结果识别规则
-                </p>
+                <p className="mt-1 text-sm text-slate-500">物流结果识别</p>
               </div>
             </div>
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-slate-900">
@@ -428,7 +426,7 @@ export default function SelectorHelperPage() {
             <div className="space-y-6">
               <div className="space-y-3">
                 <Label className="text-xs font-semibold text-slate-500">
-                  生成规则类型
+                  规则类型
                 </Label>
                 <div className="flex flex-wrap gap-2">
                   {[
@@ -465,9 +463,6 @@ export default function SelectorHelperPage() {
                   >
                     页面内容片段
                   </Label>
-                  <span className="text-[10px] font-bold text-slate-400">
-                    建议复制同时包含标题和查询结果的完整区域
-                  </span>
                 </div>
                 <div className="relative overflow-hidden rounded-md border border-slate-100 bg-slate-900/5 focus-within:ring-2 focus-within:ring-blue-500/20">
                   <Textarea
@@ -492,11 +487,11 @@ export default function SelectorHelperPage() {
                 {isAnalyzing ? (
                   <div className="flex items-center gap-2">
                     <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-                    <span>正在识别页面内容...</span>
+                    <span>识别中...</span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <span>开始识别页面内容</span>
+                    <span>开始识别</span>
                   </div>
                 )}
               </Button>
@@ -507,11 +502,11 @@ export default function SelectorHelperPage() {
           <div className="flex flex-col rounded-lg border bg-white p-5 shadow-sm">
             <div className="mb-6 flex items-center justify-between border-b border-slate-100 pb-4">
               <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-md bg-emerald-50 text-emerald-600">
+                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-emerald-50 text-emerald-600">
                   <Sparkles className="h-5 w-5" />
                 </div>
                 <h3 className="text-lg font-semibold tracking-tight text-slate-900">
-                  第二步：查看识别结果
+                  第二步：识别结果
                 </h3>
               </div>
               {detectedFields.length > 0 && (
@@ -523,7 +518,7 @@ export default function SelectorHelperPage() {
                     className="h-9 rounded-md border-slate-100 bg-white font-semibold text-slate-600 shadow-sm hover:bg-slate-50"
                   >
                     <Copy className="mr-2 h-4 w-4" />
-                    复制配置
+                    复制
                   </Button>
                   <Button
                     variant="outline"
@@ -546,9 +541,6 @@ export default function SelectorHelperPage() {
                   <h4 className="text-sm font-semibold text-slate-400">
                     暂无识别结果
                   </h4>
-                  <p className="mt-2 max-w-[200px] text-xs font-bold text-slate-400">
-                    请先在左侧粘贴页面内容并开始识别
-                  </p>
                 </div>
               ) : (
                 <div className="space-y-6">
@@ -659,7 +651,7 @@ export default function SelectorHelperPage() {
                               {/* 推荐理由 */}
                               <div className="mt-3 flex items-start gap-2">
                                 <div className="mt-0.5 text-xs font-semibold text-blue-500">
-                                  说明
+                                  原因
                                 </div>
                                 <p className="text-[11px] leading-relaxed font-bold text-slate-500">
                                   {option.reason}
@@ -673,116 +665,6 @@ export default function SelectorHelperPage() {
                   ))}
                 </div>
               )}
-            </div>
-          </div>
-        </div>
-
-        {/* 使用说明 */}
-        <div className="rounded-lg border bg-white p-5 shadow-sm">
-          <div className="mb-8 border-b border-slate-800 pb-6 text-center">
-            <h2 className="mb-2 text-xl font-semibold tracking-tight text-slate-900">
-              使用说明
-            </h2>
-            <p className="text-center text-sm text-slate-500">
-              管理员维护物流查询规则时使用
-            </p>
-          </div>
-
-          <div className="space-y-12">
-            {/* 步骤说明 */}
-            <div className="grid gap-6 md:grid-cols-3">
-              {[
-                {
-                  num: '01',
-                  title: '复制页面内容',
-                  desc: '在物流查询网页中复制包含状态、时间、位置等结果的完整区域。',
-                  color: 'bg-blue-500',
-                },
-                {
-                  num: '02',
-                  title: '识别结果字段',
-                  desc: '将内容粘贴到上方输入框，系统会尝试识别页面里各项信息的位置。',
-                  color: 'bg-indigo-500',
-                },
-                {
-                  num: '03',
-                  title: '一键应用配置',
-                  desc: '复制推荐规则，粘贴到站点的识别内容设置中即可生效。',
-                  color: 'bg-purple-500',
-                },
-              ].map(step => (
-                <div
-                  key={step.num}
-                  className="group relative rounded-md border border-slate-100 bg-white p-6 shadow-sm"
-                >
-                  <div
-                    className={cn(
-                      'mb-4 inline-flex items-center justify-center rounded-md px-3 py-1 text-xs font-semibold text-white shadow-sm',
-                      step.color
-                    )}
-                  >
-                    步骤 {step.num}
-                  </div>
-                  <h3 className="mb-2 text-sm font-semibold text-slate-900">
-                    {step.title}
-                  </h3>
-                  <p className="text-xs leading-relaxed text-slate-500">
-                    {step.desc}
-                  </p>
-                </div>
-              ))}
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-2">
-              {/* 选择器类型说明 */}
-              <div className="rounded-md border border-amber-500/20 bg-amber-500/5 p-6">
-                <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-amber-500">
-                  <div className="h-1.5 w-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
-                  规则选择建议
-                </h3>
-                <div className="space-y-4">
-                  <div className="space-y-1">
-                    <span className="text-[11px] font-semibold text-amber-600/80">
-                      推荐规则
-                    </span>
-                    <p className="text-xs leading-relaxed text-amber-700">
-                      适合大多数物流网页，页面有轻微变化时更稳定。
-                    </p>
-                  </div>
-                  <div className="space-y-1 border-t border-amber-500/10 pt-4">
-                    <span className="text-[11px] font-semibold text-emerald-600/80">
-                      备用规则
-                    </span>
-                    <p className="text-xs leading-relaxed text-emerald-700">
-                      适合页面结构稳定、字段位置固定的网页。
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* 实际案例 */}
-              <div className="rounded-md border border-blue-500/20 bg-blue-500/5 p-6">
-                <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-blue-500">
-                  <div className="h-1.5 w-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
-                  示例预览
-                </h3>
-                <div className="rounded-md border border-slate-700 bg-slate-800 p-4">
-                  <code className="block space-y-1 font-mono text-[10px]">
-                    <div className="text-slate-500 opacity-50">
-                      &lt;!-- 输入 --&gt;
-                    </div>
-                    <div className="text-slate-300">
-                      &lt;span title=&quot;状态&quot;&gt;航行中&lt;/span&gt;
-                    </div>
-                    <div className="mt-2 text-slate-500 opacity-50">
-                      &lt;!-- 结果 --&gt;
-                    </div>
-                    <div className="font-bold text-emerald-400">
-                      .//span[@title=&apos;状态&apos;]
-                    </div>
-                  </code>
-                </div>
-              </div>
             </div>
           </div>
         </div>

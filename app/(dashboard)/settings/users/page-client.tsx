@@ -421,10 +421,7 @@ export default function UsersSettingsPageClient({
     resetPasswordMutation.isPending;
 
   return (
-    <SettingsLayout
-      title="成员与权限"
-      description="管理成员账号、角色分配和启用状态，方便团队日常使用。"
-    >
+    <SettingsLayout title="成员与权限" description="成员账号和权限">
       <div className="flex-1 space-y-6 pb-20">
         {/* 用户管理主体卡片 */}
         <Card className="overflow-hidden border-slate-200/60 shadow-sm">

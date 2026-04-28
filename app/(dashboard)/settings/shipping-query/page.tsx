@@ -26,12 +26,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-	import { Input } from '@/components/ui/input';
-	import { Label } from '@/components/ui/label';
-	import {
-	  Table,
-	  TableBody,
-	  TableCell,
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Table,
+  TableBody,
+  TableCell,
   TableHead,
   TableHeader,
   TableRow,
@@ -178,7 +178,7 @@ export default function ShippingQueryPage() {
                     运输查询
                   </h1>
                   <p className="mt-1 text-sm font-medium text-slate-500">
-                    按配置站点查询物流状态
+                    物流状态查询
                   </p>
                 </div>
               </div>
@@ -198,44 +198,37 @@ export default function ShippingQueryPage() {
         {/* 查询表单 */}
         <Card className="overflow-hidden rounded-md border border-slate-200 shadow-sm">
           <CardContent className="space-y-6 p-6">
-            <div className="flex items-start gap-3 text-sm text-gray-600">
-              <Search className="h-4 w-4 text-purple-600" />
-              <span>选择站点并输入追踪单号（支持中文自动转换）</span>
-            </div>
             <div className="grid gap-8 lg:grid-cols-12">
-	              <div className="space-y-2 lg:col-span-5">
-	                <Label
-	                  htmlFor="site"
-	                  className="text-xs font-semibold text-slate-500"
-	                >
-	                  选择查询站点 *
-	                </Label>
-	                <select
-	                  id="site"
-	                  value={siteId}
-	                  onChange={e => setSiteId(e.target.value)}
-	                  className="ring-offset-background focus:ring-purple-500 h-12 w-full rounded-md border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm focus:ring-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
-	                >
-	                  <option value="" disabled>
-	                    选择目标物流站点
-	                  </option>
-	                  {sitesData?.data.map(site => (
-	                    <option key={site.id} value={site.id}>
-	                      {site.name}
-	                    </option>
-	                  ))}
-	                </select>
-	                <p className="text-[11px] font-bold text-slate-400">
-	                  ※ 系统将自动调用该站点的实时接口
-	                </p>
-	              </div>
+              <div className="space-y-2 lg:col-span-5">
+                <Label
+                  htmlFor="site"
+                  className="text-xs font-semibold text-slate-500"
+                >
+                  查询站点 *
+                </Label>
+                <select
+                  id="site"
+                  value={siteId}
+                  onChange={e => setSiteId(e.target.value)}
+                  className="ring-offset-background h-12 w-full rounded-md border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <option value="" disabled>
+                    选择目标物流站点
+                  </option>
+                  {sitesData?.data.map(site => (
+                    <option key={site.id} value={site.id}>
+                      {site.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
               <div className="space-y-2 lg:col-span-7">
                 <Label
                   htmlFor="keyword"
                   className="text-xs font-semibold text-slate-500"
                 >
-                  全球追踪单号 *
+                  追踪单号 *
                 </Label>
                 <div className="flex gap-3">
                   <Input
@@ -243,7 +236,7 @@ export default function ShippingQueryPage() {
                     value={keyword}
                     onChange={e => setKeyword(e.target.value)}
                     className="h-12 flex-1 border-slate-200 bg-slate-50/50 font-mono text-lg focus:ring-purple-500"
-                    placeholder="输入追踪单号（支持中文自动转码）"
+                    placeholder="输入追踪单号"
                     onKeyDown={e => {
                       if (e.key === 'Enter' && !queryMutation.isPending) {
                         handleQuery();
@@ -263,7 +256,7 @@ export default function ShippingQueryPage() {
                     ) : (
                       <>
                         <Search className="mr-2 h-5 w-5" />
-                        立即查询
+                        查询
                       </>
                     )}
                   </Button>
@@ -286,7 +279,7 @@ export default function ShippingQueryPage() {
                 <div className="relative z-10">
                   <div className="mb-8 flex items-center justify-between">
                     <h3 className="border-l-4 border-slate-900 pl-3 text-sm font-semibold text-slate-900">
-                      实时运输状态追踪
+                      运输状态
                     </h3>
                     <span
                       className={cn(
@@ -297,8 +290,8 @@ export default function ShippingQueryPage() {
                       )}
                     >
                       {currentResult.queryStatus === 'success'
-                        ? '同步成功'
-                        : '同步失败'}
+                        ? '查询成功'
+                        : '查询失败'}
                     </span>
                   </div>
 
@@ -356,7 +349,7 @@ export default function ShippingQueryPage() {
                       <AlertCircle className="h-6 w-6 shrink-0" />
                       <div>
                         <div className="mb-1 text-sm font-semibold">
-                          同步异常中断
+                          查询失败
                         </div>
                         <div className="text-sm font-bold opacity-80">
                           {currentResult.errorMessage}
@@ -379,7 +372,7 @@ export default function ShippingQueryPage() {
                   查询历史
                 </CardTitle>
                 <CardDescription className="mt-1 text-xs font-bold text-slate-400">
-                  最近 50 条查询记录 · 自动保存
+                  最近 50 条
                 </CardDescription>
               </div>
               <Button
@@ -401,21 +394,11 @@ export default function ShippingQueryPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50/50">
-                    <TableHead>
-                      查询时间
-                    </TableHead>
-                    <TableHead>
-                      物流站点
-                    </TableHead>
-                    <TableHead>
-                      追踪单号
-                    </TableHead>
-                    <TableHead>
-                      实时状态
-                    </TableHead>
-                    <TableHead className="text-right">
-                      同步结果
-                    </TableHead>
+                    <TableHead>查询时间</TableHead>
+                    <TableHead>物流站点</TableHead>
+                    <TableHead>追踪单号</TableHead>
+                    <TableHead>实时状态</TableHead>
+                    <TableHead className="text-right">同步结果</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

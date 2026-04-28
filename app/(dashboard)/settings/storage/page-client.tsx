@@ -201,7 +201,7 @@ export default function StorageSettingsPageClient({
                     <h1 className="text-2xl font-bold tracking-tight text-gray-900">
                       七牛云存储
                     </h1>
-                    <p className="text-sm text-gray-600">文件上传和存储配置</p>
+                    <p className="text-sm text-gray-600">文件上传设置</p>
                   </div>
                 </div>
                 <Button
@@ -224,7 +224,7 @@ export default function StorageSettingsPageClient({
                 权限不足
               </CardTitle>
               <CardDescription className="text-amber-700">
-                只有管理员可以访问七牛云存储配置。
+                仅管理员可访问。
               </CardDescription>
             </CardHeader>
           </Card>
@@ -273,7 +273,7 @@ export default function StorageSettingsPageClient({
                 </Badge>
               </div>
               <p className="text-sm font-bold text-slate-400">
-                配置您的第三方对象存储服务，确保存储空间的读写访问权限正确
+                对象存储和访问域名
               </p>
             </div>
           </div>
@@ -283,7 +283,7 @@ export default function StorageSettingsPageClient({
             className="h-11 rounded-md border-slate-200 bg-white px-6 text-xs font-semibold text-slate-900 shadow-sm hover:bg-slate-50"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            返回全局设置
+            返回设置
           </Button>
         </div>
 
@@ -293,11 +293,8 @@ export default function StorageSettingsPageClient({
             <section className="space-y-6">
               <div className="flex flex-col gap-1 px-1">
                 <h3 className="text-sm font-semibold text-slate-900">
-                  服务接入配置
+                  服务接入
                 </h3>
-                <p className="text-[11px] font-medium text-slate-400">
-                  设置云存储密钥与基础访问信息
-                </p>
               </div>
 
               {configError ? (
@@ -312,7 +309,7 @@ export default function StorageSettingsPageClient({
                         queryKey: queryKeys.settings.storage(),
                       })
                     }
-                  className="mt-6 h-10 rounded-md px-8 text-xs font-semibold"
+                    className="mt-6 h-10 rounded-md px-8 text-xs font-semibold"
                   >
                     重试加载
                   </Button>
@@ -342,7 +339,7 @@ export default function StorageSettingsPageClient({
           <div className="space-y-8">
             <section className="space-y-4">
               <h3 className="px-1 text-[11px] font-semibold text-slate-400">
-                配置指引
+                操作提示
               </h3>
               <div className="rounded-md border border-slate-100 bg-white p-6 shadow-sm">
                 <div className="space-y-6">
@@ -351,8 +348,7 @@ export default function StorageSettingsPageClient({
                       获取密钥
                     </span>
                     <p className="text-[11px] leading-relaxed font-medium text-slate-400">
-                      进入七牛云控制台，点击“个人中心” →
-                      “密钥管理”，获取您的访问密钥与私有密钥。
+                      在七牛云控制台的“密钥管理”中获取 AK 和 SK。
                     </p>
                   </div>
                   <div className="space-y-2">
@@ -360,7 +356,7 @@ export default function StorageSettingsPageClient({
                       存储空间
                     </span>
                     <p className="text-[11px] leading-relaxed font-medium text-slate-400">
-                      请确保该空间具有公共读或私有读权限，并已正确配置跨域设置。
+                      确认空间权限和跨域设置。
                     </p>
                   </div>
                 </div>

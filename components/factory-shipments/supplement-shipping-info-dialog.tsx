@@ -87,7 +87,7 @@ function useSupplementShippingInfoDialogState({
     toast({
       title: '船公司信息已补充',
       description: autoStartTracking
-        ? `订单 ${orderNumber} 已更新为运输中,系统将自动追踪货物状态`
+        ? `订单 ${orderNumber} 已更新为运输中`
         : `订单 ${orderNumber} 的船公司信息已保存`,
     });
     queryClient.invalidateQueries({

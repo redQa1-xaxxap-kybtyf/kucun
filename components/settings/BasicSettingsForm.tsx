@@ -284,10 +284,7 @@ export function BasicSettingsForm() {
         className="space-y-12 pb-32 sm:pb-20"
       >
         {/* 系统配置 */}
-        <SettingsSection
-          title="系统识别与环境"
-          description="定义系统的基础身份信息，这将在全站标题、导出报告及登录页中生效。"
-        >
+        <SettingsSection title="系统信息" description="系统名称、语言和标语">
           <div className="grid gap-6 md:grid-cols-2">
             <FormField
               control={form.control}
@@ -298,13 +295,10 @@ export function BasicSettingsForm() {
                     <FormLabel className="text-sm font-semibold text-slate-900">
                       系统显示名称 *
                     </FormLabel>
-                    <p className="text-xs font-medium text-slate-500">
-                      展示于浏览器标签与侧边栏顶部
-                    </p>
                   </div>
                   <FormControl>
                     <Input
-                      placeholder="如：反重力系统"
+                      placeholder="如：瓷砖销售库存系统"
                       className="h-11 border-slate-100 bg-slate-50/50 px-4 font-bold text-slate-900 transition-all focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10"
                       {...field}
                     />
@@ -323,9 +317,6 @@ export function BasicSettingsForm() {
                     <FormLabel className="text-sm font-semibold text-slate-900">
                       系统默认语言
                     </FormLabel>
-                    <p className="text-xs font-medium text-slate-500">
-                      全局多语言切换的基础预设
-                    </p>
                   </div>
                   <Select
                     onValueChange={field.onChange}
@@ -358,15 +349,12 @@ export function BasicSettingsForm() {
               <FormItem className="relative flex flex-col gap-4 rounded-md border border-slate-100 bg-white p-6 shadow-sm hover:border-blue-100">
                 <div className="space-y-1">
                   <FormLabel className="text-sm font-semibold text-slate-900">
-                    系统全局描述 / 标语
+                    系统标语
                   </FormLabel>
-                  <p className="text-xs font-medium text-slate-500">
-                    展示于登录页及关于页面，体现企业文化
-                  </p>
                 </div>
                 <FormControl>
                   <Textarea
-                    placeholder="请输入系统描述，例如：专业的库存管理解决方案"
+                    placeholder="例如：瓷砖销售、库存和财务一体化管理"
                     className="min-h-[100px] resize-none border-slate-100 bg-slate-50/50 p-4 font-medium italic transition-all focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10"
                     {...field}
                   />
@@ -378,10 +366,7 @@ export function BasicSettingsForm() {
         </SettingsSection>
 
         {/* 库存控制与预警阈值 */}
-        <SettingsSection
-          title="库存控制与预警阈值"
-          description="设定供应链流转中的自动控制逻辑。低库存阈值将触发系统的实时红色预警指示。"
-        >
+        <SettingsSection title="库存预警" description="库存不足提醒">
           <div className="grid gap-6 md:grid-cols-2">
             <FormField
               control={form.control}
@@ -391,11 +376,8 @@ export function BasicSettingsForm() {
                   <div className="space-y-1">
                     <FormLabel className="flex items-center gap-2 text-sm font-semibold text-slate-900">
                       <RefreshCw className="h-4 w-4 text-blue-500" />
-                      低库存全局预警值
+                      低库存预警值
                     </FormLabel>
-                    <p className="text-xs font-medium text-slate-500">
-                      分界值，低于此值将被标记为“库存不足”
-                    </p>
                   </div>
                   <FormControl>
                     <div className="relative mt-2 w-full max-w-[180px]">
@@ -535,7 +517,7 @@ export function BasicSettingsForm() {
             ) : (
               <Save className="mr-2 h-4 w-4 text-blue-400" />
             )}
-            {isSubmitting ? '正在安全保存...' : '保存全局配置'}
+            {isSubmitting ? '保存中...' : '保存设置'}
           </Button>
         </div>
       </form>

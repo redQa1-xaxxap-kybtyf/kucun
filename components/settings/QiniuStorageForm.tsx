@@ -413,9 +413,6 @@ export const QiniuStorageForm = ({
                     <FormLabel className="text-sm font-semibold text-slate-900">
                       预设存储路径格式
                     </FormLabel>
-                    <span className="text-[11px] font-medium text-slate-400">
-                      支持日期变量，如 {'{y}/{m}/{d}'}
-                    </span>
                   </div>
                   <FormControl>
                     <Input
@@ -435,7 +432,7 @@ export const QiniuStorageForm = ({
         {/* 操作按钮区 */}
         <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/10 pt-8">
           <p className="text-[11px] font-medium text-slate-400">
-            修改配置后建议先检查连接状态，确认上传服务可正常使用。
+            保存前可先检查连接。
           </p>
           <div className="flex items-center gap-4">
             <Button
