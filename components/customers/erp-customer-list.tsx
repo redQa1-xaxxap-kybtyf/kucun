@@ -177,7 +177,7 @@ export function ERPCustomerList({
       <div className="rounded-lg border border-dashed bg-white p-10 text-center">
         <EmptyState
           title="暂无客户资料"
-          description="先新增客户，开单时可直接选择"
+          description="新增客户后可直接开单"
           action={
             <Button onClick={handleCreateNew} className="h-10 rounded-lg">
               <Plus className="mr-2 h-4 w-4" />
@@ -194,7 +194,7 @@ export function ERPCustomerList({
       {isRefreshing && (
         <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-center rounded-lg border bg-white/95 px-3 py-2 text-xs font-medium text-[hsl(var(--color-text-secondary))] shadow-sm">
           <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin text-[hsl(var(--color-primary))]" />
-          正在更新列表
+          正在更新
         </div>
       )}
 

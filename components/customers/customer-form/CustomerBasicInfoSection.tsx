@@ -37,7 +37,7 @@ export function CustomerBasicInfoSection({
       <CardHeader>
         <CardTitle className="flex items-center">
           <Building2 className="mr-2 h-5 w-5" />
-          基础信息
+          客户资料
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -87,7 +87,7 @@ export function CustomerBasicInfoSection({
               <FormLabel>客户地址</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="客户的详细地址..."
+                  placeholder="客户地址"
                   className="min-h-[80px]"
                   disabled={isLoading}
                   {...field}
@@ -102,7 +102,7 @@ export function CustomerBasicInfoSection({
           control={form.control}
           name="parentCustomerId"
           label="上级客户"
-          placeholder="选择上级客户（可选）"
+          placeholder="上级客户"
           disabled={isLoading}
           excludeId={excludeCustomerId}
           onlyParents={false}

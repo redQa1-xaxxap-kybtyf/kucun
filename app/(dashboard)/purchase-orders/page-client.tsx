@@ -199,7 +199,9 @@ export function PurchaseOrdersPageClient({
     (value: string | undefined) => {
       setSupplierFilter(value);
       const nextSearch = syncPendingSearch();
-      syncFiltersToURL(buildSnapshot({ search: nextSearch, supplierId: value }));
+      syncFiltersToURL(
+        buildSnapshot({ search: nextSearch, supplierId: value })
+      );
     },
     [buildSnapshot, syncFiltersToURL, syncPendingSearch]
   );
@@ -242,15 +244,11 @@ export function PurchaseOrdersPageClient({
       <div className="mb-4 flex-shrink-0 sm:mb-6">
         <PageHeader
           title="仓库进货"
-          description="管理采购订单与到货进度，实时掌握仓库补货情况"
+          description="采购订单和到货进度"
           icon={<Warehouse className="h-6 w-6 text-white" />}
           variant="solid"
           actions={
-            <Button
-              size="lg"
-              asChild
-              className="h-11 shadow-sm"
-            >
+            <Button size="lg" asChild className="h-11 shadow-sm">
               <Link href="/purchase-orders/create">
                 <Plus className="mr-2 h-4 w-4" />
                 新建采购订单

@@ -26,7 +26,7 @@ export function CustomerPageHeader({
   const router = useRouter();
 
   return (
-    <Card className="overflow-hidden border border-border shadow-sm">
+    <Card className="border-border overflow-hidden border shadow-sm">
       <CardContent className="bg-card p-4 sm:p-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -38,7 +38,7 @@ export function CustomerPageHeader({
                 客户档案
               </h1>
               <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-                管理客户信息和交易记录
+                客户资料和交易记录
                 {selectedCustomerIds.length > 0 && (
                   <span className="ml-2 font-medium text-[hsl(var(--color-primary))]">
                     · 已选择 {selectedCustomerIds.length} 个客户

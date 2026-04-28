@@ -137,8 +137,8 @@ export function ProductsPageClient({ initialParams }: ProductsPageClientProps) {
         <div className="space-y-6">
           {/* 页面标题 */}
           <PageHeader
-            title="产品管理"
-            description="管理产品信息、规格和库存状态"
+            title="产品资料"
+            description="产品编码、规格和库存状态"
             icon={<Package className="h-6 w-6 text-white" />}
             iconBgColor="hsl(var(--color-primary))"
             actions={

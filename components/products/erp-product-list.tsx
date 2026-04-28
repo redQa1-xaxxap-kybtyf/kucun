@@ -63,7 +63,7 @@ function ERPProductListFilters({
     <SearchFilterCard
       searchValue={searchValue}
       onSearchChange={handleSearch}
-      searchPlaceholder="搜索产品编码、名称或规格..."
+      searchPlaceholder="搜索编码、名称、规格"
       isSearching={isSearching}
       filters={[
         {
@@ -140,7 +140,7 @@ function ERPProductListTableCard({
       {isRefreshing && (
         <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-center border-b border-[hsl(var(--color-border-primary))] bg-white/95 px-3 py-2 text-xs font-medium text-[hsl(var(--color-text-secondary))] shadow-sm">
           <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin text-[hsl(var(--color-primary))]" />
-          正在更新列表...
+          正在更新
         </div>
       )}
       <div className={cn('transition-opacity', isRefreshing && 'opacity-60')}>
@@ -263,13 +263,13 @@ export function ERPProductList({
     !isLoading && (isFetching || isSearching || isNavigationPending);
 
   if (isLoading) {
-    return <ContentLoading text="加载产品列表中..." />;
+    return <ContentLoading text="产品加载中..." />;
   }
 
   if (error) {
     return (
       <div className="text-muted-foreground flex h-32 items-center justify-center">
-        加载产品列表失败，请重试
+        产品列表加载失败
       </div>
     );
   }

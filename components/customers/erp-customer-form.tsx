@@ -212,7 +212,7 @@ function BasicInfoSection({
                 <FormLabel>客户名称 *</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="请输入客户名称"
+                    placeholder="客户名称"
                     disabled={isLoading}
                     {...field}
                   />
@@ -230,7 +230,7 @@ function BasicInfoSection({
                 <FormLabel>联系电话</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="请输入联系电话"
+                    placeholder="联系电话"
                     disabled={isLoading}
                     {...field}
                   />
@@ -248,7 +248,7 @@ function BasicInfoSection({
                 <FormLabel>备用电话1</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="请输入备用电话（可选）"
+                    placeholder="备用电话"
                     disabled={isLoading}
                     {...field}
                   />
@@ -266,7 +266,7 @@ function BasicInfoSection({
                 <FormLabel>备用电话2</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="请输入备用电话（可选）"
+                    placeholder="备用电话"
                     disabled={isLoading}
                     {...field}
                   />
@@ -418,7 +418,7 @@ export function ERPCustomerForm({
       {isPagePresentation ? (
         <PageContainer
           title={isEdit ? '编辑客户' : '新建客户'}
-          description={isEdit ? '修改客户资料' : '填写客户资料'}
+          description="客户资料"
           icon={<Users className="h-6 w-6 text-white" />}
           bodyClassName="space-y-6"
           footer={

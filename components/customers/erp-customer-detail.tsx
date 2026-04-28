@@ -194,7 +194,7 @@ export function ERPCustomerDetail({
         {/* 基本信息区域 */}
         <div className="space-y-3">
           <div className="text-muted-foreground text-xs font-medium">
-            基本信息
+            客户资料
           </div>
 
           {/* 客户名称 */}
@@ -317,7 +317,7 @@ export function ERPCustomerDetail({
         {extendedInfoEntries.length > 0 && (
           <div className="mt-4 space-y-3">
             <div className="text-muted-foreground text-xs font-medium">
-              扩展信息
+              更多资料
             </div>
             <div className="bg-muted/5 rounded border px-2 py-2">
               <div className="space-y-2">

@@ -78,7 +78,7 @@ export function PurchaseOrderSearchToolbar({
     <SearchFilterCard
       searchValue={searchValue}
       onSearchChange={onSearch}
-      searchPlaceholder="搜索采购订单号、集装箱号..."
+      searchPlaceholder="搜索订单号、集装箱号"
       isSearching={isSearching}
       // Toggle 按钮
       toggleButtons={[
@@ -135,7 +135,7 @@ export function PurchaseOrderSearchToolbar({
                   endDate: range.endDate,
                 });
               },
-              placeholder: '选择订单日期范围',
+              placeholder: '选择订单日期',
             }
           : undefined
       }

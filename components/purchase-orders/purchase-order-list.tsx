@@ -115,15 +115,13 @@ export function PurchaseOrderList({
   } | null>(null);
 
   if (isLoading) {
-    return <ContentLoading text="加载采购订单列表中..." />;
+    return <ContentLoading text="采购订单加载中..." />;
   }
 
   if (error) {
     return (
       <div className="border-destructive bg-destructive/10 rounded-lg border p-6 text-center">
-        <p className="text-destructive">
-          加载失败: {error instanceof Error ? error.message : '未知错误'}
-        </p>
+        <p className="text-destructive">采购订单加载失败</p>
       </div>
     );
   }

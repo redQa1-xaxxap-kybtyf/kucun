@@ -48,18 +48,36 @@ export function CustomerExtendedInfoSection({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>扩展信息</CardTitle>
+        <CardTitle>更多资料</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <div>
           <h4 className="mb-3 text-sm font-medium">联系信息</h4>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {[
-              { name: 'extendedInfo.email', label: '邮箱地址', type: 'email' },
-              { name: 'extendedInfo.wechat', label: '微信号' },
-              { name: 'extendedInfo.fax', label: '传真号码' },
-              { name: 'extendedInfo.website', label: '网站地址', type: 'url' },
-            ].map(({ name, label, type }) => (
+              {
+                name: 'extendedInfo.email',
+                label: '邮箱地址',
+                type: 'email',
+                placeholder: '邮箱',
+              },
+              {
+                name: 'extendedInfo.wechat',
+                label: '微信号',
+                placeholder: '微信号',
+              },
+              {
+                name: 'extendedInfo.fax',
+                label: '传真号码',
+                placeholder: '传真',
+              },
+              {
+                name: 'extendedInfo.website',
+                label: '网站地址',
+                type: 'url',
+                placeholder: '网址',
+              },
+            ].map(({ name, label, type, placeholder }) => (
               <FormField
                 key={name}
                 control={form.control}
@@ -70,7 +88,7 @@ export function CustomerExtendedInfoSection({
                     <FormControl>
                       <Input
                         type={type}
-                        placeholder="请输入"
+                        placeholder={placeholder}
                         disabled={isLoading}
                         value={(field.value as string) ?? ''}
                         onChange={field.onChange}
@@ -157,7 +175,7 @@ export function CustomerExtendedInfoSection({
 
             <div className="flex gap-2">
               <Input
-                placeholder="添加标签..."
+                placeholder="添加标签"
                 value={newTag}
                 onChange={event => onNewTagChange(event.target.value)}
                 onKeyDown={event => {
