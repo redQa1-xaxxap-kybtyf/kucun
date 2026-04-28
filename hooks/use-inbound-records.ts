@@ -59,9 +59,11 @@ export function useInboundRecordsState(
     setQueryParams(mergedInitial);
   }, [mergedInitial]);
 
-  const { data, isLoading, error } = useInboundRecords(queryParams);
+  const { data, isLoading, isFetching, error } = useInboundRecords(queryParams);
   const inboundRecords = data?.data || [];
   const pagination = data?.pagination;
+  const isInitialLoading = isLoading && !data;
+  const isListRefreshing = !isInitialLoading && isFetching;
 
   const handleFilter = (
     key: keyof InboundQueryParams,
@@ -92,6 +94,9 @@ export function useInboundRecordsState(
     inboundRecords,
     pagination,
     isLoading,
+    isFetching,
+    isInitialLoading,
+    isListRefreshing,
     error,
     handleFilter,
     handlePageChange,

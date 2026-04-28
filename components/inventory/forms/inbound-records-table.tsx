@@ -1,12 +1,11 @@
 'use client';
 
-import { Package, User } from 'lucide-react';
+import { Loader2, Package, User } from 'lucide-react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 
 import { CopyableText } from '@/components/common/copyable-text';
 import { EmptyState } from '@/components/common/empty-state';
-import { ContentLoading } from '@/components/common/loading';
 import { RelativeTime } from '@/components/common/relative-time';
 import { OpeningBalanceRecordActions } from '@/components/inventory/opening-balance-record-actions';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +24,7 @@ import {
   INBOUND_REASON_LABELS,
   type InboundRecord as BaseInboundRecord,
 } from '@/lib/types/inbound';
+import { cn } from '@/lib/utils';
 import { formatDetailedPieceSummary } from '@/lib/utils/piece-calculation';
 
 interface InboundRecordWithProduct
@@ -54,6 +54,7 @@ interface InboundRecordsTableProps {
     totalPages: number;
   };
   isLoading: boolean;
+  isRefreshing?: boolean;
   onPageChange?: (page: number) => void;
 }
 
@@ -142,6 +143,7 @@ export function InboundRecordsTable({
   records,
   pagination,
   isLoading,
+  isRefreshing = false,
   onPageChange,
 }: InboundRecordsTableProps) {
   const { data: session } = useSession();
@@ -150,24 +152,42 @@ export function InboundRecordsTable({
     'inventory:adjust'
   );
 
-  if (isLoading) {
-    return <ContentLoading text="加载入库记录..." />;
-  }
-
   return (
-    <div className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm">
+    <div
+      className="relative overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm"
+      aria-busy={isLoading || isRefreshing}
+    >
+      {isRefreshing && (
+        <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-center border-b border-[hsl(var(--color-border-primary))] bg-white/95 px-3 py-2 text-xs font-medium text-[hsl(var(--color-text-secondary))] shadow-sm">
+          <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin text-[hsl(var(--color-primary))]" />
+          正在更新
+        </div>
+      )}
       <TableHeading count={records.length} />
       {/* 桌面端表格视图 */}
-      <div className="hidden overflow-x-auto lg:block">
+      <div
+        className={cn(
+          'hidden overflow-x-auto transition-opacity lg:block',
+          isRefreshing && 'opacity-60'
+        )}
+      >
         <RecordsTable
           records={records}
+          isLoading={isLoading}
           canManageOpeningBalance={canManageOpeningBalance}
         />
       </div>
 
       {/* 移动端卡片视图 */}
-      <div className="space-y-3 p-3 lg:hidden">
-        {records.length === 0 ? (
+      <div
+        className={cn(
+          'space-y-3 p-3 transition-opacity lg:hidden',
+          isRefreshing && 'opacity-60'
+        )}
+      >
+        {isLoading ? (
+          <MobileLoadingSkeleton />
+        ) : records.length === 0 ? (
           <EmptyState
             title="暂无入库记录"
             description="还没有入库单，先新增一笔入库。"
@@ -354,9 +374,11 @@ function TableHeading({ count }: { count: number }) {
 
 function RecordsTable({
   records,
+  isLoading,
   canManageOpeningBalance,
 }: {
   records: InboundRecordWithProduct[];
+  isLoading: boolean;
   canManageOpeningBalance: boolean;
 }) {
   const colSpan = canManageOpeningBalance ? 10 : 9;
@@ -380,7 +402,11 @@ function RecordsTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {records.length === 0 ? (
+        {isLoading ? (
+          <TableLoadingRows
+            canManageOpeningBalance={canManageOpeningBalance}
+          />
+        ) : records.length === 0 ? (
           <TableRow>
             <TableCell colSpan={colSpan} className="p-8">
               <EmptyState
@@ -407,6 +433,53 @@ function RecordsTable({
         )}
       </TableBody>
     </Table>
+  );
+}
+
+function TableLoadingRows({
+  canManageOpeningBalance,
+}: {
+  canManageOpeningBalance: boolean;
+}) {
+  const columns = canManageOpeningBalance ? 10 : 9;
+
+  return (
+    <>
+      {Array.from({ length: 8 }).map((_, rowIndex) => (
+        <TableRow key={`inbound-loading-row-${rowIndex}`}>
+          {Array.from({ length: columns }).map((__, colIndex) => (
+            <TableCell key={colIndex} className="h-14">
+              <div className="h-3 w-full max-w-[140px] animate-pulse rounded bg-slate-100" />
+            </TableCell>
+          ))}
+        </TableRow>
+      ))}
+    </>
+  );
+}
+
+function MobileLoadingSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 6 }).map((_, index) => (
+        <div
+          key={`inbound-card-loading-${index}`}
+          className="rounded-md border border-slate-100 bg-white p-4 shadow-sm"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="space-y-2">
+              <div className="h-3 w-28 animate-pulse rounded bg-slate-100" />
+              <div className="h-3 w-36 animate-pulse rounded bg-slate-100" />
+              <div className="h-3 w-44 animate-pulse rounded bg-slate-100" />
+            </div>
+            <div className="space-y-2">
+              <div className="h-3 w-16 animate-pulse rounded bg-slate-100" />
+              <div className="h-3 w-20 animate-pulse rounded bg-slate-100" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </>
   );
 }
 

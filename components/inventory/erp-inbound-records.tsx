@@ -5,6 +5,7 @@ import * as React from 'react';
 import { InboundRecordsTable } from '@/components/inventory/forms/inbound-records-table';
 import { InboundRecordsSearchToolbar } from '@/components/inventory/inbound-records-search-toolbar';
 import { useInboundRecordsState } from '@/hooks/use-inbound-records';
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 import type { InboundQueryParams } from '@/lib/types/inbound';
 
 interface ERPInboundRecordsProps {
@@ -27,17 +28,28 @@ export function ERPInboundRecords({ initialParams }: ERPInboundRecordsProps) {
     queryParams,
     inboundRecords,
     pagination,
-    isLoading,
+    isInitialLoading,
+    isListRefreshing,
     error,
     handleFilter,
     handlePageChange,
     handleResetFilters,
   } = useInboundRecordsState(initialParams);
 
+  const {
+    searchInput,
+    isSearching,
+    handleSearchChange,
+    cancelPendingCommit,
+    setSearchInput,
+  } = useListSearchController({
+    committedValue: queryParams.search,
+    onCommit: value => {
+      handleFilter('search', value);
+    },
+  });
+
   // 本地状态管理 - 用于即时更新UI
-  const [searchValue, setSearchValue] = React.useState(
-    queryParams.search || ''
-  );
   const [reasonFilter, setReasonFilter] = React.useState<string | 'all'>(
     queryParams.reason || 'all'
   );
@@ -51,15 +63,6 @@ export function ERPInboundRecords({ initialParams }: ERPInboundRecordsProps) {
     startDate: queryParams.startDate,
     endDate: queryParams.endDate,
   });
-
-  // 搜索处理
-  const handleSearch = React.useCallback(
-    (value: string) => {
-      setSearchValue(value);
-      handleFilter('search', value);
-    },
-    [handleFilter]
-  );
 
   // 入库原因筛选处理
   const handleReasonChange = React.useCallback(
@@ -90,12 +93,13 @@ export function ERPInboundRecords({ initialParams }: ERPInboundRecordsProps) {
 
   // 清空筛选
   const handleClearFilters = React.useCallback(() => {
-    setSearchValue('');
+    cancelPendingCommit();
+    setSearchInput('');
     setReasonFilter('all');
     setDamageFilter('all');
     setDateRange({});
     handleResetFilters();
-  }, [handleResetFilters]);
+  }, [cancelPendingCommit, handleResetFilters, setSearchInput]);
 
   if (error) {
     return (
@@ -111,12 +115,12 @@ export function ERPInboundRecords({ initialParams }: ERPInboundRecordsProps) {
     <div className="space-y-4">
       {/* 搜索工具栏 */}
       <InboundRecordsSearchToolbar
-        searchValue={searchValue}
+        searchValue={searchInput}
         reasonFilter={reasonFilter}
         damageFilter={damageFilter}
         dateRange={dateRange}
-        isSearching={isLoading}
-        onSearch={handleSearch}
+        isSearching={isSearching || isListRefreshing}
+        onSearch={handleSearchChange}
         onReasonChange={handleReasonChange}
         onDamageChange={handleDamageChange}
         onDateRangeChange={handleDateRangeChange}
@@ -127,7 +131,8 @@ export function ERPInboundRecords({ initialParams }: ERPInboundRecordsProps) {
       <InboundRecordsTable
         records={inboundRecords}
         pagination={pagination}
-        isLoading={isLoading}
+        isLoading={isInitialLoading}
+        isRefreshing={isListRefreshing || isSearching}
         onPageChange={handlePageChange}
       />
     </div>

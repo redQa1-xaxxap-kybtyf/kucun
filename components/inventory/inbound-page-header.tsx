@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useState } from 'react';
 
+import { PageHeader } from '@/components/common/page-header';
 import { InitialStockImportDialog } from '@/components/inventory/initial-stock-import-dialog';
 import { Button } from '@/components/ui/button';
 import { can } from '@/lib/auth/permissions';
@@ -24,30 +25,19 @@ export function InboundPageHeader() {
 
   return (
     <>
-      <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
-        <div className="flex flex-col gap-6 p-6 sm:p-8 xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex items-start gap-5 sm:items-center">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-md bg-blue-600">
-              <PackageCheck className="h-8 w-8 text-white" />
-            </div>
-            <div className="space-y-1.5">
-              <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
-                入库记录
-              </h1>
-              <p className="text-sm font-medium text-slate-500">
-                查看仓库入库流水
-              </p>
-            </div>
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-2 xl:flex xl:w-auto xl:flex-wrap">
+      <PageHeader
+        title="入库记录"
+        description="采购入库、期初库存和破损记录"
+        icon={<PackageCheck className="h-6 w-6" />}
+        iconBgColor="hsl(var(--color-primary))"
+        actions={
+          <>
             {/* 期初入库按钮 - 仅对有权限的用户显示 */}
             {can(user ?? null, 'inventory:opening_balance') && (
               <>
                 <Button
                   variant="outline"
-                  size="lg"
-                  className="h-12 w-full border-blue-200 bg-blue-50 text-blue-700 shadow-sm hover:bg-blue-100 hover:text-blue-900"
+                  className="h-11 border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-900"
                   onClick={() => setImportDialogOpen(true)}
                 >
                   <FileSpreadsheet className="mr-2 h-4 w-4" />
@@ -55,8 +45,7 @@ export function InboundPageHeader() {
                 </Button>
                 <Button
                   variant="outline"
-                  size="lg"
-                  className="h-12 w-full border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900"
+                  className="h-11 border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                   onClick={() =>
                     router.push(
                       '/inventory/inbound/create?type=opening_balance'
@@ -71,16 +60,15 @@ export function InboundPageHeader() {
 
             {/* 新增入库按钮 */}
             <Button
-              size="lg"
-              className="h-12 w-full bg-blue-600 text-white shadow-sm hover:bg-blue-700"
+              className="h-11 bg-blue-600 text-white hover:bg-blue-700"
               onClick={() => router.push('/inventory/inbound/create')}
             >
               <Plus className="mr-2 h-4 w-4" />
               手工采购入库
             </Button>
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
       <InitialStockImportDialog
         open={importDialogOpen}
         onOpenChange={setImportDialogOpen}
