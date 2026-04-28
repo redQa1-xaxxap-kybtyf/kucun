@@ -1,7 +1,0 @@
-{
-  "navigationBarTitleText": "创建分类",
-  "usingComponents": {
-    "van-icon": "@vant/weapp/icon/index",
-    "van-empty": "@vant/weapp/empty/index"
-  }
-}

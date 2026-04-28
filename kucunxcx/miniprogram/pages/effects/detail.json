@@ -1,8 +1,0 @@
-{
-  "navigationBarTitleText": "效果图详情",
-  "usingComponents": {
-    "van-icon": "@vant/weapp/icon/index",
-    "van-goods-action": "@vant/weapp/goods-action/index",
-    "van-goods-action-icon": "@vant/weapp/goods-action-icon/index"
-  }
-}
