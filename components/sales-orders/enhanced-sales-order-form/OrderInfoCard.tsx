@@ -108,7 +108,7 @@ export function OrderInfoCard({
           name="remarks"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm font-medium">备注信息</FormLabel>
+              <FormLabel className="text-sm font-medium">备注</FormLabel>
               <FormControl>
                 <Textarea
                   placeholder="订单备注（选填）"

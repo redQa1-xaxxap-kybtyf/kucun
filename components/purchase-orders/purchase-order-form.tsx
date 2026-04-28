@@ -269,8 +269,7 @@ export function PurchaseOrderForm({
     errors: FieldErrors<PurchaseOrderFormValues>
   ) => {
     showValidationToast(errors, {
-      description:
-        '请检查未填写完整的内容后再次提交。所有带 * 的项目均为必填项。',
+      description: '请补全红色提示项后再提交。',
     });
   };
 
@@ -360,7 +359,7 @@ export function PurchaseOrderForm({
                     <FormControl>
                       <Input
                         {...field}
-                        placeholder="请输入集装箱号（可选）"
+                        placeholder="集装箱号"
                         className="h-9"
                       />
                     </FormControl>
@@ -376,14 +375,14 @@ export function PurchaseOrderForm({
                   <FormItem>
                     <FormLabel className="text-sm">
                       船运公司
-                      <span className="ml-1 text-xs text-yellow-600">
-                        （推荐填写）
+                      <span className="text-muted-foreground ml-1 text-xs">
+                        （选填）
                       </span>
                     </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        placeholder="请输入船运公司"
+                        placeholder="船运公司"
                         className="h-9"
                       />
                     </FormControl>
@@ -402,7 +401,7 @@ export function PurchaseOrderForm({
                   <FormControl>
                     <Textarea
                       {...field}
-                      placeholder="请输入订单备注（可选）"
+                      placeholder="备注"
                       rows={2}
                       className="resize-none"
                     />

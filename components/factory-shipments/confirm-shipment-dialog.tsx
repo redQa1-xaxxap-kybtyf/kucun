@@ -40,7 +40,7 @@ const confirmShipmentSchema = z.object({
     .max(50, '集装箱号码不能超过50个字符'),
   shippingCompany: z
     .string()
-    .max(100, '船运公司名称不能超过100个字符')
+    .max(100, '船运公司不能超过100个字符')
     .optional()
     .or(z.literal('')),
   estimatedArrival: z.date().optional(),
@@ -215,14 +215,10 @@ function ShippingCompanyField({
       render={({ field }) => (
         <FormItem>
           <FormLabel>
-            船运公司 <span className="text-yellow-600">(推荐填写)</span>
+            船运公司 <span className="text-muted-foreground">(选填)</span>
           </FormLabel>
           <FormControl>
-            <Input
-              placeholder="请输入船运公司"
-              {...field}
-              disabled={disabled}
-            />
+            <Input placeholder="船运公司" {...field} disabled={disabled} />
           </FormControl>
           <FormMessage />
         </FormItem>

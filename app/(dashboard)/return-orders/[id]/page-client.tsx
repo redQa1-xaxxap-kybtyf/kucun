@@ -648,7 +648,7 @@ export function ReturnOrderDetailPageClient({
                     {order.remarks && (
                       <div className="rounded-lg border border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] p-3">
                         <label className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
-                          备注信息
+                          备注
                         </label>
                         <p className="mt-1 text-sm text-[hsl(var(--color-text-secondary))]">
                           {order.remarks}

@@ -189,10 +189,10 @@ export function CustomerExtendedInfoSection({
           name="extendedInfo.notes"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>备注信息</FormLabel>
+              <FormLabel>备注</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="客户的其他备注信息..."
+                  placeholder="备注"
                   className="min-h-[100px]"
                   disabled={isLoading}
                   {...field}

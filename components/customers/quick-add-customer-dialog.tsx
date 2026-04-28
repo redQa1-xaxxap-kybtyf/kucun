@@ -250,10 +250,10 @@ export function QuickAddCustomerDialog({
               name="notes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>备注信息</FormLabel>
+                  <FormLabel>备注</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="请输入备注信息（可选）"
+                      placeholder="备注"
                       className="min-h-[60px]"
                       {...field}
                       disabled={createMutation.isPending}

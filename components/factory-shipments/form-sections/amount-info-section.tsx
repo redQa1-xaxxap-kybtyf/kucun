@@ -172,11 +172,11 @@ export function AmountInfoSection({ form }: AmountInfoSectionProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
-                跟单说明
+                备注
               </FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="填写交期、跟单说明等"
+                  placeholder="交期、跟单要求等"
                   className="min-h-[100px] resize-y"
                   {...field}
                   value={field.value || ''}

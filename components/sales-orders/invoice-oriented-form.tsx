@@ -454,27 +454,13 @@ export function SalesOrderForm({
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50 hover:bg-muted/50">
-                      <TableHead className="border-r">
-                        产品编码
-                      </TableHead>
-                      <TableHead className="border-r">
-                        产品名称
-                      </TableHead>
-                      <TableHead className="border-r">
-                        规格
-                      </TableHead>
-                      <TableHead className="border-r">
-                        数量
-                      </TableHead>
-                      <TableHead className="border-r">
-                        销售单价
-                      </TableHead>
-                      <TableHead className="border-r">
-                        金额
-                      </TableHead>
-                      <TableHead>
-                        操作
-                      </TableHead>
+                      <TableHead className="border-r">产品编码</TableHead>
+                      <TableHead className="border-r">产品名称</TableHead>
+                      <TableHead className="border-r">规格</TableHead>
+                      <TableHead className="border-r">数量</TableHead>
+                      <TableHead className="border-r">销售单价</TableHead>
+                      <TableHead className="border-r">金额</TableHead>
+                      <TableHead>操作</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -707,11 +693,11 @@ export function SalesOrderForm({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-muted-foreground text-sm font-medium">
-                      备注信息
+                      备注
                     </FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="请输入订单备注信息..."
+                        placeholder="订单备注"
                         className="min-h-[60px] resize-none text-sm"
                         {...field}
                       />

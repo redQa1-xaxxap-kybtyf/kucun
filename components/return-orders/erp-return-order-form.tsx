@@ -781,7 +781,7 @@ export function ERPReturnOrderForm({
                       <FormLabel>退货原因</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="请详细描述退货原因（可选）"
+                          placeholder="退货原因（选填）"
                           className="min-h-20 resize-none"
                           {...field}
                         />
@@ -810,10 +810,10 @@ export function ERPReturnOrderForm({
             calculateTotal={calculateTotal}
           />
 
-          {/* 备注信息 */}
+          {/* 备注 */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">备注信息</CardTitle>
+              <CardTitle className="text-base">备注</CardTitle>
             </CardHeader>
             <CardContent>
               <FormField
@@ -824,7 +824,7 @@ export function ERPReturnOrderForm({
                     <FormLabel>备注</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="请输入备注信息（可选）"
+                        placeholder="备注"
                         className="min-h-20 resize-none"
                         {...field}
                       />

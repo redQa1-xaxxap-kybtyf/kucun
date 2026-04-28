@@ -372,7 +372,7 @@ export function SalesOrderForm({
                 )}
               </div>
 
-              {/* 备注信息 */}
+              {/* 备注 */}
               <FormField
                 control={form.control}
                 name="remarks"
@@ -380,11 +380,11 @@ export function SalesOrderForm({
                   <FormItem>
                     <FormLabel className="flex items-center">
                       <FileText className="mr-1 h-4 w-4" />
-                      备注信息
+                      备注
                     </FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="订单的备注信息..."
+                        placeholder="订单备注"
                         className="min-h-[80px]"
                         disabled={isLoading}
                         {...field}

@@ -10,7 +10,7 @@ import { CountDetailPageClient } from './page-client';
 
 export const metadata: Metadata = {
   title: '盘点单详情 - 库存管理',
-  description: '查看盘点单详细信息',
+  description: '盘点单详情',
 };
 
 // Next.js 15 Route Segment Config

@@ -280,7 +280,7 @@ function RemarksField({ form }: FormComponentProps) {
           <FormLabel>备注</FormLabel>
           <FormControl>
             <Textarea
-              placeholder="收款相关的备注信息"
+              placeholder="收款备注"
               className="min-h-[80px]"
               {...field}
             />

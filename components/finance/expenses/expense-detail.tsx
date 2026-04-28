@@ -388,7 +388,7 @@ export function ExpenseDetailClient({
       {expense.remarks && (
         <Card>
           <CardHeader>
-            <CardTitle>备注信息</CardTitle>
+            <CardTitle>备注</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-sm whitespace-pre-wrap">{expense.remarks}</div>

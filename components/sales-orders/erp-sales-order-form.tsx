@@ -2433,7 +2433,7 @@ export function ERPSalesOrderForm({
                   {inventoryBlockingRemainingCount > 0 && (
                     <div className="text-red-700">
                       另有 {inventoryBlockingRemainingCount}{' '}
-                      条问题，请继续查看完整问题清单。
+                      条问题，请继续查看问题清单。
                     </div>
                   )}
                 </div>

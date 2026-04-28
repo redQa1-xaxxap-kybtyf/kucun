@@ -295,12 +295,12 @@ export function PayableForm({
             </CardContent>
           </Card>
 
-          {/* 详细信息 */}
+          {/* 应付说明 */}
           <Card className="border-border overflow-hidden rounded-md border shadow-sm">
             <CardHeader className="border-b bg-slate-50">
               <CardTitle className="flex items-center text-[hsl(var(--color-text-primary))]">
                 <FileText className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
-                详细信息
+                应付说明
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
@@ -311,10 +311,10 @@ export function PayableForm({
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>描述</FormLabel>
+                      <FormLabel>说明</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="输入应付款的详细描述..."
+                          placeholder="应付内容"
                           disabled={isLoading}
                           rows={3}
                           {...field}
@@ -335,7 +335,7 @@ export function PayableForm({
                       <FormLabel>备注</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="输入备注信息..."
+                          placeholder="备注"
                           disabled={isLoading}
                           rows={3}
                           {...field}

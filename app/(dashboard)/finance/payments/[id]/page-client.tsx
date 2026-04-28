@@ -842,7 +842,7 @@ export function PaymentDetailClient({
               <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] pb-2.5">
                 <CardTitle className="flex items-center gap-1.5 text-sm">
                   <FileText className="h-4 w-4 text-amber-600" />
-                  备注信息
+                  备注
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-3">

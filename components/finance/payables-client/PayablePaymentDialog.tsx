@@ -460,7 +460,7 @@ const PaymentRemarksField = ({
         <FormLabel>备注（可选）</FormLabel>
         <FormControl>
           <Textarea
-            placeholder="请输入付款备注信息"
+            placeholder="付款备注"
             className="resize-none"
             rows={3}
             {...field}

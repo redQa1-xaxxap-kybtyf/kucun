@@ -112,7 +112,7 @@ export function ProductSpecificationField<T extends FieldValues>({
           <FormControl>
             <Textarea
               {...field}
-              placeholder="请输入产品规格描述"
+              placeholder="规格 / 型号 / 尺寸"
               disabled={disabled}
               maxLength={200}
               rows={3}
@@ -207,7 +207,7 @@ export function ProductThicknessField<T extends FieldValues>({
           <FormControl>
             <NumberInput
               {...field}
-              placeholder="请输入产品厚度"
+              placeholder="厚度"
               disabled={disabled}
               min={0}
               max={100}

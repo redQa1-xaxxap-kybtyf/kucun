@@ -291,7 +291,7 @@ function BasicInfoExtra({ receivable }: { receivable: ReceivableDetail }) {
       {receivable.remarks && (
         <div className="bg-muted/30 rounded-md border p-4">
           <label className="text-muted-foreground text-sm font-medium">
-            备注信息
+            备注
           </label>
           <p className="mt-1 text-sm break-words">{receivable.remarks}</p>
         </div>

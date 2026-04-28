@@ -34,8 +34,8 @@ import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 const editPurchaseOrderShippingCompanySchema = z.object({
   shippingCompany: z
     .string()
-    .min(1, '船运公司名称不能为空')
-    .max(100, '船运公司名称不能超过100个字符'),
+    .min(1, '船运公司不能为空')
+    .max(100, '船运公司不能超过100个字符'),
 });
 
 type EditPurchaseOrderShippingCompanyData = z.infer<
@@ -154,15 +154,10 @@ function ShippingCompanyField({
       render={({ field }) => (
         <FormItem>
           <FormLabel>
-            船运公司名称{' '}
-            <span className="text-[hsl(var(--color-error))]">*</span>
+            船运公司 <span className="text-[hsl(var(--color-error))]">*</span>
           </FormLabel>
           <FormControl>
-            <Input
-              {...field}
-              placeholder="请输入船运公司名称"
-              disabled={disabled}
-            />
+            <Input {...field} placeholder="船运公司" disabled={disabled} />
           </FormControl>
           <FormMessage />
         </FormItem>

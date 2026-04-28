@@ -346,8 +346,7 @@ export function FactoryShipmentOrderForm({
     errors: FieldErrors<FactoryShipmentOrderFormData>
   ) => {
     showValidationToast(errors, {
-      description:
-        '请检查未填写完整的内容后再次提交。所有带 * 的项目均为必填项，手动产品需要填写名称。',
+      description: '请补全红色提示项后再提交。手动产品需填写名称。',
     });
   };
 

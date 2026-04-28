@@ -23,16 +23,16 @@ export function ProductDetailsForm({
 }: ProductDetailsFormProps) {
   return (
     <div className="grid grid-cols-1 gap-6">
-      {/* 产品描述 */}
+      {/* 产品备注 */}
       <FormField
         control={control}
         name="description"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>产品描述</FormLabel>
+            <FormLabel>产品备注</FormLabel>
             <FormControl>
               <Textarea
-                placeholder="输入产品描述"
+                placeholder="备注"
                 className="min-h-[100px]"
                 disabled={isLoading}
                 {...field}

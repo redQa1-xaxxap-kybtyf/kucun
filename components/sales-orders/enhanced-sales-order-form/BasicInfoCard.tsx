@@ -97,7 +97,7 @@ export function BasicInfoCard({
           {selectedCustomer && (
             <div className="space-y-2.5 rounded-lg border border-[hsl(var(--color-primary-light))] bg-[hsl(var(--color-primary-light))] p-3 md:col-span-2 lg:col-span-2">
               <div className="text-sm font-medium text-[hsl(var(--color-primary))]">
-                客户详细信息
+                客户信息
               </div>
               <div className="grid gap-1.5 text-sm">
                 <div className="flex items-center justify-between">

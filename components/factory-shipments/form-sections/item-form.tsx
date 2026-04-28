@@ -381,7 +381,7 @@ export const ItemForm = React.memo<ItemFormProps>(
                   </FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="请输入备注信息"
+                      placeholder="备注"
                       className="resize-none transition-all duration-200 focus:ring-2 focus:ring-[hsl(var(--color-primary))]/20"
                       rows={2}
                       {...field}

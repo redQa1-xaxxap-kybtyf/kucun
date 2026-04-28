@@ -56,13 +56,13 @@ const quickCreateProductSchema = z.object({
     .string()
     .trim()
     .min(1, '产品规格不能为空')
-    .max(200, '规格描述不能超过200个字符'),
+    .max(200, '规格不能超过200个字符'),
   unit: z.enum(['piece', 'sheet'], {
     message: '请选择有效的计量单位',
   }),
   description: z
     .string()
-    .max(1000, '产品描述不能超过1000个字符')
+    .max(1000, '产品备注不能超过1000个字符')
     .optional()
     .or(z.literal('')),
 });
@@ -304,11 +304,11 @@ export function QuickCreateProductDialog({
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>产品描述</FormLabel>
+                  <FormLabel>产品备注</FormLabel>
                   <FormControl>
                     <Textarea
                       {...field}
-                      placeholder="选填，可以添加产品的详细描述"
+                      placeholder="备注"
                       rows={3}
                       disabled={createMutation.isPending}
                       className="resize-none"

@@ -558,7 +558,7 @@ export function InboundOptionalFields({ form }: InboundFormFieldsProps) {
             </FormLabel>
             <FormControl>
               <Textarea
-                placeholder="请输入备注信息（可选）"
+                placeholder="备注"
                 className="min-h-[36px] resize-none"
                 {...field}
               />

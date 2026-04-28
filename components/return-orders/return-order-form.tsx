@@ -362,7 +362,7 @@ export function ReturnOrderForm({
                     <FormLabel>退货原因 *</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="请详细描述退货原因..."
+                        placeholder="填写退货原因"
                         className="min-h-[100px]"
                         {...field}
                       />
@@ -380,7 +380,7 @@ export function ReturnOrderForm({
                   <FormItem>
                     <FormLabel>备注</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="其他备注信息..." {...field} />
+                      <Textarea placeholder="备注" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

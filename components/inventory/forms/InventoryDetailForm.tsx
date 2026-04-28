@@ -69,7 +69,7 @@ export function InventoryDetailForm<M extends OperationMode>({
       <CardHeader>
         <CardTitle className="flex items-center">
           <Calculator className="mr-2 h-5 w-5" />
-          详细信息
+          库存信息
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -241,7 +241,7 @@ export function InventoryDetailForm<M extends OperationMode>({
               <FormLabel>{mode === 'adjust' ? '调整备注' : '备注'}</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="输入备注信息"
+                  placeholder="备注"
                   className="min-h-[80px]"
                   disabled={isLoading}
                   value={typeof field.value === 'string' ? field.value : ''}

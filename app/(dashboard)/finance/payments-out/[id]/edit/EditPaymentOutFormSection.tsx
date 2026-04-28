@@ -461,9 +461,9 @@ export function EditPaymentOutFormSection({
                   name="remarks"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>备注（可选）</FormLabel>
+                      <FormLabel>备注</FormLabel>
                       <FormControl>
-                        <Textarea placeholder="输入备注信息" {...field} />
+                        <Textarea placeholder="备注" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

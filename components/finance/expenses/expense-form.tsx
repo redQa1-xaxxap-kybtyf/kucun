@@ -507,7 +507,7 @@ export function ExpenseForm({
                   <FormLabel>备注</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="请输入备注信息（可选）"
+                      placeholder="备注"
                       className="min-h-[100px]"
                       {...field}
                       maxLength={1000}

@@ -1000,7 +1000,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-sm font-semibold text-slate-700">
-                            备注信息
+                            备注
                           </FormLabel>
                           <FormControl>
                             <Textarea

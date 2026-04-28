@@ -60,7 +60,7 @@ const createShippingDialogSchema = (options: {
         .optional(),
       shippingCompany: z
         .string()
-        .max(100, '船运公司名称不能超过100个字符')
+        .max(100, '船运公司不能超过100个字符')
         .optional(),
       estimatedArrival: z.date().optional(),
       shipmentDate: options.includeShipmentDate
@@ -284,13 +284,13 @@ function ShippingCompanyField({
             {required ? (
               <span className="text-destructive">*</span>
             ) : (
-              <span className="text-yellow-600">(推荐填写)</span>
+              <span className="text-muted-foreground">(选填)</span>
             )}
           </FormLabel>
           <FormControl>
             <Input
               {...field}
-              placeholder="请输入船运公司名称"
+              placeholder="船运公司"
               disabled={disabled}
               value={field.value ?? ''}
             />
