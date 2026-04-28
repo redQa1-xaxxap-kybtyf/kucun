@@ -33,7 +33,7 @@ interface PricingResultDialogProps {
 
 /**
  * 定价结果预览对话框
- * 显示计算出的建议销售价和利润率
+ * 显示测算销售价和利润率
  */
 export function PricingResultDialog({
   open,
@@ -61,7 +61,7 @@ export function PricingResultDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <TrendingUp className="text-primary h-5 w-5" />
-            建议销售价计算结果
+            销售价测算
           </DialogTitle>
           <DialogDescription>目标利润率 20%</DialogDescription>
         </DialogHeader>
@@ -96,7 +96,7 @@ export function PricingResultDialog({
                   <TableHead>进货价</TableHead>
                   <TableHead>分摊运费</TableHead>
                   <TableHead>最终成本</TableHead>
-                  <TableHead>建议售价</TableHead>
+                  <TableHead>测算售价</TableHead>
                   <TableHead className="text-right">利润率</TableHead>
                 </TableRow>
               </TableHeader>
@@ -140,7 +140,7 @@ export function PricingResultDialog({
           </Button>
           <Button onClick={onConfirm}>
             <Check className="mr-2 h-4 w-4" />
-            应用建议价格
+            应用价格
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -669,7 +669,7 @@ export function MonthlyReportClient() {
                           : 'bg-amber-100 text-amber-700'
                       )}
                     >
-                      {alert.type === 'danger' ? '高风险' : '建议关注'}
+                      {alert.type === 'danger' ? '高风险' : '关注'}
                     </span>
                   </div>
                   <div className="text-sm font-semibold text-slate-800">

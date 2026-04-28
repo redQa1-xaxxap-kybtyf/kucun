@@ -21,7 +21,6 @@ import {
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
@@ -87,7 +86,11 @@ export function SmartProductSearch(props: SmartProductSearchProps) {
       if (error instanceof ZodError) {
         return;
       }
-      logger.error('components:sales-orders:smart-product-search', 'onBlur failed', error);
+      logger.error(
+        'components:sales-orders:smart-product-search',
+        'onBlur failed',
+        error
+      );
     };
 
     try {
@@ -153,9 +156,6 @@ export function SmartProductSearch(props: SmartProductSearchProps) {
           >
             <SheetHeader className="border-b px-4 py-3 text-left">
               <SheetTitle>选择产品</SheetTitle>
-              <SheetDescription>
-                支持按编码、名称、规格搜索，也可以直接补录临时产品。
-              </SheetDescription>
             </SheetHeader>
             <SmartProductSearchPanel
               searchValue={searchValue}

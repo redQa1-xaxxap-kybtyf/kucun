@@ -64,9 +64,9 @@ export const ItemsTable = React.memo<ItemsTableProps>(
     );
     const [totalExpenses, setTotalExpenses] = useState(0);
     const [defaultSupplierId, setDefaultSupplierId] = useState('');
-    const watchedItems = form.watch(
-      'items'
-    ) as FactoryShipmentOrderFormData['items'] | undefined;
+    const watchedItems = form.watch('items') as
+      | FactoryShipmentOrderFormData['items']
+      | undefined;
     const duplicateGroups = React.useMemo(
       () => findFactoryShipmentDuplicateGroups(watchedItems ?? []),
       [watchedItems]
@@ -104,7 +104,7 @@ export const ItemsTable = React.memo<ItemsTableProps>(
       return quantity * unitPrice;
     };
 
-    // 计算建议销售价
+    // 测算销售价
     const handleCalculatePricing = useCallback(async () => {
       setIsCalculating(true);
 
@@ -194,7 +194,7 @@ export const ItemsTable = React.memo<ItemsTableProps>(
           '@/lib/services/factory-shipment-pricing-service'
         );
 
-        // 计算建议销售价
+        // 测算销售价
         const results = calculateOrderPricing(
           itemsForCalculation,
           totalExpenses,
@@ -220,7 +220,7 @@ export const ItemsTable = React.memo<ItemsTableProps>(
       }
     }, [form, toast]);
 
-    // 应用建议价格
+    // 应用测算价格
     const handleApplyPricing = useCallback(() => {
       let updatedCount = 0;
       pricingResults.forEach((result, index) => {
@@ -235,7 +235,7 @@ export const ItemsTable = React.memo<ItemsTableProps>(
       setShowPricingDialog(false);
       toast({
         title: '应用成功',
-        description: `已为 ${updatedCount} 个产品设置建议销售价`,
+        description: `已更新 ${updatedCount} 行销售价`,
       });
     }, [form, pricingResults, toast]);
 
@@ -423,7 +423,7 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                 disabled={isCalculating || fields.length === 0}
               >
                 <Calculator className="mr-1 h-3 w-3" />
-                {isCalculating ? '计算中...' : '建议售价'}
+                {isCalculating ? '计算中...' : '测算售价'}
               </Button>
               <Button
                 type="button"

@@ -234,9 +234,7 @@ export const UserForm: React.FC<UserFormProps> = ({
             {mode === 'create' ? '新增用户' : '编辑用户'}
           </DialogTitle>
           <DialogDescription>
-            {mode === 'create'
-              ? '创建新的用户账户，请填写完整的用户信息。'
-              : '修改用户信息，密码不会被更改。'}
+            {mode === 'create' ? '新建成员账号' : '修改账号资料，密码不变。'}
           </DialogDescription>
         </DialogHeader>
 

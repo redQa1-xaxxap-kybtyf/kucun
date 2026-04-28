@@ -249,7 +249,7 @@ export function ReturnOrdersPageClient({
       <div className="space-y-4 sm:space-y-6">
         <PageHeader
           title="退货订单管理"
-          description="管理客户退货订单，跟踪退货处理状态和退款情况"
+          description="退货处理记录"
           icon={<PackageX className="h-6 w-6 text-white" />}
           iconBgColor="hsl(var(--color-error))"
           actions={
@@ -265,11 +265,7 @@ export function ReturnOrdersPageClient({
                   导出
                 </Link>
               </Button>
-              <Button
-                size="lg"
-                asChild
-                className="h-11 shadow-sm"
-              >
+              <Button size="lg" asChild className="h-11 shadow-sm">
                 <Link href="/return-orders/create">
                   <Plus className="mr-2 h-4 w-4" />
                   新建退货单

@@ -29,8 +29,8 @@ import { fetchDefaultTemplate } from '@/lib/print-designer/default-template-clie
 import { fetchPrintDataForTemplate } from '@/lib/print-designer/preview-data-client';
 import type { PrintTemplate, TemplateType } from '@/lib/print-designer/schemas';
 
-import { PrintCanvas } from './PrintCanvas';
 import { printTemplateContent } from './print-frame';
+import { PrintCanvas } from './PrintCanvas';
 
 const typeLabels: Record<TemplateType, string> = {
   'sales-order': '销售订单',
@@ -118,10 +118,10 @@ export function PrintTemplatePreviewDialog({
       }
 
       if (!templateResult.data) {
-        const msg = '该单据类型未配置默认打印模板，请先在系统设置中配置。';
+        const msg = '未设置默认打印模板，请先到系统设置选择模板。';
         setError(msg);
         toast({
-          title: '模板未配置',
+          title: '未设置模板',
           description: msg,
           variant: 'destructive',
         });

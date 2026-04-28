@@ -299,7 +299,7 @@ function InitialStockDuplicateTable({
               <TableHead>产品编码</TableHead>
               <TableHead>批次号</TableHead>
               <TableHead>跳过原因</TableHead>
-              <TableHead>说明</TableHead>
+              <TableHead>备注</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

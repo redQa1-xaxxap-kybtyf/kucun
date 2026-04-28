@@ -28,7 +28,7 @@ export default function CreatePaymentOutPage() {
   return (
     <div className="flex h-full flex-col overflow-hidden p-6">
       <div className="space-y-6">
-        <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+        <Card className="border-border overflow-hidden rounded-md border shadow-sm">
           <CardContent className="bg-card p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -40,16 +40,11 @@ export default function CreatePaymentOutPage() {
                     登记付款
                   </h1>
                   <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-                    填写付款信息，保存后会直接记为已完成付款
+                    保存后记为已付款
                   </p>
                 </div>
               </div>
-              <Button
-                variant="outline"
-                size="lg"
-                asChild
-                className="h-10"
-              >
+              <Button variant="outline" size="lg" asChild className="h-10">
                 <Link href="/finance/payments-out">
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   返回

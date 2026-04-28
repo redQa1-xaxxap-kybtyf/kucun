@@ -186,7 +186,7 @@ function SalesOrderImportDuplicateTable({
               <TableHead>行号</TableHead>
               <TableHead>导入单号</TableHead>
               <TableHead>已有订单号</TableHead>
-              <TableHead>说明</TableHead>
+              <TableHead>原因</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

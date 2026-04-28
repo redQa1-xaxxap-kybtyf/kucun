@@ -475,7 +475,7 @@ export function OtherSettings({
                 value={footer.content}
                 onChange={e => onFooterChange({ content: e.target.value })}
                 rows={3}
-                placeholder="支持变量：{pageNumber}, {totalPages}, {date}, {time}"
+                placeholder="例：第 {pageNumber}/{totalPages} 页"
               />
             </div>
 

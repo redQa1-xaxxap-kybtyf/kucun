@@ -81,7 +81,7 @@ export function OrderItemsTable({
   const totalWeightKg = getSalesOrderTotalWeightKg(orderItems);
 
   return (
-    <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+    <Card className="border-border overflow-hidden rounded-md border shadow-sm">
       <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <CardTitle className="flex items-center gap-3 text-sm font-semibold text-slate-900">
@@ -120,65 +120,65 @@ export function OrderItemsTable({
         {/* 桌面端：表格视图 */}
         <div className="hidden overflow-x-auto md:block">
           <table className="w-full text-sm text-slate-600">
-            <thead className="sticky top-0 z-10 border-b border-slate-100 bg-slate-50 text-table-header">
+            <thead className="text-table-header sticky top-0 z-10 border-b border-slate-100 bg-slate-50">
               <tr>
-                <th className="h-11 px-3 py-3 text-left align-middle font-semibold leading-none whitespace-nowrap">
+                <th className="h-11 px-3 py-3 text-left align-middle leading-none font-semibold whitespace-nowrap">
                   产品编码
                 </th>
-                <th className="h-11 px-3 py-3 text-left align-middle font-semibold leading-none whitespace-nowrap">
+                <th className="h-11 px-3 py-3 text-left align-middle leading-none font-semibold whitespace-nowrap">
                   产品名称
                 </th>
-                <th className="h-11 px-3 py-3 text-left align-middle font-semibold leading-none whitespace-nowrap">
+                <th className="h-11 px-3 py-3 text-left align-middle leading-none font-semibold whitespace-nowrap">
                   规格
                 </th>
                 {order.orderType !== 'TRANSFER' && (
-                  <th className="h-11 px-3 py-3 text-center align-middle font-semibold leading-none whitespace-nowrap">
+                  <th className="h-11 px-3 py-3 text-center align-middle leading-none font-semibold whitespace-nowrap">
                     批次/日期
                   </th>
                 )}
-                <th className="h-11 min-w-[90px] px-3 py-3 text-center align-middle font-semibold leading-none whitespace-nowrap">
+                <th className="h-11 min-w-[90px] px-3 py-3 text-center align-middle leading-none font-semibold whitespace-nowrap">
                   装箱数
                 </th>
-                <th className="h-11 px-3 py-3 text-center align-middle font-semibold leading-none whitespace-nowrap">
+                <th className="h-11 px-3 py-3 text-center align-middle leading-none font-semibold whitespace-nowrap">
                   单位
                 </th>
-                <th className="h-11 px-3 py-3 text-right align-middle font-semibold leading-none whitespace-nowrap">
+                <th className="h-11 px-3 py-3 text-right align-middle leading-none font-semibold whitespace-nowrap">
                   数量
                 </th>
-                <th className="h-11 px-3 py-3 text-right align-middle font-semibold leading-none whitespace-nowrap">
+                <th className="h-11 px-3 py-3 text-right align-middle leading-none font-semibold whitespace-nowrap">
                   重量(kg)
                 </th>
                 {order.orderType === 'TRANSFER' && (
                   <>
-                    <th className="h-11 px-3 py-3 text-right align-middle font-semibold leading-none whitespace-nowrap">
+                    <th className="h-11 px-3 py-3 text-right align-middle leading-none font-semibold whitespace-nowrap">
                       本地发货
                     </th>
-                    <th className="h-11 px-3 py-3 text-right align-middle font-semibold leading-none whitespace-nowrap">
+                    <th className="h-11 px-3 py-3 text-right align-middle leading-none font-semibold whitespace-nowrap">
                       调货发货
                     </th>
                   </>
                 )}
-                <th className="h-11 px-3 py-3 text-right align-middle font-semibold leading-none whitespace-nowrap">
+                <th className="h-11 px-3 py-3 text-right align-middle leading-none font-semibold whitespace-nowrap">
                   单价
                 </th>
-                <th className="h-11 px-3 py-3 text-right align-middle font-semibold leading-none whitespace-nowrap">
+                <th className="h-11 px-3 py-3 text-right align-middle leading-none font-semibold whitespace-nowrap">
                   小计
                 </th>
                 {order.orderType === 'TRANSFER' && (
                   <>
-                    <th className="h-11 px-3 py-3 text-right align-middle font-semibold leading-none whitespace-nowrap">
+                    <th className="h-11 px-3 py-3 text-right align-middle leading-none font-semibold whitespace-nowrap">
                       单位成本
                     </th>
-                    <th className="h-11 px-3 py-3 text-right align-middle font-semibold leading-none whitespace-nowrap">
+                    <th className="h-11 px-3 py-3 text-right align-middle leading-none font-semibold whitespace-nowrap">
                       成本小计
                     </th>
-                    <th className="h-11 px-3 py-3 text-right align-middle font-semibold leading-none whitespace-nowrap">
+                    <th className="h-11 px-3 py-3 text-right align-middle leading-none font-semibold whitespace-nowrap">
                       毛利
                     </th>
                   </>
                 )}
-                <th className="h-11 min-w-[120px] px-3 py-3 text-left align-middle font-semibold leading-none whitespace-nowrap">
-                  备注说明
+                <th className="h-11 min-w-[120px] px-3 py-3 text-left align-middle leading-none font-semibold whitespace-nowrap">
+                  备注
                 </th>
               </tr>
             </thead>
@@ -210,8 +210,12 @@ export function OrderItemsTable({
                 const displayProductCode = item.isManualProduct
                   ? manualCode || '-'
                   : item.product?.code || '-';
-                const localQuantityDisplay = formatDecimal(item.localQuantity ?? 0);
-                const transferQuantityDisplay = formatDecimal(item.transferQuantity ?? 0);
+                const localQuantityDisplay = formatDecimal(
+                  item.localQuantity ?? 0
+                );
+                const transferQuantityDisplay = formatDecimal(
+                  item.transferQuantity ?? 0
+                );
                 const itemWeightKg = getSalesOrderItemWeightKg(item);
 
                 return (
@@ -316,7 +320,8 @@ export function OrderItemsTable({
                       <>
                         <td className="px-3 py-3.5 text-right align-top whitespace-nowrap">
                           <span className="text-sm text-gray-600">
-                            {item.unitCost !== null && item.unitCost !== undefined
+                            {item.unitCost !== null &&
+                            item.unitCost !== undefined
                               ? formatCostPrice(item.unitCost)
                               : '-'}
                           </span>
@@ -374,7 +379,10 @@ export function OrderItemsTable({
                 </td>
                 <td className="px-3 py-4 text-right whitespace-nowrap">
                   <span className="font-mono text-base font-semibold text-slate-900">
-                    {formatTotalQuantitySummary(orderItems, totalDisplayQuantity)}
+                    {formatTotalQuantitySummary(
+                      orderItems,
+                      totalDisplayQuantity
+                    )}
                   </span>
                 </td>
                 <td className="px-3 py-4 text-right whitespace-nowrap">
@@ -594,7 +602,10 @@ export function OrderItemsTable({
                 <span>
                   总数量：
                   <span className="font-semibold">
-                    {formatTotalQuantitySummary(orderItems, totalDisplayQuantity)}
+                    {formatTotalQuantitySummary(
+                      orderItems,
+                      totalDisplayQuantity
+                    )}
                   </span>
                 </span>
                 {totalWeightKg > 0 && (

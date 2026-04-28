@@ -24,7 +24,7 @@ export function FeeItemsCard({
     .reduce((sum, fee) => sum + (fee.feeAmount || 0), 0);
 
   return (
-    <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+    <Card className="border-border overflow-hidden rounded-md border shadow-sm">
       <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4">
         <CardTitle className="flex items-center justify-between text-sm font-semibold text-slate-900">
           <div className="flex items-center">
@@ -39,24 +39,24 @@ export function FeeItemsCard({
       <CardContent className="bg-white p-0">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="border-b border-slate-100 bg-slate-50 text-table-header">
+            <thead className="text-table-header border-b border-slate-100 bg-slate-50">
               <tr>
-                <th className="h-11 px-4 py-3 text-center align-middle font-semibold leading-none">
+                <th className="h-11 px-4 py-3 text-center align-middle leading-none font-semibold">
                   #
                 </th>
-                <th className="h-11 px-4 py-3 text-left align-middle font-semibold leading-none">
+                <th className="h-11 px-4 py-3 text-left align-middle leading-none font-semibold">
                   费项类别
                 </th>
-                <th className="h-11 px-4 py-3 text-left align-middle font-semibold leading-none">
-                  内容说明
+                <th className="h-11 px-4 py-3 text-left align-middle leading-none font-semibold">
+                  内容
                 </th>
-                <th className="h-11 px-4 py-3 text-right align-middle font-semibold leading-none">
+                <th className="h-11 px-4 py-3 text-right align-middle leading-none font-semibold">
                   核算金额
                 </th>
-                <th className="h-11 px-4 py-3 text-center align-middle font-semibold leading-none">
+                <th className="h-11 px-4 py-3 text-center align-middle leading-none font-semibold">
                   支出方
                 </th>
-                <th className="h-11 px-4 py-3 text-left align-middle font-semibold leading-none">
+                <th className="h-11 px-4 py-3 text-left align-middle leading-none font-semibold">
                   业务备注
                 </th>
               </tr>
@@ -109,9 +109,7 @@ export function FeeItemsCard({
             <tfoot className="border-t-2 border-slate-200 bg-slate-50/50">
               <tr className="font-bold">
                 <td colSpan={4} className="px-4 py-4 text-right text-slate-500">
-                  <span className="text-[10px] font-bold">
-                    客户承担小计
-                  </span>
+                  <span className="text-[10px] font-bold">客户承担小计</span>
                 </td>
                 <td className="px-4 py-3 text-right">
                   <span className="font-mono text-sm font-semibold text-slate-900">
@@ -122,9 +120,7 @@ export function FeeItemsCard({
               </tr>
               <tr className="border-t border-slate-100 font-bold">
                 <td colSpan={4} className="px-4 py-4 text-right text-slate-500">
-                  <span className="text-[10px] font-bold">
-                    公司承担小计
-                  </span>
+                  <span className="text-[10px] font-bold">公司承担小计</span>
                 </td>
                 <td className="px-4 py-3 text-right">
                   <span className="font-mono text-sm font-semibold text-slate-500">
@@ -136,9 +132,7 @@ export function FeeItemsCard({
               <tr className="border-t border-slate-200 bg-slate-100/20 font-semibold">
                 <td colSpan={4} className="px-4 py-5 text-right text-slate-900">
                   <div className="flex items-center justify-end gap-3">
-                    <span className="text-xs font-bold">
-                      业务应收总额
-                    </span>
+                    <span className="text-xs font-bold">业务应收总额</span>
                     <span className="text-[10px] font-medium text-slate-400">
                       (产品 {formatCurrency(productSubtotal)} + 费用{' '}
                       {formatCurrency(order.additionalFees)})

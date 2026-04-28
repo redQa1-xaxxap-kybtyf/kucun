@@ -38,7 +38,7 @@ export function CountStatisticsPageClient({
       {/* 页面标题 */}
       <PageHeader
         title="盘点单统计"
-        description="查看盘点单数量、盘点进度和差异情况"
+        description="盘点统计"
         icon={<BarChart3 className="h-6 w-6 text-white" />}
         iconBgColor="hsl(var(--color-info))"
         actions={

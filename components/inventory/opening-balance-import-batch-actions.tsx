@@ -120,15 +120,13 @@ function formatUnitCostInput(unitCost?: number) {
 }
 
 function getUnitCostInputPlaceholder(mode: OpeningBalanceUnitCostEntryMode) {
-  return mode === 'unit'
-    ? '按件录入时可直接填 96，也支持 24片价'
-    : '支持 24、24片价、96元/件';
+  return mode === 'unit' ? '例：96元/件 / 24片价' : '例：24 / 96元/件';
 }
 
 function getUnitCostInputHelperText(mode: OpeningBalanceUnitCostEntryMode) {
   return mode === 'unit'
-    ? '当前按件录入：直接填 96 会按件价换算并保存为单片成本；若某行本身就是片价，可明确写 24片价。'
-    : '当前按片录入：直接填 24 会按单片成本保存；若手里拿的是件价，也支持写 96元/件 自动换算。';
+    ? '按件价保存，系统自动换算单片成本。'
+    : '按片价保存；填写件价会自动换算。';
 }
 
 function buildQuantityInputs(detail: OpeningBalanceImportBatchDetail) {
@@ -925,8 +923,8 @@ export function OpeningBalanceImportBatchActions({
                               }
                               placeholder={
                                 record.piecesPerUnit > 0
-                                  ? '支持 460、460片、115件、115件+2片'
-                                  : '请输入正确片数'
+                                  ? '例：460片 / 115件+2片'
+                                  : '例：460片'
                               }
                               className="min-w-48"
                             />

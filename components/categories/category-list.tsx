@@ -430,7 +430,7 @@ function CategoryMobileCard({
               </div>
             ) : null}
             {category.description ? (
-              <div className="line-clamp-2">说明：{category.description}</div>
+              <div className="line-clamp-2">备注：{category.description}</div>
             ) : null}
           </div>
         </div>
@@ -640,7 +640,7 @@ function CategoryNameCell({
           {category.code ? <CategoryCodeBadge code={category.code} /> : null}
           {category.description && (
             <div className="line-clamp-1 text-gray-400">
-              说明：{category.description}
+              备注：{category.description}
             </div>
           )}
         </div>

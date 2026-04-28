@@ -373,7 +373,7 @@ function RecordsTable({
           <TableHead className="text-right">合格入库 / 到货</TableHead>
           <TableHead>业务类型</TableHead>
           <TableHead>记账时间</TableHead>
-          <TableHead className="hidden 2xl:table-cell">备注说明</TableHead>
+          <TableHead className="hidden 2xl:table-cell">备注</TableHead>
           {canManageOpeningBalance ? (
             <TableHead className="hidden 2xl:table-cell">期初纠错</TableHead>
           ) : null}

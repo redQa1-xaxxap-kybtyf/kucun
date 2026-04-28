@@ -173,7 +173,7 @@ export function CountsPageClient({
         {/* 页面标题 */}
         <PageHeader
           title="盘点单"
-          description="管理盘点单，查看盘点进度"
+          description="盘点记录"
           icon={<ClipboardCheck className="h-6 w-6 text-white" />}
           iconBgColor="hsl(var(--color-info))"
           actions={

@@ -153,7 +153,7 @@ function ProductImportDuplicateTable({
               <TableHead>行号</TableHead>
               <TableHead>产品编码</TableHead>
               <TableHead>来源</TableHead>
-              <TableHead>说明</TableHead>
+              <TableHead>原因</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

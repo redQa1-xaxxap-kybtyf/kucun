@@ -526,10 +526,10 @@ export default function ProfilePage() {
             <section className="space-y-4">
               <div className="flex flex-col gap-1 px-1">
                 <h3 className="text-sm font-semibold text-slate-900">
-                  账号安全管理
+                  账号安全
                 </h3>
                 <p className="text-[11px] font-medium text-slate-400">
-                  建议定期修改密码以保障账号安全
+                  修改登录密码
                 </p>
               </div>
 

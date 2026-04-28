@@ -19,12 +19,11 @@ import type { Metadata } from 'next';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = {
-  title: '帮助中心 - 瓷砖销售 ERP',
-  description: '系统使用指南、常见问题解答和人工支持方式',
+  title: '帮助 - 瓷砖销售 ERP',
+  description: '常用操作和联系方式',
 };
 
 /**
@@ -155,14 +154,11 @@ export default function HelpPage() {
             <div className="space-y-1">
               <div className="flex items-center gap-3">
                 <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
-                  帮助中心
+                  帮助
                 </h1>
-                <Badge className="bg-slate-900 px-2.5 py-1 text-[10px] font-semibold text-white hover:bg-slate-800">
-                  使用指南
-                </Badge>
               </div>
               <p className="text-sm font-bold text-slate-400">
-                为您提供系统操作指南、常见问题解答和支持渠道
+                常用操作和联系方式
               </p>
             </div>
           </div>
@@ -181,7 +177,7 @@ export default function HelpPage() {
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {[
             {
-              title: '操作教学视频',
+              title: '操作视频',
               desc: '手把手带您熟悉核心业务流程',
               icon: Video,
               color: 'text-blue-500',
@@ -189,7 +185,7 @@ export default function HelpPage() {
               action: '立即观看',
             },
             {
-              title: '用户使用手册',
+              title: '使用手册',
               desc: '完整的系统功能字典与操作规范',
               icon: Download,
               color: 'text-emerald-500',
@@ -197,7 +193,7 @@ export default function HelpPage() {
               action: '下载 PDF',
             },
             {
-              title: '人工协助排查',
+              title: '联系客服',
               desc: '针对复杂业务场景提供即时支持',
               icon: MessageCircle,
               color: 'text-purple-500',
@@ -215,9 +211,6 @@ export default function HelpPage() {
               <h3 className="mb-2 text-lg font-semibold text-slate-900">
                 {service.title}
               </h3>
-              <p className="mb-6 text-sm leading-relaxed font-medium text-slate-400">
-                {service.desc}
-              </p>
               <Button
                 variant="ghost"
                 className={cn(
@@ -243,11 +236,8 @@ export default function HelpPage() {
             <section className="space-y-6">
               <div className="flex flex-col gap-1 px-1">
                 <h3 className="text-sm font-semibold text-slate-900">
-                  系统操作指南目录
+                  常用操作
                 </h3>
-                <p className="text-[11px] font-medium text-slate-400">
-                  按照业务模块分类的详细操作说明
-                </p>
               </div>
 
               <div className="overflow-hidden rounded-md border border-slate-100 bg-white shadow-sm">
@@ -267,9 +257,6 @@ export default function HelpPage() {
                             <h4 className="text-base font-semibold text-slate-900">
                               {category.title}
                             </h4>
-                            <p className="text-[11px] font-medium text-slate-400">
-                              {category.description}
-                            </p>
                           </div>
                         </div>
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -280,9 +267,6 @@ export default function HelpPage() {
                             >
                               <span className="text-sm font-semibold text-slate-700 transition-colors group-hover:text-blue-600">
                                 {item.title}
-                              </span>
-                              <span className="mt-1 text-[11px] leading-relaxed font-medium text-slate-400">
-                                {item.description}
                               </span>
                             </button>
                           ))}
@@ -364,7 +348,7 @@ export default function HelpPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col gap-1">
                     <span className="text-xs font-semibold text-slate-900">
-                      核心引擎状态
+                      系统状态
                     </span>
                     <p className="text-[10px] font-medium text-slate-400">
                       系统服务运行正常
@@ -375,14 +359,6 @@ export default function HelpPage() {
                     正常运行
                   </Badge>
                 </div>
-                <Separator className="my-5 bg-slate-50" />
-                <p className="text-right text-[10px] font-bold text-slate-300">
-                  最近更新：{' '}
-                  {new Date().toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </p>
               </div>
             </section>
           </div>

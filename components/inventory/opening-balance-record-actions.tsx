@@ -418,9 +418,7 @@ export function OpeningBalanceRecordActions({
                 value={quantityInput}
                 onChange={event => setQuantityInput(event.target.value)}
                 placeholder={
-                  piecesPerUnit > 0
-                    ? '支持输入 460、460片、115件、115件+2片'
-                    : '请输入正确的片数，例如 460 或 460片'
+                  piecesPerUnit > 0 ? '例：460片 / 115件+2片' : '例：460片'
                 }
                 disabled={updateMutation.isPending}
               />

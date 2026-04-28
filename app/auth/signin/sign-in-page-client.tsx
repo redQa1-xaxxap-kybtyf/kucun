@@ -15,13 +15,7 @@ import { useForm } from 'react-hook-form';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
   FormControl,
@@ -91,7 +85,7 @@ export default function SignInPageClient({
     } => ({
       CredentialsSignin: '用户名或密码错误，请检查后重试',
       AccessDenied: '访问被拒绝，权限不足',
-      MISSING_FIELDS: '请填写完整的登录信息',
+      MISSING_FIELDS: '请输入用户名、密码和验证码',
       INVALID_FORMAT: '用户名、密码或验证码格式不正确',
       INVALID_CREDENTIALS: '用户名或密码错误，请检查后重试',
       ACCOUNT_DISABLED: '用户名或密码错误，请检查后重试',
@@ -283,9 +277,6 @@ export default function SignInPageClient({
         <Card>
           <CardHeader className="space-y-1">
             <CardTitle className="text-center text-2xl">瓷砖销售 ERP</CardTitle>
-            <CardDescription className="text-center">
-              请输入您的账户信息登录系统
-            </CardDescription>
           </CardHeader>
           <CardContent>
             {error && (

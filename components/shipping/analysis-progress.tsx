@@ -64,9 +64,9 @@ const DEFAULT_ANALYSIS_STEPS: AnalysisStep[] = [
   },
   {
     id: 'recommend',
-    name: '生成推荐配置',
+    name: '生成识别规则',
     status: 'pending',
-    description: '根据分析结果生成推荐方案',
+    description: '整理可用规则',
     icon: <CheckCircle className="h-4 w-4" />,
   },
 ];
@@ -284,9 +284,9 @@ export function useAnalysisProgress() {
       },
       {
         id: 'recommend',
-        name: '生成推荐配置',
+        name: '生成识别规则',
         status: 'pending' as const,
-        description: '生成页面定位规则建议',
+        description: '整理可用规则',
         icon: <CheckCircle className="h-4 w-4" />,
       },
     ];

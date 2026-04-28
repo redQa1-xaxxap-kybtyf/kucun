@@ -3,13 +3,7 @@ import Link from 'next/link';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default async function AuthErrorPage({
   searchParams,
@@ -60,7 +54,6 @@ export default async function AuthErrorPage({
               <AlertTriangle className="h-6 w-6 text-red-600" />
             </div>
             <CardTitle className="text-2xl">{errorInfo.title}</CardTitle>
-            <CardDescription>登录过程中遇到了一点问题</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Alert variant="destructive">

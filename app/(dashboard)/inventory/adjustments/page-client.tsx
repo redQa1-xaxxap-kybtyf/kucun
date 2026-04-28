@@ -104,7 +104,7 @@ export function AdjustmentRecordsPageClient({
         <div className="space-y-6">
           <PageHeader
             title="调整记录"
-            description="查看库存调整记录"
+            description="库存调整记录"
             icon={<FileText className="h-6 w-6 text-white" />}
             iconBgColor="hsl(var(--color-warning))"
             actions={
@@ -145,7 +145,7 @@ export function AdjustmentRecordsPageClient({
         {/* 页面标题 */}
         <PageHeader
           title="调整记录"
-          description="查看库存调整记录"
+          description="库存调整记录"
           icon={<FileText className="h-6 w-6 text-white" />}
           iconBgColor="hsl(var(--color-warning))"
           actions={
