@@ -2278,7 +2278,7 @@ export function ERPSalesOrderForm({
           {/* ERP标准布局：操作按钮 */}
           <div className="bg-card sticky bottom-0 z-20 rounded-md border p-2 shadow-md">
             <div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
-              <div className="grid grid-cols-3 gap-2 text-xs sm:grid-cols-4 xl:w-auto">
+              <div className="grid grid-cols-3 gap-2 text-xs sm:grid-cols-4 xl:min-w-[420px] xl:flex-1">
                 <div className="rounded-md bg-slate-50 px-2 py-1.5">
                   <div className="text-slate-500">产品</div>
                   <div className="font-semibold text-slate-900">
@@ -2305,30 +2305,43 @@ export function ERPSalesOrderForm({
                 </div>
               </div>
 
-              <div className="flex w-full justify-end xl:w-auto xl:justify-start">
+              <div className="grid w-full gap-2 sm:grid-cols-[minmax(88px,auto)_1fr_1fr] xl:w-auto xl:min-w-[430px]">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handleCancel}
                   disabled={isSubmitting}
-                  className="h-9 w-full text-xs sm:w-auto"
+                  className="h-10 w-full text-xs"
                 >
                   取消
                 </Button>
-              </div>
 
-              <div className="grid gap-2 sm:grid-cols-2 xl:flex xl:items-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isSubmitting || !form.watch('customerId')}
+                  className="h-10 w-full text-xs"
+                  onClick={() => submitWithStatus('draft')}
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                  ) : (
+                    <Save className="mr-1 h-3 w-3" />
+                  )}
+                  {mode === 'edit' ? '保存修改' : '保存订单'}
+                </Button>
+
                 <div className="flex w-full items-center gap-2">
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="default"
                     disabled={
                       isSubmitting ||
                       inventoryBlockingSummary.hasBlockingIssue ||
                       fields.length === 0 ||
                       !form.watch('customerId')
                     }
-                    className="h-9 w-full text-xs"
+                    className="h-10 w-full text-xs"
                     onClick={() => submitWithStatus('confirmed')}
                   >
                     {isSubmitting ? (
@@ -2346,7 +2359,7 @@ export function ERPSalesOrderForm({
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="h-9 w-9 shrink-0 text-red-600 hover:bg-red-50 hover:text-red-700"
+                            className="h-10 w-10 shrink-0 text-red-600 hover:bg-red-50 hover:text-red-700"
                             aria-label="查看无法确认的原因"
                             title="查看无法确认的原因"
                           >
@@ -2400,20 +2413,6 @@ export function ERPSalesOrderForm({
                     </TooltipProvider>
                   )}
                 </div>
-                <Button
-                  type="button"
-                  variant="default"
-                  disabled={isSubmitting || !form.watch('customerId')}
-                  className="h-9 w-full text-xs"
-                  onClick={() => submitWithStatus('draft')}
-                >
-                  {isSubmitting ? (
-                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                  ) : (
-                    <Save className="mr-1 h-3 w-3" />
-                  )}
-                  {mode === 'edit' ? '保存修改' : '保存订单'}
-                </Button>
               </div>
             </div>
 
