@@ -489,7 +489,7 @@ export function PaymentsClient({
                   将取消收款单{' '}
                   <strong>{cancellingPayment.paymentNumber}</strong>。
                   <br />
-                  取消后会关闭这笔待确认到账记录，保留单据，但不会继续算作到账。
+                  取消后不再计入到账。
                 </>
               ) : (
                 '确认取消当前待确认到账记录。'
@@ -498,7 +498,7 @@ export function PaymentsClient({
           </AlertDialogHeader>
 
           <div className="space-y-2">
-            <div className="text-sm font-medium">取消备注（可选）</div>
+            <div className="text-sm font-medium">备注（可选）</div>
             <Textarea
               value={cancelNotes}
               onChange={event => setCancelNotes(event.target.value)}
@@ -593,7 +593,6 @@ function PaymentStatisticsCards({
           <div className="text-2xl font-bold text-[hsl(var(--color-warning))]">
             {formatCurrency(statistics.pendingAmount)}
           </div>
-          <p className="text-muted-foreground text-xs">需要及时确认</p>
         </CardContent>
       </Card>
 

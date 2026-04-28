@@ -450,7 +450,7 @@ export function PaymentsPageClient({
       <div className="space-y-4 sm:space-y-6">
         <PageHeader
           title="收款管理"
-          description="查看待确认与已到账收款，方便快速核对。"
+          description="登记和确认客户收款。"
           icon={<ChineseYuan className="h-6 w-6 text-white" />}
           iconBgColor="hsl(var(--color-success))"
           actions={

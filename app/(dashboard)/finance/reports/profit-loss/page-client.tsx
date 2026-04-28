@@ -101,8 +101,9 @@ export function ProfitLossClient() {
     setIsExporting(true);
     try {
       const filename = `盈亏分析报告-${startDate}-${endDate}`;
-      const { PrintTemplateExportService } =
-        await import('@/lib/services/print-template-export-service');
+      const { PrintTemplateExportService } = await import(
+        '@/lib/services/print-template-export-service'
+      );
 
       await PrintTemplateExportService.exportDataToImage({
         templateType: 'finance-profit-loss-report',
@@ -195,7 +196,7 @@ export function ProfitLossClient() {
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="space-y-4 sm:space-y-6">
         {/* 页面标题卡片 */}
-        <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+        <Card className="border-border overflow-hidden rounded-md border shadow-sm">
           <CardContent className="bg-card p-4 sm:p-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-start gap-3 sm:items-center sm:gap-4">
@@ -538,9 +539,7 @@ export function ProfitLossClient() {
         {/* 费用明细 */}
         <section className="rounded-md border border-slate-100 p-6 shadow-sm">
           <div className="mb-6 flex items-center justify-between border-b border-slate-50 pb-4">
-            <h2 className="text-sm font-semibold text-slate-900">
-              费用明细
-            </h2>
+            <h2 className="text-sm font-semibold text-slate-900">费用明细</h2>
             <div className="text-xs font-bold text-slate-400">
               数据更新于: {new Date().toLocaleDateString()}
             </div>
@@ -669,7 +668,7 @@ export function ProfitLossClient() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-rose-900">
                 <AlertCircle className="h-5 w-5" />
-                风险提示
+                经营提醒
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -708,7 +707,6 @@ export function ProfitLossClient() {
             </CardContent>
           </Card>
         )}
-
       </div>
     </div>
   );
@@ -797,14 +795,7 @@ function StatCard({
             </div>
           </div>
         </div>
-        <div
-          className={cn(
-            'rounded-md p-2',
-            iconStyles[variant]
-          )}
-        >
-          {icon}
-        </div>
+        <div className={cn('rounded-md p-2', iconStyles[variant])}>{icon}</div>
       </CardHeader>
       <CardContent className="px-5 pt-0 pb-5">
         <div className="flex flex-col gap-2">

@@ -147,11 +147,11 @@ function ReceivableHeaderActions({
   onOpenPaymentDialog: () => void;
 }) {
   return (
-    <div className="rounded-md border bg-card p-4 shadow-sm sm:p-5">
+    <div className="bg-card rounded-md border p-4 shadow-sm sm:p-5">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm text-muted-foreground">应收编号</span>
+            <span className="text-muted-foreground text-sm">应收编号</span>
             <span className="font-medium">{receivable.receivableNumber}</span>
             <Badge variant={getReceivableStatusBadgeVariant(receivable.status)}>
               {RECEIVABLE_STATUS_LABELS[
@@ -159,7 +159,7 @@ function ReceivableHeaderActions({
               ] || receivable.status}
             </Badge>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             这里按销售订单查看应收、已收、抹零和预收抵扣情况。
           </p>
         </div>
@@ -201,8 +201,10 @@ function InfoField({
 }) {
   return (
     <div className={cn('min-w-0 space-y-1.5', className)}>
-      <label className="text-sm font-medium text-muted-foreground">{label}</label>
-      <div className="min-h-6 break-words text-sm">{children}</div>
+      <label className="text-muted-foreground text-sm font-medium">
+        {label}
+      </label>
+      <div className="min-h-6 text-sm break-words">{children}</div>
     </div>
   );
 }
@@ -230,7 +232,9 @@ function BasicInfoFields({
         <Button
           variant="link"
           className="h-auto p-0 text-left whitespace-normal"
-          onClick={() => router.push(`/sales-orders/${receivable.salesOrder.id}`)}
+          onClick={() =>
+            router.push(`/sales-orders/${receivable.salesOrder.id}`)
+          }
         >
           {receivable.salesOrder.orderNumber}
         </Button>
@@ -238,7 +242,7 @@ function BasicInfoFields({
 
       <InfoField label="客户">
         <div className="flex items-center gap-2">
-          <Users className="h-4 w-4 text-muted-foreground" />
+          <Users className="text-muted-foreground h-4 w-4" />
           <span>{receivable.customer.name}</span>
         </div>
       </InfoField>
@@ -253,7 +257,7 @@ function BasicInfoFields({
 
       <InfoField label="到期日期">
         <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <Calendar className="text-muted-foreground h-4 w-4" />
           <span>{formatDate(receivable.dueDate)}</span>
         </div>
       </InfoField>
@@ -277,19 +281,19 @@ function BasicInfoExtra({ receivable }: { receivable: ReceivableDetail }) {
   return (
     <div className="grid gap-3 lg:grid-cols-2">
       {receivable.description && (
-        <div className="rounded-md border bg-muted/30 p-4">
-          <label className="text-sm font-medium text-muted-foreground">
+        <div className="bg-muted/30 rounded-md border p-4">
+          <label className="text-muted-foreground text-sm font-medium">
             描述
           </label>
-          <p className="mt-1 break-words text-sm">{receivable.description}</p>
+          <p className="mt-1 text-sm break-words">{receivable.description}</p>
         </div>
       )}
       {receivable.remarks && (
-        <div className="rounded-md border bg-muted/30 p-4">
-          <label className="text-sm font-medium text-muted-foreground">
+        <div className="bg-muted/30 rounded-md border p-4">
+          <label className="text-muted-foreground text-sm font-medium">
             备注信息
           </label>
-          <p className="mt-1 break-words text-sm">{receivable.remarks}</p>
+          <p className="mt-1 text-sm break-words">{receivable.remarks}</p>
         </div>
       )}
     </div>
@@ -304,7 +308,7 @@ function BasicInfoCard({
   router: RouterLike;
 }) {
   return (
-    <Card className="rounded-md border border-border shadow-sm">
+    <Card className="border-border rounded-md border shadow-sm">
       <CardHeader className="border-b bg-slate-50">
         <CardTitle>基本信息</CardTitle>
       </CardHeader>
@@ -319,17 +323,19 @@ function BasicInfoCard({
 function ReceivableConfirmationCard({
   receivableConfirmation,
 }: {
-  receivableConfirmation: NonNullable<ReceivableDetail['receivableConfirmation']>;
+  receivableConfirmation: NonNullable<
+    ReceivableDetail['receivableConfirmation']
+  >;
 }) {
   return (
-    <Card className="rounded-md border border-border shadow-sm">
+    <Card className="border-border rounded-md border shadow-sm">
       <CardHeader className="border-b bg-slate-50">
-        <CardTitle className="text-base">应收登记记录</CardTitle>
+        <CardTitle className="text-base">应收记录</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 pt-6">
-        <div className="rounded-md border border-dashed bg-muted/30 p-4">
-          <p className="text-sm text-muted-foreground">
-            这条记录用于确认订单应收已建立，不代表客户已经付款。
+        <div className="bg-muted/30 rounded-md border border-dashed p-4">
+          <p className="text-muted-foreground text-sm">
+            系统生成，不计入客户实付。
           </p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -367,7 +373,7 @@ function ReceivableConfirmationCard({
 
 function PaymentRecordsCard({ receivable }: { receivable: ReceivableDetail }) {
   return (
-    <Card className="rounded-md border border-border shadow-sm">
+    <Card className="border-border rounded-md border shadow-sm">
       <CardHeader className="border-b bg-slate-50">
         <CardTitle className="flex items-center gap-2">
           <FileText className="h-5 w-5" />
@@ -385,7 +391,7 @@ function PaymentRecordsCard({ receivable }: { receivable: ReceivableDetail }) {
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0 flex-1 space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h4 className="break-all font-medium">
+                      <h4 className="font-medium break-all">
                         {payment.paymentNumber}
                       </h4>
                       {payment.sourceType && (
@@ -412,8 +418,10 @@ function PaymentRecordsCard({ receivable }: { receivable: ReceivableDetail }) {
                       )}
                     </div>
 
-                    <div className="grid gap-1 text-sm text-muted-foreground sm:grid-cols-2">
-                      <p>收款方式：{formatPaymentMethod(payment.paymentMethod)}</p>
+                    <div className="text-muted-foreground grid gap-1 text-sm sm:grid-cols-2">
+                      <p>
+                        收款方式：{formatPaymentMethod(payment.paymentMethod)}
+                      </p>
                       <p>收款日期：{formatDate(payment.paymentDate)}</p>
                       {payment.remarks && (
                         <p className="break-words sm:col-span-2">
@@ -422,15 +430,18 @@ function PaymentRecordsCard({ receivable }: { receivable: ReceivableDetail }) {
                       )}
                       {hasMeaningfulAmount(payment.roundingAmount) && (
                         <p className="sm:col-span-2">
-                          收款抹零：{formatSignedCurrency(payment.roundingAmount ?? 0)}
+                          收款抹零：
+                          {formatSignedCurrency(payment.roundingAmount ?? 0)}
                         </p>
                       )}
                     </div>
                   </div>
 
                   <div className="shrink-0 text-left sm:text-right">
-                    <p className="text-xs text-muted-foreground">
-                      {payment.sourceType === 'prepayment' ? '抵扣金额' : '实收金额'}
+                    <p className="text-muted-foreground text-xs">
+                      {payment.sourceType === 'prepayment'
+                        ? '抵扣金额'
+                        : '实收金额'}
                     </p>
                     <p className="font-medium text-[hsl(var(--color-success))]">
                       {formatCurrency(payment.amount)}
@@ -441,7 +452,7 @@ function PaymentRecordsCard({ receivable }: { receivable: ReceivableDetail }) {
             ))}
           </div>
         ) : (
-          <div className="py-8 text-center text-muted-foreground">
+          <div className="text-muted-foreground py-8 text-center">
             还没有实际收款或预收抵扣记录
           </div>
         )}
@@ -458,7 +469,7 @@ function AmountSummaryCard({
   paymentProgress: number;
 }) {
   return (
-    <Card className="rounded-md border border-border shadow-sm">
+    <Card className="border-border rounded-md border shadow-sm">
       <CardHeader className="border-b bg-slate-50">
         <CardTitle>金额汇总</CardTitle>
       </CardHeader>
@@ -544,7 +555,7 @@ function AmountSummaryCard({
 
         <Separator />
 
-        <div className="space-y-1 text-sm text-muted-foreground">
+        <div className="text-muted-foreground space-y-1 text-sm">
           <div className="flex justify-between">
             <span>已收合计</span>
             <span>
@@ -556,7 +567,9 @@ function AmountSummaryCard({
           {hasMeaningfulAmount(receivable.pendingRoundingAmount) && (
             <div className="flex justify-between">
               <span>待确认抹零</span>
-              <span>{formatSignedCurrency(receivable.pendingRoundingAmount ?? 0)}</span>
+              <span>
+                {formatSignedCurrency(receivable.pendingRoundingAmount ?? 0)}
+              </span>
             </div>
           )}
         </div>
@@ -573,7 +586,7 @@ function QuickActionsCard({
   onOpenPaymentDialog: () => void;
 }) {
   return (
-    <Card className="rounded-md border border-border shadow-sm">
+    <Card className="border-border rounded-md border shadow-sm">
       <CardHeader className="border-b bg-slate-50">
         <CardTitle>快速操作</CardTitle>
       </CardHeader>
@@ -610,7 +623,7 @@ function CustomerInfoCard({
   router: RouterLike;
 }) {
   return (
-    <Card className="rounded-md border border-border shadow-sm">
+    <Card className="border-border rounded-md border shadow-sm">
       <CardHeader className="border-b bg-slate-50">
         <CardTitle>客户信息</CardTitle>
       </CardHeader>
@@ -618,12 +631,12 @@ function CustomerInfoCard({
         <div>
           <p className="font-medium">{receivable.customer.name}</p>
           {receivable.customer.contactPerson && (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               联系人：{receivable.customer.contactPerson}
             </p>
           )}
           {receivable.customer.phone && (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               电话：{receivable.customer.phone}
             </p>
           )}

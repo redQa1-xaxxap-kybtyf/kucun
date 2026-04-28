@@ -6,7 +6,6 @@ import { DialogFooter } from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -129,11 +128,6 @@ function PaymentAmountInput({ form, enableRounding }: PaymentAmountInputProps) {
               }
             />
           </FormControl>
-          <FormDescription>
-            {enableRounding
-              ? '开启后，本次收款金额不可修改，请在“实际到账金额”里填写客户实际打款'
-              : '输入本次收款金额（支持全额或部分收款）'}
-          </FormDescription>
           <FormMessage />
         </FormItem>
       )}
@@ -152,7 +146,7 @@ function RoundingToggle({ checked, onToggle }: RoundingToggleProps) {
       <div className="space-y-0.5">
         <label className="text-sm font-medium">本次收款有尾差</label>
         <p className="text-xs text-[hsl(var(--color-text-tertiary))]">
-          客户实际到账和本次记账金额不一致时打开，比如抹零、四舍五入
+          有抹零或四舍五入时打开
         </p>
       </div>
       <Switch checked={checked} onCheckedChange={onToggle} />
@@ -184,7 +178,6 @@ function ActualAmountField({ form }: FormComponentProps) {
               }
             />
           </FormControl>
-          <FormDescription>这里填客户实际打款的金额</FormDescription>
           <FormMessage />
         </FormItem>
       )}
@@ -217,9 +210,6 @@ function RoundingAmountField({ form }: FormComponentProps) {
                 className="bg-muted"
               />
             </FormControl>
-            <FormDescription>
-              根据收款金额和实际到账自动计算；正数表示少收，负数表示多收
-            </FormDescription>
             <FormMessage />
           </FormItem>
         );
@@ -273,7 +263,6 @@ function BankInfoField({ form, paymentMethod }: BankInfoFieldProps) {
           <FormControl>
             <Input placeholder="收款账户、交易流水号等信息" {...field} />
           </FormControl>
-          <FormDescription>填写收款账户或交易流水号等信息</FormDescription>
           <FormMessage />
         </FormItem>
       )}
@@ -319,10 +308,7 @@ function FormActions({ onCancel, isSubmitting }: FormActionsProps) {
       >
         取消
       </Button>
-      <Button
-        type="submit"
-        disabled={isSubmitting}
-      >
+      <Button type="submit" disabled={isSubmitting}>
         <Save className="mr-2 h-4 w-4" />
         {isSubmitting ? '保存中...' : '登记待确认收款'}
       </Button>

@@ -370,9 +370,6 @@ const ActualPaymentAmountField = ({
             }
           />
         </FormControl>
-        <p className="text-muted-foreground text-xs">
-          这里填供应商实际收到的金额；如果有尾差，按实际付款填写即可
-        </p>
         <FormMessage />
       </FormItem>
     )}
@@ -399,9 +396,6 @@ const RoundingAmountField = ({
             className="bg-muted"
           />
         </FormControl>
-        <p className="text-muted-foreground text-xs">
-          根据记账金额和实际付款自动计算；正数表示少付，负数表示多付
-        </p>
         <FormMessage />
       </FormItem>
     )}

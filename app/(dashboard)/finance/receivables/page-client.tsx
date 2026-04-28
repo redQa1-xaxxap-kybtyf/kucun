@@ -48,7 +48,7 @@ export function ReceivablesPageClient({
       <div className="space-y-4 sm:space-y-6">
         <PageHeader
           title="应收账款"
-          description="按客户和订单查看待收余额、已收金额和收款进度。"
+          description="查看客户待收款。"
           icon={<TrendingUp className="h-6 w-6 text-white" />}
           iconBgColor="hsl(var(--color-primary))"
           actions={

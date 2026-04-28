@@ -49,7 +49,7 @@ export function ExpenseRecordActionDialog({
               <>
                 将作废费用单 <strong>{expenseNumber}</strong>。
                 <br />
-                作废后，这笔费用会保留单据记录，但不会继续计入月报、年报和利润分析；如果已挂到未付款应付，会同步回退待付金额。
+                作废后不再计入报表。
               </>
             ) : (
               <>
@@ -65,7 +65,7 @@ export function ExpenseRecordActionDialog({
 
         {isVoid && onReasonChange ? (
           <div className="space-y-2">
-            <div className="text-sm font-medium">作废说明（可选）</div>
+            <div className="text-sm font-medium">备注（可选）</div>
             <Textarea
               value={reason}
               onChange={event => onReasonChange(event.target.value)}

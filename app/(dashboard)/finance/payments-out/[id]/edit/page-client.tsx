@@ -6,13 +6,7 @@ import Link from 'next/link';
 
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const EditPaymentOutFormSection = dynamic(
   () =>
@@ -90,9 +84,6 @@ export function EditPaymentOutClient({
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle className="text-red-600">无法编辑</CardTitle>
-            <CardDescription>
-              该付款已完成，无法继续编辑。
-            </CardDescription>
           </CardHeader>
           <CardContent>
             <Button asChild className="w-full">
@@ -110,7 +101,7 @@ export function EditPaymentOutClient({
     <div className="flex h-full flex-col overflow-hidden p-4 sm:p-6">
       <div className="space-y-4 sm:space-y-6">
         {/* 页面标题卡片 */}
-        <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+        <Card className="border-border overflow-hidden rounded-md border shadow-sm">
           <CardContent className="bg-card p-4 sm:p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-4">

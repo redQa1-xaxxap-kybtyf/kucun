@@ -246,7 +246,7 @@ export function MonthlyReportClient() {
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="space-y-4 sm:space-y-6">
         {/* 页面标题卡片 */}
-        <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+        <Card className="border-border overflow-hidden rounded-md border shadow-sm">
           <CardContent className="bg-card p-4 sm:p-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between xl:items-center">
               <div className="flex items-start gap-3 sm:gap-4">
@@ -386,18 +386,28 @@ export function MonthlyReportClient() {
             icon={<Receipt className="h-4 w-4" />}
             variant={(report.alerts?.length ?? 0) > 0 ? 'warning' : 'default'}
             isCurrency={false}
-            subtitle="建议尽快处理"
+            subtitle="待处理"
           />
         </div>
 
-        <Card>
-          <CardContent className="space-y-3 px-4 py-3 text-xs leading-5 text-[hsl(var(--color-text-secondary))]">
+        <details className="group rounded-md border border-slate-200 bg-white px-4 py-3">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-semibold text-slate-800 [&::-webkit-details-marker]:hidden">
+            <span>破损明细</span>
+            <span className="text-xs font-medium text-slate-400 group-open:hidden">
+              展开查看
+            </span>
+            <span className="hidden text-xs font-medium text-slate-400 group-open:inline">
+              收起
+            </span>
+          </summary>
+          <div className="mt-3 space-y-3 border-t pt-3 text-xs leading-5 text-[hsl(var(--color-text-secondary))]">
             <p>
-              破损统计说明：本月到货破损{' '}
+              本月到货破损{' '}
               {purchaseDamage.purchaseInbound.quantity.toLocaleString()} 片 /
               {formatCurrency(purchaseDamage.purchaseInbound.amount)}，手工报损{' '}
               {purchaseDamage.manualDamage.quantity.toLocaleString()} 片 /
-              {formatCurrency(purchaseDamage.manualDamage.amount)}。到货破损里，报工厂{' '}
+              {formatCurrency(purchaseDamage.manualDamage.amount)}
+              。到货破损里，报工厂{' '}
               {purchaseDamage.supplierClaim.quantity.toLocaleString()} 片 /
               {formatCurrency(purchaseDamage.supplierClaim.amount)}，内部承担{' '}
               {purchaseDamage.internalLoss.quantity.toLocaleString()} 片 /
@@ -437,11 +447,9 @@ export function MonthlyReportClient() {
                 </div>
               </div>
             </div>
-            <p>
-              金额按采购入库时的元/片成本折算，用于经营追踪和责任核对。
-            </p>
-          </CardContent>
-        </Card>
+            <p>金额按采购成本折算。</p>
+          </div>
+        </details>
 
         {/* 收入与支出明细 */}
         <div className="rounded-md border border-slate-100 bg-slate-50/80 p-4 sm:p-6">
@@ -509,9 +517,14 @@ export function MonthlyReportClient() {
               />
             ))}
           </div>
-          <div className="mt-4 rounded-md border border-slate-200 bg-white px-4 py-3 text-xs leading-5 text-slate-500">
-            说明：这里只统计已经审核入账的费用；关联采购的费用已经计入库存或成本，不会重复记到当期费用。
-          </div>
+          <details className="mt-4 rounded-md border border-slate-200 bg-white px-4 py-3 text-xs leading-5 text-slate-500">
+            <summary className="cursor-pointer list-none font-semibold text-slate-700 [&::-webkit-details-marker]:hidden">
+              费用统计口径
+            </summary>
+            <p className="mt-2 border-t pt-2">
+              只统计已确认费用；关联采购的费用不重复计入当期费用。
+            </p>
+          </details>
         </div>
 
         {/* 资产回收与供应链 - 分组区 */}
@@ -753,14 +766,7 @@ function StatCard({
             {isCurrency ? formatCurrency(value) : value.toLocaleString()}
           </div>
         </div>
-        <div
-          className={cn(
-            'rounded-md p-2',
-            iconStyles[variant]
-          )}
-        >
-          {icon}
-        </div>
+        <div className={cn('rounded-md p-2', iconStyles[variant])}>{icon}</div>
       </CardHeader>
 
       <CardContent className="px-4 pb-4 sm:px-5">

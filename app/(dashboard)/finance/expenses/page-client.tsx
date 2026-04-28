@@ -338,7 +338,7 @@ export function ExpensesPageClient({
       <div className="space-y-4 sm:space-y-6">
         <PageHeader
           title="费用管理"
-          description="登记营业费、管理费、工资等费用；审核入账后自动进入报表。"
+          description="登记和审核经营费用。"
           icon={<Receipt className="h-6 w-6 text-white" />}
           iconBgColor="hsl(var(--color-primary))"
           actions={

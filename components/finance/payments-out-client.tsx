@@ -187,7 +187,6 @@ function PaymentOutStatisticsCards({
           <div className="text-2xl font-bold text-[hsl(var(--color-warning))]">
             {formatCurrency(statistics.pendingAmount)}
           </div>
-          <p className="text-muted-foreground text-xs">需要尽快确认完成</p>
         </CardContent>
       </Card>
 
@@ -491,7 +490,7 @@ function VoidPaymentDialog({
               <>
                 将作废付款单 <strong>{payment.paymentNumber}</strong>。
                 <br />
-                作废后，会把对应应付单的待付金额加回去，并保留这次作废记录。
+                作废后恢复对应应付余额。
               </>
             ) : (
               '确认作废这笔付款吗？'
@@ -500,7 +499,7 @@ function VoidPaymentDialog({
         </AlertDialogHeader>
 
         <div className="space-y-2">
-          <div className="text-sm font-medium">作废说明（可选）</div>
+          <div className="text-sm font-medium">备注（可选）</div>
           <Textarea
             value={voidReason}
             onChange={e => onReasonChange(e.target.value)}

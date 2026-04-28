@@ -86,7 +86,9 @@ export function ExpenseDetailClient({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || (isApprovedExpense ? '作废失败' : '删除失败'));
+        throw new Error(
+          error.error || (isApprovedExpense ? '作废失败' : '删除失败')
+        );
       }
 
       return response.json();
@@ -94,9 +96,7 @@ export function ExpenseDetailClient({
     onSuccess: () => {
       toast({
         title: isApprovedExpense ? '费用已作废' : '删除成功',
-        description: isApprovedExpense
-          ? '这笔费用已作废，不会继续进入正式报表。'
-          : '这笔费用已删除',
+        description: isApprovedExpense ? '这笔费用已作废。' : '这笔费用已删除',
       });
 
       // 刷新费用列表与详情相关查询

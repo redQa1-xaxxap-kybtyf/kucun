@@ -21,17 +21,10 @@ import { ContentLoading } from '@/components/common/loading';
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -199,11 +192,6 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
             <ChineseYuan className="h-5 w-5" />
             <span>{isEditing ? '编辑收款信息' : '登记待确认收款'}</span>
           </CardTitle>
-          <CardDescription>
-            {isEditing
-              ? '修改收款信息'
-              : '填写收款信息，核对无误后再确认到账'}
-          </CardDescription>
         </CardHeader>
 
         <CardContent>
@@ -405,9 +393,6 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
                           />
                         </div>
                       </FormControl>
-                      <FormDescription>
-                        实际到账金额，可低于收款金额以记录抹零
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -443,9 +428,6 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
                             <ChineseYuan className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
                           </div>
                         </FormControl>
-                        <FormDescription>
-                          系统自动计算的差额，正值表示抹零减免，负值表示多收
-                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     );
@@ -592,9 +574,6 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
                         {...field}
                       />
                     </FormControl>
-                    <FormDescription>
-                      请填写银行名称、账号、户名等转账相关信息
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

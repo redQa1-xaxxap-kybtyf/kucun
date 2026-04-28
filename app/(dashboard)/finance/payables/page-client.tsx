@@ -511,7 +511,7 @@ export function PayablesPageClient({
       <div className="space-y-4 sm:space-y-6">
         <PageHeader
           title="应付账款"
-          description="查看采购和其他业务产生的待付余额，及时完成付款。"
+          description="查看供应商待付款。"
           icon={<CreditCard className="h-6 w-6 text-white" />}
           iconBgColor="hsl(var(--color-primary))"
           actions={

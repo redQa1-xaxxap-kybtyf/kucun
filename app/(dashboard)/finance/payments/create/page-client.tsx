@@ -26,17 +26,10 @@ import { z } from 'zod';
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -319,7 +312,7 @@ export default function CreatePaymentPage() {
     <div className="flex h-full flex-col overflow-auto p-6">
       <div className="space-y-6">
         {/* 页面标题卡片 */}
-        <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+        <Card className="border-border overflow-hidden rounded-md border shadow-sm">
           <CardContent className="bg-card p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -331,16 +324,11 @@ export default function CreatePaymentPage() {
                     登记待确认收款
                   </h1>
                   <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-                    先登记收款信息，核对无误后再确认到账；未提交内容会自动暂存在当前设备
+                    先登记，核对后确认到账。
                   </p>
                 </div>
               </div>
-              <Button
-                variant="outline"
-                size="lg"
-                asChild
-                className="h-10"
-              >
+              <Button variant="outline" size="lg" asChild className="h-10">
                 <Link href="/finance/payments">
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   返回
@@ -350,18 +338,20 @@ export default function CreatePaymentPage() {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div
+          className={cn(
+            'grid grid-cols-1 gap-6',
+            salesOrder ? 'lg:grid-cols-3' : ''
+          )}
+        >
           {/* 主要表单 */}
-          <div className="lg:col-span-2">
-            <Card className="rounded-md border border-border shadow-sm">
+          <div className={salesOrder ? 'lg:col-span-2' : undefined}>
+            <Card className="border-border rounded-md border shadow-sm">
               <CardHeader className="border-b bg-slate-50">
                 <CardTitle className="flex items-center gap-2">
                   <ChineseYuan className="h-5 w-5" />
                   收款信息
                 </CardTitle>
-                <CardDescription>
-                  请填写收款信息，保存后可在收款列表确认到账
-                </CardDescription>
               </CardHeader>
               <CardContent className="pt-6">
                 <Form {...form}>
@@ -413,11 +403,6 @@ export default function CreatePaymentPage() {
                                 ))}
                               </select>
                             </FormControl>
-                          )}
-                          {!orderId && (
-                            <FormDescription>
-                              选择需要收款的销售订单
-                            </FormDescription>
                           )}
                           <FormMessage />
                         </FormItem>
@@ -471,9 +456,6 @@ export default function CreatePaymentPage() {
                               }
                             />
                           </FormControl>
-                          <FormDescription>
-                            这里填这次要记入订单的收款金额
-                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -502,9 +484,6 @@ export default function CreatePaymentPage() {
                               }
                             />
                           </FormControl>
-                          <FormDescription>
-                            这里填客户实际到账的金额；如果有尾差，按实际到账填写即可
-                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -535,9 +514,6 @@ export default function CreatePaymentPage() {
                                 className="bg-muted"
                               />
                             </FormControl>
-                            <FormDescription>
-                              根据收款金额和实际到账自动计算；正数表示少收，负数表示多收
-                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         );
@@ -612,9 +588,6 @@ export default function CreatePaymentPage() {
                                 {...field}
                               />
                             </FormControl>
-                            <FormDescription>
-                              请补充该收款方式对应的账户或凭证信息
-                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -673,7 +646,7 @@ export default function CreatePaymentPage() {
           <div className="space-y-4">
             {/* 订单信息 */}
             {salesOrder && (
-              <Card className="rounded-md border border-border shadow-sm">
+              <Card className="border-border rounded-md border shadow-sm">
                 <CardHeader className="border-b bg-slate-50">
                   <CardTitle className="flex items-center gap-2">
                     <Package className="h-5 w-5" />
@@ -742,27 +715,6 @@ export default function CreatePaymentPage() {
                 </CardContent>
               </Card>
             )}
-
-            {/* 收款提示 */}
-            <Card className="rounded-md border border-border shadow-sm">
-              <CardHeader className="border-b bg-slate-50">
-                <CardTitle>收款提示</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 pt-6 text-sm">
-                <div className="flex items-start gap-2">
-                  <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[hsl(var(--color-primary))]" />
-                  <p>请确认收款金额与实际到账金额一致</p>
-                </div>
-                <div className="flex items-start gap-2">
-                  <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[hsl(var(--color-primary))]" />
-                  <p>建议保留收款凭证并填写收据号码</p>
-                </div>
-                <div className="flex items-start gap-2">
-                  <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[hsl(var(--color-primary))]" />
-                  <p>登记后可在收款列表中查看和管理</p>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>

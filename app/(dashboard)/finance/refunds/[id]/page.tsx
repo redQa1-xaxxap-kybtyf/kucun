@@ -16,17 +16,12 @@ import {
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import type { ReactNode } from 'react';
 
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { REFUND_METHOD_LABELS } from '@/lib/config/finance';
 import { prisma } from '@/lib/db';
@@ -37,6 +32,29 @@ interface RefundDetailPageProps {
   params: Promise<{
     id: string;
   }>;
+}
+
+function DetailFoldSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <details className="group border-border bg-card rounded-md border px-4 py-3 shadow-sm">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-semibold text-[hsl(var(--color-text-primary))] [&::-webkit-details-marker]:hidden">
+        <span>{title}</span>
+        <span className="text-xs font-medium text-[hsl(var(--color-text-tertiary))] group-open:hidden">
+          展开
+        </span>
+        <span className="hidden text-xs font-medium text-[hsl(var(--color-text-tertiary))] group-open:inline">
+          收起
+        </span>
+      </summary>
+      <div className="mt-4 border-t pt-4">{children}</div>
+    </details>
+  );
 }
 
 export async function generateMetadata({
@@ -146,7 +164,7 @@ export default async function RefundDetailPage({
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="space-y-4 sm:space-y-6">
         {/* 页面标题卡片 */}
-        <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+        <Card className="border-border overflow-hidden rounded-md border shadow-sm">
           <CardContent className="bg-card p-4 sm:p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-4">
@@ -195,13 +213,12 @@ export default async function RefundDetailPage({
           {/* 主要信息 */}
           <div className="space-y-6 lg:col-span-2">
             {/* 退款信息 */}
-            <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+            <Card className="border-border overflow-hidden rounded-md border shadow-sm">
               <CardHeader className="border-b bg-slate-50">
                 <CardTitle className="flex items-center text-[hsl(var(--color-text-primary))]">
                   <ChineseYuan className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
                   退款信息
                 </CardTitle>
-                <CardDescription>查看退款金额和处理状态</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -258,7 +275,7 @@ export default async function RefundDetailPage({
                 {refund.remarks && (
                   <div>
                     <label className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
-                      备注说明
+                      备注
                     </label>
                     <p className="mt-1 text-sm">{refund.remarks}</p>
                   </div>
@@ -268,15 +285,12 @@ export default async function RefundDetailPage({
 
             {/* 关联订单信息 */}
             {refund.returnOrder && (
-              <Card className="overflow-hidden rounded-md border border-border shadow-sm">
-                <CardHeader className="border-b bg-slate-50">
-                  <CardTitle className="flex items-center text-[hsl(var(--color-text-primary))]">
+              <DetailFoldSection title="关联订单">
+                <div className="space-y-4">
+                  <div className="flex items-center text-sm font-semibold text-[hsl(var(--color-text-primary))]">
                     <Package className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
                     关联订单信息
-                  </CardTitle>
-                  <CardDescription>查看关联的退货单和销售订单</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
@@ -318,21 +332,20 @@ export default async function RefundDetailPage({
                       </div>
                     </>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </DetailFoldSection>
             )}
           </div>
 
           {/* 侧边栏信息 */}
           <div className="space-y-6">
             {/* 处理状态 */}
-            <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+            <Card className="border-border overflow-hidden rounded-md border shadow-sm">
               <CardHeader className="border-b bg-slate-50">
                 <CardTitle className="flex items-center text-[hsl(var(--color-text-primary))]">
                   <Clock className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
                   处理状态
                 </CardTitle>
-                <CardDescription>退款处理进度和时间记录</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-center">
@@ -367,40 +380,35 @@ export default async function RefundDetailPage({
             </Card>
 
             {/* 操作记录 */}
-            <Card className="overflow-hidden rounded-md border border-border shadow-sm">
-              <CardHeader className="border-b bg-slate-50">
-                <CardTitle className="flex items-center text-[hsl(var(--color-text-primary))]">
+            <DetailFoldSection title="操作记录">
+              <div className="space-y-3 text-sm">
+                <div className="flex items-center text-sm font-semibold text-[hsl(var(--color-text-primary))]">
                   <FileText className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
                   操作记录
-                </CardTitle>
-                <CardDescription>退款处理的操作历史</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 text-sm">
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[hsl(var(--color-primary))]" />
+                  <div>
+                    <p className="font-medium">退款申请已创建</p>
+                    <p className="text-[hsl(var(--color-text-tertiary))]">
+                      {formatDateTime(refund.createdAt)}
+                    </p>
+                  </div>
+                </div>
+
+                {refund.processedDate && (
                   <div className="flex items-start gap-3">
-                    <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[hsl(var(--color-primary))]" />
+                    <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[hsl(var(--color-success))]" />
                     <div>
-                      <p className="font-medium">退款申请已创建</p>
+                      <p className="font-medium">退款处理完成</p>
                       <p className="text-[hsl(var(--color-text-tertiary))]">
-                        {formatDateTime(refund.createdAt)}
+                        {formatDateTime(refund.processedDate)}
                       </p>
                     </div>
                   </div>
-
-                  {refund.processedDate && (
-                    <div className="flex items-start gap-3">
-                      <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[hsl(var(--color-success))]" />
-                      <div>
-                        <p className="font-medium">退款处理完成</p>
-                        <p className="text-[hsl(var(--color-text-tertiary))]">
-                          {formatDateTime(refund.processedDate)}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                )}
+              </div>
+            </DetailFoldSection>
           </div>
         </div>
       </div>

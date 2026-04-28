@@ -19,17 +19,10 @@ import { z } from 'zod';
 
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -126,7 +119,7 @@ function PayableInfoSidebar({
   payableRecord: PayableRecord;
 }) {
   return (
-    <Card className="rounded-md border border-border shadow-sm">
+    <Card className="border-border rounded-md border shadow-sm">
       <CardHeader className="border-b bg-slate-50">
         <CardTitle className="flex items-center gap-2">
           <ChineseYuan className="h-5 w-5" />
@@ -226,9 +219,6 @@ function PaymentOutFormFields({
                   ))}
                 </select>
               </FormControl>
-              <FormDescription>
-                可关联一笔应付款，也可以直接登记独立付款
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -281,10 +271,9 @@ function PaymentOutFormFields({
                 />
               </FormControl>
               {payableRecord && (
-                <FormDescription>
-                  剩余应付金额：
-                  {formatCurrency(payableRecord.remainingAmount)}
-                </FormDescription>
+                <p className="text-muted-foreground text-xs">
+                  剩余应付：{formatCurrency(payableRecord.remainingAmount)}
+                </p>
               )}
               <FormMessage />
             </FormItem>
@@ -308,9 +297,6 @@ function PaymentOutFormFields({
                   }
                 />
               </FormControl>
-              <FormDescription>
-                这里填供应商实际收到的金额；如果有尾差，按实际付款填写即可。
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -331,9 +317,6 @@ function PaymentOutFormFields({
                   className="bg-muted"
                 />
               </FormControl>
-              <FormDescription>
-                根据记账金额和实际付款自动计算；正数表示少付，负数表示多付。
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -410,7 +393,6 @@ function PaymentOutFormFields({
                 <FormControl>
                   <Textarea placeholder="输入银行账户信息" {...field} />
                 </FormControl>
-                <FormDescription>包括银行名称、账号等信息</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -684,14 +666,11 @@ export function CreatePaymentOutFormSection() {
   };
 
   return (
-    <div className="grid gap-6 lg:grid-cols-3">
-      <div className="lg:col-span-2">
-        <Card className="rounded-md border border-border shadow-sm">
+    <div className={cn('grid gap-6', payableRecord ? 'lg:grid-cols-3' : '')}>
+      <div className={payableRecord ? 'lg:col-span-2' : undefined}>
+        <Card className="border-border rounded-md border shadow-sm">
           <CardHeader className="border-b bg-slate-50">
             <CardTitle>付款信息</CardTitle>
-            <CardDescription>
-              请填写付款信息，保存后会直接记为已完成付款；未提交内容会自动暂存在当前设备
-            </CardDescription>
           </CardHeader>
           <CardContent>
             <PaymentOutFormFields

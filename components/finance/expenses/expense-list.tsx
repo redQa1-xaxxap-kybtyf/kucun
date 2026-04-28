@@ -196,7 +196,9 @@ export function ExpenseList({
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
-        throw new Error(error.error || (mode === 'void' ? '作废失败' : '删除失败'));
+        throw new Error(
+          error.error || (mode === 'void' ? '作废失败' : '删除失败')
+        );
       }
 
       return response.json();
@@ -217,7 +219,7 @@ export function ExpenseList({
         description:
           result?.message ||
           (variables.mode === 'void'
-            ? '这笔费用已作废，不会再进入正式报表。'
+            ? '这笔费用已作废。'
             : '这笔草稿费用已删除。'),
       });
     },
@@ -295,7 +297,7 @@ export function ExpenseList({
 
   return (
     <>
-      <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+      <Card className="border-border overflow-hidden rounded-md border shadow-sm">
         <CardHeader className="border-b border-slate-50 bg-slate-50/30">
           <div className="flex items-center justify-between">
             <div className="space-y-2">
@@ -308,7 +310,7 @@ export function ExpenseList({
                 )}
               </CardTitle>
               <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
-                只有“已审核入账”的费用会进入月报、年报和利润分析。
+                已确认费用会进入报表。
               </div>
             </div>
           </div>
@@ -325,15 +327,9 @@ export function ExpenseList({
                 <Table>
                   <TableHeader>
                     <TableRow className="border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50/50">
-                      <TableHead>
-                        单号
-                      </TableHead>
-                      <TableHead className="text-center">
-                        分类/状态
-                      </TableHead>
-                      <TableHead>
-                        费用事宜
-                      </TableHead>
+                      <TableHead>单号</TableHead>
+                      <TableHead className="text-center">分类/状态</TableHead>
+                      <TableHead>费用事宜</TableHead>
                       <TableHead className="text-right">
                         <Button
                           variant="ghost"
@@ -356,12 +352,8 @@ export function ExpenseList({
                           <ArrowUpDown className="ml-1 h-3 w-3" />
                         </Button>
                       </TableHead>
-                      <TableHead>
-                        关联业务
-                      </TableHead>
-                      <TableHead className="text-right">
-                        操作
-                      </TableHead>
+                      <TableHead>关联业务</TableHead>
+                      <TableHead className="text-right">操作</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -471,9 +463,9 @@ export function ExpenseList({
                                     className="h-8 px-2 text-xs font-semibold text-blue-600 hover:text-blue-700"
                                     onClick={() => setApproveTarget(expense)}
                                     disabled={approveMutation.isPending}
-                                    aria-label={`审核费用 ${expense.expenseNumber}`}
+                                    aria-label={`确认费用 ${expense.expenseNumber}`}
                                   >
-                                    审核入账
+                                    确认费用
                                   </Button>
                                 )}
                                 {expense.status === 'draft' ? (
@@ -586,10 +578,10 @@ export function ExpenseList({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>确认审核</AlertDialogTitle>
+            <AlertDialogTitle>确认费用</AlertDialogTitle>
             <AlertDialogDescription>
               {approveTarget
-                ? `确定要审核费用 ${approveTarget.expenseNumber} 吗？审核后将不再允许修改类型、金额、日期和关联业务，只能修改备注。`
+                ? `确认费用 ${approveTarget.expenseNumber} 后会进入报表。`
                 : ''}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -605,7 +597,7 @@ export function ExpenseList({
               }}
               disabled={approveMutation.isPending}
             >
-              {approveMutation.isPending ? '审核中...' : '确认审核'}
+              {approveMutation.isPending ? '确认中...' : '确认费用'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -745,9 +737,9 @@ function ExpenseCard({
                 size="sm"
                 onClick={() => onApprove(expense)}
                 className="h-8 text-xs font-bold"
-                aria-label={`审核费用 ${expense.expenseNumber}`}
+                aria-label={`确认费用 ${expense.expenseNumber}`}
               >
-                审核入账
+                确认费用
               </Button>
             ) : null}
             {expense.status === 'draft' ? (

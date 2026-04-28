@@ -76,33 +76,7 @@ export function CustomerStatementsPageClient({
         : Math.max(0, totalReturnAmount - totalRefundProcessed);
 
     return {
-      totalReturnAmount,
-      totalRefundPaid: totalRefundProcessed,
       pendingRefundAmount,
-    };
-  };
-
-  const getReceivableOverview = (summary: CustomerStatementSummary) => {
-    const salesAmount = Number(summary.receivables.salesAmount ?? 0);
-    const salesReturnAmount = Number(
-      summary.receivables.salesReturnAmount ?? 0
-    );
-    const paymentReceived = Number(summary.receivables.paymentReceived ?? 0);
-    const prepaymentReceived = Number(
-      summary.receivables.prepaymentReceived ?? 0
-    );
-    const refundProcessed = Number(
-      summary.receivables.refundProcessed ?? summary.receivables.refundPaid ?? 0
-    );
-
-    const netSales = salesAmount - salesReturnAmount;
-    const totalReceipts = paymentReceived + prepaymentReceived;
-    const netReceipts = totalReceipts - refundProcessed;
-
-    return {
-      netSales,
-      netReceipts,
-      receivableBalance: summary.receivables.receivableBalance,
     };
   };
 
@@ -111,8 +85,6 @@ export function CustomerStatementsPageClient({
     payable: number;
     net: number;
     refundPending: number;
-    returnAmount: number;
-    refundPaid: number;
   }>(
     (totals, statement) => {
       const refundMetrics = getRefundMetrics(statement.summary);
@@ -122,8 +94,6 @@ export function CustomerStatementsPageClient({
         payable: totals.payable + statement.summary.payables.payableBalance,
         net: totals.net + statement.summary.netBalance,
         refundPending: totals.refundPending + refundMetrics.pendingRefundAmount,
-        returnAmount: totals.returnAmount + refundMetrics.totalReturnAmount,
-        refundPaid: totals.refundPaid + refundMetrics.totalRefundPaid,
       };
     },
     {
@@ -131,8 +101,6 @@ export function CustomerStatementsPageClient({
       payable: 0,
       net: 0,
       refundPending: 0,
-      returnAmount: 0,
-      refundPaid: 0,
     }
   );
 
@@ -143,10 +111,6 @@ export function CustomerStatementsPageClient({
   const totalNetBalance = statisticsData?.totalNetBalance ?? fallbackTotals.net;
   const totalPendingRefundBalance =
     statisticsData?.totalPendingRefundBalance ?? fallbackTotals.refundPending;
-  const _totalReturnAmount =
-    statisticsData?.totalReturnAmount ?? fallbackTotals.returnAmount;
-  const totalRefundPaidAmount =
-    statisticsData?.totalRefundPaidAmount ?? fallbackTotals.refundPaid;
 
   // 处理搜索
   const handleSearch = (customerName: string) => {
@@ -203,7 +167,7 @@ export function CustomerStatementsPageClient({
       <div className="space-y-4 sm:space-y-6">
         <PageHeader
           title="客户往来明细"
-          description="按客户查看应收、应付、退款和往来净额，适合逐个客户核对。"
+          description="查看客户待收、待付和结余。"
           icon={<FileText className="h-6 w-6 text-white" />}
           iconBgColor="hsl(var(--color-primary))"
           actions={
@@ -252,7 +216,7 @@ export function CustomerStatementsPageClient({
 
         {/* 统计卡片 */}
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-md border border-border bg-card p-4 text-emerald-600 shadow-sm">
+          <div className="border-border bg-card rounded-md border p-4 text-emerald-600 shadow-sm">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-bold text-slate-500">
@@ -266,12 +230,12 @@ export function CustomerStatementsPageClient({
                   : formatCurrency(totalReceivableBalance)}
               </div>
               <p className="text-xs font-medium tracking-normal text-slate-500">
-                待回收货款总额
+                待收货款
               </p>
             </div>
           </div>
 
-          <div className="rounded-md border border-border bg-card p-4 text-rose-600 shadow-sm">
+          <div className="border-border bg-card rounded-md border p-4 text-rose-600 shadow-sm">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-bold text-slate-500">
@@ -285,17 +249,15 @@ export function CustomerStatementsPageClient({
                   : formatCurrency(totalPayableBalance)}
               </div>
               <p className="text-xs font-medium tracking-normal text-slate-500">
-                待支付货款总额
+                待付货款
               </p>
             </div>
           </div>
 
-          <div className="rounded-md border border-border bg-card p-4 text-amber-600 shadow-sm">
+          <div className="border-border bg-card rounded-md border p-4 text-amber-600 shadow-sm">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-slate-500">
-                  总应退金额
-                </h3>
+                <h3 className="text-xs font-bold text-slate-500">总应退金额</h3>
                 <History className="h-5 w-5" />
               </div>
               <div className="text-2xl font-semibold text-slate-900">
@@ -303,25 +265,23 @@ export function CustomerStatementsPageClient({
                   ? '---'
                   : formatCurrency(totalPendingRefundBalance)}
               </div>
-              <div className="flex items-center gap-2 text-xs font-medium tracking-normal text-slate-500">
-                已处理退款 {formatCurrency(totalRefundPaidAmount)}
-              </div>
+              <p className="text-xs font-medium tracking-normal text-slate-500">
+                待处理退款
+              </p>
             </div>
           </div>
 
-          <div className="rounded-md border border-border bg-card p-4 text-slate-900 shadow-sm">
+          <div className="border-border bg-card rounded-md border p-4 text-slate-900 shadow-sm">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-slate-500">
-                  往来净额
-                </h3>
+                <h3 className="text-xs font-bold text-slate-500">往来净额</h3>
                 <Wallet className="h-5 w-5 text-slate-400" />
               </div>
               <div className="text-2xl font-semibold text-slate-900">
                 {statisticsLoading ? '---' : formatCurrency(totalNetBalance)}
               </div>
               <p className="text-xs font-medium tracking-normal text-slate-500">
-                应收减应付结余
+                客户结余
               </p>
             </div>
           </div>
@@ -335,12 +295,12 @@ export function CustomerStatementsPageClient({
             </h2>
             <div className="flex items-center gap-2 text-xs text-slate-500">
               <History className="h-3.5 w-3.5" />
-              数据实时更新
+              点击客户查看明细
             </div>
           </div>
 
           {isLoading ? (
-            <div className="flex min-h-[320px] items-center justify-center rounded-md border border-border bg-card">
+            <div className="border-border bg-card flex min-h-[320px] items-center justify-center rounded-md border">
               <div className="flex flex-col items-center gap-4">
                 <div className="relative h-16 w-16">
                   <div className="absolute inset-0 rounded-full border-4 border-slate-100" />
@@ -352,7 +312,7 @@ export function CustomerStatementsPageClient({
               </div>
             </div>
           ) : statements.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-md border border-dashed border-slate-200 bg-card py-16">
+            <div className="bg-card flex flex-col items-center justify-center rounded-md border border-dashed border-slate-200 py-16">
               <FileText className="mb-4 h-12 w-12 text-slate-200" />
               <p className="text-sm font-medium text-slate-500">
                 暂无客户往来记录
@@ -362,9 +322,6 @@ export function CustomerStatementsPageClient({
             <div className="grid gap-4">
               {statements.map((statement: CustomerStatementListItem) => {
                 const refundMetrics = getRefundMetrics(statement.summary);
-                const receivableOverview = getReceivableOverview(
-                  statement.summary
-                );
                 const netBalance = statement.summary.netBalance;
 
                 return (
@@ -375,7 +332,7 @@ export function CustomerStatementsPageClient({
                         `/finance/customer-statements/${statement.customerId}`
                       )
                     }
-                    className="group cursor-pointer rounded-md border border-border bg-card p-4 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50/50"
+                    className="group border-border bg-card cursor-pointer rounded-md border p-4 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50/50"
                   >
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
                       {/* Left: Identity */}
@@ -455,27 +412,7 @@ export function CustomerStatementsPageClient({
                         </div>
                       </div>
 
-                      {/* Right: Reconciliation Detail Tooltip Area */}
-                      <div className="flex items-center gap-3 lg:min-w-[240px] lg:justify-end">
-                        <div className="flex flex-col items-end gap-1.5 rounded-md border border-slate-100 bg-slate-50 px-3 py-2 text-sm">
-                          <div className="flex w-full items-center justify-between gap-4">
-                            <span className="font-medium text-slate-500">
-                              净销售额
-                            </span>
-                            <span className="font-semibold text-slate-700">
-                              {formatCurrency(receivableOverview.netSales)}
-                            </span>
-                          </div>
-                          <div className="flex w-full items-center justify-between gap-4 border-t border-slate-200/50 pt-1">
-                            <span className="font-medium text-slate-500">
-                              净收款
-                            </span>
-                            <span className="font-semibold text-slate-700">
-                              {formatCurrency(receivableOverview.netReceipts)}
-                            </span>
-                          </div>
-                        </div>
-
+                      <div className="flex items-center gap-3 lg:justify-end">
                         <Button
                           size="icon"
                           variant="ghost"
@@ -495,7 +432,7 @@ export function CustomerStatementsPageClient({
                           <span className="ml-1 text-slate-900">
                             {statement.lastTransactionDate
                               ? formatDate(statement.lastTransactionDate)
-                            : '--'}
+                              : '--'}
                           </span>
                         </div>
                         <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
@@ -507,14 +444,9 @@ export function CustomerStatementsPageClient({
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-slate-400">
-                          数据已更新
-                        </span>
-                        <div className="flex h-3 w-3 items-center justify-center rounded-sm bg-emerald-500/20">
-                          <div className="h-1 w-1 rounded-full bg-emerald-500" />
-                        </div>
-                      </div>
+                      <span className="text-xs font-medium text-slate-400">
+                        点击查看明细
+                      </span>
                     </div>
                   </div>
                 );

@@ -86,7 +86,7 @@ export function StatementsPageClient({
       <div className="space-y-4 sm:space-y-6">
         <PageHeader
           title="往来对账"
-          description="按客户和供应商查看余额、累计往来和最近结算情况。"
+          description="查看客户和供应商往来余额。"
           icon={<FileText className="h-6 w-6 text-white" />}
           iconBgColor="hsl(var(--color-primary))"
           actions={

@@ -10,17 +10,10 @@ import { useForm } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -209,8 +202,7 @@ export function ExpenseForm({
       clearDraft();
       toast({
         title: '创建成功',
-        description:
-          '费用已保存为草稿；审核入账后才会计入月报、年报和利润分析。',
+        description: '费用已保存为草稿；确认后进入报表。',
       });
       invalidateExpenseQueries();
       onSuccess?.();
@@ -252,7 +244,7 @@ export function ExpenseForm({
         title: '更新成功',
         description: isApproved
           ? '费用已更新，相关报表会自动刷新。'
-          : '费用已更新；未审核入账的费用仍不会计入正式报表。',
+          : '费用已更新；未确认费用不会进入报表。',
       });
       invalidateExpenseQueries();
       onSuccess?.();
@@ -303,9 +295,6 @@ export function ExpenseForm({
     <Card>
       <CardHeader>
         <CardTitle>{isEditMode ? '编辑费用' : '登记费用'}</CardTitle>
-        <CardDescription>
-          财务报表只统计已经审核通过的费用。草稿费用需要在列表里点“审核入账”后，才会进入月报、年报和利润分析；关联采购的费用会并入采购成本，不会重复记到期间费用。未提交内容会暂存在当前设备。
-        </CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -388,7 +377,6 @@ export function ExpenseForm({
                         disabled={isApproved}
                       />
                     </FormControl>
-                    <FormDescription>最大金额：99,999,999.99</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -503,7 +491,6 @@ export function ExpenseForm({
                           }}
                         />
                       </FormControl>
-                      <FormDescription>选择要关联的业务单据</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -526,7 +513,6 @@ export function ExpenseForm({
                       maxLength={1000}
                     />
                   </FormControl>
-                  <FormDescription>最多 1000 个字符</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

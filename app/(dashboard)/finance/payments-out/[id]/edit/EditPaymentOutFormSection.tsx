@@ -13,17 +13,10 @@ import { z } from 'zod';
 
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -100,7 +93,7 @@ function PayableInfoSidebar({
   payableRecord: NonNullable<PaymentOutRecord['payableRecord']>;
 }) {
   return (
-    <Card className="rounded-md border border-border shadow-sm">
+    <Card className="border-border rounded-md border shadow-sm">
       <CardHeader className="border-b bg-slate-50">
         <CardTitle className="flex items-center gap-2">
           <ChineseYuan className="h-5 w-5" />
@@ -258,13 +251,19 @@ export function EditPaymentOutFormSection({
   };
 
   return (
-    <div className="grid gap-6 lg:grid-cols-3">
+    <div
+      className={cn(
+        'grid gap-6',
+        initialPayment.payableRecord ? 'lg:grid-cols-3' : ''
+      )}
+    >
       {/* 主表单区域 */}
-      <div className="lg:col-span-2">
-        <Card className="rounded-md border border-border shadow-sm">
+      <div
+        className={initialPayment.payableRecord ? 'lg:col-span-2' : undefined}
+      >
+        <Card className="border-border rounded-md border shadow-sm">
           <CardHeader className="border-b bg-slate-50">
             <CardTitle>付款信息</CardTitle>
-            <CardDescription>编辑付款详细信息</CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -328,7 +327,6 @@ export function EditPaymentOutFormSection({
                           }
                         />
                       </FormControl>
-                      <FormDescription>请输入实际付款金额</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -351,9 +349,6 @@ export function EditPaymentOutFormSection({
                           }
                         />
                       </FormControl>
-                      <FormDescription>
-                        这里填供应商实际收到的金额；如果有尾差，按实际付款填写即可。
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -374,9 +369,6 @@ export function EditPaymentOutFormSection({
                           className="bg-muted"
                         />
                       </FormControl>
-                      <FormDescription>
-                        根据记账金额和实际付款自动计算；正数表示少付，负数表示多付。
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -457,9 +449,6 @@ export function EditPaymentOutFormSection({
                         <FormControl>
                           <Textarea placeholder="输入银行账户信息" {...field} />
                         </FormControl>
-                        <FormDescription>
-                          包括银行名称、账号等信息
-                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}

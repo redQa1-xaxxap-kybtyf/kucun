@@ -16,7 +16,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -322,10 +321,6 @@ export function ReceivablePaymentDialog({
               </div>
             </div>
 
-            <div className="rounded-lg border border-dashed border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-4 py-3 text-sm text-[hsl(var(--color-text-secondary))]">
-              款项已经到账时，直接点“登记并确认到账”；如果只是先录入收款记录，后续再由财务确认，请点“登记待确认收款”。
-            </div>
-
             <Form {...form}>
               <form
                 className="space-y-3"
@@ -411,9 +406,6 @@ export function ReceivablePaymentDialog({
                           }}
                         />
                       </FormControl>
-                      <FormDescription>
-                        这里填客户这次实际到账的金额；如果有尾差，按实际到账填写即可。
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -443,9 +435,6 @@ export function ReceivablePaymentDialog({
                             className="bg-muted"
                           />
                         </FormControl>
-                        <FormDescription>
-                          根据上面两个金额自动算出；正数表示少收，负数表示多收。
-                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     );

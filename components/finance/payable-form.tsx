@@ -14,17 +14,10 @@ import { SupplierSelector } from '@/components/suppliers/supplier-selector';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -89,15 +82,12 @@ export function PayableForm({
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           {/* 基础信息 */}
-          <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+          <Card className="border-border overflow-hidden rounded-md border shadow-sm">
             <CardHeader className="border-b bg-slate-50">
               <CardTitle className="flex items-center text-[hsl(var(--color-text-primary))]">
                 <Building2 className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
                 基础信息
               </CardTitle>
-              <CardDescription>
-                填写应付款的基本信息，包括供应商、来源和金额
-              </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -116,7 +106,6 @@ export function PayableForm({
                           placeholder="选择供应商..."
                         />
                       </FormControl>
-                      <FormDescription>选择应付款对应的供应商</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -149,7 +138,6 @@ export function PayableForm({
                           )}
                         </SelectContent>
                       </Select>
-                      <FormDescription>应付款的来源类型</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -174,7 +162,6 @@ export function PayableForm({
                           }
                         />
                       </FormControl>
-                      <FormDescription>应付款的总金额（元）</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -224,7 +211,6 @@ export function PayableForm({
                           </PopoverContent>
                         </Popover>
                       </FormControl>
-                      <FormDescription>应付款的到期日期</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -246,9 +232,6 @@ export function PayableForm({
                             value={field.value || ''}
                           />
                         </FormControl>
-                        <FormDescription>
-                          关联的采购订单或其他单据号
-                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -270,7 +253,6 @@ export function PayableForm({
                           value={field.value || ''}
                         />
                       </FormControl>
-                      <FormDescription>约定的付款条件或账期</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -304,7 +286,6 @@ export function PayableForm({
                             )}
                           </SelectContent>
                         </Select>
-                        <FormDescription>应付款的当前状态</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -315,13 +296,12 @@ export function PayableForm({
           </Card>
 
           {/* 详细信息 */}
-          <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+          <Card className="border-border overflow-hidden rounded-md border shadow-sm">
             <CardHeader className="border-b bg-slate-50">
               <CardTitle className="flex items-center text-[hsl(var(--color-text-primary))]">
                 <FileText className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
                 详细信息
               </CardTitle>
-              <CardDescription>填写应付款的描述和备注信息</CardDescription>
             </CardHeader>
             <CardContent className="p-6">
               <div className="space-y-6">
@@ -341,9 +321,6 @@ export function PayableForm({
                           value={field.value || ''}
                         />
                       </FormControl>
-                      <FormDescription>
-                        应付款的详细说明（最多500字符）
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -365,9 +342,6 @@ export function PayableForm({
                           value={field.value || ''}
                         />
                       </FormControl>
-                      <FormDescription>
-                        其他需要记录的信息（最多1000字符）
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -377,7 +351,7 @@ export function PayableForm({
           </Card>
 
           {/* 表单操作 */}
-          <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+          <Card className="border-border overflow-hidden rounded-md border shadow-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-end gap-4">
                 <Button

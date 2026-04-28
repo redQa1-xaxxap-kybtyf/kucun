@@ -538,7 +538,7 @@ export function PaymentsOutPageClient({
       <div className="space-y-4 sm:space-y-6">
         <PageHeader
           title="付款管理"
-          description="查看待确认与已完成付款，方便核对供应商结算。"
+          description="登记和确认供应商付款。"
           icon={<ChineseYuan className="h-6 w-6 text-white" />}
           iconBgColor="hsl(var(--color-primary))"
           actions={

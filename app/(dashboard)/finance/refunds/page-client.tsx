@@ -369,7 +369,7 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
       <div className="space-y-4 sm:space-y-6">
         <PageHeader
           title="退款处理"
-          description="跟踪退货产生的退款，优先处理待处理和待退款款项。"
+          description="处理客户退款。"
           icon={<TrendingDown className="h-6 w-6 text-white" />}
           iconBgColor="hsl(var(--color-warning))"
           actions={
@@ -385,11 +385,7 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
                   导出
                 </Link>
               </Button>
-              <Button
-                size="lg"
-                asChild
-                className="h-11 shadow-sm"
-              >
+              <Button size="lg" asChild className="h-11 shadow-sm">
                 <Link href="/return-orders/create">
                   <Plus className="mr-2 h-4 w-4" />
                   新建退货订单

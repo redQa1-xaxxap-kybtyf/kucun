@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 
 import { CopyableText } from '@/components/common/copyable-text';
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
@@ -74,6 +74,29 @@ interface PaymentOutRecord {
 
 interface PaymentOutDetailClientProps {
   initialPayment: PaymentOutRecord;
+}
+
+function DetailFoldSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <details className="group rounded-md border border-[hsl(var(--color-border-secondary))] bg-white px-4 py-3 shadow-sm">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-semibold text-[hsl(var(--color-text-primary))] [&::-webkit-details-marker]:hidden">
+        <span>{title}</span>
+        <span className="text-xs font-medium text-[hsl(var(--color-text-tertiary))] group-open:hidden">
+          展开
+        </span>
+        <span className="hidden text-xs font-medium text-[hsl(var(--color-text-tertiary))] group-open:inline">
+          收起
+        </span>
+      </summary>
+      <div className="mt-4 border-t pt-4">{children}</div>
+    </details>
+  );
 }
 
 /**
@@ -283,9 +306,7 @@ export function PaymentOutDetailClient({
               </Link>
             </Button>
             <div className="h-5 w-px bg-gray-300"></div>
-            <h1 className="text-lg font-semibold text-gray-900">
-              付款详情
-            </h1>
+            <h1 className="text-lg font-semibold text-gray-900">付款详情</h1>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap lg:justify-end">
             {payment.status !== 'cancelled' && (
@@ -338,10 +359,9 @@ export function PaymentOutDetailClient({
             <AlertDialogHeader>
               <AlertDialogTitle>确认这笔付款已经完成？</AlertDialogTitle>
               <AlertDialogDescription>
-                将把付款单 <strong>{payment.paymentNumber}</strong>{' '}
-                记为已完成。
+                将把付款单 <strong>{payment.paymentNumber}</strong> 记为已完成。
                 <br />
-                确认后，这笔付款会记入已付款，对应应付单的待付金额也会减少。
+                完成后会同步更新对应应付单。
               </AlertDialogDescription>
             </AlertDialogHeader>
 
@@ -366,12 +386,12 @@ export function PaymentOutDetailClient({
               <AlertDialogDescription>
                 将作废付款单 <strong>{payment.paymentNumber}</strong>。
                 <br />
-                作废后，会把对应应付单的待付金额加回去，并保留这次作废记录。
+                作废后会恢复对应应付余额。
               </AlertDialogDescription>
             </AlertDialogHeader>
 
             <div className="space-y-2">
-              <div className="text-sm font-medium">作废说明（可选）</div>
+              <div className="text-sm font-medium">备注（可选）</div>
               <Textarea
                 value={voidReason}
                 onChange={e => setVoidReason(e.target.value)}
@@ -532,49 +552,44 @@ export function PaymentOutDetailClient({
               </CardContent>
             </Card>
 
-            {/* 操作记录 */}
-            <Card className="overflow-hidden shadow-sm">
-              <CardHeader className="border-b bg-[hsl(var(--color-bg-secondary))]/50 pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Clock className="h-4 w-4 text-[hsl(var(--color-primary))]" />
-                  操作记录
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4">
-                <div className="space-y-4">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
-                      <User className="h-4 w-4 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
-                        创建记录
-                      </p>
-                      <p className="text-xs text-[hsl(var(--color-text-secondary))]">
-                        {payment.user.name} 于{' '}
-                        {formatDateTime(payment.createdAt)} 创建
-                      </p>
-                    </div>
-                  </div>
-
-                  {payment.status === 'confirmed' && (
+            <DetailFoldSection title="操作记录">
+              <Card className="overflow-hidden border-0 shadow-none">
+                <CardContent className="p-0">
+                  <div className="space-y-4">
                     <div className="flex items-start gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
-                        <CheckCircle className="h-4 w-4 text-green-600" />
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
+                        <User className="h-4 w-4 text-blue-600" />
                       </div>
                       <div>
                         <p className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
-                          确认付款完成
+                          创建记录
                         </p>
                         <p className="text-xs text-[hsl(var(--color-text-secondary))]">
-                          于 {formatDateTime(payment.updatedAt)} 确认
+                          {payment.user.name} 于{' '}
+                          {formatDateTime(payment.createdAt)} 创建
                         </p>
                       </div>
                     </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+
+                    {payment.status === 'confirmed' && (
+                      <div className="flex items-start gap-3">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                            确认付款完成
+                          </p>
+                          <p className="text-xs text-[hsl(var(--color-text-secondary))]">
+                            于 {formatDateTime(payment.updatedAt)} 确认
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </DetailFoldSection>
           </div>
 
           {/* 右侧：关联信息 */}

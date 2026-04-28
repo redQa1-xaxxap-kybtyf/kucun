@@ -202,8 +202,8 @@ export function PaymentDetailClient({
   const isReversalAction = canReverseOrderPayment || canReversePrepayment;
   const cancelActionText = isReversalAction
     ? payment.paymentType === 'prepayment'
-      ? '冲销预收款'
-      : '冲销收款'
+      ? '撤销预收款'
+      : '撤销收款'
     : '取消收款';
 
   // 确认收款
@@ -286,8 +286,8 @@ export function PaymentDetailClient({
       }
 
       toast({
-        title: isReversalAction ? '冲销成功' : '取消成功',
-        description: isReversalAction ? '这笔收款已冲销' : '这笔收款已取消',
+        title: isReversalAction ? '撤销成功' : '取消成功',
+        description: isReversalAction ? '这笔收款已撤销' : '这笔收款已取消',
         variant: 'success',
       });
 
@@ -325,7 +325,7 @@ export function PaymentDetailClient({
             </Button>
             <div className="h-5 w-px bg-gray-300"></div>
             <h1 className="text-lg font-semibold text-gray-900">
-              {isSystemReceivableConfirmation ? '应收登记详情' : '收款详情'}
+              {isSystemReceivableConfirmation ? '应收记录' : '收款详情'}
             </h1>
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
@@ -392,13 +392,10 @@ export function PaymentDetailClient({
             <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="space-y-2">
                 <div className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">
-                  应收登记
+                  应收记录
                 </div>
                 <p className="text-sm text-amber-900">
-                  这条记录只表示这张订单的应收已经登记，不代表客户已经付款，也不会计入实际收款列表。
-                </p>
-                <p className="text-xs text-amber-700">
-                  如需查看客户真实到账，请查看下方订单收款汇总或前往销售订单详情。
+                  系统生成，不计入客户实付。
                 </p>
               </div>
               {payment.salesOrder?.id && (
@@ -421,28 +418,26 @@ export function PaymentDetailClient({
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>
-                {isReversalAction ? '确认冲销这笔收款？' : '确认取消这笔收款？'}
+                {isReversalAction ? '确认撤销这笔收款？' : '确认取消这笔收款？'}
               </AlertDialogTitle>
               <AlertDialogDescription>
-                {isReversalAction ? '将冲销' : '将取消'}收款单{' '}
+                {isReversalAction ? '将撤销' : '将取消'}收款单{' '}
                 <strong>{payment.paymentNumber}</strong>。
                 <br />
                 {isReversalAction
-                  ? '冲销后保留单据记录，并写入往来账反向流水。'
+                  ? '撤销后不再计入已收。'
                   : '取消后保留单据记录，但不会继续进入到账统计。'}
               </AlertDialogDescription>
             </AlertDialogHeader>
 
             <div className="space-y-2">
-              <div className="text-sm font-medium">
-                {isReversalAction ? '冲销备注（可选）' : '取消备注（可选）'}
-              </div>
+              <div className="text-sm font-medium">备注（可选）</div>
               <Textarea
                 value={cancelNotes}
                 onChange={event => setCancelNotes(event.target.value)}
                 placeholder={
                   isReversalAction
-                    ? '例如：订单取消前冲销 / 收款录错 / 重新登记...'
+                    ? '例如：订单取消 / 收款录错 / 重新登记...'
                     : '例如：误录收款 / 客户取消支付 / 重新登记...'
                 }
                 disabled={isCancelling}
@@ -461,10 +456,10 @@ export function PaymentDetailClient({
               >
                 {isCancelling
                   ? isReversalAction
-                    ? '冲销中...'
+                    ? '撤销中...'
                     : '取消中...'
                   : isReversalAction
-                    ? '确认冲销收款'
+                    ? '确认撤销收款'
                     : '确认取消收款'}
               </AlertDialogAction>
             </AlertDialogFooter>
@@ -569,7 +564,7 @@ export function PaymentDetailClient({
                 </p>
                 {isSystemReceivableConfirmation ? (
                   <p className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
-                    应收登记
+                    应收记录
                   </p>
                 ) : (
                   <PaymentMethodDisplay method={payment.paymentMethod} />
@@ -677,7 +672,7 @@ export function PaymentDetailClient({
                     </p>
                     {isSystemReceivableConfirmation && (
                       <p className="mt-1 text-xs text-gray-500">
-                        这条应收登记不算已收金额。
+                        系统生成，不计实收。
                       </p>
                     )}
                   </div>
@@ -695,16 +690,13 @@ export function PaymentDetailClient({
               <CardContent className="space-y-2.5 p-3">
                 <div className="rounded-md border border-amber-100 bg-amber-50 p-3 shadow-sm">
                   <p className="text-sm text-gray-700">
-                    这笔收款未直接关联销售订单，通常为客户预收款（定金）。
-                  </p>
-                  <p className="mt-2 text-xs text-amber-700">
-                    如果下方有“预收款使用明细”，表示这笔预收款已经被部分订单抵扣。
+                    客户预收款，可在后续订单中抵扣。
                   </p>
                   {payment.paymentType === 'prepayment' &&
                     isSettledPayment &&
                     hasPrepaymentUsages && (
                       <p className="mt-2 rounded-md bg-amber-100 px-2.5 py-2 text-xs font-medium text-amber-800">
-                        这笔预收款已被订单抵扣，需要先到关联订单回滚抵扣后再冲销。
+                        这笔预收款已被订单抵扣，需要先到关联订单回滚抵扣后再撤销。
                       </p>
                     )}
                 </div>
