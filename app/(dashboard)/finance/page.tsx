@@ -27,7 +27,10 @@ export default async function FinancePage() {
         id: session.user.id,
         email: session.user.email ?? '',
         username:
-          session.user.username ?? session.user.email ?? session.user.name ?? '',
+          session.user.username ??
+          session.user.email ??
+          session.user.name ??
+          '',
         name: session.user.name ?? '当前用户',
         role: session.user.role ?? 'sales',
         status: session.user.status ?? 'active',
@@ -43,7 +46,7 @@ export default async function FinancePage() {
   const workbenchSummary = getFinanceWorkbenchSummary(userRole);
 
   return (
-    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
+    <div className="flex h-full flex-col overflow-auto p-4 xl:p-6">
       <div className="space-y-4 sm:space-y-6">
         <FinanceOverviewHeader
           dateLabel={todayLabel}

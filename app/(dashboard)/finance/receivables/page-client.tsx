@@ -44,7 +44,7 @@ export function ReceivablesPageClient({
   );
 
   return (
-    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
+    <div className="flex h-full flex-col overflow-auto p-4 xl:p-6">
       <div className="space-y-4 sm:space-y-6">
         <PageHeader
           title="应收账款"

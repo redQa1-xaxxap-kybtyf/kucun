@@ -279,9 +279,9 @@ export function CustomersPageClient({
       }
       maxWidthClassName="max-w-[1680px]"
       headerVariant="solid"
-      headerClassName="lg:px-8 lg:pt-8 xl:px-10 xl:pt-10"
-      bannerClassName="lg:px-10 xl:px-14"
-      bodyClassName="space-y-6 lg:px-10 lg:pb-10 xl:px-14 xl:pb-14"
+      headerClassName="lg:px-6 lg:pt-6 xl:px-10 xl:pt-10"
+      bannerClassName="lg:px-6 xl:px-14"
+      bodyClassName="space-y-6 lg:px-6 lg:pb-6 xl:px-14 xl:pb-14"
     >
       <div className="relative">
         {isError && (

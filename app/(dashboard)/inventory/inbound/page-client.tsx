@@ -32,7 +32,7 @@ export function InboundRecordsPageClient({
   initialParams,
 }: InboundRecordsPageClientProps) {
   return (
-    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
+    <div className="flex h-full flex-col overflow-auto p-4 xl:p-6">
       <div className="mb-6 flex-shrink-0">
         <InboundPageHeader />
       </div>

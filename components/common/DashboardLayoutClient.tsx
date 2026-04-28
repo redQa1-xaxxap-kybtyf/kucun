@@ -22,6 +22,7 @@ const MobileNav = dynamic(
 );
 
 const MOBILE_BREAKPOINT = 768;
+const COMPACT_DESKTOP_BREAKPOINT = 1440;
 
 interface DashboardLayoutClientProps {
   /** 子组件 */
@@ -191,16 +192,36 @@ export function DashboardLayoutClient({
     }
 
     const handleResize = () => {
-      if (window.innerWidth >= MOBILE_BREAKPOINT) {
-        setSidebarSettings(prev =>
-          prev.mobileNavOpen ? { ...prev, mobileNavOpen: false } : prev
-        );
-      }
+      const width = window.innerWidth;
+      const shouldUseCompactSidebar =
+        width >= MOBILE_BREAKPOINT && width < COMPACT_DESKTOP_BREAKPOINT;
+
+      setSidebarSettings(prev => {
+        const nextMobileNavOpen =
+          width >= MOBILE_BREAKPOINT ? false : prev.mobileNavOpen;
+        const nextCollapsed = showSidebar
+          ? shouldUseCompactSidebar
+          : prev.isCollapsed;
+
+        if (
+          prev.mobileNavOpen === nextMobileNavOpen &&
+          prev.isCollapsed === nextCollapsed
+        ) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          mobileNavOpen: nextMobileNavOpen,
+          isCollapsed: nextCollapsed,
+        };
+      });
     };
 
+    handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [showSidebar]);
 
   // 手势处理（使用 useCallback 优化）
   const minSwipeDistance = 50;
@@ -281,7 +302,7 @@ export function DashboardLayoutClient({
               'flex flex-1 flex-col overflow-y-auto transition-all duration-200 focus:outline-none',
               showSidebar &&
                 sidebarSettings.isOpen &&
-                (sidebarSettings.isCollapsed ? 'md:ml-20' : 'md:ml-72')
+                (sidebarSettings.isCollapsed ? 'md:ml-16' : 'md:ml-64')
             )}
             onTouchStart={showSidebar ? onTouchStart : undefined}
             onTouchMove={showSidebar ? onTouchMove : undefined}

@@ -150,15 +150,12 @@ function buildFilterUpdates(
 
 function useSalesOrdersController(initialParams: SalesOrderQueryParams) {
   const router = useRouter();
-  const { params, updateParams } = useUrlSearchParams(
-    salesOrderParamsConfig,
-    {
-      basePath: '/sales-orders',
-      debounceMs: 0, // ✅ 禁用这里的防抖,使用自定义防抖
-      shallow: true,
-      initialParams,
-    }
-  );
+  const { params, updateParams } = useUrlSearchParams(salesOrderParamsConfig, {
+    basePath: '/sales-orders',
+    debounceMs: 0, // ✅ 禁用这里的防抖,使用自定义防抖
+    shallow: true,
+    initialParams,
+  });
 
   const {
     searchInput,
@@ -295,7 +292,7 @@ function SalesOrdersContent({
   ) => void;
 }) {
   return (
-    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
+    <div className="flex h-full flex-col overflow-auto p-4 xl:p-6">
       <div className="mb-4 flex-shrink-0 sm:mb-6">
         <SalesOrderPageHeader
           recordScope={currentQueryParams.recordScope}

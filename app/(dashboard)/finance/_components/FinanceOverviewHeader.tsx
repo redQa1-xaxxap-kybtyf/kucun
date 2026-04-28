@@ -68,7 +68,7 @@ export function FinanceOverviewHeader({
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl font-semibold tracking-tight sm:text-3xl sm:font-bold">
+                <h1 className="text-xl font-semibold tracking-tight sm:text-2xl sm:font-bold xl:text-3xl">
                   财务中心
                 </h1>
                 <Badge variant="secondary" className="text-xs">

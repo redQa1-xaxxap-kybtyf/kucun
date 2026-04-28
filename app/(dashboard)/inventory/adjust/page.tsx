@@ -67,7 +67,7 @@ export default function InventoryAdjustPage() {
   };
 
   return (
-    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
+    <div className="flex h-full flex-col overflow-auto p-4 xl:p-6">
       <div className="space-y-6">
         {/* 页面标题 */}
         <PageHeader
@@ -90,10 +90,13 @@ export default function InventoryAdjustPage() {
                 <ArrowLeft className="h-4 w-4" />
                 返回
               </Button>
-              <Button variant="outline" size="lg" className="h-11 gap-2" asChild>
-                <Link href="/inventory/manual-damage">
-                  查看手工报损台账
-                </Link>
+              <Button
+                variant="outline"
+                size="lg"
+                className="h-11 gap-2"
+                asChild
+              >
+                <Link href="/inventory/manual-damage">查看手工报损台账</Link>
               </Button>
               <Button
                 size="lg"

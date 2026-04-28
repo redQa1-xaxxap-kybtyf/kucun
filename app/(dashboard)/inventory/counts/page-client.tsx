@@ -168,7 +168,7 @@ export function CountsPageClient({
 
   return (
     // 与库存总览等页面保持一致的布局容器，统一滚动和边距
-    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
+    <div className="flex h-full flex-col overflow-auto p-4 xl:p-6">
       <div className="space-y-6">
         {/* 页面标题 */}
         <PageHeader
@@ -178,11 +178,7 @@ export function CountsPageClient({
           iconBgColor="hsl(var(--color-info))"
           actions={
             hasManagePermission ? (
-              <Button
-                size="lg"
-                asChild
-                className="h-11 shadow-sm"
-              >
+              <Button size="lg" asChild className="h-11 shadow-sm">
                 <Link href="/inventory/counts/new">
                   <Plus className="mr-2 h-4 w-4" />
                   新建盘点单

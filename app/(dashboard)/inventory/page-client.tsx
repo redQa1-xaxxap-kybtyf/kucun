@@ -180,8 +180,7 @@ export function InventoryPageClient({
         toast({
           variant: 'destructive',
           title: '导出失败',
-          description:
-            error instanceof Error ? error.message : '库存导出失败',
+          description: error instanceof Error ? error.message : '库存导出失败',
         });
       } finally {
         setIsExporting(false);
@@ -559,7 +558,7 @@ function InventoryContent(props: {
   const [showMobileStats, setShowMobileStats] = React.useState(false);
 
   return (
-    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
+    <div className="flex h-full flex-col overflow-auto p-4 xl:p-6">
       <div className="flex flex-col gap-6">
         {/* 统一标题区域，所有端都在最上方 */}
         {/* 旗舰级头部区域 */}
