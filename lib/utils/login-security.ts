@@ -10,6 +10,7 @@
  */
 
 import { prisma } from '@/lib/db';
+import { logExtendedConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import {
   isLoginBlocked as checkIfBlocked,
@@ -22,7 +23,7 @@ const LOGIN_SECURITY_CONFIG = {
   maxFailedAttempts: 5, // 最大失败次数(已废弃,使用Redis机制)
   lockoutDuration: 15, // 手动锁定默认时长(分钟)
   attemptWindow: 15, // 统计时间窗口(分钟,已废弃)
-  cleanupAfterDays: 30, // 清理N天前的记录
+  cleanupAfterDays: Math.max(logExtendedConfig.retentionDays, 1), // 清理N天前的记录
 };
 
 /**

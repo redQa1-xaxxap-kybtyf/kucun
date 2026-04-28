@@ -352,6 +352,11 @@ export const salesOrderQuerySchema = z.object({
     .nullable()
     .optional()
     .transform(val => val ?? undefined),
+  userId: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val ?? undefined),
   startDate: z
     .string()
     .nullable()

@@ -16,6 +16,7 @@ import { errorResponse, withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { ExportAuditService } from '@/lib/services/export-audit-service';
+import { buildPayableWhereConditions } from '@/lib/services/payable-query-service';
 import { payableRecordQuerySchema } from '@/lib/validations/payable';
 
 /**
@@ -52,6 +53,7 @@ export const POST = withAuth(
         page,
         limit,
         search,
+        supplierId,
         status,
         sourceType,
         sortBy,
@@ -59,48 +61,16 @@ export const POST = withAuth(
         startDate,
         endDate,
       } = validationResult.data;
-
-      // 构建查询条件
-      const whereConditions: {
-        OR?: Array<{
-          payableNumber?: { contains: string };
-          remarks?: { contains: string };
-          supplier?: { name?: { contains: string } };
-        }>;
-        status?: string;
-        sourceType?: string;
-        createdAt?: { gte?: Date; lte?: Date };
-      } = {};
-
-      // 搜索条件
-      if (search) {
-        whereConditions.OR = [
-          { payableNumber: { contains: search } },
-          { remarks: { contains: search } },
-          { supplier: { name: { contains: search } } },
-        ];
-      }
-
-      // 状态筛选
-      if (status) {
-        whereConditions.status = status;
-      }
-
-      // 来源类型筛选
-      if (sourceType) {
-        whereConditions.sourceType = sourceType;
-      }
-
-      // 日期范围
-      if (startDate || endDate) {
-        whereConditions.createdAt = {};
-        if (startDate) {
-          whereConditions.createdAt.gte = new Date(startDate);
-        }
-        if (endDate) {
-          whereConditions.createdAt.lte = new Date(endDate);
-        }
-      }
+      const whereConditions = buildPayableWhereConditions({
+        page,
+        limit,
+        search,
+        supplierId,
+        status,
+        sourceType,
+        startDate,
+        endDate,
+      });
 
       // 数据量检查：先统计总数
       const totalCount = await prisma.payableRecord.count({
@@ -171,12 +141,12 @@ export const POST = withAuth(
         );
         fileContent = CSVExportService.generateCSVContent(exportData, {
           dateFields: ['到期日期', '创建时间'],
-          numberFields: ['应付金额', '已核销金额', '剩余金额'],
+          numberFields: ['应付金额', '已付金额', '剩余金额'],
           fieldOrder: [
             '应付款编号',
             '供应商名称',
             '应付金额',
-            '已核销金额',
+            '已付金额',
             '剩余金额',
             '结算状态',
             '来源类型',
@@ -200,7 +170,7 @@ export const POST = withAuth(
           { width: 15 }, // 应付款编号
           { width: 20 }, // 供应商名称
           { width: 12 }, // 应付金额
-          { width: 12 }, // 已核销金额
+          { width: 12 }, // 已付金额
           { width: 12 }, // 剩余金额
           { width: 10 }, // 结算状态
           { width: 12 }, // 来源类型
@@ -306,4 +276,3 @@ export const POST = withAuth(
   },
   { permissions: ['finance:export'] }
 );
-

@@ -10,6 +10,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { env, logExtendedConfig } from '@/lib/env';
 import { extractRequestInfo, logSystemEventInfo } from '@/lib/logger';
+import { cleanupExpiredSystemLogs } from '@/lib/services/system-log-maintenance-service';
 import type {
   SettingsApiResponse,
   SystemLog,
@@ -343,19 +344,6 @@ export async function DELETE(
     const body = await request.json();
     const validatedData = SystemLogCleanupRequestSchema.parse(body);
 
-    // 构建删除条件
-    const where: Record<string, unknown> = {
-      createdAt: {
-        lt: new Date(validatedData.beforeDate),
-      },
-    };
-
-    if (validatedData.types && validatedData.types.length > 0) {
-      where.type = {
-        in: validatedData.types,
-      };
-    }
-
     // 记录清理操作日志
     await logSystemEventInfo(
       'cleanup_logs',
@@ -371,15 +359,17 @@ export async function DELETE(
     );
 
     // 执行删除操作
-    const result = await prisma.systemLog.deleteMany({
-      where,
+    const cutoffDate = new Date(validatedData.beforeDate);
+    const deletedCount = await cleanupExpiredSystemLogs({
+      cutoffDate,
+      types: validatedData.types,
     });
 
     return NextResponse.json({
       success: true,
       data: {
         message: '系统日志清理完成',
-        deletedCount: result.count,
+        deletedCount,
       },
     });
   } catch (error) {

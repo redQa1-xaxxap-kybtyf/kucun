@@ -54,6 +54,7 @@ export const GET = withAuth(
     const queryParams = {
       page,
       pageSize,
+      search: searchParams.get('search') || undefined,
       expenseType: searchParams.get('expenseType') || undefined,
       startDate: searchParams.get('startDate') || undefined,
       endDate: searchParams.get('endDate') || undefined,

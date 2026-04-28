@@ -196,7 +196,9 @@ export function withAuth(
             ? new URL(env.NEXTAUTH_URL).origin
             : null;
 
-          // 允许的 Origin 列表：内部 Origin + 外部 Origin（如配置）
+          // 允许的 Origin 列表：内部 Origin + 显式配置的外部 Origin。
+          // 这里不能信任 x-forwarded-* / forwarded 之类的客户端可控 Header，
+          // 否则攻击者可以伪造代理头，把任意 Origin 混进白名单。
           const allowedOrigins = new Set<string>();
           allowedOrigins.add(internalOrigin);
           if (externalOrigin) {

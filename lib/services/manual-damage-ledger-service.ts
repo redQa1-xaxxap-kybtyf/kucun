@@ -290,7 +290,17 @@ async function resolveSupplierIdForManualDamage(
 }
 
 export async function backfillMissingManualDamageLedgers(limit = 200) {
-  const adjustments = await prisma.inventoryAdjustment.findMany({
+  const inventoryAdjustmentModel = (
+    prisma as typeof prisma & {
+      inventoryAdjustment?: Partial<Pick<typeof prisma.inventoryAdjustment, 'findMany'>>;
+    }
+  ).inventoryAdjustment;
+
+  if (!inventoryAdjustmentModel || typeof inventoryAdjustmentModel.findMany !== 'function') {
+    return 0;
+  }
+
+  const adjustments = await inventoryAdjustmentModel.findMany({
     where: {
       reason: 'damage_loss',
       status: 'approved',
@@ -415,7 +425,28 @@ export async function getManualDamageMetricsForPeriod(
   startDate: Date,
   endDate: Date
 ) {
+  const manualDamageLedgerModel = (
+    prisma as typeof prisma & {
+      manualDamageLedger?: Partial<
+        Pick<typeof prisma.manualDamageLedger, 'aggregate' | 'groupBy'>
+      >;
+    }
+  ).manualDamageLedger;
+
   await backfillMissingManualDamageLedgers();
+
+  if (
+    !manualDamageLedgerModel ||
+    typeof manualDamageLedgerModel.aggregate !== 'function' ||
+    typeof manualDamageLedgerModel.groupBy !== 'function'
+  ) {
+    return {
+      quantity: 0,
+      amount: 0,
+      byCategory: createEmptyManualDamageCategoryMetrics(),
+      byHandling: createEmptyManualDamageHandlingMetrics(),
+    };
+  }
 
   const where = {
     createdAt: {
@@ -425,14 +456,14 @@ export async function getManualDamageMetricsForPeriod(
   };
 
   const [summary, groupedByCategory, groupedByHandling] = await Promise.all([
-    prisma.manualDamageLedger.aggregate({
+    manualDamageLedgerModel.aggregate({
       where,
       _sum: {
         damagedQuantity: true,
         referenceAmount: true,
       },
     }),
-    prisma.manualDamageLedger.groupBy({
+    manualDamageLedgerModel.groupBy({
       by: ['damageCategory'],
       where,
       _sum: {
@@ -440,7 +471,7 @@ export async function getManualDamageMetricsForPeriod(
         referenceAmount: true,
       },
     }),
-    prisma.manualDamageLedger.groupBy({
+    manualDamageLedgerModel.groupBy({
       by: ['damageHandling'],
       where,
       _sum: {

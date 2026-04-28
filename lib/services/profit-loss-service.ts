@@ -237,7 +237,7 @@ async function getExpenseDetail(
     });
 
     // 总费用以聚合结果为准，兼容历史异常类型数据，避免明细映射遗漏后影响利润
-    totalExpenses = toNumber(expenseAggregate._sum.expenseAmount);
+    totalExpenses = toNumber(expenseAggregate?._sum?.expenseAmount);
   }
 
   const expenseRate = calculateExpenseRate(totalExpenses, totalRevenue);

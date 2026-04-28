@@ -254,8 +254,8 @@ export const DEFAULT_STATEMENT_STATUSES: StatementStatusConfig[] = [
   },
   {
     status: 'settled',
-    label: '已结清',
-    description: '账户已结清',
+    label: '无余额',
+    description: '账户当前无余额',
     color: 'blue',
     isActive: true,
   },

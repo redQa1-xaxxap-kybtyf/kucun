@@ -380,7 +380,7 @@ function toStatementType(role: PartnerRole): StatementType {
 }
 
 type PartnerLookupClient = Pick<
-  Prisma.TransactionClient,
+  Partial<Prisma.TransactionClient>,
   'customer' | 'supplier'
 >;
 
@@ -388,7 +388,10 @@ async function resolvePartnerEntity(
   partnerId: string,
   db: PartnerLookupClient = prisma
 ): Promise<PartnerEntity> {
-  const customer = await db.customer.findUnique({
+  const customerClient = db.customer ?? prisma.customer;
+  const supplierClient = db.supplier ?? prisma.supplier;
+
+  const customer = await customerClient.findUnique({
     where: { id: partnerId },
     select: {
       id: true,
@@ -411,7 +414,7 @@ async function resolvePartnerEntity(
     };
   }
 
-  const supplier = await db.supplier.findUnique({
+  const supplier = await supplierClient.findUnique({
     where: { id: partnerId },
     select: {
       id: true,

@@ -7,6 +7,7 @@ import { decode } from 'next-auth/jwt';
 
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
+import { validateAndTouchUserSession } from '@/lib/services/user-session-service';
 
 // 内部调用密钥（使用 NEXTAUTH_SECRET 的哈希前缀）
 const INTERNAL_API_KEY = `internal_${env.NEXTAUTH_SECRET?.slice(0, 16)}`;
@@ -57,7 +58,6 @@ export async function POST(request: NextRequest) {
     }
 
     // 解析 JWT/JWE（由 /api/auth/mini-login 生成）
-    // 注意：这里不要访问数据库，避免生产环境 Session 表缺失导致 500
     let payload: any = null;
     try {
       payload = await decode({
@@ -82,12 +82,31 @@ export async function POST(request: NextRequest) {
     const userId = String(payload.id || payload.sub || '').trim();
     const username = String(payload.username || '').trim();
     const status = String(payload.status || '').trim();
+    const sessionId = String(payload.sessionId || '').trim();
 
     if (!userId || !username) {
       return NextResponse.json(
         { success: false, error: 'Invalid or expired token' },
         { status: 401 }
       );
+    }
+
+    if (sessionId) {
+      const sessionResult = await validateAndTouchUserSession({
+        userId,
+        sessionId,
+        idleTimeoutSeconds: env.USER_SESSION_TIMEOUT * 60,
+      });
+
+      if (!sessionResult.valid) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: sessionResult.reason || 'Session is invalid',
+          },
+          { status: 401 }
+        );
+      }
     }
 
     return NextResponse.json({
@@ -99,6 +118,7 @@ export async function POST(request: NextRequest) {
         username,
         role: payload.role ? String(payload.role) : null,
         status: status || 'active',
+        sessionId: sessionId || null,
       },
     });
   } catch (error) {

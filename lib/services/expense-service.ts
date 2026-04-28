@@ -570,6 +570,7 @@ export async function getExpenseRecords(
   const {
     page = 1,
     pageSize = 20,
+    search,
     expenseType,
     startDate,
     endDate,
@@ -584,6 +585,7 @@ export async function getExpenseRecords(
   } = query;
 
   const skip = (page - 1) * pageSize;
+  const normalizedSearch = search?.trim();
 
   // 构建查询条件
   const where: Prisma.ExpenseRecordWhereInput = {};
@@ -599,6 +601,15 @@ export async function getExpenseRecords(
 
   if (expenseType) {
     where.expenseType = expenseType;
+  }
+
+  if (normalizedSearch) {
+    where.OR = [
+      { expenseNumber: { contains: normalizedSearch } },
+      { expenseName: { contains: normalizedSearch } },
+      { relatedNumber: { contains: normalizedSearch } },
+      { remarks: { contains: normalizedSearch } },
+    ];
   }
 
   // ✅ P0修复: 使用本地时区解析日期，并正确设置结束日期上限

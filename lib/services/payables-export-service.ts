@@ -28,8 +28,8 @@ export interface PayableExportData extends Record<string, unknown> {
   供应商名称: string;
   /** 应付金额 */
   应付金额: number;
-  /** 已核销金额 */
-  已核销金额: number;
+  /** 已付金额 */
+  已付金额: number;
   /** 剩余金额 */
   剩余金额: number;
   /** 结算状态 */
@@ -72,11 +72,12 @@ export class PayablesExportService {
       应付款编号: item.payableNumber || '',
       供应商名称: item.supplier?.name || '未知供应商',
       应付金额: toNumber(item.payableAmount, 0),
-      已核销金额: toNumber(item.paidAmount, 0),
+      已付金额: toNumber(item.paidAmount, 0),
       剩余金额: toNumber(item.remainingAmount, 0),
       结算状态:
-        PAYABLE_STATUS_LABELS[item.status as keyof typeof PAYABLE_STATUS_LABELS] ||
-        item.status,
+        PAYABLE_STATUS_LABELS[
+          item.status as keyof typeof PAYABLE_STATUS_LABELS
+        ] || item.status,
       来源类型:
         PAYABLE_SOURCE_TYPE_LABELS[
           item.sourceType as keyof typeof PAYABLE_SOURCE_TYPE_LABELS
@@ -104,7 +105,7 @@ export class PayablesExportService {
       filename,
       sheetName: '应付账款',
       dateFields: ['到期日期', '创建时间'],
-      numberFields: ['应付金额', '已核销金额', '剩余金额'],
+      numberFields: ['应付金额', '已付金额', '剩余金额'],
       freezeHeader: true,
       dateFormat: 'yyyy-MM-dd HH:mm:ss',
     });
@@ -122,13 +123,13 @@ export class PayablesExportService {
     CSVExportService.exportToCSV(data, {
       filename,
       dateFields: ['到期日期', '创建时间'],
-      numberFields: ['应付金额', '已核销金额', '剩余金额'],
+      numberFields: ['应付金额', '已付金额', '剩余金额'],
       dateFormat: 'yyyy-MM-dd HH:mm:ss',
       fieldOrder: [
         '应付款编号',
         '供应商名称',
         '应付金额',
-        '已核销金额',
+        '已付金额',
         '剩余金额',
         '结算状态',
         '来源类型',

@@ -15,6 +15,9 @@ import type { InventoryQueryParams } from '@/lib/types/inventory';
 const AVAILABLE_QUANTITY_SQL = Prisma.raw(
   '(CASE WHEN i.quantity - i.reserved_quantity < 0 THEN 0 ELSE i.quantity - i.reserved_quantity END)'
 );
+const PRODUCT_GROUP_KEY_SQL = Prisma.raw(
+  "COALESCE(NULLIF(TRIM(p.code), ''), i.product_id)"
+);
 
 /**
  * 库存查询结果 Zod Schema (用于运行时验证)
@@ -180,7 +183,6 @@ function buildOrderByClause(
 }
 
 interface InventoryGroupPageRow {
-  product_id: string;
   product_code: string;
 }
 
@@ -246,16 +248,15 @@ export async function getOptimizedInventoryList(
   const groupOrderByClause = buildGroupOrderByClause(sortBy, sortOrder);
   const offset = (page - 1) * limit;
 
-  // 先按产品分页，避免同编码不同批次被拆到不同页。
+  // 先按产品编码分页，避免同编码的不同产品记录/批次被拆到不同页。
   const pagedGroups = await prisma.$queryRaw<InventoryGroupPageRow[]>`
     SELECT
-      i.product_id as product_id,
-      p.code as product_code
+      ${PRODUCT_GROUP_KEY_SQL} as product_code
     FROM inventory i
     LEFT JOIN products p ON i.product_id = p.id
     WHERE ${whereClause}
-    GROUP BY i.product_id, p.code
-    ORDER BY ${groupOrderByClause}, p.code ASC
+    GROUP BY ${PRODUCT_GROUP_KEY_SQL}
+    ORDER BY ${groupOrderByClause}, product_code ASC
     LIMIT ${limit} OFFSET ${offset}
   `;
 
@@ -263,12 +264,12 @@ export async function getOptimizedInventoryList(
     return [];
   }
 
-  const pagedProductIds = pagedGroups.map(group => group.product_id);
-  const pagedGroupOrderClause = Prisma.sql`FIELD(i.product_id, ${Prisma.join(
-    pagedProductIds
+  const pagedProductCodes = pagedGroups.map(group => group.product_code);
+  const pagedGroupOrderClause = Prisma.sql`FIELD(${PRODUCT_GROUP_KEY_SQL}, ${Prisma.join(
+    pagedProductCodes
   )})`;
 
-  // 再一次性查出当前页产品下的所有批次记录，保证分组展示不会跨页。
+  // 再一次性查出当前页产品编码下的所有批次记录，保证分组展示不会跨页。
   const rawRecords = await prisma.$queryRaw<unknown[]>`
     SELECT
       i.id,
@@ -305,7 +306,7 @@ export async function getOptimizedInventoryList(
       AND bs_default.batch_number = i.batch_number
     LEFT JOIN categories c ON p.category_id = c.id
     WHERE ${whereClause}
-      AND i.product_id IN (${Prisma.join(pagedProductIds)})
+      AND ${PRODUCT_GROUP_KEY_SQL} IN (${Prisma.join(pagedProductCodes)})
     ORDER BY ${pagedGroupOrderClause}, ${orderByClause}, i.id ASC
   `;
 
@@ -385,7 +386,7 @@ export async function getInventoryCount(
   const whereClause = buildWhereClause(params);
 
   const result = await prisma.$queryRaw<[{ count: bigint }]>`
-    SELECT COUNT(DISTINCT i.product_id) as count
+    SELECT COUNT(DISTINCT ${PRODUCT_GROUP_KEY_SQL}) as count
     FROM inventory i
     LEFT JOIN products p ON i.product_id = p.id
     WHERE ${whereClause}

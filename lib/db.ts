@@ -55,6 +55,12 @@ async function logDatabaseError(
 const isJestEnvironment =
   typeof process !== 'undefined' && !!process.env.JEST_WORKER_ID;
 
+const prismaLogLevels: Prisma.LogLevel[] = isJestEnvironment
+  ? []
+  : env.NODE_ENV === 'development'
+    ? ['query', 'error', 'warn']
+    : ['error'];
+
 // 全局 Prisma 客户端实例
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -83,8 +89,7 @@ function createPrismaClient() {
   }
 
   return new PrismaClient({
-    log:
-      env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+    log: prismaLogLevels,
     datasources: {
       db: {
         url: env.DATABASE_URL,

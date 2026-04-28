@@ -10,6 +10,7 @@ import 'dotenv/config';
 import { shippingQuerySchedulerConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
 
+import { getOperationsMaintenanceScheduler } from './operations-maintenance-scheduler';
 import { createShippingQueryWorker } from '../workers/shipping-query-worker';
 
 import { getShippingQueryScheduler } from './shipping-query-scheduler';
@@ -18,6 +19,9 @@ import { getShippingQueryScheduler } from './shipping-query-scheduler';
  * 调度器实例
  */
 let scheduler: ReturnType<typeof getShippingQueryScheduler> | null = null;
+let maintenanceScheduler:
+  | ReturnType<typeof getOperationsMaintenanceScheduler>
+  | null = null;
 
 /**
  * Worker 实例
@@ -50,6 +54,13 @@ async function start(): Promise<void> {
       status: scheduler.getStatus(),
     });
 
+    maintenanceScheduler = getOperationsMaintenanceScheduler();
+    await maintenanceScheduler.start();
+
+    logger.info('shipping-scheduler', '运维维护调度器启动成功', undefined, {
+      maintenanceStatus: maintenanceScheduler.getStatus(),
+    });
+
     // 设置健康检查
     setupHealthCheck();
   } catch (error) {
@@ -79,6 +90,12 @@ async function stop(): Promise<void> {
       logger.info('shipping-scheduler', '调度器已停止');
     }
 
+    if (maintenanceScheduler) {
+      await maintenanceScheduler.stop();
+      maintenanceScheduler = null;
+      logger.info('shipping-scheduler', '运维维护调度器已停止');
+    }
+
     // 停止 Worker
     if (worker) {
       await worker.close();
@@ -101,7 +118,7 @@ async function stop(): Promise<void> {
 function setupHealthCheck(): void {
   setInterval(() => {
     try {
-      if (!scheduler || !worker) {
+      if (!scheduler || !worker || !maintenanceScheduler) {
         logger.error(
           'shipping-scheduler',
           '健康检查失败：调度器或 Worker 未运行'
@@ -110,9 +127,11 @@ function setupHealthCheck(): void {
       }
 
       const status = scheduler.getStatus();
+      const maintenanceStatus = maintenanceScheduler.getStatus();
 
       logger.debug('shipping-scheduler', '健康检查通过', undefined, {
         schedulerRunning: status.isRunning,
+        maintenanceSchedulerRunning: maintenanceStatus.isRunning,
         workerRunning: worker !== null,
       });
     } catch (error) {

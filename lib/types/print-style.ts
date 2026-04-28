@@ -345,11 +345,18 @@ export interface SummarySettings {
   padding?: number;
 
   /**
-   * 字段颜色配置
+   * 汇总字段数值颜色配置
    * 键为字段key,值为颜色(支持hex/rgb/颜色名称)
    * @example { totalAmount: '#ff0000', totalWeight: '#00ff00' }
    */
   fieldColors?: Record<string, string>;
+
+  /**
+   * 汇总字段标签颜色配置
+   * 键为字段key,值为颜色(支持hex/rgb/颜色名称)
+   * @example { totalAmount: '#111111', totalWeight: '#555555' }
+   */
+  fieldLabelColors?: Record<string, string>;
 
   /**
    * 是否显示汇总区域外边框
@@ -365,6 +372,14 @@ export interface SummarySettings {
    * 汇总区域外边框宽度（px）
    */
   borderWidth?: number;
+}
+
+/**
+ * 汇总字段配色项
+ */
+export interface SummaryFieldColorOption {
+  key: string;
+  label: string;
 }
 
 /**

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { authMiddleware } from './lib/auth-middleware';
+import { getRequestHost, getRequestProtocol } from './lib/utils/request-origin';
 
 /**
  * 主中间件函数
@@ -10,8 +11,14 @@ import { authMiddleware } from './lib/auth-middleware';
 export async function middleware(request: NextRequest) {
   const url = request.nextUrl;
   const pathname = url.pathname;
-  const hostHeader = request.headers.get('x-forwarded-host') || request.headers.get('host');
-  const hostname = (hostHeader?.split(':')[0] || url.hostname).toLowerCase();
+  const configuredAuthOrigin =
+    process.env.NODE_ENV === 'production' ? process.env.NEXTAUTH_URL : undefined;
+  const hostname = (
+    getRequestHost(request, {
+      fallbackOrigin: configuredAuthOrigin,
+      preferFallbackOrigin: Boolean(configuredAuthOrigin),
+    })?.split(':')[0] || url.hostname
+  ).toLowerCase();
   const isLocalLoopback =
     hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
 
@@ -20,8 +27,10 @@ export async function middleware(request: NextRequest) {
 
   // 生产环境下，对认证相关路由强制要求 HTTPS
   if (process.env.NODE_ENV === 'production') {
-    const proto =
-      request.headers.get('x-forwarded-proto') || url.protocol.replace(':', '');
+    const proto = getRequestProtocol(request, {
+      fallbackOrigin: configuredAuthOrigin,
+      preferFallbackOrigin: Boolean(configuredAuthOrigin),
+    });
 
     if (!isLocalLoopback && (isAuthApi || isAuthPage) && proto !== 'https') {
       return new Response('HTTPS Required', { status: 403 });
@@ -116,5 +125,7 @@ export const config = {
     },
     // 额外匹配认证 API 路由，用于强制 HTTPS 校验和安全头
     '/api/auth/:path*',
+    // 额外匹配认证页面，确保 HTTPS 校验和安全头真正生效
+    '/auth/:path*',
   ],
 };

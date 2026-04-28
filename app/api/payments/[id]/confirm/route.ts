@@ -11,6 +11,7 @@ import {
   buildExcludeAutoReceivableConfirmationWhere,
   isAutoReceivableConfirmationPayment,
 } from '@/lib/services/receivables-helpers';
+import { getSalesOrderReceivableTotal } from '@/lib/utils/sample-order';
 
 const serializeError = (error: unknown) =>
   error instanceof Error
@@ -127,6 +128,8 @@ export const POST = withAuth(
               id: true,
               totalAmount: true,
               roundingAdjustment: true,
+              isSampleOrder: true,
+              sampleSettlementType: true,
               status: true,
               prepaymentUsages: {
                 select: {
@@ -153,17 +156,23 @@ export const POST = withAuth(
               0
             );
 
-            const orderDue =
-              Number(salesOrder.totalAmount ?? 0) +
-              Number(salesOrder.roundingAdjustment ?? 0);
+            const orderDue = getSalesOrderReceivableTotal({
+              isSampleOrder: salesOrder.isSampleOrder,
+              sampleSettlementType: salesOrder.sampleSettlementType,
+              totalAmount: salesOrder.totalAmount,
+              roundingAdjustment: salesOrder.roundingAdjustment,
+            });
             const totalSettled = totalPaid + prepaymentApplied;
 
-            if (salesOrder.status === 'shipped' && totalSettled >= orderDue) {
-              await tx.salesOrder.update({
-                where: { id: salesOrder.id },
-                data: { status: 'completed' },
-              });
-            }
+            await tx.salesOrder.update({
+              where: { id: salesOrder.id },
+              data: {
+                paidAmount: Math.min(orderDue, totalSettled),
+                ...(salesOrder.status === 'shipped' && totalSettled >= orderDue
+                  ? { status: 'completed' }
+                  : {}),
+              },
+            });
           }
         }
 

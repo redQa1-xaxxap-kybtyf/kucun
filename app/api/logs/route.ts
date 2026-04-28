@@ -11,6 +11,7 @@ import {
 } from '@/lib/api/pagination';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
+import { cleanupExpiredSystemLogs } from '@/lib/services/system-log-maintenance-service';
 import type {
   SystemLog,
   SystemLogLevel,
@@ -203,26 +204,17 @@ export const DELETE = withAuth(async (request: NextRequest, { user }) => {
       );
     }
 
-    // 计算截止日期
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
-
-    // 删除过期日志
-    const result = await prisma.systemLog.deleteMany({
-      where: {
-        createdAt: {
-          lt: cutoffDate,
-        },
-      },
-    });
+    const deletedCount = await cleanupExpiredSystemLogs({ retentionDays });
 
     return NextResponse.json({
       success: true,
       data: {
-        deletedCount: result.count,
+        deletedCount,
         cutoffDate: cutoffDate.toISOString(),
       },
-      message: `成功清理 ${result.count} 条过期日志`,
+      message: `成功清理 ${deletedCount} 条过期日志`,
     });
   } catch (error) {
     console.error('清理过期日志失败:', error);

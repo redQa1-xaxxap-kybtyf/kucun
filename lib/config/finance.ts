@@ -132,7 +132,7 @@ export const ENTITY_TYPE_LABELS = {
 // 账单状态中文标签映射
 export const STATEMENT_STATUS_LABELS = {
   [STATEMENT_STATUSES.ACTIVE]: '正常',
-  [STATEMENT_STATUSES.SETTLED]: '已结清',
+  [STATEMENT_STATUSES.SETTLED]: '无余额',
   [STATEMENT_STATUSES.SUSPENDED]: '已暂停',
 } as const;
 

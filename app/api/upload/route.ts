@@ -11,6 +11,7 @@ import { withAuth } from '@/lib/auth/api-helpers';
 import { env, uploadConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { uploadToQiniu } from '@/lib/services/qiniu-upload';
+import { getRequestOrigin } from '@/lib/utils/request-origin';
 
 // 声明使用 Node.js 运行时（sharp 和 Buffer 需要 Node.js 环境）
 export const runtime = 'nodejs';
@@ -436,9 +437,10 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
     const { file, type } = payload;
     const buffer = await prepareUploadBuffer(file, type);
 
-    const publicBaseOrigin = process.env.NEXTAUTH_URL
-      ? new URL(process.env.NEXTAUTH_URL).origin
-      : request.nextUrl.origin;
+    const publicBaseOrigin = getRequestOrigin(request, {
+      fallbackOrigin: process.env.NEXTAUTH_URL || request.nextUrl.origin,
+      preferFallbackOrigin: Boolean(process.env.NEXTAUTH_URL),
+    });
 
     // 小程序端上传优先保证可用：即使未启用 UPLOAD_FALLBACK_ENABLED，
     // 也允许在七牛失败时落本地（避免生产环境存储配置缺失导致“无法上传”）。

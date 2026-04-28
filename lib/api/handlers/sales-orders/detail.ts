@@ -1,6 +1,7 @@
 import type { Prisma, SalesOrder } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
+import { calculateSalesOrderSettledAmount } from '@/lib/services/sales-order-settlement';
 import { isAutoReceivableConfirmationPayment } from '@/lib/services/receivables-helpers';
 import { getSalesOrderReceivableTotal } from '@/lib/utils/sample-order';
 
@@ -384,7 +385,9 @@ export async function getSalesOrderDetailWithPayments(id: string) {
   const actualPayments = order.payments.filter(
     payment => !isAutoReceivableConfirmationPayment(payment)
   );
-  const confirmed = actualPayments.filter(p => p.status === 'confirmed');
+  const confirmed = actualPayments.filter(p =>
+    ['confirmed', 'applied'].includes(p.status)
+  );
   const actualPaidAmount = confirmed.reduce(
     (sum, r) => sum + Number(r.actualPaymentAmount),
     0
@@ -393,7 +396,27 @@ export async function getSalesOrderDetailWithPayments(id: string) {
     (sum, r) => sum + Number(r.roundingAmount || 0),
     0
   );
-  const paidAmount = actualPaidAmount + paymentRounding;
+
+  const prepaymentUsages =
+    order.prepaymentUsages?.map(usage => ({
+      id: usage.id,
+      paymentRecordId: usage.paymentRecordId,
+      paymentNumber: usage.paymentRecord.paymentNumber,
+      paymentMethod: usage.paymentRecord.paymentMethod,
+      paymentDate: usage.paymentRecord.paymentDate.toISOString(),
+      paymentStatus: usage.paymentRecord.status,
+      appliedAmount: Number(usage.appliedAmount ?? 0),
+      createdAt: usage.createdAt.toISOString(),
+    })) ?? [];
+
+  const prepaymentTotalApplied = prepaymentUsages.reduce(
+    (sum, u) => sum + u.appliedAmount,
+    0
+  );
+  const paidAmount = calculateSalesOrderSettledAmount({
+    payments: confirmed,
+    prepaymentUsages,
+  });
 
   type SalesOrderAmounts = Pick<
     SalesOrder,
@@ -415,23 +438,6 @@ export async function getSalesOrderDetailWithPayments(id: string) {
     order as unknown as SalesOrderDetailResult,
     productsMap,
     batchSpecificationMap
-  );
-
-  const prepaymentUsages =
-    order.prepaymentUsages?.map(usage => ({
-      id: usage.id,
-      paymentRecordId: usage.paymentRecordId,
-      paymentNumber: usage.paymentRecord.paymentNumber,
-      paymentMethod: usage.paymentRecord.paymentMethod,
-      paymentDate: usage.paymentRecord.paymentDate.toISOString(),
-      paymentStatus: usage.paymentRecord.status,
-      appliedAmount: Number(usage.appliedAmount ?? 0),
-      createdAt: usage.createdAt.toISOString(),
-    })) ?? [];
-
-  const prepaymentTotalApplied = prepaymentUsages.reduce(
-    (sum, u) => sum + u.appliedAmount,
-    0
   );
 
   return {

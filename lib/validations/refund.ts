@@ -6,12 +6,18 @@ import { z } from 'zod';
 import { paginationConfig } from '@/lib/env';
 
 // 退款方式验证规则
-export const refundMethodSchema = z.enum(
-  ['cash', 'bank_transfer', 'original_payment', 'other'],
-  {
-    message: '请选择退款方式',
-  }
-);
+export const REFUND_METHODS = [
+  'cash',
+  'bank_transfer',
+  'original_payment',
+  'alipay',
+  'wechat',
+  'other',
+] as const;
+
+export const refundMethodSchema = z.enum(REFUND_METHODS, {
+  message: '请选择退款方式',
+});
 
 // 退款状态验证规则
 export const refundStatusSchema = z.enum(

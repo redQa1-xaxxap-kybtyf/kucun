@@ -148,6 +148,7 @@ export interface UpdateExpenseRequest {
 
 // 费用记录查询参数
 export interface ExpenseQueryParams {
+  search?: string;
   expenseType?: ExpenseType;
   startDate?: string; // ISO日期字符串
   endDate?: string; // ISO日期字符串

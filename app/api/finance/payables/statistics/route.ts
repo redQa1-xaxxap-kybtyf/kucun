@@ -8,6 +8,7 @@ import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
+import { buildPayableWhereConditions } from '@/lib/services/payable-query-service';
 import type {
   PayableRecordQuery,
   PayableStatistics,
@@ -27,53 +28,6 @@ type PayableStatsQuery = Pick<
   PayableRecordQuery,
   'search' | 'supplierId' | 'status' | 'sourceType' | 'startDate' | 'endDate'
 >;
-
-/**
- * 构建筛选条件（与列表查询保持一致）
- */
-const buildWhereConditions = (
-  query: PayableStatsQuery
-): Prisma.PayableRecordWhereInput => {
-  const where: Prisma.PayableRecordWhereInput = {};
-
-  // 搜索条件
-  if (query.search) {
-    where.OR = [
-      { payableNumber: { contains: query.search } },
-      { supplier: { name: { contains: query.search } } },
-      { sourceNumber: { contains: query.search } },
-    ];
-  }
-
-  // 供应商筛选
-  if (query.supplierId) {
-    where.supplierId = query.supplierId;
-  }
-
-  // 状态筛选
-  if (query.status) {
-    where.status = query.status;
-  }
-
-  // 来源类型筛选
-  if (query.sourceType) {
-    where.sourceType = query.sourceType;
-  }
-
-  // 日期范围筛选
-  if (query.startDate || query.endDate) {
-    const dateFilter: { gte?: Date; lte?: Date } = {};
-    if (query.startDate) {
-      dateFilter.gte = new Date(query.startDate);
-    }
-    if (query.endDate) {
-      dateFilter.lte = new Date(query.endDate);
-    }
-    where.createdAt = dateFilter;
-  }
-
-  return where;
-};
 
 const fetchPayablesAggregates = async (
   where: Prisma.PayableRecordWhereInput,
@@ -214,7 +168,7 @@ export const GET = withAuth(async (request: Request) => {
     };
 
     // 构建筛选条件
-    const where = buildWhereConditions(queryParams);
+    const where = buildPayableWhereConditions(queryParams);
 
     const { startOfMonth, endOfMonth } = getCurrentMonthRange();
     const aggregates = await fetchPayablesAggregates(

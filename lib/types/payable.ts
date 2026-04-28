@@ -176,8 +176,8 @@ export interface PaymentOutRecordResponse {
 // 应付款状态标签映射
 export const PAYABLE_STATUS_LABELS: Record<PayableStatus, string> = {
   pending: '待付款',
-  partial: '部分结清',
-  paid: '已结清',
+  partial: '部分付款',
+  paid: '已付款',
   overdue: '已逾期',
   cancelled: '已取消',
 };
@@ -203,9 +203,9 @@ export const PAYMENT_OUT_METHOD_LABELS: Record<PaymentOutMethod, string> = {
 
 // 付款状态标签映射
 export const PAYMENT_OUT_STATUS_LABELS: Record<PaymentOutStatus, string> = {
-  pending: '待确认',
-  confirmed: '已确认',
-  cancelled: '已取消',
+  pending: '待确认付款',
+  confirmed: '已完成付款',
+  cancelled: '已作废',
 };
 
 // 应付款状态变体映射（用于Badge组件）

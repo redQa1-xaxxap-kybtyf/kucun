@@ -4,12 +4,18 @@
 import { z } from 'zod';
 
 // 收款方式枚举验证
-export const paymentMethodSchema = z.enum(
-  ['cash', 'wechat_transfer', 'abc_qr', 'icbc_qr', 'ccb_qr', 'cib_qr'],
-  {
-    message: '请选择有效的收款方式',
-  }
-);
+export const PAYMENT_METHODS = [
+  'cash',
+  'wechat_transfer',
+  'abc_qr',
+  'icbc_qr',
+  'ccb_qr',
+  'cib_qr',
+] as const;
+
+export const paymentMethodSchema = z.enum(PAYMENT_METHODS, {
+  message: '请选择有效的收款方式',
+});
 
 // 收款状态枚举验证
 export const paymentStatusSchema = z.enum(

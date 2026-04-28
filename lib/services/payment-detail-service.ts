@@ -64,7 +64,7 @@ async function buildSalesOrderSummary(payment: PaymentDetailEntity) {
       prisma.paymentRecord.aggregate({
         where: {
           salesOrderId: payment.salesOrderId,
-          status: 'confirmed',
+          status: { in: ['confirmed', 'applied'] },
           ...buildExcludeAutoReceivableConfirmationWhere(),
         },
         _sum: { paymentAmount: true },

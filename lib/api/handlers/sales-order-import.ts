@@ -46,6 +46,9 @@ export interface SalesOrderImportPreviewRow {
   productCode: string;
   productName: string;
   specification: string;
+  colorCode?: string;
+  batchNumber?: string;
+  productionDate?: string;
   displayUnit: '片' | '件';
   displayQuantity: number;
   quantity: number;
@@ -467,6 +470,9 @@ function buildImportPreviewRow(options: {
       options.transformedItem.specification ||
       options.product.specification ||
       '',
+    colorCode: options.rowData.色号 || undefined,
+    batchNumber: options.rowData.批次号 || undefined,
+    productionDate: options.rowData.生产日期 || undefined,
     displayUnit: (options.transformedItem.displayUnit as '片' | '件') || '片',
     displayQuantity: Number(options.transformedItem.displayQuantity ?? 0),
     quantity: Number(options.transformedItem.quantity ?? 0),
@@ -558,6 +564,9 @@ function buildDeterministicImportOrderNo(bucket: OrderBucket) {
         normalizeLookupKey(row.productCode),
         normalizeLookupKey(row.productName),
         normalizeLookupKey(row.specification),
+        normalizeLookupKey(row.colorCode || ''),
+        normalizeLookupKey(row.batchNumber || ''),
+        row.productionDate || '',
         row.displayUnit,
         row.displayQuantity,
         row.quantity,

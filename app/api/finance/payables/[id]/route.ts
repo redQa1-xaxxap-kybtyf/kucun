@@ -300,7 +300,7 @@ const putPayableHandler = withAuth(
         updateData.payableAmount < toNumber(existingPayable.paidAmount)
       ) {
         return NextResponse.json(
-          { success: false, error: '应付金额不能小于已核销金额' },
+          { success: false, error: '应付金额不能小于已付金额' },
           { status: 400 }
         );
       }

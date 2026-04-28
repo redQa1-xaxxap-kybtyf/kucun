@@ -2,6 +2,7 @@ import { logger } from '@/lib/logger';
 import { redis } from '@/lib/redis/redis-client';
 
 const DEFAULT_MAX_CONCURRENT_SESSIONS = 3;
+const ADMIN_MAX_CONCURRENT_SESSIONS = 1;
 const DEFAULT_IDLE_TIMEOUT_SECONDS = 2 * 60 * 60;
 
 type SessionRecord = {
@@ -14,6 +15,13 @@ type SessionRecord = {
 
 const getSessionKey = (sessionId: string) => `auth:session:${sessionId}`;
 const getUserSessionsKey = (userId: string) => `auth:user-sessions:${userId}`;
+
+export function getMaxConcurrentSessionsForRole(role?: string | null): number {
+  const normalizedRole = role?.trim().toLowerCase();
+  return normalizedRole === 'admin'
+    ? ADMIN_MAX_CONCURRENT_SESSIONS
+    : DEFAULT_MAX_CONCURRENT_SESSIONS;
+}
 
 function safeParseSession(raw: string): SessionRecord | null {
   try {
@@ -93,6 +101,12 @@ async function enforceMaxSessions(params: {
   }
 
   await pipeline.exec();
+
+  logger.info('user-session', '超出并发会话上限，已清理旧会话', {
+    userId: params.userId,
+    maxSessions: params.maxSessions,
+    evictedSessionCount: evictIds.length,
+  });
 }
 
 export async function registerUserSession(params: {

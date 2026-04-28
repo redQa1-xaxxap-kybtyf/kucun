@@ -13,6 +13,10 @@ import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 import {
+  calculateSalesOrderRemainingAmount,
+  calculateSalesOrderSettledAmount,
+} from '@/lib/services/sales-order-settlement';
+import {
   createTransferPayableRecord,
   validateStatusTransition,
 } from '@/lib/services/sales-order-service';
@@ -100,21 +104,35 @@ export const putSalesOrderRoute: ApiHandler = async (
       select: {
         totalAmount: true,
         roundingAdjustment: true,
+        isSampleOrder: true,
+        sampleSettlementType: true,
         payments: {
-          where: { status: 'confirmed' },
-          select: { actualPaymentAmount: true, roundingAmount: true },
+          where: { status: { in: ['confirmed', 'applied'] } },
+          select: {
+            status: true,
+            paymentAmount: true,
+            actualPaymentAmount: true,
+            roundingAmount: true,
+            remarks: true,
+          },
+        },
+        prepaymentUsages: {
+          select: { appliedAmount: true },
         },
       },
     });
     if (o) {
-      const paid = o.payments.reduce(
-        (s, r) =>
-          s + Number(r.actualPaymentAmount) + Number(r.roundingAmount || 0),
-        0
-      );
-      const actualTotal =
-        Number(o.totalAmount) + Number(o.roundingAdjustment || 0);
-      const remaining = actualTotal - paid;
+      const actualTotal = getSalesOrderReceivableTotal({
+        isSampleOrder: o.isSampleOrder,
+        sampleSettlementType: o.sampleSettlementType,
+        totalAmount: o.totalAmount,
+        roundingAdjustment: o.roundingAdjustment,
+      });
+      const remaining = calculateSalesOrderRemainingAmount({
+        receivableTotal: actualTotal,
+        payments: o.payments,
+        prepaymentUsages: o.prepaymentUsages,
+      });
       if (remaining > 0.01) {
         return NextResponse.json(
           {
@@ -226,14 +244,14 @@ export const putSalesOrderRoute: ApiHandler = async (
     existingOrder.status === 'confirmed' && status === 'draft'
       ? '销售订单已撤回为草稿'
       : status === 'confirmed'
-      ? '销售订单已确认'
-      : status === 'shipped'
-        ? '销售订单已发货'
-        : status === 'completed'
-          ? '销售订单已完成'
-          : status === 'cancelled'
-            ? '销售订单已取消'
-            : '销售订单更新成功';
+        ? '销售订单已确认'
+        : status === 'shipped'
+          ? '销售订单已发货'
+          : status === 'completed'
+            ? '销售订单已完成'
+            : status === 'cancelled'
+              ? '销售订单已取消'
+              : '销售订单更新成功';
 
   // ✅ P0修复：销售订单状态更新后，失效销售订单和应收款缓存
   invalidateSalesOrderAndReceivables(id).catch(error => {
@@ -385,18 +403,34 @@ async function maybeAutoCompleteAfterShipped(id: string, orderNumber: string) {
     select: {
       totalAmount: true,
       roundingAdjustment: true,
+      isSampleOrder: true,
+      sampleSettlementType: true,
       payments: {
-        where: { status: 'confirmed' },
-        select: { actualPaymentAmount: true, roundingAmount: true },
+        where: { status: { in: ['confirmed', 'applied'] } },
+        select: {
+          status: true,
+          paymentAmount: true,
+          actualPaymentAmount: true,
+          roundingAmount: true,
+          remarks: true,
+        },
+      },
+      prepaymentUsages: {
+        select: { appliedAmount: true },
       },
     },
   });
   if (!o) return;
-  const paid = o.payments.reduce(
-    (s, r) => s + Number(r.actualPaymentAmount) + Number(r.roundingAmount || 0),
-    0
-  );
-  const actualTotal = Number(o.totalAmount) + Number(o.roundingAdjustment || 0);
+  const actualTotal = getSalesOrderReceivableTotal({
+    isSampleOrder: o.isSampleOrder,
+    sampleSettlementType: o.sampleSettlementType,
+    totalAmount: o.totalAmount,
+    roundingAdjustment: o.roundingAdjustment,
+  });
+  const paid = calculateSalesOrderSettledAmount({
+    payments: o.payments,
+    prepaymentUsages: o.prepaymentUsages,
+  });
   const remaining = actualTotal - paid;
   if (remaining <= 0.01) {
     await prisma.salesOrder.update({

@@ -27,8 +27,8 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
         },
         {
           id: 'view-customers',
-          title: '客户管理',
-          description: '查看和管理客户信息',
+          title: '客户档案',
+          description: '查看和维护客户资料',
           icon: 'users',
           color: 'green',
           href: '/customers',

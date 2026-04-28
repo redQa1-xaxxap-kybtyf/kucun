@@ -26,6 +26,7 @@ import {
   type OrderNumberConfig,
 } from '@/lib/services/order-number-generator';
 import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
+import { isAutoReceivableConfirmationPayment } from '@/lib/services/receivables-helpers';
 import { roundCostPrice } from '@/lib/utils/cost-price';
 import { findAvailableInventory } from '@/lib/utils/inventory-variant-mapper';
 import { toNumber } from '@/lib/utils/number';
@@ -571,12 +572,20 @@ async function executeOrderConfirmation(
           isManualProduct: orderItem.isManualProduct,
         });
 
-        if (!isSameNullableNumber(orderItem.piecesPerUnit, finalSnapshot.piecesPerUnit)) {
+        if (
+          !isSameNullableNumber(
+            orderItem.piecesPerUnit,
+            finalSnapshot.piecesPerUnit
+          )
+        ) {
           updateData.piecesPerUnit = finalSnapshot.piecesPerUnit;
         }
 
         if (
-          !isSameNullableNumber(orderItem.weightSnapshot, finalSnapshot.weightSnapshot)
+          !isSameNullableNumber(
+            orderItem.weightSnapshot,
+            finalSnapshot.weightSnapshot
+          )
         ) {
           updateData.weightSnapshot = finalSnapshot.weightSnapshot;
         }
@@ -1373,11 +1382,65 @@ async function executeOrderCancellation(
             },
           },
         },
+        payments: {
+          where: {
+            paymentType: 'order_payment',
+            status: { in: ['confirmed', 'applied'] },
+            voidedAt: null,
+          },
+          select: {
+            id: true,
+            paymentNumber: true,
+            status: true,
+            actualPaymentAmount: true,
+            remarks: true,
+          },
+        },
+        prepaymentUsages: {
+          select: {
+            id: true,
+            appliedAmount: true,
+            paymentRecord: {
+              select: {
+                paymentNumber: true,
+              },
+            },
+          },
+        },
       },
     });
 
     if (!existingOrder) {
       throw new Error('销售订单不存在');
+    }
+
+    const confirmedCustomerPayments = existingOrder.payments.filter(
+      payment => !isAutoReceivableConfirmationPayment(payment)
+    );
+    if (confirmedCustomerPayments.length > 0) {
+      throw new Error(
+        `订单已存在确认收款 ${confirmedCustomerPayments[0]?.paymentNumber ?? ''}，不能直接取消。请先走退款或收款冲销流程。`
+      );
+    }
+
+    const appliedPrepaymentAmount = existingOrder.prepaymentUsages.reduce(
+      (sum, usage) => sum + toNumber(usage.appliedAmount, 0),
+      0
+    );
+    const recordedPrepaymentAmount = toNumber(
+      existingOrder.prepaymentAmount,
+      0
+    );
+    if (
+      existingOrder.prepaymentUsages.length > 0 ||
+      appliedPrepaymentAmount > 0.0001 ||
+      recordedPrepaymentAmount > 0.0001
+    ) {
+      const paymentNumber =
+        existingOrder.prepaymentUsages[0]?.paymentRecord.paymentNumber;
+      throw new Error(
+        `订单已使用预收款抵扣${paymentNumber ? `（${paymentNumber}）` : ''}，不能直接取消。请先处理预收款冲抵回滚或退款。`
+      );
     }
 
     const finalOperatorId = operatorId || existingOrder.userId;

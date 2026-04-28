@@ -15,6 +15,7 @@ import { getStandardTransactionOptions } from '@/lib/db/transaction-options';
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { updateExpensePaymentStatusAfterPayment } from '@/lib/services/expense-payable-integration';
+import { buildPaymentOutWhereConditions } from '@/lib/services/payment-out-query-service';
 import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 import type {
   PaymentOutRecordDetail,
@@ -207,46 +208,19 @@ export const GET = withAuth(
       sortOrder = 'desc',
     } = validationResult.data;
 
-    // 构建查询条件
-    const where: Record<string, unknown> = {};
-
-    if (search) {
-      where.OR = [
-        { paymentNumber: { contains: search } },
-        { supplier: { name: { contains: search } } },
-        { voucherNumber: { contains: search } },
-      ];
-    }
-
-    if (payableRecordId) {
-      where.payableRecordId = payableRecordId;
-    }
-
-    if (supplierId) {
-      where.supplierId = supplierId;
-    }
-
-    if (status) {
-      where.status = status;
-    }
-
-    if (paymentMethod) {
-      where.paymentMethod = paymentMethod;
-    }
-
-    if (startDate || endDate) {
-      const dateFilter: { gte?: Date; lte?: Date } = {};
-      if (startDate) {
-        const parsedStart =
-          parseLocalDateString(startDate) ?? new Date(startDate);
-        dateFilter.gte = parsedStart;
-      }
-      if (endDate) {
-        const parsedEnd = parseLocalDateString(endDate) ?? new Date(endDate);
-        dateFilter.lte = parsedEnd;
-      }
-      where.paymentDate = dateFilter;
-    }
+    const where = buildPaymentOutWhereConditions({
+      page,
+      limit,
+      search,
+      payableRecordId,
+      supplierId,
+      status,
+      paymentMethod,
+      startDate,
+      endDate,
+      sortBy,
+      sortOrder,
+    });
 
     // 计算分页
     const skip = (page - 1) * limit;

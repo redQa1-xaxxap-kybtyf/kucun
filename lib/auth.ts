@@ -13,6 +13,7 @@ import {
   logLoginSuccess,
 } from './services/login-log-service';
 import {
+  getMaxConcurrentSessionsForRole,
   registerUserSession,
   validateAndTouchUserSession,
 } from './services/user-session-service';
@@ -378,6 +379,7 @@ export const authOptions: NextAuthOptions = {
             userId: token.id,
             sessionId,
             expiresAtMs: expiresAtSeconds * 1000,
+            maxSessions: getMaxConcurrentSessionsForRole(token.role),
           });
         } catch (error) {
           // Redis 故障不应阻断登录，只降级并发/空闲超时能力
@@ -446,6 +448,7 @@ export const authOptions: NextAuthOptions = {
     signIn: '/auth/signin',
     error: '/auth/error',
   },
+  useSecureCookies: env.NODE_ENV === 'production',
   // 移除 fallback 值,强制使用环境变量
   // 如果 NEXTAUTH_SECRET 未配置,应用启动时会失败
   secret: env.NEXTAUTH_SECRET,

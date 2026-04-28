@@ -9,6 +9,9 @@ import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { parseLocalDateString } from '@/lib/utils/datetime';
 import { toNumber } from '@/lib/utils/number';
+import { paymentOutMethodSchema } from '@/lib/validations/payable';
+import { paymentMethodSchema } from '@/lib/validations/payment';
+import { refundMethodSchema } from '@/lib/validations/refund';
 
 // cspell:words payables
 
@@ -47,7 +50,7 @@ const createPaymentSchema = z
       .number()
       .min(-9999999, '抹零金额不能低于 -9,999,999')
       .max(9999999, '抹零金额不能超过 9,999,999'),
-    paymentMethod: z.enum(['cash', 'bank_transfer', 'check', 'other']),
+    paymentMethod: paymentMethodSchema,
     paymentDate: z.date(),
     receiptNumber: z.string().optional(),
     remarks: z.string().optional(),
@@ -293,7 +296,7 @@ export async function createPayableRecord(
 const createPaymentOutSchema = z.object({
   payableRecordId: z.string().min(1, '应付款编号不能为空'),
   paymentAmount: z.number().positive('付款金额必须大于 0'),
-  paymentMethod: z.enum(['cash', 'bank_transfer', 'check', 'other']),
+  paymentMethod: paymentOutMethodSchema,
   paymentDate: z.date(),
   voucherNumber: z.string().optional(),
   remarks: z.string().optional(),
@@ -433,13 +436,7 @@ const createRefundSchema = z.object({
   customerId: z.string().min(1, '客户不能为空'),
   refundType: z.enum(['full_refund', 'partial_refund', 'exchange_refund']),
   refundAmount: z.number().positive('退款金额必须大于 0'),
-  refundMethod: z.enum([
-    'cash',
-    'bank_transfer',
-    'check',
-    'original_payment',
-    'other',
-  ]),
+  refundMethod: refundMethodSchema,
   refundDate: z.date(),
   reason: z.string().min(1, '退款原因不能为空'),
   receiptNumber: z.string().optional(),

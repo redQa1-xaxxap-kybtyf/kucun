@@ -1,9 +1,10 @@
 // 小程序专用登录API
 // 不需要验证码，简化认证流程
 
+import { randomUUID } from 'crypto';
+
 import bcrypt from 'bcryptjs';
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { encode } from 'next-auth/jwt';
 
 import { prisma } from '@/lib/db';
@@ -14,6 +15,10 @@ import {
   logLoginFailure,
   logLoginSuccess,
 } from '@/lib/services/login-log-service';
+import {
+  getMaxConcurrentSessionsForRole,
+  registerUserSession,
+} from '@/lib/services/user-session-service';
 import { baseValidations } from '@/lib/validations/base';
 
 const MINI_PROGRAM_JWT_SALT = 'mini-program';
@@ -269,6 +274,28 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    let sessionId: string | undefined;
+    const expiresAtMs =
+      Date.now() + MINI_PROGRAM_TOKEN_MAX_AGE_SECONDS * 1000;
+
+    try {
+      sessionId = randomUUID();
+      await registerUserSession({
+        userId: user.id,
+        sessionId,
+        expiresAtMs,
+        maxSessions: getMaxConcurrentSessionsForRole(user.role),
+      });
+    } catch (error) {
+      sessionId = undefined;
+      logger.warn(
+        'security',
+        '注册小程序用户会话失败(忽略)',
+        { userId: user.id, username: user.username },
+        { error: error instanceof Error ? error.message : String(error) }
+      );
+    }
+
     // 9. 生成小程序 Bearer Token（JWT/JWE），避免依赖 Prisma Session 表（生产环境可能未建表）
     const token = await encode({
       token: {
@@ -281,6 +308,7 @@ export async function POST(request: NextRequest) {
         role: user.role,
         status: user.status,
         client: 'mini-program',
+        sessionId,
       },
       secret: env.NEXTAUTH_SECRET,
       salt: MINI_PROGRAM_JWT_SALT,
@@ -294,6 +322,7 @@ export async function POST(request: NextRequest) {
         token,
         tokenType: 'Bearer',
         expiresIn: MINI_PROGRAM_TOKEN_MAX_AGE_SECONDS, // 单位：秒
+        sessionId: sessionId || null,
         user: {
           id: user.id,
           username: user.username,

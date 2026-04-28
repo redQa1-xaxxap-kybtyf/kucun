@@ -10,6 +10,7 @@ import type {
   PaymentOutMethod,
   PaymentOutStatus,
 } from '@/lib/types/payable';
+import { parseLocalDateString } from '@/lib/utils/datetime';
 import { toNumber } from '@/lib/utils/number';
 
 type RawPayableSearchParams = {
@@ -30,6 +31,19 @@ type PayableQuery = PayableRecordQuery & {
   sortOrder: NonNullable<PayableRecordQuery['sortOrder']>;
 };
 
+type PayableWhereQuery = {
+  search?: string;
+  supplierId?: string;
+  status?: PayableRecordQuery['status'];
+  sourceType?: PayableRecordQuery['sourceType'];
+  startDate?: string;
+  endDate?: string;
+  page?: number;
+  limit?: number;
+  sortBy?: PayableRecordQuery['sortBy'];
+  sortOrder?: PayableRecordQuery['sortOrder'];
+};
+
 export function sanitizePayableSearchParams(
   searchParams: RawPayableSearchParams
 ) {
@@ -39,16 +53,40 @@ export function sanitizePayableSearchParams(
   };
 }
 
-function buildWhereConditions(
-  query: PayableRecordQuery
+function buildPayableDateFilter(startDate?: string, endDate?: string) {
+  if (!startDate && !endDate) {
+    return undefined;
+  }
+
+  const dateFilter: { gte?: Date; lte?: Date } = {};
+  if (startDate) {
+    dateFilter.gte = parseLocalDateString(startDate) ?? new Date(startDate);
+  }
+  if (endDate) {
+    const endDateValue =
+      parseLocalDateString(endDate) ?? new Date(endDate);
+    endDateValue.setHours(23, 59, 59, 999);
+    dateFilter.lte = endDateValue;
+  }
+
+  return dateFilter;
+}
+
+export function buildPayableWhereConditions(
+  query: PayableWhereQuery
 ): Prisma.PayableRecordWhereInput {
   const where: Prisma.PayableRecordWhereInput = {};
+  const normalizedSearch = query.search?.trim();
 
-  if (query.search) {
+  if (normalizedSearch) {
     where.OR = [
-      { payableNumber: { contains: query.search } },
-      { supplier: { name: { contains: query.search } } },
-      { sourceNumber: { contains: query.search } },
+      { payableNumber: { contains: normalizedSearch } },
+      { sourceNumber: { contains: normalizedSearch } },
+      { description: { contains: normalizedSearch } },
+      { remarks: { contains: normalizedSearch } },
+      { supplier: { name: { contains: normalizedSearch } } },
+      { supplier: { phone: { contains: normalizedSearch } } },
+      { supplier: { address: { contains: normalizedSearch } } },
     ];
   }
 
@@ -64,14 +102,8 @@ function buildWhereConditions(
     where.sourceType = query.sourceType;
   }
 
-  if (query.startDate || query.endDate) {
-    const dateFilter: { gte?: Date; lte?: Date } = {};
-    if (query.startDate) {
-      dateFilter.gte = new Date(query.startDate);
-    }
-    if (query.endDate) {
-      dateFilter.lte = new Date(query.endDate);
-    }
+  const dateFilter = buildPayableDateFilter(query.startDate, query.endDate);
+  if (dateFilter) {
     where.createdAt = dateFilter;
   }
 
@@ -211,7 +243,7 @@ async function fetchPayables(
 export async function fetchPayableRecordList(
   query: PayableQuery
 ): Promise<PayableRecordListResponse> {
-  const where = buildWhereConditions(query);
+  const where = buildPayableWhereConditions(query);
 
   const [payables, total] = await Promise.all([
     fetchPayables(where, query),

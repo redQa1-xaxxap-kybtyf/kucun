@@ -2,6 +2,7 @@ import type { Prisma } from '@prisma/client';
 
 import { buildDateTimeRangeFromDateStrings } from '@/lib/api/date-range';
 import { prisma } from '@/lib/db';
+import { calculateSalesOrderSettledAmount } from '@/lib/services/sales-order-settlement';
 import { getSystemMode } from '@/lib/services/system-mode-service';
 import {
   SALES_ORDER_PENDING_FILTER_STATUSES,
@@ -19,8 +20,17 @@ import {
 const listInclude = {
   ...salesOrderRelations,
   payments: {
-    where: { status: 'confirmed' },
-    select: { paymentAmount: true },
+    where: { status: { in: ['confirmed', 'applied'] as string[] } },
+    select: {
+      status: true,
+      paymentAmount: true,
+      actualPaymentAmount: true,
+      roundingAmount: true,
+      remarks: true,
+    },
+  },
+  prepaymentUsages: {
+    select: { appliedAmount: true },
   },
   returnOrders: {
     where: {
@@ -167,9 +177,11 @@ const buildInGroupOrderBy = (
   params: SalesOrderQueryParams
 ): Prisma.SalesOrderOrderByWithRelationInput[] => {
   const sortOrder = params.sortOrder ?? DEFAULT_SORT_ORDER;
+  const prioritizedSortField: keyof Prisma.SalesOrderOrderByWithRelationInput =
+    params.sortBy === 'createdAt' ? 'createdAt' : 'orderDate';
 
   return [
-    { orderDate: sortOrder },
+    { [prioritizedSortField]: sortOrder },
     { id: sortOrder },
   ] satisfies Prisma.SalesOrderOrderByWithRelationInput[];
 };
@@ -179,7 +191,7 @@ const shouldUsePrioritizedStatusOrdering = (params: SalesOrderQueryParams) => {
 
   return (
     params.recordScope !== 'history' &&
-    sortField === 'orderDate' &&
+    (sortField === 'orderDate' || sortField === 'createdAt') &&
     (params.status === undefined || params.status === 'pending')
   );
 };
@@ -295,12 +307,13 @@ const mapListOrder = (
     }
   >
 ) => {
-  const { payments, returnOrders, _count, items, ...base } = order;
+  const { payments, prepaymentUsages, returnOrders, _count, items, ...base } =
+    order;
   const orderBase = mapOrderBaseFields(base);
-  const paidAmount = payments.reduce(
-    (sum, payment) => sum + Number(payment.paymentAmount),
-    0
-  );
+  const paidAmount = calculateSalesOrderSettledAmount({
+    payments,
+    prepaymentUsages,
+  });
   const receivableTotal = getSalesOrderReceivableTotal({
     isSampleOrder: orderBase.isSampleOrder,
     sampleSettlementType: orderBase.sampleSettlementType,

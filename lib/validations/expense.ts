@@ -275,6 +275,13 @@ export const updateExpenseSchema = z.object({
 
 // 费用记录筛选验证规则
 export const expenseFilterSchema = z.object({
+  search: z
+    .string()
+    .trim()
+    .max(100, '搜索内容不能超过100个字符')
+    .optional()
+    .describe('搜索关键词（可选）'),
+
   expenseType: expenseTypeSchema.optional().describe('费用类型筛选（可选）'),
 
   startDate: z

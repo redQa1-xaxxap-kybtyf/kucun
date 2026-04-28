@@ -98,6 +98,7 @@ function buildQueryConditions(
   includeVoided?: boolean
 ) {
   const whereConditions: Record<string, unknown> = {};
+  const normalizedSearch = search.trim();
 
   if (!includeVoided) {
     whereConditions.voidedAt = null;
@@ -107,10 +108,16 @@ function buildQueryConditions(
     whereConditions.dataTag = 'prod';
   }
 
-  if (search) {
+  if (normalizedSearch) {
     whereConditions.OR = [
-      { refundNumber: { contains: search } },
-      { returnOrderNumber: { contains: search } },
+      { refundNumber: { contains: normalizedSearch } },
+      { returnOrderNumber: { contains: normalizedSearch } },
+      { salesOrder: { orderNumber: { contains: normalizedSearch } } },
+      { customer: { name: { contains: normalizedSearch } } },
+      { customer: { phone: { contains: normalizedSearch } } },
+      { reason: { contains: normalizedSearch } },
+      { remarks: { contains: normalizedSearch } },
+      { receiptNumber: { contains: normalizedSearch } },
     ];
   }
 

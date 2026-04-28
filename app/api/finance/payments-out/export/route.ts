@@ -15,6 +15,7 @@ import { type NextRequest } from 'next/server';
 import { errorResponse, withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { buildPaymentOutWhereConditions } from '@/lib/services/payment-out-query-service';
 import {
   PAYMENT_OUT_METHOD_LABELS,
   PAYMENT_OUT_STATUS_LABELS,
@@ -80,45 +81,19 @@ export const POST = withAuth(
         sortOrder = 'desc',
         limit,
       } = validationResult.data;
-
-      const where: Record<string, unknown> = {};
-
-      if (search) {
-        where.OR = [
-          { paymentNumber: { contains: search } },
-          { supplier: { name: { contains: search } } },
-          { voucherNumber: { contains: search } },
-        ];
-      }
-
-      if (payableRecordId) {
-        where.payableRecordId = payableRecordId;
-      }
-
-      if (supplierId) {
-        where.supplierId = supplierId;
-      }
-
-      if (status) {
-        where.status = status;
-      }
-
-      if (paymentMethod) {
-        where.paymentMethod = paymentMethod;
-      }
-
-      if (startDate || endDate) {
-        const dateFilter: { gte?: Date; lte?: Date } = {};
-        if (startDate) {
-          dateFilter.gte = new Date(startDate);
-        }
-        if (endDate) {
-          const end = new Date(endDate);
-          end.setHours(23, 59, 59, 999);
-          dateFilter.lte = end;
-        }
-        where.paymentDate = dateFilter;
-      }
+      const where = buildPaymentOutWhereConditions({
+        page: 1,
+        limit,
+        search,
+        payableRecordId,
+        supplierId,
+        status,
+        paymentMethod,
+        startDate,
+        endDate,
+        sortBy,
+        sortOrder,
+      });
 
       const totalCount = await prisma.paymentOutRecord.count({ where });
 

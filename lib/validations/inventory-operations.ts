@@ -171,7 +171,7 @@ export const inventoryCountSchema = z
 // 批量操作验证
 export const batchOperationSchema = z.object({
   ids: z
-    .array(z.string().uuid({ error: '记录编号格式不正确' }))
+    .array(z.string().uuid({ error: '记录ID格式不正确' }))
     .min(1, { error: '请选择至少一条记录' })
     .max(100, { error: '批量操作最多支持100条记录' }),
   action: z.enum(['delete', 'export'], { message: '请选择有效的操作' }),

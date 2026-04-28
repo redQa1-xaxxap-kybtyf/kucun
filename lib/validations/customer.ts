@@ -189,7 +189,7 @@ export const customerQuickAddSchema = z.object({
 
 // ✅ 客户更新表单验证 - parentCustomerId可选
 export const customerUpdateSchema = z.object({
-  id: z.string().min(1, '客户不能为空'),
+  id: z.string().min(1, '客户ID不能为空'),
   name: baseValidations.name.optional(),
   phone: baseValidations.phone,
   address: baseValidations.address,

@@ -153,6 +153,12 @@ async function collectSampleMetrics(
   summary: SampleMetrics;
   customers: SampleCustomerMetrics[];
 }> {
+  const salesOrderModel =
+    prisma.salesOrder as typeof prisma.salesOrder &
+      Partial<Pick<typeof prisma.salesOrder, 'findMany'>>;
+  const outboundRecordModel =
+    prisma.outboundRecord as typeof prisma.outboundRecord &
+      Partial<Pick<typeof prisma.outboundRecord, 'findMany'>>;
   const salesOrderWhere = applyReportVisibility<Prisma.SalesOrderWhereInput>(
     {
       ...buildSalesOrderWhere(startDate, endDate),
@@ -164,144 +170,150 @@ async function collectSampleMetrics(
   const summaryAccumulator = createSampleMetricAccumulator();
   const customers = new Map<string, SampleCustomerAccumulator>();
 
-  let salesOrderCursor: string | undefined;
-  while (true) {
-    const batch = await prisma.salesOrder.findMany({
-      where: salesOrderWhere,
-      select: {
-        id: true,
-        customerId: true,
-        totalAmount: true,
-        costAmount: true,
-        customer: {
+  if (typeof salesOrderModel.findMany === 'function') {
+    let salesOrderCursor: string | undefined;
+    while (true) {
+      const batch =
+        (await salesOrderModel.findMany({
+          where: salesOrderWhere,
           select: {
-            name: true,
+            id: true,
+            customerId: true,
+            totalAmount: true,
+            costAmount: true,
+            customer: {
+              select: {
+                name: true,
+              },
+            },
+            items: {
+              select: {
+                quantity: true,
+              },
+            },
           },
-        },
-        items: {
-          select: {
-            quantity: true,
+          orderBy: {
+            id: 'asc',
           },
-        },
-      },
-      orderBy: {
-        id: 'asc',
-      },
-      take: SAMPLE_REPORT_BATCH_SIZE,
-      ...(salesOrderCursor
-        ? { cursor: { id: salesOrderCursor }, skip: 1 }
-        : {}),
-    });
+          take: SAMPLE_REPORT_BATCH_SIZE,
+          ...(salesOrderCursor
+            ? { cursor: { id: salesOrderCursor }, skip: 1 }
+            : {}),
+        })) ?? [];
 
-    if (batch.length === 0) {
-      break;
+      if (batch.length === 0) {
+        break;
+      }
+
+      for (const order of batch) {
+        const identity = normalizeCustomerIdentity(
+          order.customerId,
+          order.customer?.name
+        );
+        const sampleQuantity = order.items.reduce(
+          (sum, item) => sum + Number(item.quantity ?? 0),
+          0
+        );
+        const sampleRevenue = toNumber(order.totalAmount);
+        const sampleCost = toNumber(order.costAmount);
+
+        recordSampleMetric(
+          summaryAccumulator,
+          'sampleOrder',
+          identity.customerId,
+          sampleQuantity,
+          sampleRevenue,
+          sampleCost
+        );
+
+        const customerAccumulator = getOrCreateCustomerAccumulator(
+          customers,
+          identity.customerId,
+          identity.customerName
+        );
+        recordSampleMetric(
+          customerAccumulator,
+          'sampleOrder',
+          identity.customerId,
+          sampleQuantity,
+          sampleRevenue,
+          sampleCost
+        );
+      }
+
+      salesOrderCursor = batch[batch.length - 1].id;
     }
-
-    for (const order of batch) {
-      const identity = normalizeCustomerIdentity(
-        order.customerId,
-        order.customer?.name
-      );
-      const sampleQuantity = order.items.reduce(
-        (sum, item) => sum + Number(item.quantity ?? 0),
-        0
-      );
-      const sampleRevenue = toNumber(order.totalAmount);
-      const sampleCost = toNumber(order.costAmount);
-
-      recordSampleMetric(
-        summaryAccumulator,
-        'sampleOrder',
-        identity.customerId,
-        sampleQuantity,
-        sampleRevenue,
-        sampleCost
-      );
-
-      const customerAccumulator = getOrCreateCustomerAccumulator(
-        customers,
-        identity.customerId,
-        identity.customerName
-      );
-      recordSampleMetric(
-        customerAccumulator,
-        'sampleOrder',
-        identity.customerId,
-        sampleQuantity,
-        sampleRevenue,
-        sampleCost
-      );
-    }
-
-    salesOrderCursor = batch[batch.length - 1].id;
   }
 
-  let outboundCursor: string | undefined;
-  while (true) {
-    const batch = await prisma.outboundRecord.findMany({
-      where: {
-        createdAt: {
-          gte: startDate,
-          lte: endDate,
-        },
-        reason: 'sample_outbound',
-        salesOrderId: null,
-      },
-      select: {
-        id: true,
-        customerId: true,
-        quantity: true,
-        totalCost: true,
-        customer: {
-          select: {
-            name: true,
+  if (typeof outboundRecordModel.findMany === 'function') {
+    let outboundCursor: string | undefined;
+    while (true) {
+      const batch =
+        (await outboundRecordModel.findMany({
+          where: {
+            createdAt: {
+              gte: startDate,
+              lte: endDate,
+            },
+            reason: 'sample_outbound',
+            salesOrderId: null,
           },
-        },
-      },
-      orderBy: {
-        id: 'asc',
-      },
-      take: SAMPLE_REPORT_BATCH_SIZE,
-      ...(outboundCursor ? { cursor: { id: outboundCursor }, skip: 1 } : {}),
-    });
+          select: {
+            id: true,
+            customerId: true,
+            quantity: true,
+            totalCost: true,
+            customer: {
+              select: {
+                name: true,
+              },
+            },
+          },
+          orderBy: {
+            id: 'asc',
+          },
+          take: SAMPLE_REPORT_BATCH_SIZE,
+          ...(outboundCursor ? { cursor: { id: outboundCursor }, skip: 1 } : {}),
+        })) ?? [];
 
-    if (batch.length === 0) {
-      break;
+      if (batch.length === 0) {
+        break;
+      }
+
+      for (const record of batch) {
+        const identity = normalizeCustomerIdentity(
+          record.customerId,
+          record.customer?.name
+        );
+        const sampleQuantity = Number(record.quantity ?? 0);
+        const sampleCost = toNumber(record.totalCost);
+
+        recordSampleMetric(
+          summaryAccumulator,
+          'manualOutbound',
+          identity.customerId,
+          sampleQuantity,
+          0,
+          sampleCost
+        );
+
+        const customerAccumulator = getOrCreateCustomerAccumulator(
+          customers,
+          identity.customerId,
+          identity.customerName
+        );
+        recordSampleMetric(
+          customerAccumulator,
+          'manualOutbound',
+          identity.customerId,
+          sampleQuantity,
+          0,
+          sampleCost
+        );
+      }
+
+      outboundCursor = batch[batch.length - 1].id;
     }
-
-    for (const record of batch) {
-      const identity = normalizeCustomerIdentity(
-        record.customerId,
-        record.customer?.name
-      );
-      const sampleQuantity = Number(record.quantity ?? 0);
-      const sampleCost = toNumber(record.totalCost);
-
-      recordSampleMetric(
-        summaryAccumulator,
-        'manualOutbound',
-        identity.customerId,
-        sampleQuantity,
-        0,
-        sampleCost
-      );
-
-      const customerAccumulator = getOrCreateCustomerAccumulator(
-        customers,
-        identity.customerId,
-        identity.customerName
-      );
-      recordSampleMetric(
-        customerAccumulator,
-        'manualOutbound',
-        identity.customerId,
-        sampleQuantity,
-        0,
-        sampleCost
-      );
-    }
-
-    outboundCursor = batch[batch.length - 1].id;
   }
 
   const summary = finalizeSampleAccumulator(summaryAccumulator);

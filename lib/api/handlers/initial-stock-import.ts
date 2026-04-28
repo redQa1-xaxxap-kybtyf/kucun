@@ -72,6 +72,7 @@ type ProductLookup = {
   code: string;
   name: string;
   specification: string | null;
+  piecesPerUnit?: number | null;
   variants: Array<{
     id: string;
     colorCode: string;
@@ -586,6 +587,57 @@ function resolvePiecesPerUnit(
   }
 
   return {};
+}
+
+function resolveBatchSpecificationPiecesPerUnit(
+  parsedRow: ParsedInitialStockRow,
+  product: ProductLookup,
+  piecesPerUnitResolution: {
+    piecesPerUnit?: number;
+  },
+  weightResolution: {
+    weight?: number;
+  }
+):
+  | {
+      batchPiecesPerUnit?: number;
+    }
+  | {
+      error: InitialStockImportError;
+    } {
+  if (
+    typeof piecesPerUnitResolution.piecesPerUnit === 'number' &&
+    piecesPerUnitResolution.piecesPerUnit > 0
+  ) {
+    return {
+      batchPiecesPerUnit: piecesPerUnitResolution.piecesPerUnit,
+    };
+  }
+
+  if (
+    typeof weightResolution.weight !== 'number' ||
+    weightResolution.weight <= 0
+  ) {
+    return {};
+  }
+
+  if (
+    typeof product.piecesPerUnit === 'number' &&
+    product.piecesPerUnit > 0
+  ) {
+    return {
+      batchPiecesPerUnit: product.piecesPerUnit,
+    };
+  }
+
+  return {
+    error: createImportError(
+      parsedRow.rowNumber,
+      '填写“本批次实际每件重量(kg)”但未填写装箱数时，需要先在产品管理中维护默认装箱数，或在当前行补充装箱数后再导入',
+      '装箱数',
+      product.code
+    ),
+  };
 }
 
 function resolveQuantity(
@@ -1105,6 +1157,19 @@ async function prepareInitialStockImportRows(rows: InitialStockRowInput[]) {
       continue;
     }
 
+    const batchSpecificationPiecesPerUnitResolution =
+      resolveBatchSpecificationPiecesPerUnit(
+        parsedRow,
+        productResolution.product,
+        piecesPerUnitResolution,
+        weightResolution
+      );
+
+    if ('error' in batchSpecificationPiecesPerUnitResolution) {
+      errors.push(batchSpecificationPiecesPerUnitResolution.error);
+      continue;
+    }
+
     preliminaryRows.push({
       rowNumber: parsedRow.rowNumber,
       product: productResolution.product,
@@ -1115,7 +1180,8 @@ async function prepareInitialStockImportRows(rows: InitialStockRowInput[]) {
       quantityUnitSource: quantityResolution.quantityUnitSource,
       piecesPerUnit: piecesPerUnitResolution.piecesPerUnit,
       piecesPerUnitSource: piecesPerUnitResolution.piecesPerUnitSource,
-      batchPiecesPerUnit: piecesPerUnitResolution.batchPiecesPerUnit,
+      batchPiecesPerUnit:
+        batchSpecificationPiecesPerUnitResolution.batchPiecesPerUnit,
       weight: weightResolution.weight,
       weightSource: weightResolution.weightSource,
       quantity: quantityResolution.quantity,
@@ -1197,9 +1263,7 @@ export async function importInitialStockRows(
         variantId: row.variantId,
         quantity: row.quantity,
         unitCost: row.unitCost,
-        piecesPerUnit:
-          row.batchPiecesPerUnit ??
-          (row.weightSource === 'row' ? row.piecesPerUnit : undefined),
+        piecesPerUnit: row.batchPiecesPerUnit,
         weight: row.weightSource === 'row' ? row.weight : undefined,
         reason: 'opening_balance',
         remarks: row.remarks,

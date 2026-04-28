@@ -6,6 +6,7 @@ import { decode, getToken } from 'next-auth/jwt';
 
 import { env, uploadConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
+import { validateAndTouchUserSession } from '@/lib/services/user-session-service';
 
 export const runtime = 'nodejs';
 
@@ -105,8 +106,16 @@ export async function GET(
             (payload as any).sub || (payload as any).id || ''
           );
           const username = String((payload as any).username || '');
-          if (userId && username) {
+          const sessionId = String((payload as any).sessionId || '').trim();
+          if (userId && username && !sessionId) {
             authed = true;
+          } else if (userId && username && sessionId) {
+            const sessionResult = await validateAndTouchUserSession({
+              userId,
+              sessionId,
+              idleTimeoutSeconds: env.USER_SESSION_TIMEOUT * 60,
+            });
+            authed = sessionResult.valid;
           }
         }
       } catch (_error) {

@@ -183,7 +183,7 @@ export function useProductSelection(
   form: ReturnType<typeof useForm<InboundFormData>>,
   setSelectedProduct: (product: ProductOption | null) => void
 ) {
-  const handleProductSelect = (product: ProductOption) => {
+  const handleProductSelect = (product: ProductOption | null) => {
     setSelectedProduct(product);
     form.setValue('inputQuantity', undefined, {
       shouldDirty: false,

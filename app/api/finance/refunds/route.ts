@@ -13,6 +13,11 @@ import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
 import { publishFinanceEvent } from '@/lib/events';
 import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
+import {
+  buildRefundQueryParams,
+  fetchRefundsList,
+  sanitizeRefundSearchParams,
+} from '@/lib/services/refund-query-service';
 import { toNumber } from '@/lib/utils/number';
 import {
   createRefundRecordSchema,
@@ -57,20 +62,11 @@ export const GET = withAuth(
         400
       );
     }
-    const queryParams = {
-      page: normalizedPage,
-      limit: normalizedLimit,
-      search: searchParams.get('search') || undefined,
-      status: searchParams.get('status') || undefined,
-      customerId: searchParams.get('customerId') || undefined,
-      returnOrderId: searchParams.get('returnOrderId') || undefined,
-      salesOrderId: searchParams.get('salesOrderId') || undefined,
-      refundType: searchParams.get('refundType') || undefined,
-      startDate: searchParams.get('startDate') || undefined,
-      endDate: searchParams.get('endDate') || undefined,
-      sortBy: searchParams.get('sortBy') || undefined,
-      sortOrder: (searchParams.get('sortOrder') as 'asc' | 'desc') || undefined,
-    };
+    const queryParams = sanitizeRefundSearchParams(
+      Object.fromEntries(searchParams.entries())
+    );
+    queryParams.page = normalizedPage;
+    queryParams.limit = normalizedLimit;
 
     // 使用 Zod schema 验证
     const validationResult = refundQuerySchema.safeParse(queryParams);
@@ -82,214 +78,34 @@ export const GET = withAuth(
       );
     }
 
-    const {
-      page = 1,
-      limit = 20,
-      search,
-      status,
-      customerId,
-      returnOrderId,
-      salesOrderId,
-      refundType,
-      startDate,
-      endDate,
-      sortBy = 'refundDate',
-      sortOrder = 'desc',
-    } = validationResult.data;
-
-    // 构建查询条件
-    const where: Record<string, unknown> = {};
-
-    if (search) {
-      where.OR = [
-        { refundNumber: { contains: search } },
-        { customer: { name: { contains: search } } },
-        { reason: { contains: search } },
-      ];
-    }
-
-    if (status) {
-      where.status = status;
-    }
-
-    if (customerId) {
-      where.customerId = customerId;
-    }
-
-    if (returnOrderId) {
-      where.returnOrderId = returnOrderId;
-    }
-
-    if (salesOrderId) {
-      where.salesOrderId = salesOrderId;
-    }
-
-    if (refundType) {
-      where.refundType = refundType;
-    }
-
-    if (startDate || endDate) {
-      const dateFilter: { gte?: Date; lte?: Date } = {};
-      if (startDate) {
-        dateFilter.gte = new Date(startDate);
-      }
-      if (endDate) {
-        const endDateValue = new Date(endDate);
-        endDateValue.setHours(23, 59, 59, 999);
-        dateFilter.lte = endDateValue;
-      }
-      where.refundDate = dateFilter;
-    }
-
-    // 构建排序条件
-    type OrderByType =
-      | Record<string, 'asc' | 'desc'>
-      | { customer: { name: 'asc' | 'desc' } };
-    let orderBy: OrderByType;
-
-    // customerName is not in the enum, but we handle it separately
-    if (sortBy === ('customerName' as typeof sortBy)) {
-      orderBy = { customer: { name: sortOrder } };
-    } else {
-      orderBy = { [sortBy]: sortOrder };
-    }
-
-    // 计算分页
-    const skip = (page - 1) * limit;
-
-    // ✅ P0修复: 使用聚合查询替代全表扫描
-    const [refunds, total, aggregateResult] = await Promise.all([
-      prisma.refundRecord.findMany({
-        where,
-        include: {
-          customer: {
-            select: {
-              id: true,
-              name: true,
-              phone: true,
-            },
-          },
-          salesOrder: {
-            select: {
-              id: true,
-              orderNumber: true,
-              totalAmount: true,
-              status: true,
-            },
-          },
-          returnOrder: {
-            select: {
-              id: true,
-              returnNumber: true,
-              totalAmount: true,
-              status: true,
-            },
-          },
-          user: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
-        orderBy: [orderBy, { id: 'desc' }] as any,
-        skip,
-        take: limit,
-      }),
-      prisma.refundRecord.count({ where }),
-      // ✅ P0修复: 使用聚合查询替代全表扫描
-      prisma.refundRecord.aggregate({
-        where,
-        _sum: {
-          refundAmount: true,
-          processedAmount: true,
-          remainingAmount: true,
-        },
-      }),
-    ]);
-
-    // ✅ P0修复: 使用 groupBy 按状态统计数量
-    const statusCounts = await prisma.refundRecord.groupBy({
-      by: ['status'],
-      where,
-      _count: {
-        _all: true,
-      },
+    const normalizedQuery = buildRefundQueryParams(validationResult.data);
+    const response = await fetchRefundsList({
+      page: normalizedQuery.page,
+      limit: normalizedQuery.limit,
+      search: normalizedQuery.search ?? '',
+      status: normalizedQuery.status,
+      customerId: normalizedQuery.customerId,
+      returnOrderId: normalizedQuery.returnOrderId,
+      salesOrderId: normalizedQuery.salesOrderId,
+      refundType: normalizedQuery.refundType,
+      refundMethod: normalizedQuery.refundMethod,
+      sortBy: normalizedQuery.sortBy ?? 'refundDate',
+      sortOrder: normalizedQuery.sortOrder === 'asc' ? 'asc' : 'desc',
+      startDate: normalizedQuery.startDate,
+      endDate: normalizedQuery.endDate,
+      includeTest: normalizedQuery.includeTest,
+      includeVoided: normalizedQuery.includeVoided,
     });
 
-    // 格式化退款记录数据
-    const formattedRefunds = refunds.map(refund => ({
-      id: refund.id,
-      refundNumber: refund.refundNumber,
-      returnOrderId: refund.returnOrderId,
-      returnOrderNumber:
-        refund.returnOrder?.returnNumber || refund.returnOrderNumber,
-      salesOrderId: refund.salesOrderId,
-      salesOrderNumber: refund.salesOrder?.orderNumber || '',
-      customerId: refund.customerId,
-      customerName: refund.customer?.name || '',
-      refundType: refund.refundType,
-      refundMethod: refund.refundMethod,
-      refundAmount: Number(refund.refundAmount),
-      processedAmount: Number(refund.processedAmount),
-      remainingAmount: Number(refund.remainingAmount),
-      status: refund.status,
-      refundDate: refund.refundDate.toISOString().split('T')[0],
-      processedDate: refund.processedDate?.toISOString().split('T')[0] || null,
-      reason: refund.reason,
-      remarks: refund.remarks,
-      bankInfo: refund.bankInfo,
-      receiptNumber: refund.receiptNumber,
-      createdAt: refund.createdAt.toISOString(),
-      updatedAt: refund.updatedAt.toISOString(),
-      customer: refund.customer
-        ? {
-            ...refund.customer,
-          }
-        : null,
-      salesOrder: refund.salesOrder
-        ? {
-            ...refund.salesOrder,
-            totalAmount: Number(refund.salesOrder.totalAmount),
-          }
-        : null,
-      returnOrder: refund.returnOrder
-        ? {
-            id: refund.returnOrder.id,
-            returnOrderNumber: refund.returnOrder.returnNumber,
-            totalAmount: Number(refund.returnOrder.totalAmount ?? 0),
-            status: refund.returnOrder.status ?? undefined,
-          }
-        : null,
-      user: refund.user,
-    }));
-
-    // ✅ P0修复: 从聚合结果构建统计数据
-    const totalRefundable = Number(aggregateResult._sum.refundAmount ?? 0);
-    const totalProcessed = Number(aggregateResult._sum.processedAmount ?? 0);
-    const totalRemaining = Number(aggregateResult._sum.remainingAmount ?? 0);
-    const pendingCount =
-      statusCounts.find(s => s.status === 'pending')?._count._all ?? 0;
-    const processingCount =
-      statusCounts.find(s => s.status === 'processing')?._count._all ?? 0;
-    const completedCount =
-      statusCounts.find(s => s.status === 'completed')?._count._all ?? 0;
-
     return successResponse({
-      refunds: formattedRefunds,
-      statistics: {
-        totalRefundable,
-        totalProcessed,
-        totalRemaining,
-        pendingCount,
-        processingCount,
-        completedCount,
-      },
+      ...response,
       pagination: buildOffsetPaginationMeta({
-        page,
-        limit,
-        total,
-        hasMore: skip + formattedRefunds.length < total,
+        page: response.pagination.page,
+        limit: response.pagination.limit,
+        total: response.pagination.total,
+        hasMore:
+          response.pagination.page * response.pagination.limit <
+          response.pagination.total,
       }),
     });
   },

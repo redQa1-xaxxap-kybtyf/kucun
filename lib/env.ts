@@ -470,7 +470,7 @@ const envSchema = z.object({
     .string()
     .min(1, 'SYSTEM_COMPANY_NAME 不能为空')
     .max(100, 'SYSTEM_COMPANY_NAME 不能超过100个字符')
-    .default('库存管理系统')
+    .default('瓷砖销售 ERP')
     .describe('默认公司名称'),
 
   SYSTEM_TIMEZONE: z
@@ -536,7 +536,7 @@ const envSchema = z.object({
     .string()
     .regex(/^[\d]+$/, 'LOG_RETENTION_DAYS 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default(30)
+    .default(180)
     .describe('日志保留天数'),
 
   LOG_CRITICAL_ACTIONS: z
@@ -548,13 +548,13 @@ const envSchema = z.object({
   LOG_CRITICAL_TYPES: z
     .string()
     .min(1, 'LOG_CRITICAL_TYPES 不能为空')
-    .default('security,system,error')
+    .default('security,business_operation,error')
     .describe('关键日志类型'),
 
   LOG_CRITICAL_LEVELS: z
     .string()
     .min(1, 'LOG_CRITICAL_LEVELS 不能为空')
-    .default('error,warn,info')
+    .default('critical,error,warning')
     .describe('关键日志级别'),
 
   // 日志配置
@@ -688,6 +688,48 @@ const envSchema = z.object({
 // 环境变量类型推断
 export type Env = z.infer<typeof envSchema>;
 
+function isLocalLoopbackHostname(hostname: string) {
+  return (
+    hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
+  );
+}
+
+function validateProductionUrl(urlValue: string, variableName: string) {
+  const parsedUrl = new URL(urlValue);
+
+  if (
+    parsedUrl.protocol !== 'https:' &&
+    !isLocalLoopbackHostname(parsedUrl.hostname)
+  ) {
+    throw new Error(
+      `${variableName} 在生产环境必须使用 HTTPS 地址，当前值为 ${urlValue}`
+    );
+  }
+}
+
+function validateProductionEnv(parsed: Env) {
+  if (parsed.NODE_ENV !== 'production') {
+    return;
+  }
+
+  if (!parsed.NEXTAUTH_URL) {
+    throw new Error('生产环境必须配置 NEXTAUTH_URL，且必须是 HTTPS 地址');
+  }
+
+  validateProductionUrl(parsed.NEXTAUTH_URL, 'NEXTAUTH_URL');
+
+  if (!parsed.WS_ALLOWED_ORIGINS) {
+    return;
+  }
+
+  parsed.WS_ALLOWED_ORIGINS.split(',')
+    .map(origin => origin.trim())
+    .filter(Boolean)
+    .forEach(origin => {
+      validateProductionUrl(origin, 'WS_ALLOWED_ORIGINS');
+    });
+}
+
 /**
  * 验证并解析环境变量
  * @returns 验证后的环境变量对象
@@ -764,7 +806,7 @@ function validateEnv(): Env {
         SUPPLIER_CACHE_TTL: 300000,
         SUPPLIER_DEFAULT_STATUS: 'active',
         SYSTEM_DEFAULT_LANGUAGE: 'zh',
-        SYSTEM_COMPANY_NAME: '库存管理系统',
+        SYSTEM_COMPANY_NAME: '瓷砖销售 ERP',
         SYSTEM_TIMEZONE: 'Asia/Shanghai',
         USER_PASSWORD_MIN_LENGTH: 8,
         USER_MAX_LOGIN_ATTEMPTS: 5,
@@ -773,10 +815,10 @@ function validateEnv(): Env {
         STORAGE_ALLOWED_FILE_TYPES: 'jpg,jpeg,png,pdf,doc,docx,xls,xlsx',
         STORAGE_ENCRYPTION_KEY: '',
         STORAGE_REGION: 'z0',
-        LOG_RETENTION_DAYS: 30,
+        LOG_RETENTION_DAYS: 180,
         LOG_CRITICAL_ACTIONS: 'login,logout,delete,update_settings',
-        LOG_CRITICAL_TYPES: 'security,system,error',
-        LOG_CRITICAL_LEVELS: 'error,warn,info',
+        LOG_CRITICAL_TYPES: 'security,business_operation,error',
+        LOG_CRITICAL_LEVELS: 'critical,error,warning',
         RATE_LIMIT_ENABLED: true,
         RATE_LIMIT_GLOBAL: 100,
         RATE_LIMIT_AUTH: 5,
@@ -851,7 +893,7 @@ function validateEnv(): Env {
         SUPPLIER_CACHE_TTL: 300000,
         SUPPLIER_DEFAULT_STATUS: 'active',
         SYSTEM_DEFAULT_LANGUAGE: 'zh',
-        SYSTEM_COMPANY_NAME: '库存管理系统',
+        SYSTEM_COMPANY_NAME: '瓷砖销售 ERP',
         SYSTEM_TIMEZONE: 'Asia/Shanghai',
         USER_PASSWORD_MIN_LENGTH: 8,
         USER_MAX_LOGIN_ATTEMPTS: 5,
@@ -860,10 +902,10 @@ function validateEnv(): Env {
         STORAGE_ALLOWED_FILE_TYPES: 'jpg,jpeg,png,pdf,doc,docx,xls,xlsx',
         STORAGE_ENCRYPTION_KEY: '',
         STORAGE_REGION: 'z0',
-        LOG_RETENTION_DAYS: 30,
+        LOG_RETENTION_DAYS: 180,
         LOG_CRITICAL_ACTIONS: 'login,logout,delete,update_settings',
-        LOG_CRITICAL_TYPES: 'security,system,error',
-        LOG_CRITICAL_LEVELS: 'error,warn,info',
+        LOG_CRITICAL_TYPES: 'security,business_operation,error',
+        LOG_CRITICAL_LEVELS: 'critical,error,warning',
         RATE_LIMIT_ENABLED: true,
         RATE_LIMIT_GLOBAL: 100,
         RATE_LIMIT_AUTH: 5,
@@ -884,6 +926,7 @@ function validateEnv(): Env {
   // 服务器端验证完整的环境变量
   try {
     const parsed = envSchema.parse(process.env);
+    validateProductionEnv(parsed);
     return parsed;
   } catch (error) {
     if (error instanceof z.ZodError) {

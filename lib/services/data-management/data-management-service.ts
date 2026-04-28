@@ -431,7 +431,7 @@ async function filterRowsMissingReversal(
 const CLEANUP_REGISTRY: CleanupRegistryEntry[] = [
   {
     id: 'prepayment_usages',
-    label: '预收冲抵/核销记录',
+    label: '预收抵扣记录',
     stage: 'S1',
     methodByAction: { reset_trial: 'delete', cleanup_test: 'delete' },
     showInPreview: true,
@@ -454,7 +454,7 @@ const CLEANUP_REGISTRY: CleanupRegistryEntry[] = [
 
       return {
         id: 'prepayment_usages',
-        label: '预收冲抵/核销',
+        label: '预收抵扣',
         count: agg._count.id ?? 0,
         amountSum: toNumber(agg._sum.appliedAmount),
       };

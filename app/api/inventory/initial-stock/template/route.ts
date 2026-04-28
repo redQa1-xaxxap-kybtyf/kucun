@@ -82,7 +82,7 @@ function createInstructionSheet(source: InitialStockTemplateSource) {
     [
       ACTUAL_BATCH_WEIGHT_HEADER,
       '否',
-      '填写后用于记录本次导入批次的实际每件重量；留空则本次不记录重量',
+      '填写后用于记录本次导入批次的实际每件重量；按片导入时若当前行未填装箱数，系统会优先尝试使用产品档案中的默认装箱数保存该重量；若产品也没有默认装箱数，请在当前行补充装箱数',
     ],
     [
       '数量',

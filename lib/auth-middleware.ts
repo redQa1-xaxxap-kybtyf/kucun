@@ -189,70 +189,72 @@ export async function authMiddleware(request: NextRequest) {
       : miniTokenHeader || null;
 
     if (bearerToken) {
-      // 0) 优先直接解码小程序 token，避免中间件内部 fetch 自己的 API 在某些部署环境下不稳定
+      // 0) 优先通过内部接口校验 Bearer Token，统一走会话有效性校验
       try {
-        const payload = await decode({
-          token: bearerToken,
-          secret: env.NEXTAUTH_SECRET,
-          salt: MINI_PROGRAM_JWT_SALT,
-        });
+        const verifyResponse = await fetch(
+          new URL('/api/internal/verify-token', request.url),
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-internal-key': INTERNAL_API_KEY,
+            },
+            body: JSON.stringify({ token: bearerToken }),
+          }
+        );
 
-        if (payload && typeof payload === 'object') {
-          const userId = String(
-            (payload as any).sub || (payload as any).id || ''
-          );
-          const username = String((payload as any).username || '');
-          if (userId && username) {
+        if (verifyResponse.ok) {
+          const result = await verifyResponse.json();
+          if (result.success && result.user) {
+            // 构造与NextAuth token格式兼容的对象
             token = {
-              sub: userId,
-              email: (payload as any).email ?? '',
-              name: (payload as any).name ?? '',
-              username,
-              role: (payload as any).role ?? 'user',
-              status: (payload as any).status ?? 'active',
+              sub: result.user.id,
+              email: result.user.email,
+              name: result.user.name,
+              username: result.user.username,
+              role: result.user.role,
+              status: result.user.status,
+              sessionId: result.user.sessionId || '',
             };
           }
         }
-      } catch (_error) {
-        // ignore，继续走内部验证兜底
+      } catch (error) {
+        // Bearer Token验证失败，继续尝试本地解码兜底
+        // eslint-disable-next-line no-console
+        console.warn(
+          'Bearer token verification failed, trying local decode fallback',
+          error
+        );
       }
 
-      // 1) 兜底：调用内部API验证 Bearer Token
+      // 1) 兜底：直接解码小程序 token，避免内部 fetch 失败时完全不可用
       if (!token) {
         try {
-          const verifyResponse = await fetch(
-            new URL('/api/internal/verify-token', request.url),
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'x-internal-key': INTERNAL_API_KEY,
-              },
-              body: JSON.stringify({ token: bearerToken }),
-            }
-          );
+          const payload = await decode({
+            token: bearerToken,
+            secret: env.NEXTAUTH_SECRET,
+            salt: MINI_PROGRAM_JWT_SALT,
+          });
 
-          if (verifyResponse.ok) {
-            const result = await verifyResponse.json();
-            if (result.success && result.user) {
-              // 构造与NextAuth token格式兼容的对象
+          if (payload && typeof payload === 'object') {
+            const userId = String(
+              (payload as any).sub || (payload as any).id || ''
+            );
+            const username = String((payload as any).username || '');
+            if (userId && username) {
               token = {
-                sub: result.user.id,
-                email: result.user.email,
-                name: result.user.name,
-                username: result.user.username,
-                role: result.user.role,
-                status: result.user.status,
+                sub: userId,
+                email: (payload as any).email ?? '',
+                name: (payload as any).name ?? '',
+                username,
+                role: (payload as any).role ?? 'user',
+                status: (payload as any).status ?? 'active',
+                sessionId: (payload as any).sessionId ?? '',
               };
             }
           }
-        } catch (error) {
-          // Bearer Token验证失败，继续尝试NextAuth
-          // eslint-disable-next-line no-console
-          console.warn(
-            'Bearer token verification failed, trying NextAuth',
-            error
-          );
+        } catch (_error) {
+          // ignore，继续走 NextAuth
         }
       }
     }

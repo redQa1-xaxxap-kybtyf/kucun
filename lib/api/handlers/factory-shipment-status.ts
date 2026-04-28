@@ -145,6 +145,17 @@ export interface OrderStatusUpdateResult {
   payableRecordIds?: string[];
 }
 
+function logFactoryShipmentPerf(
+  message: string,
+  startTime: number,
+  context?: Record<string, string | number | boolean | null | undefined>
+) {
+  logger.debug('factory-shipment-status:perf', message, {
+    ...context,
+    durationMs: Date.now() - startTime,
+  });
+}
+
 /**
  * 获取智能状态流转路径
  * 用于确认发货时的自动状态流转
@@ -231,12 +242,12 @@ export async function updateFactoryShipmentStatus(
 
   // 执行状态更新
   const startTime = Date.now();
-  console.log(
-    `[PERF] 开始执行 updateFactoryShipmentStatus, orderId: ${orderId}`
-  );
+  logFactoryShipmentPerf('开始执行 updateFactoryShipmentStatus', startTime, {
+    orderId,
+  });
 
   return await prisma.$transaction(async tx => {
-    console.log(`[PERF] 事务开始, 耗时: ${Date.now() - startTime}ms`);
+    logFactoryShipmentPerf('事务开始', startTime, { orderId });
 
     const existingOrder = await tx.factoryShipmentOrder.findUnique({
       where: { id: orderId },
@@ -270,7 +281,7 @@ export async function updateFactoryShipmentStatus(
       },
     });
 
-    console.log(`[PERF] 订单查询完成, 耗时: ${Date.now() - startTime}ms`);
+    logFactoryShipmentPerf('订单查询完成', startTime, { orderId });
 
     if (!existingOrder) {
       throw new Error('订单不存在');
@@ -476,7 +487,7 @@ export async function updateFactoryShipmentStatus(
           `创建应收账款失败: ${error instanceof Error ? error.message : '未知错误'}`
         );
       }
-      console.log(`[PERF] 应收账款处理完成, 耗时: ${Date.now() - startTime}ms`);
+      logFactoryShipmentPerf('应收账款处理完成', startTime, { orderId });
     }
 
     // 记录厂家直发订单的往来账(应收), 保证伙伴账本与利润表口径一致
@@ -539,7 +550,7 @@ export async function updateFactoryShipmentStatus(
       finalStatus === FACTORY_SHIPMENT_STATUS.SHIPPED ||
       finalStatus === FACTORY_SHIPMENT_STATUS.ARRIVED
     ) {
-      console.log(`[PERF] 开始处理应付账款, 耗时: ${Date.now() - startTime}ms`);
+      logFactoryShipmentPerf('开始处理应付账款', startTime, { orderId });
       try {
         logger.info('factory-shipment-status', '开始创建应付账款', {
           orderId,
@@ -667,9 +678,10 @@ export async function updateFactoryShipmentStatus(
                 payableNumbers.push(await generatePayableNumber(tx));
               }
 
-              console.log(
-                `[PERF] 应付款编号生成完成, 耗时: ${Date.now() - startTime}ms`
-              );
+              logFactoryShipmentPerf('应付款编号生成完成', startTime, {
+                orderId,
+                payableCount: creationQueue.length,
+              });
 
               for (let i = 0; i < creationQueue.length; i++) {
                 const payable = creationQueue[i];
@@ -782,7 +794,7 @@ export async function updateFactoryShipmentStatus(
           `创建应付账款失败: ${error instanceof Error ? error.message : '未知错误'}`
         );
       }
-      console.log(`[PERF] 应付账款处理完成, 耗时: ${Date.now() - startTime}ms`);
+      logFactoryShipmentPerf('应付账款处理完成', startTime, { orderId });
     }
 
     return {
