@@ -63,7 +63,7 @@ export default function EditSupplierPage({ params }: EditSupplierPageProps) {
     return (
       <PageContainer
         title="编辑供应商"
-        description="加载供应商信息中..."
+        description="供应商加载中..."
         icon={<Building2 className="h-6 w-6 text-white" />}
         actions={actions}
         bodyClassName="space-y-6"
@@ -108,7 +108,7 @@ export default function EditSupplierPage({ params }: EditSupplierPageProps) {
   return (
     <PageContainer
       title="编辑供应商"
-      description={<>修改供应商 &ldquo;{supplier.name}&rdquo; 的信息</>}
+      description={<>供应商资料：{supplier.name}</>}
       icon={<Building2 className="h-6 w-6 text-white" />}
       actions={actions}
       bodyClassName="space-y-6"

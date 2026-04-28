@@ -165,13 +165,13 @@ function ProductInfoCard({ form, isEdit, isLoading }: ProductInfoCardProps) {
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center text-lg">
           <Package className="mr-2 h-4 w-4" />
-          产品信息
+          产品资料
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <div>
           <h3 className="text-muted-foreground mb-4 text-sm font-medium">
-            基础信息
+            编码与规格
           </h3>
           <ProductBasicInfoForm
             control={form.control}

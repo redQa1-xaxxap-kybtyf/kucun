@@ -76,7 +76,7 @@ export default function CreateSupplierPageClient() {
   return (
     <PageContainer
       title="新建供应商"
-      description="创建新的供应商记录"
+      description="供应商资料"
       icon={<Building2 className="h-6 w-6 text-white" />}
       actions={
         <Button
@@ -132,7 +132,7 @@ export default function CreateSupplierPageClient() {
           <CardHeader className="border-b bg-[hsl(var(--color-bg-secondary))]">
             <CardTitle className="flex items-center text-[hsl(var(--color-text-primary))]">
               <Building2 className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
-              基本信息
+              供应商资料
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
@@ -151,7 +151,7 @@ export default function CreateSupplierPageClient() {
                       <FormLabel>供应商名称 *</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="请输入供应商名称"
+                          placeholder="供应商名称"
                           disabled={isLoading}
                           {...field}
                           value={field.value || ''} // 确保显示空字符串而不是 undefined
@@ -171,7 +171,7 @@ export default function CreateSupplierPageClient() {
                       <FormLabel>联系电话</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="请输入联系电话"
+                          placeholder="联系电话"
                           disabled={isLoading}
                           {...field}
                           value={field.value || ''} // 确保显示空字符串而不是 undefined
@@ -191,7 +191,7 @@ export default function CreateSupplierPageClient() {
                       <FormLabel>地址</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="请输入供应商地址"
+                          placeholder="供应商地址"
                           disabled={isLoading}
                           rows={3}
                           {...field}

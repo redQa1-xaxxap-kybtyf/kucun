@@ -81,7 +81,7 @@ function ProductNameInput({
           <FormLabel>产品名称</FormLabel>
           <FormControl>
             <Input
-              placeholder="可选，留空则使用分类名称"
+              placeholder="产品名称"
               disabled={disabled}
               maxLength={100}
               {...field}
@@ -308,7 +308,7 @@ function ProductSpecificationInput({
             <span className="text-destructive">*</span>
           </FormLabel>
           <FormControl>
-            <Input placeholder="如:600x600mm" disabled={disabled} {...field} />
+            <Input placeholder="如：600x600mm" disabled={disabled} {...field} />
           </FormControl>
           <FormMessage />
         </FormItem>
@@ -372,7 +372,7 @@ function ProductThicknessInput({
       name="thickness"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>厚度 (mm)</FormLabel>
+          <FormLabel>厚度（mm）</FormLabel>
           <FormControl>
             <Input
               type="number"

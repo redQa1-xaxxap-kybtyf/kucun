@@ -135,7 +135,7 @@ export function QuickAddSupplierDialog({
                   <FormLabel>供应商名称 *</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="请输入供应商名称"
+                      placeholder="供应商名称"
                       {...field}
                       disabled={createMutation.isPending}
                     />
@@ -153,7 +153,7 @@ export function QuickAddSupplierDialog({
                   <FormLabel>联系电话</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="请输入联系电话"
+                      placeholder="联系电话"
                       value={field.value ?? ''}
                       onChange={event => field.onChange(event.target.value)}
                       disabled={createMutation.isPending}
@@ -172,7 +172,7 @@ export function QuickAddSupplierDialog({
                   <FormLabel>联系地址</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="请输入联系地址"
+                      placeholder="联系地址"
                       value={field.value ?? ''}
                       onChange={event => field.onChange(event.target.value)}
                       disabled={createMutation.isPending}

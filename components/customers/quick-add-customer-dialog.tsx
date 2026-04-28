@@ -191,7 +191,7 @@ export function QuickAddCustomerDialog({
                   <FormLabel>客户名称 *</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="请输入客户名称"
+                      placeholder="客户名称"
                       {...field}
                       disabled={createMutation.isPending}
                     />
@@ -210,7 +210,7 @@ export function QuickAddCustomerDialog({
                   <FormLabel>联系电话</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="请输入联系电话"
+                      placeholder="联系电话"
                       {...field}
                       disabled={createMutation.isPending}
                     />

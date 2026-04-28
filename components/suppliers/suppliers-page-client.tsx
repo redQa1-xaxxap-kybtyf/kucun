@@ -259,7 +259,7 @@ export function SuppliersPageClient({
   return (
     <PageContainer
       title="供应商档案"
-      description="统一维护供应商资料，查看供货记录、应付款和合作状态。"
+      description="供应商资料、采购和对账"
       icon={<Building2 className="h-6 w-6 text-white" />}
       actions={
         <Button size="lg" asChild className="h-10 rounded-md px-4 font-medium">
@@ -273,7 +273,7 @@ export function SuppliersPageClient({
         <FilterBar
           searchValue={searchInput}
           onSearchChange={handleSearchChange}
-          searchPlaceholder="搜索供应商名称、证照编号或联系人..."
+          searchPlaceholder="搜索供应商、证照、联系人"
           isSearching={isSearching || isFetching}
           filters={[
             {
@@ -316,14 +316,14 @@ export function SuppliersPageClient({
         {isListRefreshing && (
           <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-center rounded-lg border border-[hsl(var(--color-border-primary))] bg-white/95 px-3 py-2 text-xs font-medium text-[hsl(var(--color-text-secondary))] shadow-sm">
             <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin text-[hsl(var(--color-primary))]" />
-            正在更新列表...
+            正在更新
           </div>
         )}
 
         {isLoading ? (
           <div className="flex min-h-[360px] items-center justify-center rounded-lg border bg-white">
             <EmptyState
-              title="正在加载供应商资料..."
+              title="供应商加载中..."
               icon={
                 <Loader2 className="h-10 w-10 animate-spin text-slate-300" />
               }
@@ -334,7 +334,7 @@ export function SuppliersPageClient({
           <div className="rounded-lg border border-dashed border-slate-200 bg-white p-10 text-center">
             <EmptyState
               title="还没有供应商资料"
-              description="先新增一位供应商，后续更方便录入采购和对账"
+              description="新增供应商后可录入采购和对账"
               action={
                 <Button
                   onClick={() => router.push('/suppliers/create')}

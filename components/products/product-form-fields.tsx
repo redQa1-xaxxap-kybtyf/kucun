@@ -52,7 +52,7 @@ export function ProductCodeField<T extends FieldValues>({
           <FormControl>
             <Input
               {...field}
-              placeholder="请输入产品编码"
+              placeholder="产品编码"
               disabled={disabled}
               maxLength={50}
             />
@@ -82,7 +82,7 @@ export function ProductNameField<T extends FieldValues>({
           <FormControl>
             <Input
               {...field}
-              placeholder="请输入产品名称"
+              placeholder="产品名称"
               disabled={disabled}
               maxLength={100}
             />

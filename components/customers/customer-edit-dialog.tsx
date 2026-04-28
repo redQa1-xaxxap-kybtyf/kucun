@@ -177,11 +177,11 @@ export function CustomerEditDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>编辑客户</DialogTitle>
-          <DialogDescription>修改客户的基本信息</DialogDescription>
+          <DialogDescription>客户资料</DialogDescription>
         </DialogHeader>
 
         {isLoadingCustomer ? (
-          <ContentLoading text="加载客户信息..." />
+          <ContentLoading text="客户加载中..." />
         ) : (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -192,7 +192,7 @@ export function CustomerEditDialog({
                   <FormItem>
                     <FormLabel>客户名称</FormLabel>
                     <FormControl>
-                      <Input placeholder="请输入客户名称" {...field} />
+                      <Input placeholder="客户名称" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -206,7 +206,7 @@ export function CustomerEditDialog({
                   <FormItem>
                     <FormLabel>联系电话</FormLabel>
                     <FormControl>
-                      <Input placeholder="请输入联系电话" {...field} />
+                      <Input placeholder="联系电话" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -221,7 +221,7 @@ export function CustomerEditDialog({
                     <FormLabel>客户地址</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="请输入客户地址"
+                        placeholder="客户地址"
                         className="resize-none"
                         rows={3}
                         {...field}
