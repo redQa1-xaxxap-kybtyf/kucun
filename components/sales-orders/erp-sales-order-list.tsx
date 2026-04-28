@@ -807,7 +807,7 @@ export function ERPSalesOrderList({
         {isListRefreshing && (
           <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-center border-b border-[hsl(var(--color-border-primary))] bg-white/95 px-3 py-2 text-xs font-medium text-[hsl(var(--color-text-secondary))] shadow-sm">
             <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin text-[hsl(var(--color-primary))]" />
-            正在更新列表...
+            正在更新
           </div>
         )}
 
@@ -850,7 +850,7 @@ export function ERPSalesOrderList({
                   // 首次加载状态：显示骨架屏
                   Array.from({ length: 10 }).map((_, i) => (
                     <TableRow key={i}>
-                      <TableCell className="h-8 text-xs">加载中...</TableCell>
+                      <TableCell className="h-8 text-xs">加载中</TableCell>
                       <TableCell className="h-8 text-xs">-</TableCell>
                       <TableCell className="h-8 text-xs">-</TableCell>
                       <TableCell className="h-8 text-xs">-</TableCell>

@@ -77,7 +77,6 @@ export const ReturnOrderSearchToolbar =
           statusFilter={statusFilter}
           typeFilter={typeFilter}
           processTypeFilter={processTypeFilter}
-          includeTest={includeTest}
           includeVoided={includeVoided}
           isSearching={isSearching}
           dateRange={dateRange}
@@ -180,7 +179,6 @@ type ReturnOrderToolbarViewProps = {
   statusFilter: ReturnOrderUiStatus | 'all';
   typeFilter: ReturnOrderType | 'all';
   processTypeFilter: ReturnProcessType | 'all';
-  includeTest?: boolean;
   includeVoided?: boolean;
   dateRange: DateRangeValue;
   isSearching?: boolean;
@@ -198,7 +196,6 @@ function ReturnOrderToolbarView({
   statusFilter,
   typeFilter,
   processTypeFilter,
-  includeTest,
   includeVoided,
   dateRange,
   isSearching,
@@ -214,7 +211,7 @@ function ReturnOrderToolbarView({
     <SearchFilterCard
       searchValue={searchValue}
       onSearchChange={onSearch}
-      searchPlaceholder="搜索退货单号或客户名称..."
+      searchPlaceholder="搜索退货单号、客户"
       isSearching={isSearching}
       // Toggle 按钮
       toggleButtons={[
@@ -288,7 +285,7 @@ function ReturnOrderToolbarView({
         label: '退货日期',
         value: dateRange,
         onChange: handleDateRangeChange,
-        placeholder: '选择退货日期范围',
+        placeholder: '选择退货日期',
       }}
       // 清空筛选
       onClearFilters={handleClearFilters}

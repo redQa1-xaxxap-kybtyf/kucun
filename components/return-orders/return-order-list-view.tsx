@@ -86,7 +86,7 @@ export function ReturnOrderListView({
   onRetry,
 }: ReturnOrderListViewProps) {
   if (isLoading) {
-    return <ContentLoading text="加载退货订单..." />;
+    return <ContentLoading text="退货单加载中..." />;
   }
 
   if (error) {
@@ -117,7 +117,7 @@ export function ReturnOrderListView({
         {isRefreshing && (
           <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-center border-b border-[hsl(var(--color-border-primary))] bg-white/95 px-3 py-2 text-xs font-medium text-[hsl(var(--color-text-secondary))] shadow-sm">
             <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin text-[hsl(var(--color-primary))]" />
-            正在更新列表...
+            正在更新
           </div>
         )}
         <div className={cn('transition-opacity', isRefreshing && 'opacity-60')}>

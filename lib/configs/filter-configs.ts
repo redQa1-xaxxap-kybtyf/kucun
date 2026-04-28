@@ -140,9 +140,9 @@ export const SALES_ORDER_FILTER_CONFIG = {
       width: 'w-[140px]',
     },
   ],
-  searchPlaceholder: '搜索订单号、客户名称、产品编码...',
+  searchPlaceholder: '搜索订单号、客户、产品编码',
   dateRangeLabel: '订单日期',
-  dateRangePlaceholder: '选择订单日期范围',
+  dateRangePlaceholder: '选择订单日期',
 };
 
 /**
@@ -173,9 +173,9 @@ export const RETURN_ORDER_FILTER_CONFIG = {
       width: 'w-[140px]',
     },
   ],
-  searchPlaceholder: '搜索退货单号、客户名称...',
+  searchPlaceholder: '搜索退货单号、客户',
   dateRangeLabel: '退货日期',
-  dateRangePlaceholder: '选择退货日期范围',
+  dateRangePlaceholder: '选择退货日期',
 };
 
 // ==================== 产品模块配置 ====================

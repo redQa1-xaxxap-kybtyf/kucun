@@ -275,9 +275,7 @@ export function SalesOrderForm({
               {isEdit ? '编辑销售订单' : '新建销售订单'}
             </h1>
             <p className="text-muted-foreground">
-              {isEdit
-                ? '修改销售订单信息和明细'
-                : '新建销售订单并维护客户与明细信息'}
+              {isEdit ? '销售订单和产品明细' : '客户、产品和费用明细'}
             </p>
           </div>
         </div>
@@ -308,7 +306,7 @@ export function SalesOrderForm({
             <CardHeader>
               <CardTitle className="flex items-center">
                 <ShoppingCart className="mr-2 h-5 w-5" />
-                基础信息
+                订单信息
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -319,7 +317,7 @@ export function SalesOrderForm({
                     control={form.control}
                     name="customerId"
                     label="选择客户 *"
-                    placeholder="搜索客户..."
+                    placeholder="搜索客户"
                     disabled={isLoading}
                   />
                 </div>

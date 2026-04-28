@@ -252,7 +252,7 @@ export function ReturnOrderForm({
             <CardHeader>
               <CardTitle className="flex items-center">
                 <ShoppingCart className="mr-2 h-5 w-5" />
-                基础信息
+                退货信息
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -263,7 +263,7 @@ export function ReturnOrderForm({
                   name="salesOrderId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>关联销售订单 *</FormLabel>
+                      <FormLabel>销售订单 *</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         value={field.value}
@@ -275,7 +275,7 @@ export function ReturnOrderForm({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="none">请选择销售订单</SelectItem>
+                          <SelectItem value="none">选择销售订单</SelectItem>
                           {/* 这里应该显示销售订单列表，简化处理 */}
                           <SelectItem value="sales-order-1">
                             SO202501160001
@@ -670,7 +670,7 @@ export function ReturnOrderForm({
 
                                   <div className="mt-3 flex items-center justify-between border-t pt-3">
                                     <span className="text-muted-foreground">
-                                      小计:
+                                      小计：
                                     </span>
                                     <span className="font-medium">
                                       {formatReturnAmount(field.subtotal)}
@@ -726,7 +726,7 @@ export function ReturnOrderForm({
               {isLoading
                 ? '保存中...'
                 : mode === 'create'
-                  ? '新建退货订单'
+                  ? '新建退货单'
                   : '保存修改'}
             </Button>
           </div>

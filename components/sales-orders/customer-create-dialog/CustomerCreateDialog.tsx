@@ -87,9 +87,7 @@ function CustomerCreateDialogView({
             <User className="h-5 w-5" />
             新增客户
           </DialogTitle>
-          <DialogDescription>
-            快速创建新客户，创建后将自动选择该客户
-          </DialogDescription>
+          <DialogDescription>创建后自动选中</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -102,7 +100,7 @@ function CustomerCreateDialogView({
                   <FormLabel>客户名称 *</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="请输入客户名称"
+                      placeholder="客户名称"
                       disabled={isPending}
                       {...field}
                     />
@@ -120,7 +118,7 @@ function CustomerCreateDialogView({
                   <FormLabel>联系电话</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="请输入手机号码"
+                      placeholder="手机号码"
                       disabled={isPending}
                       {...field}
                     />

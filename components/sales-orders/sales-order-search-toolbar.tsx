@@ -233,14 +233,12 @@ export const SalesOrderSearchToolbar = React.memo<SalesOrderSearchToolbarProps>(
 
     const customerFilter = (
       <div className="w-full min-w-0 space-y-1.5 xl:w-[320px]">
-        <div className="text-muted-foreground text-xs font-medium">
-          客户筛选
-        </div>
+        <div className="text-muted-foreground text-xs font-medium">客户</div>
         <div className="flex min-w-0 items-center gap-2">
           <CustomerSelector
             value={queryParams.customerId}
             onValueChange={handleCustomerFilterChange}
-            placeholder="选择客户筛选订单"
+            placeholder="选择客户"
             allowCreate={false}
             className="h-10 min-w-0 flex-1 rounded-lg bg-white"
           />
@@ -425,7 +423,7 @@ export const SalesOrderSearchToolbar = React.memo<SalesOrderSearchToolbarProps>(
                     <CustomerSelector
                       value={queryParams.customerId}
                       onValueChange={handleCustomerFilterChange}
-                      placeholder="选择客户筛选订单"
+                      placeholder="选择客户"
                       allowCreate={false}
                       className="h-10 min-w-0 flex-1 rounded-lg bg-white"
                     />
@@ -453,7 +451,7 @@ export const SalesOrderSearchToolbar = React.memo<SalesOrderSearchToolbarProps>(
                       onClick={onClearFilters}
                       className="h-10 rounded-lg px-3 text-[hsl(var(--color-text-secondary))] hover:bg-[hsl(var(--color-primary-light))]"
                     >
-                      清空条件
+                      清空
                     </Button>
                   </div>
                 ) : null}
