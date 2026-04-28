@@ -93,6 +93,7 @@ playwright.config.mjs
 !tests/e2e/receivables-payment-real-click.test.ts
 
 !tests-regression/**/*.test.ts
+!tests-regression/**/*.test.tsx
 *.spec.js
 
 # 临时测试脚本
@@ -168,6 +169,7 @@ prisma/*.bak-*
 playwright-*.png
 test-artifacts/
 tmp-*.txt
+tmp/
 tests/screenshots/
 
 # 微信小程序依赖目录（仅本地安装使用，不提交到仓库）

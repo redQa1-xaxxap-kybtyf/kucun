@@ -1,6 +1,6 @@
 {
   "name": "kucun",
-  "version": "1.0.110",
+  "version": "1.0.114",
   "description": "瓷砖行业库存管理工具",
   "private": true,
   "scripts": {
@@ -51,6 +51,7 @@
     "db:studio": "prisma studio",
     "scheduler:start": "dotenv -e .env -- tsx lib/queue/schedulers/start-scheduler.ts",
     "scheduler:dev": "dotenv -e .env -- tsx watch lib/queue/schedulers/start-scheduler.ts",
+    "maintenance:run": "tsx scripts/run-operations-maintenance.ts",
     "db:reset": "prisma migrate reset",
     "download-geoip": "node scripts/download-geoip.js",
     "test:ip-location": "tsx scripts/test-ip-location.ts",

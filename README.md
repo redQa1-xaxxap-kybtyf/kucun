@@ -145,6 +145,11 @@ npm run dev
 - `npm run cache:clear` - 清理 Redis 缓存
 - `npm run test:redis-ws` - 测试 Redis 和 WebSocket 连接
 
+### 调度和运维
+
+- `npm run scheduler:start` - 启动调度器进程（运输查询 + 日志维护 + 自动备份）
+- `npm run maintenance:run` - 手动执行一次日志维护，并在需要时执行数据库备份
+
 ### 部署 (PM2)
 
 - `npm run pm2:start` - 启动单实例模式
@@ -401,6 +406,16 @@ npm run pm2:start:cluster
 npm run deploy:prod
 ```
 
+`pm2:start` / `pm2:start:cluster` 会同时拉起 `kucun-app` 和 `kucun-scheduler`。
+其中 `kucun-scheduler` 负责运输自动查询、日志自动清理和数据库自动备份。
+
+如果上线后想立即验证一次维护链路，可以执行：
+
+```bash
+npm run maintenance:run
+npm run maintenance:run -- --force-backup
+```
+
 ### Docker 部署 (待实现)
 
 ```bash
@@ -417,6 +432,9 @@ docker-compose up -d
 - `REDIS_HOST`: Redis 主机
 - `REDIS_PORT`: Redis 端口
 - `REDIS_PASSWORD`: Redis 密码
+- `MAINTENANCE_AUTO_ENABLED`: 是否开启自动日志维护
+- `AUTO_DB_BACKUP_ENABLED`: 是否开启自动数据库备份
+- `DB_BACKUP_DIR`: 数据库备份目录
 - `QINIU_ACCESS_KEY`: 七牛云访问密钥
 - `QINIU_SECRET_KEY`: 七牛云私钥
 - `QINIU_BUCKET`: 七牛云存储桶

@@ -44,6 +44,31 @@ module.exports = {
       // 进程信号处理
       shutdown_with_message: true,
     },
+    {
+      // 调度器进程 - 运输查询 + 运维维护
+      name: 'kucun-scheduler',
+      script: 'node_modules/tsx/dist/cli.mjs',
+      args: 'lib/queue/schedulers/start-scheduler.ts',
+      instances: 1,
+      exec_mode: 'fork',
+      env: {
+        NODE_ENV: 'production',
+      },
+      error_file: './logs/scheduler-err.log',
+      out_file: './logs/scheduler-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      max_memory_restart: '1G',
+      autorestart: true,
+      watch: false,
+      max_restarts: 10,
+      min_uptime: '10s',
+      restart_delay: 4000,
+      env_file: '.env.production',
+      kill_timeout: 5000,
+      listen_timeout: 5000,
+      shutdown_with_message: true,
+    },
   ],
 
   // 部署配置 (可选)
