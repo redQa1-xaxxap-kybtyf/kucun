@@ -31,11 +31,7 @@ interface InventoryCheckResult {
   isLowStock: boolean;
   message: string;
   severity: 'success' | 'warning' | 'error';
-  reason:
-    | 'success'
-    | 'low_stock'
-    | 'missing_batch'
-    | 'insufficient_stock';
+  reason: 'success' | 'low_stock' | 'missing_batch' | 'insufficient_stock';
   shortageScope?: 'total' | 'batch';
   selectableBatchCount?: number;
 }
@@ -287,9 +283,7 @@ export function InventoryChecker({
                       - [{item.product?.code || '未知编码'}]{' '}
                       {item.product?.name || '未知产品'}
                       {item.batchNumber ? ` / 批次 ${item.batchNumber}` : ''}：
-                      {item.shortageScope === 'batch'
-                        ? '批次可用'
-                        : '总可用'}{' '}
+                      {item.shortageScope === 'batch' ? '批次可用' : '总可用'}{' '}
                       {item.availableQuantity}片，需要 {item.requestedQuantity}
                       片，缺少 {item.requestedQuantity - item.availableQuantity}
                       片
@@ -317,12 +311,11 @@ export function InventoryChecker({
                         .unit as keyof typeof PRODUCT_UNIT_LABELS
                     ] || warningItems[0].product.unit
                   : '片'}
-                ，建议及时补货
               </div>
             ) : (
               <div>
                 <div className="mb-1">
-                  以下 {warningItems.length} 个产品库存偏低，建议及时补货：
+                  以下 {warningItems.length} 个产品库存偏低：
                 </div>
                 <div className="space-y-0.5 text-sm">
                   {warningItems.map((item, index) => (

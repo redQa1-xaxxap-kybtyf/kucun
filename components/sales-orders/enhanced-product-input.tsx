@@ -5,13 +5,7 @@ import * as React from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   FormControl,
   FormField,
@@ -101,11 +95,6 @@ export function EnhancedProductInput({
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-sm">产品信息</CardTitle>
-            <CardDescription className="text-xs">
-              {isTransferSale
-                ? '选择库存产品或手动输入临时产品'
-                : '选择库存产品'}
-            </CardDescription>
           </div>
           {isTransferSale && (
             <div className="flex gap-1">

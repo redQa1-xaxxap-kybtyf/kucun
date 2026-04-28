@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -124,9 +123,6 @@ export function QuickAddSupplierDialog({
       <DialogContent className="sm:max-w-[420px]">
         <DialogHeader>
           <DialogTitle>快速新增供应商</DialogTitle>
-          <DialogDescription>
-            填写供应商基础信息，创建后会自动选中。
-          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>

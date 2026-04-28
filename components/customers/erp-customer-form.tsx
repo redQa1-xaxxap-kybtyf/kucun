@@ -418,7 +418,7 @@ export function ERPCustomerForm({
       {isPagePresentation ? (
         <PageContainer
           title={isEdit ? '编辑客户' : '新建客户'}
-          description={isEdit ? '修改客户信息' : '创建新的客户记录'}
+          description={isEdit ? '修改客户资料' : '填写客户资料'}
           icon={<Users className="h-6 w-6 text-white" />}
           bodyClassName="space-y-6"
           footer={

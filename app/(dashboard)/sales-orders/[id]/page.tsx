@@ -4,7 +4,7 @@
 import { useQuery } from '@tanstack/react-query';
 import dynamic from 'next/dynamic';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 
 import { useBreadcrumbTitle } from '@/components/common/BreadcrumbContext';
 import { ContentLoading } from '@/components/common/loading';
@@ -66,7 +66,9 @@ const PaymentsCard = dynamic(
 
 const PrepaymentUsageCard = dynamic(
   () =>
-    import('./components/PrepaymentUsageCard').then(mod => mod.PrepaymentUsageCard),
+    import('./components/PrepaymentUsageCard').then(
+      mod => mod.PrepaymentUsageCard
+    ),
   { ssr: false, loading: () => null }
 );
 
@@ -103,6 +105,32 @@ async function fetchSalesOrderDetail(id: string): Promise<SalesOrderDetail> {
   }
 
   return result.data;
+}
+
+function SecondaryOrderSection({
+  title,
+  summary,
+  children,
+}: {
+  title: string;
+  summary: string;
+  children: ReactNode;
+}) {
+  return (
+    <details className="group">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded-md border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm transition-colors hover:bg-slate-50 [&::-webkit-details-marker]:hidden">
+        <span>{title}</span>
+        <span className="text-xs font-medium text-slate-400 group-open:hidden">
+          展开
+        </span>
+        <span className="hidden text-xs font-medium text-slate-400 group-open:inline">
+          收起
+        </span>
+      </summary>
+      <div className="mt-3 space-y-4">{children}</div>
+      <p className="mt-2 px-1 text-xs text-slate-400">{summary}</p>
+    </details>
+  );
 }
 
 export default function SalesOrderDetailPage() {
@@ -302,16 +330,26 @@ export default function SalesOrderDetailPage() {
 
   const canEditOrder = order.status === 'draft';
   const canConfirmOrder =
-    order.status === 'draft' && Array.isArray(order.items) && order.items.length > 0;
+    order.status === 'draft' &&
+    Array.isArray(order.items) &&
+    order.items.length > 0;
   const canQuickReturn = RETURN_ALLOWED_SALES_ORDER_STATUSES.includes(
     order.status as (typeof RETURN_ALLOWED_SALES_ORDER_STATUSES)[number]
   );
+  const hasReturnOrders = (order.returnOrders ?? []).length > 0;
+  const hasFeeItems = (order.feeItems ?? []).length > 0;
+  const returnedAmount = (order.returnOrders ?? []).reduce(
+    (sum, returnOrder) => sum + Number(returnOrder.refundAmount ?? 0),
+    0
+  );
+  const hasReconciliationSummary =
+    returnedAmount > 0 || Number(order.refundedAmount ?? 0) > 0;
 
   return (
     <div className="flex h-full flex-col overflow-auto bg-slate-50/30">
       <div
         id="sales-order-export-content"
-        className="mx-auto w-full max-w-[1680px] space-y-8 p-4 lg:p-10 xl:p-14"
+        className="mx-auto w-full max-w-[1680px] space-y-5 p-4 lg:p-8 xl:p-10"
       >
         <HeaderCard
           order={order}
@@ -346,12 +384,8 @@ export default function SalesOrderDetailPage() {
           pureTransferProfit={pureTransferProfit}
         />
 
-        <OrderReconciliationSummaryCard order={order} />
-
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-4 lg:gap-8">
-          <div className="space-y-6 lg:col-span-3">
-            <BasicInfoCard order={order} />
-            <RelatedReturnOrdersCard order={order} />
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="space-y-5">
             <OrderItemsTable
               order={order}
               totalDisplayQuantity={totalDisplayQuantity}
@@ -360,12 +394,42 @@ export default function SalesOrderDetailPage() {
               productSubtotal={productSubtotal}
               density={density}
             />
-            <FeeItemsCard order={order} productSubtotal={productSubtotal} />
+
+            <SecondaryOrderSection
+              title="订单基础资料"
+              summary="客户、开单日期、创建人和备注等信息默认收起，按需核对。"
+            >
+              <BasicInfoCard order={order} />
+            </SecondaryOrderSection>
+
+            {(hasReturnOrders || hasFeeItems) && (
+              <SecondaryOrderSection
+                title="退货和费用"
+                summary="有退货、物流费、加工费等业务附加项时展开查看。"
+              >
+                <RelatedReturnOrdersCard order={order} />
+                <FeeItemsCard order={order} productSubtotal={productSubtotal} />
+              </SecondaryOrderSection>
+            )}
           </div>
+
           <div className="space-y-4">
             <PaymentsCard order={order} />
             <PrepaymentUsageCard order={order} />
-            <OperationHistoryCard order={order} userName={userName} />
+            {hasReconciliationSummary && (
+              <SecondaryOrderSection
+                title="财务核对"
+                summary="退货总值和实退金额仅在需要对账时展开。"
+              >
+                <OrderReconciliationSummaryCard order={order} />
+              </SecondaryOrderSection>
+            )}
+            <SecondaryOrderSection
+              title="操作记录"
+              summary="创建、确认、发货等系统记录默认收起。"
+            >
+              <OperationHistoryCard order={order} userName={userName} />
+            </SecondaryOrderSection>
           </div>
         </div>
       </div>

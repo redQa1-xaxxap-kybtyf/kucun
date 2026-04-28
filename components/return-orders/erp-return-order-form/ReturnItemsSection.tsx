@@ -136,9 +136,7 @@ export function ReturnItemsSection({
 
           {fields.length === 0 ? (
             <div className="text-muted-foreground py-8 text-center text-xs">
-              {isSingleOrder
-                ? '暂无退货明细，请先选择销售订单'
-                : '暂无退货明细，请从上方选择要退货的产品'}
+              暂无退货明细
             </div>
           ) : (
             <div className="rounded-md border">

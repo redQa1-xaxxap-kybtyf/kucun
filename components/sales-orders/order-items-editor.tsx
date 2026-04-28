@@ -13,13 +13,7 @@ import {
 import { EnhancedProductSelector } from '@/components/sales-orders/enhanced-product-selector';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   FormControl,
   FormField,
@@ -149,9 +143,6 @@ export function OrderItemsEditor<
             </Badge>
           </div>
         </CardTitle>
-        <CardDescription>
-          添加订单中的产品明细，支持瓷砖行业特有的色号和生产日期管理
-        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {fields.length === 0 ? (

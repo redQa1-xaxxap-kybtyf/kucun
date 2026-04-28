@@ -12,7 +12,6 @@ import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -205,9 +204,6 @@ export function QuickCreateProductDialog({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>快速添加产品</DialogTitle>
-          <DialogDescription>
-            填写基本信息快速创建产品，创建后将自动选中该产品
-          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>

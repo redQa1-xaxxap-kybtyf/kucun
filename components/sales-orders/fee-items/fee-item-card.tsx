@@ -17,7 +17,6 @@ import { useFormContext } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import {
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -198,11 +197,6 @@ export function FeeItemCard({ index }: FeeItemCardProps) {
                   ))}
                 </SelectContent>
               </Select>
-              <FormDescription className="text-xs">
-                {field.value === 'customer'
-                  ? '计入销售收入，不影响成本'
-                  : '计入销售成本，影响利润'}
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}

@@ -6,7 +6,6 @@ import { useWatch, type Control } from 'react-hook-form';
 
 import {
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -353,7 +352,6 @@ function ProductStatusSelect({
           </Select>
           {/* 添加隐藏的 input 来确保表单数据包含此字段 */}
           <input type="hidden" name={field.name} value={field.value || ''} />
-          <FormDescription>停用的产品将不能创建新的销售订单</FormDescription>
           <FormMessage />
         </FormItem>
       )}

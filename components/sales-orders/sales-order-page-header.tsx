@@ -38,9 +38,7 @@ export function SalesOrderPageHeader({
       <PageHeader
         title={isHistoryView ? '历史销售记录' : '销售订单'}
         description={
-          isHistoryView
-            ? '查看通过导入保存的历史销售记录；这类记录默认不会进入销售看板、应收统计和库存预留。'
-            : '管理销售订单和发货信息'
+          isHistoryView ? '查看导入的历史单据' : '开单、发货和收款进度'
         }
         icon={<ShoppingCart className="h-6 w-6 text-white" />}
         iconBgColor="hsl(var(--color-info))"

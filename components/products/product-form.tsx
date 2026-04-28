@@ -121,7 +121,7 @@ function ProductFormHeader({ isEdit, onCancel }: ProductFormHeaderProps) {
               {isEdit ? '编辑产品' : '新建产品'}
             </h1>
             <p className="text-muted-foreground text-sm">
-              {isEdit ? '修改产品信息' : '填写必填信息即可快速创建'}
+              {isEdit ? '产品资料' : '产品资料'}
             </p>
           </div>
         </div>

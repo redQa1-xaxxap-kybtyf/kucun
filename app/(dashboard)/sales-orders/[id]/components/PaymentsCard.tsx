@@ -102,7 +102,7 @@ function ReceivableConfirmationNote({
               variant="outline"
               className="rounded-md border-slate-300 bg-white px-2 py-0.5 font-bold text-slate-600"
             >
-              系统建账记录
+              应收记录
             </Badge>
           </div>
           <p className="text-sm font-medium text-slate-700">
@@ -110,12 +110,10 @@ function ReceivableConfirmationNote({
           </p>
           {isSettled ? (
             <p className="text-[11px] font-medium text-emerald-700">
-              订单已收清，这条仅保留作应收建账历史，不代表还有待确认收款。
+              订单已结清，仅保留应收记录。
             </p>
           ) : (
-            <p className="text-[11px] text-slate-500">
-              该记录仅用于确认订单应收已建立，不代表客户已付款。
-            </p>
+            <p className="text-[11px] text-slate-500">系统生成，不计入实收。</p>
           )}
           <p className="text-[10px] text-slate-400">
             登记时间：
@@ -216,7 +214,7 @@ export function PaymentsCard({ order }: { order: SalesOrderDetail }) {
   const receivableEnabled = shouldCreateReceivableForOrder(order);
 
   return (
-    <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+    <Card className="border-border overflow-hidden rounded-md border shadow-sm">
       <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1.5">
@@ -226,7 +224,7 @@ export function PaymentsCard({ order }: { order: SalesOrderDetail }) {
             </CardTitle>
             <p className="text-[11px] font-medium text-slate-500">
               {receivableEnabled
-                ? '这里只显示实际收款和预收抵扣，应收登记单独提示。'
+                ? '只显示实际收款和预收抵扣。'
                 : `${SAMPLE_ORDER_LABEL}当前按免费结算，不会进入客户应收。`}
             </p>
           </div>

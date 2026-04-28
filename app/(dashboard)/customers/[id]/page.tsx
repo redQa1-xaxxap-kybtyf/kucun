@@ -277,9 +277,6 @@ function CustomerDetailContent({ customer }: { customer: CustomerDetail }) {
             <h2 className="text-base font-semibold text-slate-900 sm:text-lg">
               业务往来与近期记录
             </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              集中查看销售、退货和待收款情况
-            </p>
           </div>
           <div className="p-4 sm:p-5">
             <CustomerActivityTabs

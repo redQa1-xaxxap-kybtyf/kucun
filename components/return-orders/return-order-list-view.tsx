@@ -605,16 +605,7 @@ function ReturnOrderActionMenu({
             <AlertDialogTitle>确定取消这张退货单吗？</AlertDialogTitle>
             <AlertDialogDescription>
               退货单 <strong>{order.returnNumber}</strong>{' '}
-              取消后将不再继续处理。
-              <br />
-              <br />
-              取消后：
-              <ul className="mt-2 list-inside list-disc space-y-1">
-                <li>这张退货单会变成“已取消”</li>
-                <li>往来余额不会再按这张退货单继续处理</li>
-                <li>单据记录会保留，方便后续查询</li>
-                <li>取消后不能恢复</li>
-              </ul>
+              取消后将不再继续处理，且不能恢复。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

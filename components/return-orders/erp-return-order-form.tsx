@@ -556,11 +556,6 @@ export function ERPReturnOrderForm({
             <h1 className="text-lg font-semibold">
               {mode === 'create' ? '新建退货单' : '修改退货单'}
             </h1>
-            <p className="text-muted-foreground text-sm">
-              {mode === 'create'
-                ? '填写退货信息并确认处理方式'
-                : '修改退货信息'}
-            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">

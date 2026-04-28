@@ -5,17 +5,10 @@ import * as React from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -73,7 +66,6 @@ export function CategoryEditFormCard({
   return (
     <Card className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] shadow-sm">
       <CategoryFormCardHeader />
-      <CategoryFormGuidance />
       <CardContent className="p-6">
         <CategoryEditFormBody
           form={form}
@@ -99,30 +91,7 @@ function CategoryFormCardHeader() {
         <FolderTree className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
         分类信息
       </CardTitle>
-      <CardDescription>
-        修改分类的基本信息，包括名称、父级分类和排序顺序
-      </CardDescription>
     </CardHeader>
-  );
-}
-
-function CategoryFormGuidance() {
-  return (
-    <div className="border-b bg-[hsl(var(--color-info-light))] px-6 py-3">
-      <div className="flex items-start gap-2 text-sm">
-        <span className="text-xs font-semibold text-[hsl(var(--color-info))]">
-          说明
-        </span>
-        <div className="flex-1 text-[hsl(var(--color-info))]">
-          <strong>分类层级规则：</strong>
-          <ul className="mt-1 ml-4 list-disc space-y-1 text-xs">
-            <li>支持最多3级分类（例如：抛光砖 → 系列A → 款式1）</li>
-            <li>不同父分类下可以创建相同名称的子分类</li>
-            <li>保存后可在列表查看完整分类信息</li>
-          </ul>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -280,7 +249,6 @@ function CategoryNameField({ control }: { control: CategoryFormControl }) {
           <FormControl>
             <Input placeholder="请输入分类名称" {...field} />
           </FormControl>
-          <FormDescription>分类的显示名称，最多50个字符</FormDescription>
           <FormMessage />
         </FormItem>
       )}
@@ -311,7 +279,11 @@ function CategoryParentField({
       return parentCategories;
     }
 
-    if (parentCategories.some(category => category.id === currentParentCategory.id)) {
+    if (
+      parentCategories.some(
+        category => category.id === currentParentCategory.id
+      )
+    ) {
       return parentCategories;
     }
 
@@ -363,9 +335,7 @@ function CategoryParentField({
                           : 'text-muted-foreground'
                       }`}
                     >
-                      {selectedParentId
-                        ? displayParentPath
-                        : '请选择父级分类'}
+                      {selectedParentId ? displayParentPath : '请选择父级分类'}
                     </span>
                     {isLoading && (
                       <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
@@ -420,12 +390,6 @@ function CategoryParentField({
                 </SelectContent>
               </Select>
             </div>
-            <FormDescription>
-              选择父级分类以创建层级结构（最多支持3级），系统会显示完整路径，避免同名分类选错
-              <span className="mt-1 block text-xs text-[hsl(var(--color-info))]">
-                提示：输入关键词即可查找，选择时优先显示分类名称和路径
-              </span>
-            </FormDescription>
             <FormMessage />
           </FormItem>
         );
@@ -452,7 +416,6 @@ function CategorySortOrderField({ control }: { control: CategoryFormControl }) {
               }
             />
           </FormControl>
-          <FormDescription>数字越小排序越靠前</FormDescription>
           <FormMessage />
         </FormItem>
       )}

@@ -278,14 +278,6 @@ export function OrderNumberGenerator({
           )}
         </div>
       )}
-
-      {/* 订单号格式说明 */}
-      <div className="text-muted-foreground text-xs">
-        <div className="mb-1 font-medium">订单号格式说明：</div>
-        <div>• 格式：SO + 8位日期 + 4位序号</div>
-        <div>• 示例：SO202501190001</div>
-        <div>• 点击刷新按钮自动生成唯一订单号</div>
-      </div>
     </div>
   );
 }

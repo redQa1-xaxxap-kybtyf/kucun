@@ -1,4 +1,4 @@
-import { AlertCircle, Info } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 
@@ -6,7 +6,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -142,14 +141,6 @@ function PrepaymentAmountInput({
               />
             </div>
           </FormControl>
-          <FormDescription className="text-xs">
-            <div className="flex items-start gap-1">
-              <Info className="mt-0.5 h-3 w-3 flex-shrink-0" />
-              <span>
-                可输入0.01 - {formatCurrency(maxApplicableAmount)}元 之间的金额
-              </span>
-            </div>
-          </FormDescription>
           <FormMessage />
         </FormItem>
       )}
@@ -234,11 +225,6 @@ function PrepaymentCheckbox({
             <FormLabel className="text-sm font-medium">
               使用预收款抵扣
             </FormLabel>
-            <FormDescription className="text-xs">
-              {!customerId
-                ? '请先选择客户'
-                : '使用客户的预收款余额抵扣订单金额'}
-            </FormDescription>
           </div>
         </FormItem>
       )}

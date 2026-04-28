@@ -17,17 +17,10 @@ import type { z } from 'zod';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -584,23 +577,7 @@ function CreateCategoryForm({
           <FolderTree className="mr-2 h-5 w-5 text-blue-600" />
           分类信息
         </CardTitle>
-        <CardDescription>
-          填写分类的基本信息，包括名称、父级分类和排序顺序
-        </CardDescription>
       </CardHeader>
-      <div className="border-b bg-blue-50 px-6 py-3">
-        <div className="flex items-start gap-2 text-sm">
-          <span className="text-xs font-semibold text-blue-600">说明</span>
-          <div className="flex-1 text-blue-800">
-            <strong>分类层级规则：</strong>
-            <ul className="mt-1 ml-4 list-disc space-y-1 text-xs">
-              <li>支持最多3级分类（例如：抛光砖 → 系列A → 款式1）</li>
-              <li>不同父分类下可以创建相同名称的子分类</li>
-              <li>编码会自动生成，创建后可在分类列表查看，无需手动记忆</li>
-            </ul>
-          </div>
-        </div>
-      </div>
       <CardContent className="p-6">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -614,9 +591,6 @@ function CreateCategoryForm({
                     <FormControl>
                       <Input placeholder="请输入分类名称" {...field} />
                     </FormControl>
-                    <FormDescription>
-                      分类的显示名称，最多50个字符
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -711,12 +685,6 @@ function CreateCategoryForm({
                           </SelectContent>
                         </Select>
                       </div>
-                      <FormDescription>
-                        选择父级分类以创建层级结构（最多支持3级），系统会显示完整路径，避免同名分类选错
-                        <span className="mt-1 block text-xs text-blue-600">
-                          提示：输入关键词即可查找，选择时优先显示分类名称和路径
-                        </span>
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   );
@@ -739,7 +707,6 @@ function CreateCategoryForm({
                         }
                       />
                     </FormControl>
-                    <FormDescription>数字越小排序越靠前</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

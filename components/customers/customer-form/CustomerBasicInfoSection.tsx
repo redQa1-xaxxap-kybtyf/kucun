@@ -2,16 +2,9 @@ import { Building2 } from 'lucide-react';
 import type { UseFormReturn } from 'react-hook-form';
 
 import { CustomerSelector } from '@/components/customers/customer-hierarchy';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -46,7 +39,6 @@ export function CustomerBasicInfoSection({
           <Building2 className="mr-2 h-5 w-5" />
           基础信息
         </CardTitle>
-        <CardDescription>客户的基本信息，包括名称、联系方式等</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -63,7 +55,6 @@ export function CustomerBasicInfoSection({
                     {...field}
                   />
                 </FormControl>
-                <FormDescription>客户的完整名称或公司名称</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -82,7 +73,6 @@ export function CustomerBasicInfoSection({
                     {...field}
                   />
                 </FormControl>
-                <FormDescription>主要联系电话</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -103,7 +93,6 @@ export function CustomerBasicInfoSection({
                   {...field}
                 />
               </FormControl>
-              <FormDescription>客户的详细地址信息</FormDescription>
               <FormMessage />
             </FormItem>
           )}

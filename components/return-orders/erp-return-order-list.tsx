@@ -544,7 +544,7 @@ export function ERPReturnOrderList({
   // ✅ 改进的错误处理：显示错误信息并提供重试功能
   if (error) {
     return (
-      <Card className="rounded-md border border-border shadow-sm">
+      <Card className="border-border rounded-md border shadow-sm">
         <CardContent className="pt-6">
           <div className="flex flex-col items-center justify-center gap-4 py-8">
             <div className="text-center">
@@ -823,16 +823,7 @@ export function ERPReturnOrderList({
             <AlertDialogTitle>确定取消这张退货单吗？</AlertDialogTitle>
             <AlertDialogDescription>
               退货单 <strong>{orderToCancel?.returnNumber}</strong>{' '}
-              取消后将不再继续处理。
-              <br />
-              <br />
-              取消后：
-              <ul className="mt-2 list-inside list-disc space-y-1">
-                <li>这张退货单会变成“已取消”</li>
-                <li>往来余额不会再按这张退货单继续处理</li>
-                <li>单据记录会保留，方便后续查询</li>
-                <li>取消后不能恢复</li>
-              </ul>
+              取消后将不再继续处理，且不能恢复。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

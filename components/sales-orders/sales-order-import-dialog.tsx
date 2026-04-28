@@ -263,7 +263,7 @@ function ImportedSalesOrdersTable({
         <Table>
           <TableHeader>
             <TableRow>
-                  <TableHead>订单号</TableHead>
+              <TableHead>订单号</TableHead>
               <TableHead>导入单号</TableHead>
               <TableHead>客户</TableHead>
               <TableHead>金额</TableHead>
@@ -571,18 +571,14 @@ export function SalesOrderImportDialog({
               <FileSpreadsheet className="h-5 w-5 text-sky-600" />
               批量导入销售单
             </DialogTitle>
-            <DialogDescription>
-              建议先检查，再正式导入。只要其中一张销售单有问题，这次就不会保存任何数据。
-            </DialogDescription>
+            <DialogDescription>先检查，再导入。</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                导入时会按产品编码匹配现有产品资料；客户名称不能为空，如果客户还没建档，会按名称自动建立客户资料，电话和联系人后续可以补录。导入单号可以留空，系统会自动生成一个导入单号，用来识别是否重复导入；如果留空，只有相邻且“客户名称 + 订单日期 + 订单备注”相同的行才会自动合并成一张订单，所以不同订单建议直接填写导入单号。新模板里“订单备注”写整单备注，“明细备注”写行备注；旧模板里的“备注”列仍按明细备注处理。单位留空默认按“片”，填“件”时会优先使用当前行装箱数换算片数，当前行没填时再回退产品资料里的默认装箱数。你可以在下方统一选择“导入为已确认未发货”或“导入为已发货”，不需要在
-                Excel
-                里额外加列。只要任意一张订单导入失败，本次就不会保存。历史销售如果已经收款，请后续另外补录收款记录，销售导入不会把已收金额一起带入。
+                客户和产品会按模板匹配；检查通过后才会正式保存。
               </AlertDescription>
             </Alert>
 

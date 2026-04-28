@@ -17,13 +17,7 @@ import { useFieldArray, useForm } from 'react-hook-form';
 // UI Components
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
   FormControl,
@@ -240,11 +234,6 @@ export function ReturnOrderForm({
           <h1 className="text-3xl font-bold tracking-tight">
             {mode === 'create' ? '新建退货单' : '编辑退货单'}
           </h1>
-          <p className="text-muted-foreground">
-            {mode === 'create'
-              ? '填写退货信息并添加退货明细'
-              : '修改退货单信息'}
-          </p>
         </div>
       </div>
 
@@ -265,7 +254,6 @@ export function ReturnOrderForm({
                 <ShoppingCart className="mr-2 h-5 w-5" />
                 基础信息
               </CardTitle>
-              <CardDescription>填写退货订单的基本信息</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -410,7 +398,6 @@ export function ReturnOrderForm({
                     <Package className="mr-2 h-5 w-5" />
                     退货明细
                   </CardTitle>
-                  <CardDescription>选择要退货的产品明细</CardDescription>
                 </div>
                 {selectedSalesOrderId && (
                   <div className="text-muted-foreground text-sm">

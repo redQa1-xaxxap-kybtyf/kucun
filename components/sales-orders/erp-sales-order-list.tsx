@@ -65,8 +65,8 @@ import {
   type SalesOrderQueryParams,
   type SalesOrderStatus,
 } from '@/lib/types/sales-order';
-import { formatDate, formatDateTime } from '@/lib/utils/datetime';
 import { cn } from '@/lib/utils';
+import { formatDate } from '@/lib/utils/datetime';
 import {
   getCurrentPathWithSearch,
   withReturnTo,
@@ -132,18 +132,6 @@ export function ERPSalesOrderList({
 
   const isHistoryView = initialParams?.recordScope === 'history';
   const normalizedStatus = initialParams?.status;
-  const isPrioritySorted = React.useMemo(() => {
-    if (isHistoryView) {
-      return false;
-    }
-
-    const sortBy = initialParams?.sortBy || 'orderDate';
-
-    return (
-      (sortBy === 'orderDate' || sortBy === 'createdAt') &&
-      (!normalizedStatus || normalizedStatus === 'pending')
-    );
-  }, [initialParams?.sortBy, isHistoryView, normalizedStatus]);
 
   // 清空所有筛选条件
   // ✅ P1修复: 清空筛选时也清空搜索词
@@ -811,34 +799,6 @@ export function ERPSalesOrderList({
         isSearching={isSearching || isFetching}
       />
 
-      {isHistoryView && (
-        <div className="rounded-md border border-sky-200 bg-sky-50 px-4 py-3 text-sky-900">
-          <div className="flex items-start gap-3">
-            <Clock className="mt-0.5 h-4 w-4 shrink-0 text-sky-600" />
-            <div className="min-w-0">
-              <p className="text-sm font-bold">历史导入视角</p>
-              <p className="mt-1 text-xs leading-5 text-sky-800 sm:text-sm">
-                这里集中展示通过导入沉淀的历史销售记录。默认销售订单列表不会显示它们，销售看板、应收统计和库存预留也不会自动纳入。
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {!isHistoryView && isPrioritySorted && (
-        <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-            <div className="min-w-0">
-              <p className="text-sm font-bold">待确认优先</p>
-              <p className="mt-1 text-xs leading-5 text-amber-800 sm:text-sm">
-                列表默认按业务处理顺序展示，草稿单会始终排在已确认前面，方便先确认再发货；已完成和已取消会自动靠后。
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* 数据表格 */}
       <div
         className="relative overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm"
@@ -880,7 +840,7 @@ export function ERPSalesOrderList({
                   <TableHead className="w-[180px] min-w-[180px] whitespace-nowrap">
                     日期
                   </TableHead>
-                  <TableHead className="w-24 min-w-[96px] whitespace-nowrap">
+                  <TableHead className="w-[140px] min-w-[140px] whitespace-nowrap">
                     操作
                   </TableHead>
                 </TableRow>
@@ -1016,21 +976,36 @@ export function ERPSalesOrderList({
                         </div>
                       </TableCell>
                       <TableCell className="h-8 text-xs">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0"
-                              onClick={e => e.stopPropagation()}
-                            >
-                              <MoreHorizontal className="h-3 w-3" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-40">
-                            {renderOrderActionMenuItems(order)}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-xs font-semibold text-[hsl(var(--color-primary))]"
+                            onClick={e => {
+                              e.stopPropagation();
+                              handleOpenOrder(order);
+                            }}
+                          >
+                            <Eye className="mr-1 h-3 w-3" />
+                            查看
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0"
+                                onClick={e => e.stopPropagation()}
+                                aria-label="更多操作"
+                              >
+                                <MoreHorizontal className="h-3.5 w-3.5" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-40">
+                              {renderOrderActionMenuItems(order)}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))

@@ -94,7 +94,7 @@ export function ProductImageUpload({
             <ProductImageUploadArea
               type="thumbnail"
               title="上传缩略图"
-              description="建议尺寸 300x300px，支持 JPG、PNG 格式"
+              description="300x300 / JPG、PNG"
               multiple={false}
               disabled={disabled}
               uploading={uploading}
@@ -125,7 +125,7 @@ export function ProductImageUpload({
           <ProductImageUploadArea
             type="main"
             title="上传主图"
-            description={`建议尺寸 800x800px，最多上传 ${maxFiles} 张`}
+            description={`800x800 / 最多 ${maxFiles} 张`}
             multiple={true}
             disabled={disabled}
             uploading={uploading}
@@ -159,7 +159,7 @@ export function ProductImageUpload({
           <ProductImageUploadArea
             type="effect"
             title="上传效果图"
-            description={`展示产品使用效果，最多上传 ${maxFiles} 张`}
+            description={`最多 ${maxFiles} 张`}
             multiple={true}
             disabled={disabled}
             uploading={uploading}

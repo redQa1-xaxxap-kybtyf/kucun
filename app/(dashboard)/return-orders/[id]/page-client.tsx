@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { CheckCircle, XCircle } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 
 import { useBreadcrumbTitle } from '@/components/common/BreadcrumbContext';
 import { ContentLoading } from '@/components/common/loading';
@@ -57,6 +57,34 @@ const PrintTemplatePreviewDialog = dynamic(
     ).then(mod => mod.PrintTemplatePreviewDialog),
   { ssr: false, loading: () => null }
 );
+
+function DetailFoldSection({
+  title,
+  summary,
+  children,
+}: {
+  title: string;
+  summary: string;
+  children: ReactNode;
+}) {
+  return (
+    <details className="group">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded-md border border-[hsl(var(--color-border-secondary))] bg-white px-4 py-3 text-sm font-semibold text-[hsl(var(--color-text-primary))] shadow-sm [&::-webkit-details-marker]:hidden">
+        <span>{title}</span>
+        <span className="text-xs font-medium text-[hsl(var(--color-text-tertiary))] group-open:hidden">
+          展开
+        </span>
+        <span className="hidden text-xs font-medium text-[hsl(var(--color-text-tertiary))] group-open:inline">
+          收起
+        </span>
+      </summary>
+      <div className="mt-3">{children}</div>
+      <p className="mt-2 px-1 text-xs text-[hsl(var(--color-text-tertiary))]">
+        {summary}
+      </p>
+    </details>
+  );
+}
 
 interface ReturnOrderDetail {
   id: string;
@@ -298,7 +326,7 @@ export function ReturnOrderDetailPageClient({
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="space-y-4 sm:space-y-6">
         {/* 页面标题卡片 */}
-        <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+        <Card className="border-border overflow-hidden rounded-md border shadow-sm">
           <CardContent className="bg-card p-4 sm:p-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
@@ -332,149 +360,6 @@ export function ReturnOrderDetailPageClient({
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
           {/* 基本信息 */}
           <div className="space-y-6 lg:col-span-2">
-            <Card>
-              <CardHeader className="border-b border-[hsl(var(--color-border-secondary))]">
-                <CardTitle className="text-lg">基本信息</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <div className="space-y-4">
-                  {/* 客户信息 */}
-                  <div className="rounded-lg border border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-tertiary))] p-4">
-                    <h3 className="mb-3 text-sm font-semibold text-[hsl(var(--color-text-primary))]">
-                      客户信息
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-xs text-[hsl(var(--color-text-tertiary))]">
-                          客户名称
-                        </label>
-                        <p className="mt-1 font-medium text-[hsl(var(--color-text-primary))]">
-                          {order.customer.name}
-                        </p>
-                      </div>
-                      <div>
-                        <label className="text-xs text-[hsl(var(--color-text-tertiary))]">
-                          联系电话
-                        </label>
-                        <p className="mt-1 font-medium text-[hsl(var(--color-text-primary))]">
-                          {order.customer.phone || '-'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 订单信息 */}
-                  <div className="rounded-lg border border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-tertiary))] p-4">
-                    <h3 className="mb-3 text-sm font-semibold text-[hsl(var(--color-text-primary))]">
-                      订单信息
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-xs text-[hsl(var(--color-text-tertiary))]">
-                          退货模式
-                        </label>
-                        <p className="mt-1 font-medium text-[hsl(var(--color-text-primary))]">
-                          {RETURN_ORDER_MODE_LABELS[
-                            order.returnMode as keyof typeof RETURN_ORDER_MODE_LABELS
-                          ] || order.returnMode}
-                        </p>
-                      </div>
-                      <div>
-                        <label className="text-xs text-[hsl(var(--color-text-tertiary))]">
-                          退货类型
-                        </label>
-                        <p className="mt-1 font-medium text-[hsl(var(--color-text-primary))]">
-                          {RETURN_ORDER_TYPE_LABELS[
-                            order.type as keyof typeof RETURN_ORDER_TYPE_LABELS
-                          ] || order.type}
-                        </p>
-                      </div>
-                      <div>
-                        <label className="text-xs text-[hsl(var(--color-text-tertiary))]">
-                          处理方式
-                        </label>
-                        <p className="mt-1 font-medium text-[hsl(var(--color-text-primary))]">
-                          {RETURN_PROCESS_TYPE_LABELS[
-                            order.processType as keyof typeof RETURN_PROCESS_TYPE_LABELS
-                          ] || order.processType}
-                        </p>
-                      </div>
-                      {order.salesOrder && (
-                        <div>
-                          <label className="text-xs text-[hsl(var(--color-text-tertiary))]">
-                            关联销售订单
-                          </label>
-                          <p className="mt-1">
-                            <Button
-                              variant="link"
-                              className="h-auto p-0 text-[hsl(var(--color-primary))] hover:underline"
-                              onClick={() => {
-                                if (!order.salesOrder) {
-                                  return;
-                                }
-                                router.push(
-                                  `/sales-orders/${order.salesOrder.id}`
-                                );
-                              }}
-                            >
-                              {order.salesOrder.orderNumber}
-                            </Button>
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* 其他信息 */}
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <label className="text-xs text-[hsl(var(--color-text-tertiary))]">
-                        退货原因
-                      </label>
-                      <p className="mt-1 text-[hsl(var(--color-text-secondary))]">
-                        {order.reason}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-xs text-[hsl(var(--color-text-tertiary))]">
-                        创建人
-                      </label>
-                      <p className="mt-1 text-[hsl(var(--color-text-secondary))]">
-                        {order.user.name}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-xs text-[hsl(var(--color-text-tertiary))]">
-                        创建时间
-                      </label>
-                      <p className="mt-1 text-[hsl(var(--color-text-secondary))]">
-                        {formatDateTime(order.createdAt)}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-xs text-[hsl(var(--color-text-tertiary))]">
-                        更新时间
-                      </label>
-                      <p className="mt-1 text-[hsl(var(--color-text-secondary))]">
-                        {formatDateTime(order.updatedAt)}
-                      </p>
-                    </div>
-                  </div>
-
-                  {order.remarks && (
-                    <div className="rounded-lg border border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] p-3">
-                      <label className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
-                        备注信息
-                      </label>
-                      <p className="mt-1 text-sm text-[hsl(var(--color-text-secondary))]">
-                        {order.remarks}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
             {/* 退货明细 */}
             <Card>
               <CardHeader className="border-b border-[hsl(var(--color-border-secondary))]">
@@ -629,6 +514,151 @@ export function ReturnOrderDetailPageClient({
                 </div>
               </CardContent>
             </Card>
+
+            <DetailFoldSection
+              title="退货基础资料"
+              summary="客户、原订单、退货原因、经办人和备注默认收起。"
+            >
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="space-y-4">
+                    {/* 客户信息 */}
+                    <div className="rounded-lg border border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-tertiary))] p-4">
+                      <h3 className="mb-3 text-sm font-semibold text-[hsl(var(--color-text-primary))]">
+                        客户信息
+                      </h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-xs text-[hsl(var(--color-text-tertiary))]">
+                            客户名称
+                          </label>
+                          <p className="mt-1 font-medium text-[hsl(var(--color-text-primary))]">
+                            {order.customer.name}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-xs text-[hsl(var(--color-text-tertiary))]">
+                            联系电话
+                          </label>
+                          <p className="mt-1 font-medium text-[hsl(var(--color-text-primary))]">
+                            {order.customer.phone || '-'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 订单信息 */}
+                    <div className="rounded-lg border border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-tertiary))] p-4">
+                      <h3 className="mb-3 text-sm font-semibold text-[hsl(var(--color-text-primary))]">
+                        订单信息
+                      </h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-xs text-[hsl(var(--color-text-tertiary))]">
+                            退货模式
+                          </label>
+                          <p className="mt-1 font-medium text-[hsl(var(--color-text-primary))]">
+                            {RETURN_ORDER_MODE_LABELS[
+                              order.returnMode as keyof typeof RETURN_ORDER_MODE_LABELS
+                            ] || order.returnMode}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-xs text-[hsl(var(--color-text-tertiary))]">
+                            退货类型
+                          </label>
+                          <p className="mt-1 font-medium text-[hsl(var(--color-text-primary))]">
+                            {RETURN_ORDER_TYPE_LABELS[
+                              order.type as keyof typeof RETURN_ORDER_TYPE_LABELS
+                            ] || order.type}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-xs text-[hsl(var(--color-text-tertiary))]">
+                            处理方式
+                          </label>
+                          <p className="mt-1 font-medium text-[hsl(var(--color-text-primary))]">
+                            {RETURN_PROCESS_TYPE_LABELS[
+                              order.processType as keyof typeof RETURN_PROCESS_TYPE_LABELS
+                            ] || order.processType}
+                          </p>
+                        </div>
+                        {order.salesOrder && (
+                          <div>
+                            <label className="text-xs text-[hsl(var(--color-text-tertiary))]">
+                              关联销售订单
+                            </label>
+                            <p className="mt-1">
+                              <Button
+                                variant="link"
+                                className="h-auto p-0 text-[hsl(var(--color-primary))] hover:underline"
+                                onClick={() => {
+                                  if (!order.salesOrder) {
+                                    return;
+                                  }
+                                  router.push(
+                                    `/sales-orders/${order.salesOrder.id}`
+                                  );
+                                }}
+                              >
+                                {order.salesOrder.orderNumber}
+                              </Button>
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 其他信息 */}
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <label className="text-xs text-[hsl(var(--color-text-tertiary))]">
+                          退货原因
+                        </label>
+                        <p className="mt-1 text-[hsl(var(--color-text-secondary))]">
+                          {order.reason}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="text-xs text-[hsl(var(--color-text-tertiary))]">
+                          创建人
+                        </label>
+                        <p className="mt-1 text-[hsl(var(--color-text-secondary))]">
+                          {order.user.name}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="text-xs text-[hsl(var(--color-text-tertiary))]">
+                          创建时间
+                        </label>
+                        <p className="mt-1 text-[hsl(var(--color-text-secondary))]">
+                          {formatDateTime(order.createdAt)}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="text-xs text-[hsl(var(--color-text-tertiary))]">
+                          更新时间
+                        </label>
+                        <p className="mt-1 text-[hsl(var(--color-text-secondary))]">
+                          {formatDateTime(order.updatedAt)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {order.remarks && (
+                      <div className="rounded-lg border border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] p-3">
+                        <label className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                          备注信息
+                        </label>
+                        <p className="mt-1 text-sm text-[hsl(var(--color-text-secondary))]">
+                          {order.remarks}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </DetailFoldSection>
           </div>
 
           {/* 金额汇总 */}
@@ -716,48 +746,49 @@ export function ReturnOrderDetailPageClient({
               </Card>
             )}
 
-            {/* 操作历史 */}
-            <Card>
-              <CardHeader>
-                <CardTitle>操作历史</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-3">
-                    <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">退货申请创建</p>
-                      <p className="text-muted-foreground text-xs">
-                        {formatDateTime(order.createdAt)}
-                      </p>
-                    </div>
-                  </div>
-                  {order.updatedAt !== order.createdAt && (
+            <DetailFoldSection
+              title="操作历史"
+              summary="创建、审核和状态变化记录默认收起。"
+            >
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="space-y-3">
                     <div className="flex items-center space-x-3">
-                      <div
-                        className={`h-2 w-2 rounded-full ${
-                          displayStatus.value === 'completed'
-                            ? 'bg-green-500'
-                            : displayStatus.value === 'rejected' ||
-                                displayStatus.value === 'cancelled'
-                              ? 'bg-red-500'
-                              : 'bg-yellow-500'
-                        }`}
-                      ></div>
+                      <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                       <div className="flex-1">
-                        <p className="text-sm font-medium">
-                          状态更新为：
-                          {displayStatus.label}
-                        </p>
+                        <p className="text-sm font-medium">退货申请创建</p>
                         <p className="text-muted-foreground text-xs">
-                          {formatDateTime(order.updatedAt)}
+                          {formatDateTime(order.createdAt)}
                         </p>
                       </div>
                     </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                    {order.updatedAt !== order.createdAt && (
+                      <div className="flex items-center space-x-3">
+                        <div
+                          className={`h-2 w-2 rounded-full ${
+                            displayStatus.value === 'completed'
+                              ? 'bg-green-500'
+                              : displayStatus.value === 'rejected' ||
+                                  displayStatus.value === 'cancelled'
+                                ? 'bg-red-500'
+                                : 'bg-yellow-500'
+                          }`}
+                        ></div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">
+                            状态更新为：
+                            {displayStatus.label}
+                          </p>
+                          <p className="text-muted-foreground text-xs">
+                            {formatDateTime(order.updatedAt)}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </DetailFoldSection>
           </div>
         </div>
       </div>

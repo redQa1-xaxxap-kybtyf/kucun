@@ -296,7 +296,9 @@ export function CategoryList({
             <TableRow className="bg-gray-50/50">
               <TableHead className="w-[360px]">分类信息</TableHead>
               <TableHead className="w-[80px]">排序</TableHead>
-              <TableHead className="w-[100px] whitespace-nowrap">产品数量</TableHead>
+              <TableHead className="w-[100px] whitespace-nowrap">
+                产品数量
+              </TableHead>
               <TableHead className="w-[120px]">状态</TableHead>
               <TableHead className="w-[150px]">创建时间</TableHead>
               <TableHead className="w-[150px]">更新时间</TableHead>
@@ -395,7 +397,7 @@ function CategoryMobileCard({
     category.level < 2 && category.status === 'active';
   const isAtMaxLevel = category.level >= 2;
   const addChildTitle = isAtMaxLevel
-    ? '最多支持3级分类'
+    ? '已到三级'
     : category.status !== 'active'
       ? '父级分类未启用，无法添加子分类'
       : '添加子分类';
@@ -433,7 +435,9 @@ function CategoryMobileCard({
           </div>
         </div>
 
-        <div className={`rounded-xl px-2 py-1 text-xs font-semibold ${style.bg} ${style.color}`}>
+        <div
+          className={`rounded-xl px-2 py-1 text-xs font-semibold ${style.bg} ${style.color}`}
+        >
           {style.badge}
         </div>
       </div>
@@ -667,9 +671,7 @@ function CategoryStatusCell({
           disabled={updatingStatusId === category.id}
           className="data-[state=checked]:bg-green-500"
         />
-        <span
-          className={`text-xs font-medium ${statusMeta.textClass}`}
-        >
+        <span className={`text-xs font-medium ${statusMeta.textClass}`}>
           {statusMeta.label}
         </span>
       </div>
@@ -695,7 +697,7 @@ function CategoryActionCell({
   const isAtMaxLevel = category.level >= 2;
 
   const addChildTitle = isAtMaxLevel
-    ? '最多支持3级分类'
+    ? '已到三级'
     : category.status !== 'active'
       ? '父级分类未启用，无法添加子分类'
       : '添加子分类';

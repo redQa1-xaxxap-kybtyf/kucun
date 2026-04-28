@@ -124,6 +124,37 @@ const UNIT_MAPPING: Record<string, string> = {
   ml: 'mL',
 };
 
+function OptionalFormSection({
+  title,
+  summary,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  summary: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <details
+      open={defaultOpen || undefined}
+      className="group bg-card rounded border"
+    >
+      <summary className="bg-muted/30 flex cursor-pointer list-none items-center justify-between gap-4 border-b px-3 py-2 text-sm font-medium [&::-webkit-details-marker]:hidden">
+        <span>{title}</span>
+        <span className="text-xs font-normal text-slate-500 group-open:hidden">
+          展开
+        </span>
+        <span className="hidden text-xs font-normal text-slate-500 group-open:inline">
+          收起
+        </span>
+      </summary>
+      <div className="space-y-3 p-3">{children}</div>
+      <p className="border-t px-3 py-2 text-xs text-slate-500">{summary}</p>
+    </details>
+  );
+}
+
 const coerceNumeric = (value: unknown): number => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -598,6 +629,7 @@ export function ERPSalesOrderForm({
   const feeItems = (form.watch('feeItems') ??
     EMPTY_FEE_ITEMS) as SalesOrderFeeItem[];
   const roundingAdjustment = Number(form.watch('roundingAdjustment') ?? 0);
+  const prepaymentAmount = Number(form.watch('prepaymentAmount') ?? 0);
   const sampleReceivableEnabled =
     !isSampleOrder || sampleSettlementType === 'CHARGEABLE';
 
@@ -1713,9 +1745,6 @@ export function ERPSalesOrderForm({
                         : autoOrderNumber || '正在生成...'}
                     </div>
                   </div>
-                  <p className="text-xs text-gray-500">
-                    {mode === 'edit' ? '编辑现有订单' : '保存时自动生成订单号'}
-                  </p>
                 </div>
 
                 <FormField
@@ -1747,9 +1776,6 @@ export function ERPSalesOrderForm({
                   <div className="rounded-md border bg-gray-50 px-3 py-1.5 text-sm text-gray-700">
                     {creationDisplayText}
                   </div>
-                  <p className="text-xs text-gray-500">
-                    这里显示建单时间，不能手动修改
-                  </p>
                 </div>
               </div>
 
@@ -1839,11 +1865,8 @@ export function ERPSalesOrderForm({
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="space-y-1">
                         <FormLabel className="text-sm font-semibold text-amber-900">
-                          作为样品单管理
+                          样品单
                         </FormLabel>
-                        <p className="text-xs leading-5 text-amber-800/80">
-                          开启后，这张单据会纳入样品统计，可按客户、月份和年度汇总样品数量与样品费。
-                        </p>
                       </div>
                       <FormControl>
                         <div className="flex items-center gap-3 rounded-md bg-white px-3 py-2 shadow-sm">
@@ -1872,9 +1895,6 @@ export function ERPSalesOrderForm({
                         <FormLabel className="text-sm font-semibold text-slate-800">
                           样品结算方式
                         </FormLabel>
-                        <p className="mt-1 text-xs leading-5 text-slate-600">
-                          免费样品默认不生成客户应收；收费样品在订单确认后会进入客户应收。
-                        </p>
                       </div>
                       <FormControl>
                         <RadioGroup
@@ -1895,9 +1915,6 @@ export function ERPSalesOrderForm({
                               <span className="block text-sm font-semibold text-emerald-900">
                                 {SAMPLE_SETTLEMENT_TYPE_LABELS.FREE}
                               </span>
-                              <span className="block text-xs leading-5 text-emerald-800/80">
-                                默认按免费处理，不生成应收，也不能使用客户预收款。
-                              </span>
                             </Label>
                           </div>
                           <div className="flex items-start gap-3 rounded-lg border border-sky-200 bg-sky-50/80 p-3 shadow-sm">
@@ -1912,9 +1929,6 @@ export function ERPSalesOrderForm({
                             >
                               <span className="block text-sm font-semibold text-sky-900">
                                 {SAMPLE_SETTLEMENT_TYPE_LABELS.CHARGEABLE}
-                              </span>
-                              <span className="block text-xs leading-5 text-sky-800/80">
-                                确认后会进入客户应收，适合有样品费或押金的场景。
                               </span>
                             </Label>
                           </div>
@@ -1940,9 +1954,7 @@ export function ERPSalesOrderForm({
                             {resolvedCustomer.address.trim()}
                           </span>
                         ) : (
-                          <span className="text-gray-400">
-                            该客户暂无地址，可在客户资料中维护
-                          </span>
+                          <span className="text-gray-400">暂无地址</span>
                         )
                       ) : (
                         <span className="text-gray-400">
@@ -1966,8 +1978,7 @@ export function ERPSalesOrderForm({
                     <Alert className="mb-3 border-amber-300 bg-amber-50">
                       <AlertCircle className="h-4 w-4 text-amber-600" />
                       <AlertDescription className="text-sm text-amber-800">
-                        <strong>提示：</strong>
-                        调货订单需要选择供应商才能添加产品。请先在下方选择供应商。
+                        请先选择供应商。
                       </AlertDescription>
                     </Alert>
                   )}
@@ -2002,9 +2013,6 @@ export function ERPSalesOrderForm({
                                   >
                                     {TRANSFER_MODE_LABELS.SUPPLIER_ONLY}
                                   </Label>
-                                  <p className="text-xs text-gray-500">
-                                    订单全部由供应商调货发出，本地仓无需参与。
-                                  </p>
                                 </div>
                               </div>
                               <div className="border-border flex items-start gap-2 rounded-md border bg-white p-3 shadow-sm">
@@ -2020,9 +2028,6 @@ export function ERPSalesOrderForm({
                                   >
                                     {TRANSFER_MODE_LABELS.MIXED}
                                   </Label>
-                                  <p className="text-xs text-gray-500">
-                                    本地仓与供应商共同完成发货，可在订单明细中拆分数量。
-                                  </p>
                                 </div>
                               </div>
                             </RadioGroup>
@@ -2105,43 +2110,35 @@ export function ERPSalesOrderForm({
             showInlineInventoryStatus={!isMobile}
           />
 
-          {/* 费用项管理 */}
-          <div className="bg-card rounded border">
-            <div className="bg-muted/30 border-b px-3 py-2">
-              <h3 className="text-sm font-medium">费用项管理</h3>
-            </div>
-            <div className="space-y-3 p-3">
-              <FeeItemsFormField
-                control={form.control}
+          <OptionalFormSection
+            title="费用"
+            summary="加工费、运费等特殊费用按需填写。"
+            defaultOpen={feeItems.length > 0}
+          >
+            <FeeItemsFormField control={form.control} disabled={isSubmitting} />
+          </OptionalFormSection>
+
+          <OptionalFormSection
+            title="预收款抵扣"
+            summary="客户有预收款时再展开抵扣。"
+            defaultOpen={prepaymentAmount > 0}
+          >
+            {sampleReceivableEnabled ? (
+              <PrepaymentSection
+                form={form}
+                customerId={form.watch('customerId')}
+                orderTotal={orderTotalWithFees}
                 disabled={isSubmitting}
               />
-            </div>
-          </div>
-
-          {/* 预收款抵扣 */}
-          <div className="bg-card rounded border">
-            <div className="bg-muted/30 border-b px-3 py-2">
-              <h3 className="text-sm font-medium">预收款抵扣</h3>
-            </div>
-            <div className="p-3">
-              {sampleReceivableEnabled ? (
-                <PrepaymentSection
-                  form={form}
-                  customerId={form.watch('customerId')}
-                  orderTotal={orderTotalWithFees}
-                  disabled={isSubmitting}
-                />
-              ) : (
-                <Alert className="border-emerald-200 bg-emerald-50/80">
-                  <AlertCircle className="h-4 w-4 text-emerald-600" />
-                  <AlertDescription className="text-sm text-emerald-800">
-                    免费样品单不计入应收，所以这里不能使用预收款。
-                    如果这张样品需要收费，请先把上方结算方式改成“收费样品”。
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
-          </div>
+            ) : (
+              <Alert className="border-emerald-200 bg-emerald-50/80">
+                <AlertCircle className="h-4 w-4 text-emerald-600" />
+                <AlertDescription className="text-sm text-emerald-800">
+                  免费样品单不使用预收款。
+                </AlertDescription>
+              </Alert>
+            )}
+          </OptionalFormSection>
 
           {/* ERP标准布局：汇总信息 */}
           <div className="bg-card rounded border">

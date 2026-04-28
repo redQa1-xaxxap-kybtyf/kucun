@@ -5,16 +5,9 @@ import type { UseFormReturn } from 'react-hook-form';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -56,7 +49,6 @@ export function CustomerExtendedInfoSection({
     <Card>
       <CardHeader>
         <CardTitle>扩展信息</CardTitle>
-        <CardDescription>客户的详细资料和业务信息</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div>
@@ -206,9 +198,6 @@ export function CustomerExtendedInfoSection({
                   {...field}
                 />
               </FormControl>
-              <FormDescription>
-                记录客户的特殊要求、合作历史等信息
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}

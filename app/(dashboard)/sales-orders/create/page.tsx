@@ -38,22 +38,23 @@ export default async function CreateSalesOrderPage({
 
   const [initialOrderNumber, duplicateSourceOrder, prefillCustomer] =
     await Promise.all([
-    generateSalesOrderNumber(),
-    copyFrom
-      ? (getSalesOrderById(copyFrom) as Promise<SalesOrder | null>)
-      : Promise.resolve(null),
-    !copyFrom && customerId
-      ? (getCustomerDetail(customerId)
-          .then(customer => ({
-            id: customer.id,
-            name: customer.name,
-            phone: customer.phone,
-            address: customer.address,
-          }))
-          .catch(() => null) as Promise<
-            Pick<Customer, 'id' | 'name' | 'phone' | 'address'> | null
-          >)
-      : Promise.resolve(null),
+      generateSalesOrderNumber(),
+      copyFrom
+        ? (getSalesOrderById(copyFrom) as Promise<SalesOrder | null>)
+        : Promise.resolve(null),
+      !copyFrom && customerId
+        ? (getCustomerDetail(customerId)
+            .then(customer => ({
+              id: customer.id,
+              name: customer.name,
+              phone: customer.phone,
+              address: customer.address,
+            }))
+            .catch(() => null) as Promise<Pick<
+            Customer,
+            'id' | 'name' | 'phone' | 'address'
+          > | null>)
+        : Promise.resolve(null),
     ]);
 
   const isDuplicating = Boolean(duplicateSourceOrder);
@@ -61,17 +62,17 @@ export default async function CreateSalesOrderPage({
   const cancelHref = isDuplicating
     ? withReturnTo(`/sales-orders/${duplicateSourceOrder?.id}`, returnTo)
     : (returnTo ??
-        (prefillCustomer ? `/customers/${prefillCustomer.id}` : '/sales-orders'));
+      (prefillCustomer ? `/customers/${prefillCustomer.id}` : '/sales-orders'));
   const pageTitle = isDuplicating
     ? '复制销售订单'
     : isCustomerPrefilled
       ? `为 ${prefillCustomer?.name} 新建销售订单`
       : '新建销售订单';
   const pageDescription = isDuplicating
-    ? `基于订单 ${duplicateSourceOrder?.orderNumber} 预填客户、明细和费用，可调整后保存为新订单`
+    ? `基于 ${duplicateSourceOrder?.orderNumber} 复制`
     : isCustomerPrefilled
-      ? '已自动带入客户信息，可以直接补充商品、费用和备注后保存'
-      : '创建新的销售订单';
+      ? '已带入客户，补充商品后保存'
+      : '选择客户和商品后保存';
 
   return (
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">

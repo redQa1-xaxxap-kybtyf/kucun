@@ -14,7 +14,6 @@ import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -174,9 +173,6 @@ export function QuickAddCustomerDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>快速添加客户</DialogTitle>
-          <DialogDescription>
-            填写客户基本信息，快速创建新客户记录
-          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>

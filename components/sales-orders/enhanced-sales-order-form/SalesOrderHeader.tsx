@@ -17,9 +17,7 @@ export function SalesOrderHeader({ onBack }: SalesOrderHeaderProps) {
       </Button>
       <div>
         <h1 className="text-3xl font-bold tracking-tight">新建销售订单</h1>
-        <p className="text-muted-foreground">
-          创建新的销售订单，支持完整的开票信息
-        </p>
+        <p className="text-muted-foreground">选择客户和商品后保存订单</p>
       </div>
     </div>
   );

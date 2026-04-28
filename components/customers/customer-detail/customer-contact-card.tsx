@@ -43,7 +43,7 @@ export function CustomerContactCard({
         <div className="mb-4">
           <h3 className="text-sm font-semibold text-slate-900">联系信息</h3>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2">
           <SectionItem
             icon={
               <IconBadge
@@ -68,6 +68,102 @@ export function CustomerContactCard({
               </span>
             }
           />
+        </div>
+
+        <div className="mt-5 flex items-start gap-3 border-t pt-4">
+          <IconBadge color="slate" icon={<MapPin className="h-3.5 w-3.5" />} />
+          <div className="flex-1">
+            <p className="text-xs font-medium text-slate-500">地址</p>
+            <p className="mt-1 text-sm font-medium text-slate-700">
+              {address || '未填写'}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <CustomerFoldSection
+        title="更多客户资料"
+        summary="客户类型、等级和行业按需展开查看。"
+      >
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <SectionItem
+            icon={
+              <IconBadge
+                color="amber"
+                icon={<Building2 className="h-3.5 w-3.5" />}
+              />
+            }
+            label="客户类型"
+            value={
+              <span className="font-bold text-slate-700">
+                {getCustomerTypeLabel(extendedInfo.customerType)}
+              </span>
+            }
+          />
+          <SectionItem
+            icon={
+              <IconBadge
+                color="orange"
+                icon={<Star className="h-3.5 w-3.5" />}
+              />
+            }
+            label="客户等级"
+            value={
+              <span className="font-bold text-slate-700">
+                {extendedInfo.level ? `${extendedInfo.level} 级客户` : '标准级'}
+              </span>
+            }
+          />
+          <SectionItem
+            icon={
+              <IconBadge
+                color="teal"
+                icon={<Briefcase className="h-3.5 w-3.5" />}
+              />
+            }
+            label="所属行业"
+            value={
+              <span className="font-bold text-slate-700">
+                {extendedInfo.industry || '通用贸易'}
+              </span>
+            }
+          />
+        </div>
+      </CustomerFoldSection>
+
+      <CustomerFoldSection
+        title="结算与开票资料"
+        summary="信用额度、结算条款、邮箱和税号从首屏移出，减少开单干扰。"
+      >
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <SectionItem
+            icon={
+              <IconBadge
+                color="emerald"
+                icon={<Wallet className="h-3.5 w-3.5" />}
+              />
+            }
+            label="信用额度"
+            value={
+              <span className="font-mono font-semibold text-emerald-600">
+                {formatCurrency(extendedInfo.creditLimit || 0)}
+              </span>
+            }
+          />
+          <SectionItem
+            icon={
+              <IconBadge
+                color="blue"
+                icon={<CreditCard className="h-3.5 w-3.5" />}
+              />
+            }
+            label="结算条款"
+            value={
+              <span className="font-bold text-slate-700">
+                {extendedInfo.paymentTerms || '现结/预付'}
+              </span>
+            }
+          />
           <SectionItem
             icon={
               <IconBadge
@@ -82,133 +178,29 @@ export function CustomerContactCard({
               </span>
             }
           />
+          <SectionItem
+            icon={
+              <IconBadge
+                color="slate"
+                icon={<FileText className="h-3.5 w-3.5" />}
+              />
+            }
+            label="税号"
+            value={
+              <span className="font-mono text-sm font-bold text-slate-700">
+                {extendedInfo.taxNumber || '未填写'}
+              </span>
+            }
+          />
         </div>
+      </CustomerFoldSection>
 
-        <div className="mt-5 flex items-start gap-3 border-t pt-4">
-          <IconBadge color="slate" icon={<MapPin className="h-3.5 w-3.5" />} />
-          <div className="flex-1">
-            <p className="text-xs font-medium text-slate-500">地址</p>
-            <p className="mt-1 text-sm font-medium text-slate-700">
-              {address || '未填写'}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* 属性与财务分区 */}
-      <div className="grid gap-4 md:grid-cols-2">
-        {/* 客户画像属性 */}
-        <section className="rounded-lg border bg-white p-4 sm:p-5">
-          <div className="mb-4">
-            <h3 className="text-sm font-semibold text-slate-900">客户信息</h3>
-          </div>
-          <div className="grid gap-4">
-            <SectionItem
-              icon={
-                <IconBadge
-                  color="amber"
-                  icon={<Building2 className="h-3.5 w-3.5" />}
-                />
-              }
-              label="客户类型"
-              value={
-                <span className="font-bold text-slate-700">
-                  {getCustomerTypeLabel(extendedInfo.customerType)}
-                </span>
-              }
-            />
-            <SectionItem
-              icon={
-                <IconBadge
-                  color="orange"
-                  icon={<Star className="h-3.5 w-3.5" />}
-                />
-              }
-              label="客户等级"
-              value={
-                <span className="font-bold text-slate-700">
-                  {extendedInfo.level
-                    ? `${extendedInfo.level} 级客户`
-                    : '标准级'}
-                </span>
-              }
-            />
-            <SectionItem
-              icon={
-                <IconBadge
-                  color="teal"
-                  icon={<Briefcase className="h-3.5 w-3.5" />}
-                />
-              }
-              label="所属行业"
-              value={
-                <span className="font-bold text-slate-700">
-                  {extendedInfo.industry || '通用贸易'}
-                </span>
-              }
-            />
-          </div>
-        </section>
-
-        {/* 财务授信用档案 */}
-        <section className="rounded-lg border bg-white p-4 sm:p-5">
-          <div className="mb-4">
-            <h3 className="text-sm font-semibold text-slate-900">结算信息</h3>
-          </div>
-          <div className="grid gap-4">
-            <SectionItem
-              icon={
-                <IconBadge
-                  color="emerald"
-                  icon={<Wallet className="h-3.5 w-3.5" />}
-                />
-              }
-              label="信用额度"
-              value={
-                <span className="font-mono font-semibold text-emerald-600">
-                  {formatCurrency(extendedInfo.creditLimit || 0)}
-                </span>
-              }
-            />
-            <SectionItem
-              icon={
-                <IconBadge
-                  color="blue"
-                  icon={<CreditCard className="h-3.5 w-3.5" />}
-                />
-              }
-              label="结算条款"
-              value={
-                <span className="font-bold text-slate-700">
-                  {extendedInfo.paymentTerms || '现结/预付'}
-                </span>
-              }
-            />
-            <SectionItem
-              icon={
-                <IconBadge
-                  color="slate"
-                  icon={<FileText className="h-3.5 w-3.5" />}
-                />
-              }
-              label="税号"
-              value={
-                <span className="font-mono text-sm font-bold text-slate-700">
-                  {extendedInfo.taxNumber || '未填写'}
-                </span>
-              }
-            />
-          </div>
-        </section>
-      </div>
-
-      {/* 备注与时间印戳 */}
-      <section className="rounded-lg border bg-white p-4 sm:p-5">
+      <CustomerFoldSection
+        title="备注和系统信息"
+        summary="内部备注、创建时间和更新时间默认收起。"
+      >
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-2xl flex-1">
-            <div className="mb-4">
-              <h3 className="text-sm font-semibold text-slate-900">补充备注</h3>
-            </div>
             <p className="text-sm leading-relaxed text-slate-600">
               {extendedInfo.notes || '暂无补充说明'}
             </p>
@@ -228,8 +220,34 @@ export function CustomerContactCard({
             </div>
           </div>
         </div>
-      </section>
+      </CustomerFoldSection>
     </div>
+  );
+}
+
+function CustomerFoldSection({
+  title,
+  summary,
+  children,
+}: {
+  title: string;
+  summary: string;
+  children: ReactNode;
+}) {
+  return (
+    <details className="group rounded-lg border bg-white px-4 py-3 sm:px-5">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-semibold text-slate-900 [&::-webkit-details-marker]:hidden">
+        <span>{title}</span>
+        <span className="text-xs font-medium text-slate-400 group-open:hidden">
+          展开
+        </span>
+        <span className="hidden text-xs font-medium text-slate-400 group-open:inline">
+          收起
+        </span>
+      </summary>
+      <div className="mt-4 border-t pt-4">{children}</div>
+      <p className="mt-3 text-xs text-slate-400">{summary}</p>
+    </details>
   );
 }
 

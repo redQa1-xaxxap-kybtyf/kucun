@@ -226,7 +226,7 @@ export function CustomersPageClient({
   return (
     <PageContainer
       title="客户档案"
-      description="维护客户名称、电话、地址，快速查看销售、退货和应收情况。"
+      description="维护客户、电话和地址。"
       icon={<Users className="h-6 w-6 text-white" />}
       actions={
         <Button size="lg" asChild className="h-11 rounded-lg px-5">

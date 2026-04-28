@@ -170,14 +170,14 @@ export const SalesOrderSearchToolbar = React.memo<SalesOrderSearchToolbarProps>(
       () => [
         {
           key: 'historyOrders',
-          label: '历史销售记录',
+          label: '历史',
           icon: <Clock className="mr-1 h-3 w-3" />,
           active: isHistoryView,
           onClick: handleToggleHistoryOrders,
         },
         {
           key: 'transferOrders',
-          label: '调货订单',
+          label: '调货',
           icon: <Truck className="mr-1 h-3 w-3" />,
           active: queryParams.orderType === 'TRANSFER',
           onClick: handleToggleTransferOrders,
@@ -200,7 +200,7 @@ export const SalesOrderSearchToolbar = React.memo<SalesOrderSearchToolbarProps>(
           ? [
               {
                 key: 'includeTest',
-                label: '显示测试',
+                label: '测试',
                 icon: <Eye className="mr-1 h-3 w-3" />,
                 active: !!queryParams.includeTest,
                 onClick: handleToggleIncludeTest,
@@ -209,7 +209,7 @@ export const SalesOrderSearchToolbar = React.memo<SalesOrderSearchToolbarProps>(
           : []),
         {
           key: 'includeVoided',
-          label: '显示作废',
+          label: '作废',
           icon: <Ban className="mr-1 h-3 w-3" />,
           active: !!queryParams.includeVoided,
           onClick: handleToggleIncludeVoided,

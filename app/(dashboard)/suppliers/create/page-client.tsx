@@ -10,17 +10,10 @@ import { useForm } from 'react-hook-form';
 import { ActionBar } from '@/components/layouts/action-bar';
 import { PageContainer } from '@/components/layouts/page-container';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -141,9 +134,6 @@ export default function CreateSupplierPageClient() {
               <Building2 className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
               基本信息
             </CardTitle>
-            <CardDescription>
-              供应商的基本信息，包括名称、联系方式等
-            </CardDescription>
           </CardHeader>
           <CardContent className="p-6">
             <Form {...form}>
@@ -167,9 +157,6 @@ export default function CreateSupplierPageClient() {
                           value={field.value || ''} // 确保显示空字符串而不是 undefined
                         />
                       </FormControl>
-                      <FormDescription>
-                        供应商的正式名称，最多100个字符
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -190,9 +177,6 @@ export default function CreateSupplierPageClient() {
                           value={field.value || ''} // 确保显示空字符串而不是 undefined
                         />
                       </FormControl>
-                      <FormDescription>
-                        供应商的联系电话，支持手机和固话格式
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -214,9 +198,6 @@ export default function CreateSupplierPageClient() {
                           value={field.value || ''} // 确保显示空字符串而不是 undefined
                         />
                       </FormControl>
-                      <FormDescription>
-                        供应商的详细地址，最多200个字符
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

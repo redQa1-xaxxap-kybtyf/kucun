@@ -379,17 +379,14 @@ export function ProductImportDialog({
       <DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>批量导入产品基础信息</DialogTitle>
-          <DialogDescription>
-            支持 Excel
-            或文本表格文件。建议先下载模板填写，再先做导入检查，再执行正式导入。
-          </DialogDescription>
+          <DialogDescription>先下载模板，检查通过后导入。</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <Alert>
             <FileSpreadsheet className="h-4 w-4" />
             <AlertDescription>
-              模板字段：产品编码、产品名称、规格、产品分类、厚度(mm)、状态、描述。产品分类只填一列：一级分类填“瓷砖”，二级分类填“瓷砖/抛光砖”，三级分类填“瓷砖/抛光砖/柔抛”，直接从模板里的“分类参考”复制即可。
+              产品分类可直接从模板里的“分类参考”复制。
             </AlertDescription>
           </Alert>
 
