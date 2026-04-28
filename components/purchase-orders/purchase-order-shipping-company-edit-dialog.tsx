@@ -19,7 +19,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -161,13 +160,10 @@ function ShippingCompanyField({
           <FormControl>
             <Input
               {...field}
-              placeholder="请输入船运公司名称，例如：HE YUAN SHUN 98"
+              placeholder="请输入船运公司名称"
               disabled={disabled}
             />
           </FormControl>
-          <FormDescription>
-            输入负责运输的船运公司名称，便于后续到货跟踪。
-          </FormDescription>
           <FormMessage />
         </FormItem>
       )}
@@ -199,9 +195,7 @@ function PurchaseOrderShippingCompanyEditDialogView({
           <DialogTitle className="flex items-center gap-2">
             <Ship className="h-5 w-5" /> 编辑船运公司
           </DialogTitle>
-          <DialogDescription>
-            请更新采购订单 {orderNumber} 的船运公司信息。
-          </DialogDescription>
+          <DialogDescription>采购订单 {orderNumber}</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>

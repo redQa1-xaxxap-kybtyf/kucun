@@ -128,7 +128,7 @@ function InitialStockPreviewTable({
         <div className="text-sm font-medium text-slate-900">可导入明细</div>
         {getDefaultQuantityUnitCount(result) > 0 ? (
           <div className="text-xs text-amber-700">
-            未填写数量单位的旧模板行，系统已按“片”处理。建议后续统一填写“件”或“片”，避免再把件数当片数。
+            未填写单位的行已按“片”处理。
           </div>
         ) : null}
       </div>
@@ -285,11 +285,10 @@ function InitialStockDuplicateTable({
   return (
     <div className="space-y-2">
       <div className="space-y-1">
-        <div className="text-sm font-medium text-amber-700">
-          以下行不会导入
-        </div>
+        <div className="text-sm font-medium text-amber-700">以下行不会导入</div>
         <div className="text-xs text-amber-700">
-          系统按“产品编码 + 色号 + 批次号”判断重复；跳过只是不导入，不会自动合并数量。
+          系统按“产品编码 + 色号 +
+          批次号”判断重复；跳过只是不导入，不会自动合并数量。
         </div>
       </div>
       <div className="max-h-64 overflow-auto rounded-md border border-amber-200">
@@ -541,9 +540,7 @@ export function InitialStockImportDialog({
             期初库存批量导入
           </DialogTitle>
           <DialogDescription className="text-sm text-slate-600">
-            正式导入只会导入产品库中已存在且检查通过的产品。建议优先下载产品库模板，直接填写批次、装箱数、本批次实际每件重量、数量、数量单位、单位成本、供应商和库位；数量单位填“件”时，数量支持最多
-            3
-            位小数，并会按装箱数自动换算成片，单位成本会按件价自动折算成单片成本；按片导入时若填写了本批次实际每件重量但当前行未填装箱数，系统会优先尝试使用产品管理里的默认装箱数保存该批次重量；旧模板里的“单片成本”列也继续兼容。
+            先下载模板，填写批次、数量、单位成本、供应商和库位，上传后先检查再导入。
           </DialogDescription>
         </DialogHeader>
 
@@ -551,12 +548,7 @@ export function InitialStockImportDialog({
           <Alert className="border-blue-200 bg-blue-50/80 text-blue-900">
             <PackageSearch className="h-4 w-4" />
             <AlertDescription className="leading-6">
-              推荐流程：先点“导出产品库模板”，系统会自动带出产品编码、名称、规格、色号；上传后先做导入检查，再正式导入。一行只表示一个“产品编码
-              + 色号 +
-              批次”组合，同编号多个色号或多个批次请拆成多行。数量单位建议明确填写“件”或“片”，其中“件”支持最多
-              3
-              位小数，会自动按装箱数换算成片，并把单位成本按件价折算成单片成本；按片导入时，如果填写了本批次实际每件重量但当前行未填装箱数，系统会优先尝试使用产品管理里的默认装箱数保存该批次重量，没有默认装箱数时会提示补充装箱数；供应商按名称精确匹配，不填也可导入。遇到重复批次、已有库存或错误行时，系统会自动跳过并给出明细。
-              跳过只是不导入，不会把重复行的数量自动合并。
+              一行对应一个产品、色号和批次。重复批次或错误行会跳过，并在检查结果里显示明细。
             </AlertDescription>
           </Alert>
 
@@ -657,7 +649,7 @@ export function InitialStockImportDialog({
                     {result.importBatchId}
                   </div>
                   <div className="text-xs text-blue-700/80">
-                    如果这次导入发现数量录错，可以直接按这个批次统一更正，或者在没进入后续业务前整批删除重导。
+                    可按本批次统一更正。
                   </div>
                 </div>
 

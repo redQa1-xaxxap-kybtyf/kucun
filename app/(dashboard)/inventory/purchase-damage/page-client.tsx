@@ -357,7 +357,7 @@ export function PurchaseDamageLedgerPageClient({
     <div className="flex h-full flex-col gap-4 overflow-auto p-4 xl:p-6">
       <PageHeader
         title="采购到货破损台账"
-        description="采购入库登记了破损后，系统会自动落这里。报工厂赔付和内部承担可以分开跟进，不用再翻单据。"
+        description="跟进到货破损和赔付。"
         icon={<AlertTriangle className="h-5 w-5" />}
         iconBgColor="hsl(var(--color-warning))"
         actions={

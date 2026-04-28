@@ -17,7 +17,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -139,20 +138,10 @@ function ShippingCompanyField({
           <FormControl>
             <Input
               {...field}
-              placeholder="请输入船公司名称，例如：HE YUAN SHUN 98"
+              placeholder="请输入船公司名称"
               disabled={disabled || isLocked}
             />
           </FormControl>
-          <FormDescription>
-            {isLocked ? (
-              <span className="text-[hsl(var(--color-error))]">
-                ⚠️
-                订单已进行物流查询，不允许修改船运公司。如需修改，请联系管理员。
-              </span>
-            ) : (
-              '输入负责运输的船公司名称，用于运输追踪和查询'
-            )}
-          </FormDescription>
           <FormMessage />
         </FormItem>
       )}

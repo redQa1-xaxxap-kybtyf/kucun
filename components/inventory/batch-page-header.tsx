@@ -27,7 +27,7 @@ export function BatchPageHeader({
               批次规格管理
             </h1>
             <p className="max-w-md text-sm leading-relaxed font-medium text-slate-500">
-              在这里维护每个批次的每件片数和重量，方便入库、出库和库存核对时直接使用。
+              维护批次片数和重量。
             </p>
           </div>
         </div>

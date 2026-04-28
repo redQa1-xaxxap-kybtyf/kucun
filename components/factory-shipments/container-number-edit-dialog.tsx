@@ -17,7 +17,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -140,9 +139,6 @@ function ContainerNumberField({
               disabled={disabled}
             />
           </FormControl>
-          <FormDescription>
-            输入货运公司提供的集装箱号码，用于运输追踪
-          </FormDescription>
           <FormMessage />
         </FormItem>
       )}

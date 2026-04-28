@@ -153,7 +153,7 @@ export function BatchPurchaseInboundSection({
       <Alert className="border-blue-200 bg-blue-50">
         <AlertCircle className="h-4 w-4 text-blue-600" />
         <AlertDescription className="text-sm text-blue-800">
-          同一供应商一次到多种货时，可以在这里一起录入；每件片数、重量、破损这些内容按需要再补。
+          同一供应商多种货，可一起录入。
         </AlertDescription>
       </Alert>
 

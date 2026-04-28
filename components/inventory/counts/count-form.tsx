@@ -14,7 +14,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -399,7 +398,6 @@ export function CountForm({
                       maxLength={1000}
                     />
                   </FormControl>
-                  <FormDescription>最多 1000 个字符</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

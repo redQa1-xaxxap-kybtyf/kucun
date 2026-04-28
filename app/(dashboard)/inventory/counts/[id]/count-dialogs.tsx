@@ -98,9 +98,6 @@ export function AddProductDialog({
               autoFocus
             />
           </div>
-          <p className="text-muted-foreground text-xs">
-            将根据所选产品当前的库存记录按批次自动生成盘点明细，支持直接输入名称后按回车选择。
-          </p>
         </div>
         <DialogFooter>
           <Button

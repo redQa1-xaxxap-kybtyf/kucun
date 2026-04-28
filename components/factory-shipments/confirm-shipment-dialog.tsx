@@ -20,7 +20,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -195,9 +194,6 @@ function ContainerNumberField({
               disabled={disabled}
             />
           </FormControl>
-          <FormDescription>
-            确认发货时必须填写货运公司提供的集装箱号
-          </FormDescription>
           <FormMessage />
         </FormItem>
       )}
@@ -223,14 +219,11 @@ function ShippingCompanyField({
           </FormLabel>
           <FormControl>
             <Input
-              placeholder="如已知,请填写船运公司"
+              placeholder="请输入船运公司"
               {...field}
               disabled={disabled}
             />
           </FormControl>
-          <FormDescription>
-            填写船运公司信息可以更好地追踪货物状态,可稍后补充
-          </FormDescription>
           <FormMessage />
         </FormItem>
       )}
@@ -259,7 +252,6 @@ function EstimatedArrivalField({
               disabled={disabled}
             />
           </FormControl>
-          <FormDescription>可选,如有预计时间请填写</FormDescription>
           <FormMessage />
         </FormItem>
       )}
@@ -319,10 +311,7 @@ function ConfirmShipmentDialogView({
           <DialogTitle className="flex items-center gap-2">
             <Ship className="h-5 w-5" /> 确认发货
           </DialogTitle>
-          <DialogDescription>
-            请填写集装箱号码完成确认。如已知船运公司，可一并填写，方便后续追踪（订单{' '}
-            {orderNumber}）。
-          </DialogDescription>
+          <DialogDescription>订单 {orderNumber}</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>

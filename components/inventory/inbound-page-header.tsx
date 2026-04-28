@@ -35,7 +35,7 @@ export function InboundPageHeader() {
                 入库记录
               </h1>
               <p className="text-sm font-medium text-slate-500">
-                查看仓库入库流水，核对库存账实是否相符
+                查看仓库入库流水
               </p>
             </div>
           </div>

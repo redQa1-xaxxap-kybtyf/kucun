@@ -197,7 +197,7 @@ export function ManualDamageLedgerPageClient({
     <div className="flex h-full flex-col gap-4 overflow-auto p-4 xl:p-6">
       <PageHeader
         title="手工报损台账"
-        description="仓内破损、报废、丢失在扣减库存后，会自动登记到这里。后续是内部承担还是找工厂赔付，都在这里跟进。"
+        description="跟进仓内报损和处理结果。"
         icon={<AlertTriangle className="h-5 w-5" />}
         iconBgColor="hsl(var(--color-warning))"
         actions={

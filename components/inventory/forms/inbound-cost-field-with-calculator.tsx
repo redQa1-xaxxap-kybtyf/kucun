@@ -21,7 +21,6 @@ import { type UseFormReturn } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import {
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -196,9 +195,6 @@ export function InboundCostFieldWithCalculator({
               value={field.value ?? ''}
             />
           </FormControl>
-          <FormDescription className="text-xs text-gray-500">
-            请填写每片的成本。如不确定，可使用&ldquo;辅助计算&rdquo;功能
-          </FormDescription>
           <FormMessage />
         </FormItem>
       )}

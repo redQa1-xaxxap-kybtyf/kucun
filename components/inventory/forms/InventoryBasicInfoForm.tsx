@@ -1,14 +1,8 @@
 import { Package } from 'lucide-react';
-import { useWatch, type Control, type Path } from 'react-hook-form';
+import { type Control, type Path } from 'react-hook-form';
 
 import { ProductSelector } from '@/components/products/product-selector';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   FormControl,
   FormField,
@@ -50,19 +44,6 @@ export function InventoryBasicInfoForm<M extends OperationMode>({
   typeOptions,
   isLoading,
 }: InventoryBasicInfoFormProps<M>) {
-  const outboundControl = control as unknown as Control<
-    FormValuesByMode['outbound']
-  >;
-  const watchedOutboundType = useWatch({
-    control: outboundControl,
-    name: 'type',
-  });
-  const outboundType = mode === 'outbound' ? watchedOutboundType : undefined;
-  const outboundTypeDescription =
-    outboundType && OUTBOUND_TYPE_DESCRIPTION_MAP[outboundType]
-      ? OUTBOUND_TYPE_DESCRIPTION_MAP[outboundType]
-      : null;
-
   return (
     <Card>
       <CardHeader>
@@ -70,15 +51,9 @@ export function InventoryBasicInfoForm<M extends OperationMode>({
           <Package className="mr-2 h-5 w-5" />
           基础信息
         </CardTitle>
-        <CardDescription>选择产品并填写基础信息</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {renderOperationTypeField({ control, mode, typeOptions, isLoading })}
-        {mode === 'outbound' && outboundTypeDescription ? (
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">
-            {outboundTypeDescription}
-          </div>
-        ) : null}
         <FormField
           control={control}
           name={'productId' as Path<FormValuesByMode[M]>}
@@ -102,18 +77,6 @@ export function InventoryBasicInfoForm<M extends OperationMode>({
     </Card>
   );
 }
-
-const OUTBOUND_TYPE_DESCRIPTION_MAP: Record<string, string> = {
-  normal_outbound:
-    '用于普通手工出库或历史补录。若是客户样品，请选“样品出库”；若是展厅领样或内部消耗，请选“内部领用”。',
-  sales_outbound:
-    '用于没有挂销售单、但已经确定要发给客户的销售出库，需要选择客户。',
-  sample_outbound: '用于客户样品领取，会纳入样品统计，需要选择客户。',
-  internal_use_outbound:
-    '用于展厅摆样、内部领料、内部送样等场景，不需要选择客户。',
-  adjust_outbound:
-    '仅用于特殊台账修正。常规破损、丢失或报废，建议走“报损处理”。',
-};
 
 function renderOperationTypeField<M extends OperationMode>({
   control,

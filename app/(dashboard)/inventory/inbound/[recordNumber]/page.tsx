@@ -182,9 +182,7 @@ function OperationRecordCard({
           </div>
         )}
         <div className="grid gap-1 sm:grid-cols-[100px_1fr] sm:items-center sm:gap-2">
-          <span className="text-[11px] font-semibold text-slate-400">
-            库位
-          </span>
+          <span className="text-[11px] font-semibold text-slate-400">库位</span>
           <span className="font-bold text-slate-700">
             {record.location || '—'}
           </span>
@@ -280,9 +278,6 @@ function BatchTraceCard({ batchNumber }: { batchNumber: string }) {
           </Link>
         </Button>
       </CardHeader>
-      <CardContent className="p-4 text-xs text-slate-500 sm:p-6">
-        批次流水用于核对单个产品批次的完整库存变化。
-      </CardContent>
     </Card>
   );
 }

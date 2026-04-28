@@ -74,8 +74,8 @@ export default function InventoryAdjustPage() {
           title="库存调整"
           description={
             initialValues?.reason === 'damage_loss'
-              ? '处理仓内破损、报废和损耗，扣减库存后会自动登记到手工报损台账'
-              : '查看当前库存状态并进行调整操作'
+              ? '处理破损、报废和损耗。'
+              : '调整当前库存。'
           }
           icon={<PackagePlus className="h-6 w-6 text-white" />}
           iconBgColor="hsl(var(--color-success))"

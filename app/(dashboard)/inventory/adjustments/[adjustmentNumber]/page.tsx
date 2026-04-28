@@ -65,8 +65,12 @@ function DetailRow({
   );
 }
 
-function getAdjustmentPiecesPerUnit(adjustment: InventoryAdjustmentWithBalance) {
-  return adjustment.batchPiecesPerUnit ?? adjustment.product?.piecesPerUnit ?? 0;
+function getAdjustmentPiecesPerUnit(
+  adjustment: InventoryAdjustmentWithBalance
+) {
+  return (
+    adjustment.batchPiecesPerUnit ?? adjustment.product?.piecesPerUnit ?? 0
+  );
 }
 
 function StatCard({
@@ -298,9 +302,6 @@ function BatchTraceCard({ batchNumber }: { batchNumber: string }) {
           <CardTitle className="text-base text-[hsl(var(--color-text-primary))]">
             批次追溯
           </CardTitle>
-          <p className="text-xs text-[hsl(var(--color-text-secondary))]">
-            跳转至批次库存流水，查看该批次完整的出入库轨迹。
-          </p>
         </div>
         <Button variant="outline" asChild>
           <Link
@@ -310,9 +311,6 @@ function BatchTraceCard({ batchNumber }: { batchNumber: string }) {
           </Link>
         </Button>
       </CardHeader>
-      <CardContent className="pt-6 text-sm text-[hsl(var(--color-text-secondary))]">
-        批次流水汇总了入库、出库和调整记录，方便核对库存变化。
-      </CardContent>
     </Card>
   );
 }

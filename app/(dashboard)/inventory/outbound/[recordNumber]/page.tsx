@@ -161,9 +161,6 @@ function BatchHistoryCard({ batchNumber }: { batchNumber?: string | null }) {
           <CardTitle className="text-base text-[hsl(var(--color-text-primary))]">
             批次追溯
           </CardTitle>
-          <p className="text-xs text-[hsl(var(--color-text-secondary))]">
-            快速查看该批次的入库、出库、调整记录。
-          </p>
         </div>
         <Button variant="outline" asChild>
           <Link
@@ -173,9 +170,6 @@ function BatchHistoryCard({ batchNumber }: { batchNumber?: string | null }) {
           </Link>
         </Button>
       </CardHeader>
-      <CardContent className="pt-6 text-sm text-[hsl(var(--color-text-secondary))]">
-        使用批次历史可以完整追踪库存去向，辅助库存稽核与复盘。
-      </CardContent>
     </Card>
   );
 }

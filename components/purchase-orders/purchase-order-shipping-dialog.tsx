@@ -19,7 +19,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -182,10 +181,7 @@ export function PurchaseOrderShippingDialog({
 
   const dialogTitle =
     mode === 'confirm_shipment' ? '确认仓库发货' : '补充船公司信息';
-  const dialogDescription =
-    mode === 'confirm_shipment'
-      ? `请填写集装箱号完成确认。如已知船运公司，可一并填写，方便后续查询运输状态（订单 ${orderNumber}）。`
-      : `请补充订单 ${orderNumber} 的船公司信息，用于自动跟踪运输状态`;
+  const dialogDescription = `订单 ${orderNumber}`;
 
   return (
     <Dialog open={open} onOpenChange={handleCloseAttempt}>
@@ -208,7 +204,6 @@ export function PurchaseOrderShippingDialog({
             <ShippingCompanyField
               form={form}
               required={requireShipping}
-              mode={mode}
               disabled={isSubmitting}
             />
             <EstimatedArrivalField form={form} disabled={isSubmitting} />
@@ -272,19 +267,12 @@ function ContainerNumberField({
 function ShippingCompanyField({
   form,
   required,
-  mode,
   disabled,
 }: {
   form: UseFormReturn<PurchaseOrderShippingFormValues>;
   required: boolean;
-  mode: ShippingDialogMode;
   disabled?: boolean;
 }) {
-  const description =
-    mode === 'confirm_shipment'
-      ? '填写船运公司有助于后续自动查询运输状态，如暂时不清楚可以先留空，之后在运输中阶段补充。'
-      : '运输中及之后的状态必须填写船运公司信息，用于自动查询和核对运输状态。';
-
   return (
     <FormField
       control={form.control}
@@ -302,12 +290,11 @@ function ShippingCompanyField({
           <FormControl>
             <Input
               {...field}
-              placeholder="请输入船运公司名称，例如：马士基、中远海运等"
+              placeholder="请输入船运公司名称"
               disabled={disabled}
               value={field.value ?? ''}
             />
           </FormControl>
-          <FormDescription>{description}</FormDescription>
           <FormMessage />
         </FormItem>
       )}
@@ -336,7 +323,6 @@ function EstimatedArrivalField({
               disabled={disabled}
             />
           </FormControl>
-          <FormDescription>可选，如已知预计到港时间请填写</FormDescription>
           <FormMessage />
         </FormItem>
       )}

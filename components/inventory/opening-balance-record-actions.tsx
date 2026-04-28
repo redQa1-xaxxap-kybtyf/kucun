@@ -104,15 +104,11 @@ function formatAmount(value?: number) {
 }
 
 function getUnitCostInputPlaceholder(mode: OpeningBalanceUnitCostEntryMode) {
-  return mode === 'unit'
-    ? '按件录入时可直接填 96，也支持 24片价'
-    : '支持 24、24片价、96元/件';
+  return mode === 'unit' ? '输入件价' : '输入片价';
 }
 
 function getUnitCostInputHelperText(mode: OpeningBalanceUnitCostEntryMode) {
-  return mode === 'unit'
-    ? '现在按件价填写。直接填 96 会自动换算成单片成本；如果这一条本来就是片价，也可以写成 24片价。'
-    : '现在按片价填写。直接填 24 会按单片成本保存；如果你手里拿到的是件价，也可以写成 96元/件 自动换算。';
+  return mode === 'unit' ? '按件价填写。' : '按片价填写。';
 }
 
 function parseCorrectedQuantity(input: string, piecesPerUnit: number) {
@@ -362,7 +358,7 @@ export function OpeningBalanceRecordActions({
           <DialogHeader>
             <DialogTitle>更正期初库存</DialogTitle>
             <DialogDescription>
-              这里直接修改这条期初记录，适合处理刚导入就发现录错、还没被后续单据用到的情况。数量和成本都可以单独改。
+              更正这条期初记录的数量或成本。
             </DialogDescription>
           </DialogHeader>
 
@@ -370,7 +366,7 @@ export function OpeningBalanceRecordActions({
             <Alert className="border-blue-200 bg-blue-50/80 text-blue-900">
               <RotateCcw className="h-4 w-4" />
               <AlertDescription className="leading-6">
-                如果这条期初记录已经被出库、销售或其他后续单据用到，系统会自动拦住，避免把后面的账带乱。
+                已被后续业务使用时不能修改。
               </AlertDescription>
             </Alert>
 
@@ -430,7 +426,7 @@ export function OpeningBalanceRecordActions({
               />
               <div className="text-xs text-slate-500">
                 {piecesPerUnit > 0
-                  ? `系统会按 ${piecesPerUnit} 片/件帮你换算。例如 115件 会换算成 ${115 * piecesPerUnit}片。`
+                  ? `按 ${piecesPerUnit} 片/件换算。`
                   : '该记录没有装箱数，只能按片数更正。'}
               </div>
             </div>
@@ -573,8 +569,7 @@ export function OpeningBalanceRecordActions({
             <AlertDialogDescription className="leading-6">
               这会删除原始期初入库记录 <strong>{record.recordNumber}</strong>。
               <br />
-              只有当这条记录还没有被后续业务使用时，系统才会允许删除。
-              删除后建议立即按正确数量重新导入。
+              未被后续业务使用时才允许删除。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

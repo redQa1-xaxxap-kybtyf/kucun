@@ -48,9 +48,6 @@ export default function CreateFactoryShipmentPage() {
             <h1 className="text-2xl font-semibold tracking-tight text-[hsl(var(--color-text-primary))]">
               新建厂家发货单
             </h1>
-            <p className="mt-1 text-sm text-[hsl(var(--color-text-secondary))]">
-              按单据顺序填写客户、明细与结算信息
-            </p>
           </div>
           <Button variant="outline" asChild className="w-full sm:w-auto">
             <Link href="/factory-shipments">

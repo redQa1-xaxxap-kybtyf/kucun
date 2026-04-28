@@ -19,7 +19,6 @@ import { SupplierSelector } from '@/components/suppliers/supplier-selector';
 import { Button } from '@/components/ui/button';
 import {
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -205,11 +204,6 @@ export function FeeItemCard({ index }: FeeItemCardProps) {
                   ))}
                 </SelectContent>
               </Select>
-              <FormDescription className="text-xs">
-                {field.value === 'customer'
-                  ? '计入销售收入，不影响成本'
-                  : '计入销售成本，影响利润'}
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -232,9 +226,6 @@ export function FeeItemCard({ index }: FeeItemCardProps) {
                   placeholder="选择供应商（可选）"
                 />
               </FormControl>
-              <FormDescription className="text-xs">
-                如物流公司等费用结算对象
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}

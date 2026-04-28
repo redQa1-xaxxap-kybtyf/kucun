@@ -55,10 +55,7 @@ export function OpeningBalanceConfirmDialog({
           <DialogDescription asChild>
             <div className="text-muted-foreground space-y-3 pt-2 text-sm">
               <p className="text-base font-medium text-gray-900">
-                您正在录入期初库存数据，请确认数据准确无误。
-              </p>
-              <p className="text-sm text-gray-600">
-                期初库存将影响后续所有财务核算，建议录入完成后进行核对。
+                请确认期初库存数量和成本无误。
               </p>
             </div>
           </DialogDescription>

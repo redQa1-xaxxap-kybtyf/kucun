@@ -27,7 +27,7 @@ export function OutboundPageHeader() {
               产品出库记录
             </h1>
             <p className="text-sm font-medium text-slate-500">
-              查看产品出库流水，核对每一笔库存减少
+              查看产品出库流水
             </p>
           </div>
         </div>

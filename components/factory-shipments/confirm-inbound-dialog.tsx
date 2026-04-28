@@ -137,7 +137,7 @@ function FormFieldWithDescription({
 }: {
   label: string;
   required?: boolean;
-  description: string;
+  description?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -147,9 +147,11 @@ function FormFieldWithDescription({
         {required && <span className="text-[hsl(var(--color-error))]"> *</span>}
       </Label>
       {children}
-      <p className="text-xs text-[hsl(var(--color-text-secondary))]">
-        {description}
-      </p>
+      {description ? (
+        <p className="text-xs text-[hsl(var(--color-text-secondary))]">
+          {description}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -191,11 +193,7 @@ function InboundItemCard({
 
       {/* 表单字段 */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <FormFieldWithDescription
-          label="入库数量"
-          required
-          description="实际入库的数量，默认为订单数量"
-        >
+        <FormFieldWithDescription label="入库数量" required>
           <Input
             type="number"
             min={0}
@@ -207,11 +205,7 @@ function InboundItemCard({
           />
         </FormFieldWithDescription>
 
-        <FormFieldWithDescription
-          label="每单位片数"
-          required
-          description="每个单位包含的片数，用于库存计算"
-        >
+        <FormFieldWithDescription label="每单位片数" required>
           <Input
             type="number"
             min={1}
@@ -225,11 +219,7 @@ function InboundItemCard({
           />
         </FormFieldWithDescription>
 
-        <FormFieldWithDescription
-          label="入库成本"
-          required
-          description="每单位的进货成本，用于库存成本核算"
-        >
+        <FormFieldWithDescription label="入库成本" required>
           <Input
             type="number"
             min={0}
@@ -241,10 +231,7 @@ function InboundItemCard({
           />
         </FormFieldWithDescription>
 
-        <FormFieldWithDescription
-          label="批次号"
-          description="用于追溯和管理，建议填写"
-        >
+        <FormFieldWithDescription label="批次号">
           <Input
             placeholder="填写批次号（可选）"
             value={state?.batchNumber ?? ''}
@@ -255,9 +242,9 @@ function InboundItemCard({
           />
         </FormFieldWithDescription>
 
-        <FormFieldWithDescription label="库位" description="货物存放的具体位置">
+        <FormFieldWithDescription label="库位">
           <Input
-            placeholder="填写库位信息（可选）"
+            placeholder="请输入库位（可选）"
             value={state?.location ?? ''}
             onChange={e => onFieldChange(item.id, 'location', e.target.value)}
             className="h-10"
@@ -265,12 +252,9 @@ function InboundItemCard({
         </FormFieldWithDescription>
 
         <div className="md:col-span-2">
-          <FormFieldWithDescription
-            label="备注"
-            description="记录质检情况、特殊处理要求等信息"
-          >
+          <FormFieldWithDescription label="备注">
             <Textarea
-              placeholder="补充说明，例如质检情况、特殊处理要求等（可选）"
+              placeholder="请输入备注（可选）"
               rows={2}
               value={state?.remarks ?? ''}
               onChange={e => onFieldChange(item.id, 'remarks', e.target.value)}

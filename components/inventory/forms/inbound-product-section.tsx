@@ -209,10 +209,9 @@ export function InboundProductSection({
             </div>
             {batchSpecs.length > 0 && (
               <div className="flex flex-col gap-1.5 border-t border-green-200 pt-3 sm:col-span-2 xl:col-span-6">
-                <span className="font-medium text-gray-600">历史批次可参考</span>
-                <p className="text-muted-foreground text-xs">
-                  如果现有入库数量和现有批次相同可直接选择，新增批次请直接输入。
-                </p>
+                <span className="font-medium text-gray-600">
+                  历史批次可参考
+                </span>
                 <div className="flex flex-col gap-1.5">
                   {batchSpecs.map((spec, index) => {
                     // 计算件数和剩余片数

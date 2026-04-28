@@ -263,7 +263,7 @@ export function BatchSpecificationForm({
         {mode === 'create' && selectedProduct ? (
           <div className="border-muted-foreground/40 bg-muted/30 text-muted-foreground rounded-md border border-dashed px-3 py-2 text-xs">
             当前选择产品：{selectedProduct.label}（编码：{selectedProduct.code}
-            ）。请填写本批次自己的装箱数和实际重量。
+            ）。
           </div>
         ) : null}
 

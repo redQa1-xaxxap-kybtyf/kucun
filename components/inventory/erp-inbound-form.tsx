@@ -10,6 +10,7 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import {
   BatchPurchaseInboundSection,
   createBatchPurchaseInboundRow,
@@ -28,13 +29,11 @@ import {
 import { InboundFormToolbar } from '@/components/inventory/forms/inbound-form-toolbar';
 import { InboundProductSection } from '@/components/inventory/forms/inbound-product-section';
 import { OpeningBalanceConfirmDialog } from '@/components/inventory/opening-balance-confirm-dialog';
-import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -325,7 +324,9 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
         const firstMessage =
           fieldPriority
             .map(field => rowError[field])
-            .find(value => typeof value === 'string' && value.trim().length > 0) ??
+            .find(
+              value => typeof value === 'string' && value.trim().length > 0
+            ) ??
           Object.values(rowError).find(
             value => typeof value === 'string' && value.trim().length > 0
           );
@@ -451,7 +452,9 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
     return undefined;
   };
 
-  const getPreferredSingleErrorMessage = (value: unknown): string | undefined => {
+  const getPreferredSingleErrorMessage = (
+    value: unknown
+  ): string | undefined => {
     if (!value || typeof value !== 'object') {
       return undefined;
     }
@@ -614,7 +617,9 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
       <div className="space-y-4">
         {/* 页面标题卡片 */}
         <InboundFormToolbar
-          isSubmitting={isSubmitting || isConfirmSubmitting || isBatchSubmitting}
+          isSubmitting={
+            isSubmitting || isConfirmSubmitting || isBatchSubmitting
+          }
           onReset={handleFormReset}
           onBack={handleBack}
           title={currentPageTitle}
@@ -629,7 +634,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
             <AlertCircle className="h-4 w-4 text-amber-600" />
             <AlertTitle className="text-amber-900">正在录入期初库存</AlertTitle>
             <AlertDescription className="text-amber-800">
-              提交后库存会立即生效。如果库存页一时没看到，请先清空筛选或搜索条件再核对。
+              提交后库存立即生效。
             </AlertDescription>
           </Alert>
         )}
@@ -662,9 +667,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                       <h3 className="text-base font-semibold tracking-tight text-slate-900">
                         1. 入库类型
                       </h3>
-                      <p className="text-xs text-slate-500">
-                        默认就是采购入库，不是采购时再切换。
-                      </p>
+                      <p className="text-xs text-slate-500">默认采购入库。</p>
                     </div>
                   </div>
                   <div className="rounded-md border border-slate-100 bg-slate-50/30 p-6">
@@ -676,7 +679,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                               当前类型：采购入库
                             </div>
                             <p className="text-sm text-slate-500">
-                              先填写本次收货的基础信息，需要时再补充其他内容。
+                              按本次收货填写。
                             </p>
                           </div>
                           {!isOpeningBalance && (
@@ -703,9 +706,6 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                         <div className="border-t border-slate-100/70 pt-4">
                           <p className="text-sm font-semibold text-slate-700">
                             录单方式
-                          </p>
-                          <p className="mt-1 text-xs text-slate-500">
-                            单产品适合日常收货，批量录入适合同一供应商一次到多种货。
                           </p>
                           <div className="mt-3 grid gap-3 md:grid-cols-2">
                             <Button
@@ -746,7 +746,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                               当前类型：{INBOUND_REASON_LABELS[watchedReason]}
                             </div>
                             <p className="text-sm text-slate-500">
-                              现在按这个入库类型填写，提交后会正常入库。
+                              按当前类型入库。
                             </p>
                           </div>
                           <Button
@@ -773,7 +773,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                           当前类型：期初库存
                         </div>
                         <p className="text-sm text-slate-500">
-                          期初库存录入不需要再切换入库类型，直接填写数量和成本即可。
+                          直接填写数量和成本。
                         </p>
                       </div>
                     )}
@@ -791,7 +791,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                         2. 供应商与产品
                       </h3>
                       <p className="text-xs text-slate-500">
-                        先确认供应商，再录入产品明细，符合采购员常用录单顺序。
+                        先选供应商，再选产品。
                       </p>
                     </div>
                   </div>
@@ -831,7 +831,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                           3. 批次与数量
                         </h3>
                         <p className="text-xs text-slate-500">
-                          先把批次和数量填对，其他内容按需要补充。
+                          填写批次和数量。
                         </p>
                       </div>
                     </div>
@@ -851,9 +851,6 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                                 {...field}
                               />
                             </FormControl>
-                            <FormDescription className="text-xs text-slate-500">
-                              同一项目请尽量使用一致批次，方便后续追溯和避免色差。
-                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -870,7 +867,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                               更多设置
                             </p>
                             <p className="mt-1 text-xs text-slate-500">
-                              每件片数、重量这些内容按需要再填；如果按件录入，会自动展开。
+                              按需要填写。
                             </p>
                           </div>
                           {watchedInputUnit !== 'units' && (
@@ -908,9 +905,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                         <h3 className="text-base font-semibold tracking-tight text-slate-900">
                           4. 到货破损
                         </h3>
-                        <p className="text-xs text-slate-500">
-                          大多数收货没有破损时可以直接跳过，有破损再登记。
-                        </p>
+                        <p className="text-xs text-slate-500">有破损再登记。</p>
                       </div>
                     </div>
                     <div className="rounded-md border border-amber-100 bg-amber-50/40 p-4">
@@ -922,7 +917,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                               : '本次到货没有破损，可直接继续'}
                           </p>
                           <p className="mt-1 text-xs text-amber-800">
-                            只有收货当场已经确认的破损才需要登记，提交后会从到货数量里扣掉这部分。
+                            提交后会从入库数量中扣除。
                           </p>
                         </div>
                         <Button
@@ -966,7 +961,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                             : '4. 成本信息'}
                         </h3>
                         <p className="text-xs text-slate-500">
-                          单位成本和金额拆开显示，便于录入时快速核对。
+                          核对成本和金额。
                         </p>
                       </div>
                     </div>
@@ -994,9 +989,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                             : '5. 备注'}
                       </h3>
                       <p className="text-xs text-slate-500">
-                        {isBatchPurchaseMode
-                          ? '这里写本次整单都适用的说明，提交后会带到每一条明细里。'
-                          : '这里可以补充到货说明、沟通情况等，没有备注也可以直接提交。'}
+                        {isBatchPurchaseMode ? '整单备注，可选。' : '可选。'}
                       </p>
                     </div>
                   </div>

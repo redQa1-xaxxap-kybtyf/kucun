@@ -2,13 +2,7 @@ import { Building2, Calculator } from 'lucide-react';
 import { useWatch, type Control, type Path } from 'react-hook-form';
 
 import { CustomerSelector } from '@/components/customers/customer-hierarchy';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   FormControl,
   FormField,
@@ -51,9 +45,12 @@ export function InventoryDetailForm<M extends OperationMode>({
   mode,
   isLoading,
 }: InventoryDetailFormProps<M>) {
-  const outboundControl =
-    control as unknown as Control<FormValuesByMode['outbound']>;
-  const adjustControl = control as unknown as Control<FormValuesByMode['adjust']>;
+  const outboundControl = control as unknown as Control<
+    FormValuesByMode['outbound']
+  >;
+  const adjustControl = control as unknown as Control<
+    FormValuesByMode['adjust']
+  >;
   const watchedOutboundType = useWatch({
     control: outboundControl,
     name: 'type',
@@ -74,13 +71,6 @@ export function InventoryDetailForm<M extends OperationMode>({
           <Calculator className="mr-2 h-5 w-5" />
           详细信息
         </CardTitle>
-        <CardDescription>
-          {mode === 'inbound'
-            ? '入库相关详细信息'
-            : mode === 'outbound'
-              ? '出库相关详细信息'
-              : '调整相关详细信息'}
-        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <FormField
@@ -134,7 +124,7 @@ export function InventoryDetailForm<M extends OperationMode>({
 
         {mode === 'outbound' && !requiresCustomer ? (
           <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-500">
-            当前类型无需选择客户。若本次是发给客户的销售或客户样品，请回到上方改为“销售出库”或“样品出库”。
+            当前类型无需选择客户。
           </div>
         ) : null}
 
@@ -172,7 +162,7 @@ export function InventoryDetailForm<M extends OperationMode>({
         {mode === 'adjust' && adjustReason === 'damage_loss' ? (
           <>
             <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
-              报损保存后会自动登记到“手工报损台账”。如果后续需要找工厂赔付，在这里先选好处理方式，后面台账里可以继续跟进。
+              保存后进入报损台账。
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <FormField

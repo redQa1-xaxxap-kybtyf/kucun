@@ -8,13 +8,7 @@ import { InventoryAlertStats } from '@/components/inventory/alerts/inventory-ale
 import { InventoryAlertTable } from '@/components/inventory/alerts/inventory-alert-table';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useInventoryAlerts } from '@/hooks/use-inventory-alerts';
 
 interface InventoryAlertsProps {
@@ -116,11 +110,6 @@ export function InventoryAlerts({
               </span>
             )}
           </CardTitle>
-          <CardDescription>
-            {alerts.length > 0
-              ? `发现 ${alerts.length} 个库存预警，请及时处理`
-              : '当前没有库存预警'}
-          </CardDescription>
         </CardHeader>
       )}
       <CardContent className="space-y-4">

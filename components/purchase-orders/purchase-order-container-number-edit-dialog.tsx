@@ -19,7 +19,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -160,13 +159,10 @@ function ContainerNumberField({
           <FormControl>
             <Input
               {...field}
-              placeholder="请输入集装箱号，例如：CONT-2025-001"
+              placeholder="请输入集装箱号"
               disabled={disabled}
             />
           </FormControl>
-          <FormDescription>
-            填写货运公司提供的集装箱号，便于后续到货和运输跟踪。
-          </FormDescription>
           <FormMessage />
         </FormItem>
       )}

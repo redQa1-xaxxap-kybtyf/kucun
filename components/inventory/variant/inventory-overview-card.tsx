@@ -3,13 +3,7 @@
 import { Package } from 'lucide-react';
 
 import { Badge, type BadgeProps } from '@/components/ui/badge';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { formatCostPrice } from '@/lib/utils/cost-price';
 import { formatPieceSummary } from '@/lib/utils/piece-calculation';
@@ -62,9 +56,6 @@ export function InventoryOverviewCard({
           <Package className="h-5 w-5" />
           库存概览
         </CardTitle>
-        <CardDescription>
-          {variant.product.name} ({variant.sku})
-        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -117,8 +108,12 @@ export function InventoryOverviewCard({
           </div>
           <Progress value={stockPercentage} className="h-2" />
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[hsl(var(--color-text-tertiary))]">
-            <span>可用：{formatInventoryQuantity(inventory.availableQuantity)}</span>
-            <span>库存总量：{formatInventoryQuantity(inventory.totalQuantity)}</span>
+            <span>
+              可用：{formatInventoryQuantity(inventory.availableQuantity)}
+            </span>
+            <span>
+              库存总量：{formatInventoryQuantity(inventory.totalQuantity)}
+            </span>
           </div>
         </div>
       </CardContent>

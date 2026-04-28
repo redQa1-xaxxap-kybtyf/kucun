@@ -9,7 +9,7 @@ import { NewCountPageClient } from './page-client';
 
 export const metadata: Metadata = {
   title: '新建盘点单 - 库存管理',
-  description: '填写基本信息和盘点范围',
+  description: '盘点范围',
 };
 
 /**

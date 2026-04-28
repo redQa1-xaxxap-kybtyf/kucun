@@ -244,7 +244,7 @@ export function AdjustmentDetailDialog({
             {adjustment.notes && (
               <div>
                 <Label className="text-muted-foreground text-sm font-medium">
-                  备注信息
+                  备注
                 </Label>
                 <p className="bg-muted mt-1 rounded-md p-3 text-sm">
                   {adjustment.notes}
@@ -256,9 +256,17 @@ export function AdjustmentDetailDialog({
           <Separator />
 
           {/* 操作信息 */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">操作信息</h3>
-            <div className="grid grid-cols-1 gap-4">
+          <details className="group rounded-md border px-4 py-3">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-medium [&::-webkit-details-marker]:hidden">
+              <span>经办信息</span>
+              <span className="text-muted-foreground text-xs group-open:hidden">
+                展开
+              </span>
+              <span className="text-muted-foreground hidden text-xs group-open:inline">
+                收起
+              </span>
+            </summary>
+            <div className="mt-4 grid grid-cols-1 gap-4 border-t pt-4">
               <div>
                 <Label className="text-muted-foreground text-sm font-medium">
                   操作人员
@@ -298,7 +306,7 @@ export function AdjustmentDetailDialog({
                 </div>
               )}
             </div>
-          </div>
+          </details>
         </div>
       </DialogContent>
     </Dialog>

@@ -63,9 +63,7 @@ export function PricingResultDialog({
             <TrendingUp className="text-primary h-5 w-5" />
             建议销售价计算结果
           </DialogTitle>
-          <DialogDescription>
-            基于进货价和运费分摊，系统已计算出建议销售价（目标利润率 20%）
-          </DialogDescription>
+          <DialogDescription>目标利润率 20%</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -110,7 +108,9 @@ export function PricingResultDialog({
                     </TableCell>
                     <TableCell>{formatCostPrice(result.unitCost)}</TableCell>
                     <TableCell>¥{result.allocatedExpense.toFixed(2)}</TableCell>
-                    <TableCell>{formatCostPrice(result.finalUnitCost)}</TableCell>
+                    <TableCell>
+                      {formatCostPrice(result.finalUnitCost)}
+                    </TableCell>
                     <TableCell className="font-semibold">
                       ¥{result.suggestedUnitPrice.toFixed(2)}
                     </TableCell>

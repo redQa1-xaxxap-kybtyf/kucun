@@ -55,10 +55,8 @@ export function InboundCostFieldWithTooltip({
                 </TooltipTrigger>
                 <TooltipContent side="right" className="max-w-xs">
                   <div className="space-y-1.5">
-                    <p className="font-medium">请填写每片的成本</p>
-                    <p className="text-xs text-gray-300">
-                      如果知道每件成本，请先除以装箱数
-                    </p>
+                    <p className="font-medium">填写每片成本</p>
+                    <p className="text-xs text-gray-300">件价可先除以装箱数</p>
                     <div className="border-t border-gray-700 pt-1.5">
                       <p className="text-xs font-medium text-[hsl(var(--color-info))]">
                         示例：

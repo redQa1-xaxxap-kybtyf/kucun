@@ -77,17 +77,14 @@ export function TemporaryProductsClient() {
   const [sortBy, setSortBy] = React.useState('usageCount');
   const [page, setPage] = React.useState(1);
   const limit = 20;
-  const {
-    searchInput,
-    handleSearchChange,
-    cancelPendingCommit,
-  } = useListSearchController({
-    committedValue: search,
-    onCommit: value => {
-      setSearch(value ?? '');
-      setPage(1);
-    },
-  });
+  const { searchInput, handleSearchChange, cancelPendingCommit } =
+    useListSearchController({
+      committedValue: search,
+      onCommit: value => {
+        setSearch(value ?? '');
+        setPage(1);
+      },
+    });
 
   // 获取供应商列表
   const { data: suppliersData } = useSuppliers();
@@ -303,15 +300,9 @@ export function TemporaryProductsClient() {
                       <TableHead>编码</TableHead>
                       <TableHead>名称</TableHead>
                       <TableHead>规格</TableHead>
-                      <TableHead className="text-center">
-                        单位
-                      </TableHead>
-                      <TableHead className="text-center">
-                        装箱数
-                      </TableHead>
-                      <TableHead className="text-center">
-                        使用次数
-                      </TableHead>
+                      <TableHead className="text-center">单位</TableHead>
+                      <TableHead className="text-center">装箱数</TableHead>
+                      <TableHead className="text-center">使用次数</TableHead>
                       <TableHead>最后使用</TableHead>
                       <TableHead>创建人</TableHead>
                     </TableRow>
@@ -482,32 +473,6 @@ export function TemporaryProductsClient() {
               )}
             </>
           )}
-        </CardContent>
-      </Card>
-
-      {/* 使用说明 */}
-      <Card className="border-blue-200 bg-blue-50/50">
-        <CardContent className="py-3">
-          <div className="flex gap-2.5">
-            <div className="mt-0.5 text-blue-600">
-              <Package className="h-4 w-4" />
-            </div>
-            <div className="space-y-0.5 text-xs">
-              <p className="font-medium text-blue-900">关于调货产品</p>
-              <p className="text-blue-700">
-                • 调货产品由系统在创建调货销售订单时自动记录和管理
-              </p>
-              <p className="text-blue-700">
-                • 同一供应商的相同编码会自动复用,并更新使用统计
-              </p>
-              <p className="text-blue-700">
-                • 此页面仅用于查询和检索,不提供手动创建/编辑/删除功能
-              </p>
-              <p className="text-blue-700">
-                • 使用次数反映了该调货产品在订单中被使用的总次数
-              </p>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

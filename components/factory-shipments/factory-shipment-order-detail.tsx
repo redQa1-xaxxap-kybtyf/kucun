@@ -54,9 +54,9 @@ import { toPieceOrSheetLabel } from '@/lib/utils/inventory-unit-conversion';
 
 const PrintTemplatePreviewDialog = dynamic(
   () =>
-    import('@/components/print-designer/renderer/PrintTemplatePreviewDialog').then(
-      mod => mod.PrintTemplatePreviewDialog
-    ),
+    import(
+      '@/components/print-designer/renderer/PrintTemplatePreviewDialog'
+    ).then(mod => mod.PrintTemplatePreviewDialog),
   { ssr: false, loading: () => null }
 );
 
@@ -133,7 +133,7 @@ export function FactoryShipmentOrderDetail({
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* 页面标题和操作 */}
-      <Card className="overflow-hidden rounded-md border border-border shadow-sm">
+      <Card className="border-border overflow-hidden rounded-md border shadow-sm">
         <CardContent className="bg-card p-4 sm:p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3 sm:gap-4">
@@ -225,7 +225,7 @@ export function FactoryShipmentOrderDetail({
             </AlertTitle>
             <AlertDescription className="flex items-center justify-between">
               <p className="text-xs text-yellow-800 dark:text-yellow-200">
-                请向货运公司询问船公司名称,以便追踪货物运输状态
+                补充后可继续跟踪运输状态
               </p>
               <Button
                 size="sm"
@@ -485,27 +485,13 @@ export function FactoryShipmentOrderDetail({
               <Table>
                 <TableHeader className="bg-[hsl(var(--color-bg-table-header))]">
                   <TableRow className="border-b border-[hsl(var(--color-border-primary))]">
-                    <TableHead className="w-[50px]">
-                      序号
-                    </TableHead>
-                    <TableHead className="min-w-[180px]">
-                      产品名称
-                    </TableHead>
-                    <TableHead className="min-w-[120px]">
-                      供应商
-                    </TableHead>
-                    <TableHead className="min-w-[120px]">
-                      规格
-                    </TableHead>
-                    <TableHead className="min-w-[120px]">
-                      批次
-                    </TableHead>
-                    <TableHead className="w-[120px]">
-                      数量
-                    </TableHead>
-                    <TableHead className="w-[80px]">
-                      单位
-                    </TableHead>
+                    <TableHead className="w-[50px]">序号</TableHead>
+                    <TableHead className="min-w-[180px]">产品名称</TableHead>
+                    <TableHead className="min-w-[120px]">供应商</TableHead>
+                    <TableHead className="min-w-[120px]">规格</TableHead>
+                    <TableHead className="min-w-[120px]">批次</TableHead>
+                    <TableHead className="w-[120px]">数量</TableHead>
+                    <TableHead className="w-[80px]">单位</TableHead>
                     <TableHead className="w-[110px] text-right">
                       装箱数
                     </TableHead>
@@ -515,12 +501,8 @@ export function FactoryShipmentOrderDetail({
                     <TableHead className="w-[110px] text-right">
                       销售价
                     </TableHead>
-                    <TableHead className="w-[120px] text-right">
-                      小计
-                    </TableHead>
-                    <TableHead className="w-[120px] text-right">
-                      利润
-                    </TableHead>
+                    <TableHead className="w-[120px] text-right">小计</TableHead>
+                    <TableHead className="w-[120px] text-right">利润</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

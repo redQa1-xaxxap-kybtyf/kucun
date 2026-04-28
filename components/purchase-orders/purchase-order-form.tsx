@@ -383,7 +383,7 @@ export function PurchaseOrderForm({
                     <FormControl>
                       <Input
                         {...field}
-                        placeholder="如已知，请填写船运公司（用于后续追踪）"
+                        placeholder="请输入船运公司"
                         className="h-9"
                       />
                     </FormControl>

@@ -24,9 +24,7 @@ export function InventoryAlertCard({ stockStatus }: InventoryAlertCardProps) {
               {stockStatus === 'low_stock' ? '库存预警' : '缺货警告'}
             </div>
             <div className="text-sm text-[hsl(var(--color-warning-hover))]">
-              {stockStatus === 'low_stock'
-                ? '当前库存偏低，建议及时补货'
-                : '当前已无可用库存，请尽快补货'}
+              {stockStatus === 'low_stock' ? '当前库存偏低' : '暂无可用库存'}
             </div>
           </div>
         </div>

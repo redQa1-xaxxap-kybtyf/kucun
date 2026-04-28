@@ -21,7 +21,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -163,12 +162,11 @@ function ShippingCompanyField({
           </FormLabel>
           <FormControl>
             <Input
-              placeholder="例如: 马士基、中远海运等"
+              placeholder="请输入船公司名称"
               {...field}
               disabled={disabled}
             />
           </FormControl>
-          <FormDescription>请向货运公司询问船公司名称</FormDescription>
           <FormMessage />
         </FormItem>
       )}
@@ -198,7 +196,6 @@ function EstimatedArrivalField({
               placeholder="选择预计到达时间"
             />
           </FormControl>
-          <FormDescription>可选,通常运输时间约6天</FormDescription>
           <FormMessage />
         </FormItem>
       )}
@@ -230,9 +227,6 @@ function AutoStartTrackingField({
             <FormLabel className="text-sm font-medium">
               自动开始追踪货物状态
             </FormLabel>
-            <FormDescription className="text-xs">
-              补充信息后自动更新为&quot;运输中&quot;,系统将定时查询货物位置
-            </FormDescription>
           </div>
         </FormItem>
       )}

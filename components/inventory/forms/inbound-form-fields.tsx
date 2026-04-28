@@ -7,7 +7,6 @@ import { type UseFormReturn } from 'react-hook-form';
 import { SupplierSelector } from '@/components/suppliers/supplier-selector';
 import {
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -77,11 +76,6 @@ export function InboundQuantityFields({ form }: InboundFormFieldsProps) {
                 }
               />
             </FormControl>
-            {isPurchase ? (
-              <FormDescription className="text-xs text-gray-500">
-                先填到货总量；如有破损，系统会自动扣减并计算合格入库片数。
-              </FormDescription>
-            ) : null}
             <FormMessage />
           </FormItem>
         )}
@@ -173,9 +167,6 @@ export function InboundSpecificationFields({ form }: InboundFormFieldsProps) {
                   }
                 />
               </FormControl>
-              <FormDescription className="text-xs text-gray-500">
-                当前按件录入，系统会按这里填写的数量换算成片数。
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -184,7 +175,7 @@ export function InboundSpecificationFields({ form }: InboundFormFieldsProps) {
         <div className="rounded-md border border-dashed border-slate-200 bg-slate-50/80 p-4">
           <p className="text-sm font-semibold text-slate-700">装箱数</p>
           <p className="mt-1 text-xs leading-5 text-slate-500">
-            当前按片录入，不需要填写装箱数。需要按件录入时，再把上方录入单位切换为“件”。
+            按件录入时填写。
           </p>
         </div>
       )}
@@ -214,9 +205,6 @@ export function InboundSpecificationFields({ form }: InboundFormFieldsProps) {
                 }
               />
             </FormControl>
-            <FormDescription className="text-xs text-slate-500">
-              这里填这次到货这一批的实际重量；不填也可以。
-            </FormDescription>
             <FormMessage />
           </FormItem>
         )}
@@ -295,9 +283,6 @@ export function InboundCostField({ form }: InboundFormFieldsProps) {
               }
             />
           </FormControl>
-          <FormDescription className="text-xs text-gray-500">
-            按合格入库片数自动计算本次入库金额。
-          </FormDescription>
           <FormMessage />
         </FormItem>
       )}
@@ -368,11 +353,6 @@ export function InboundTotalCostField({ form }: InboundFormFieldsProps) {
               value={totalCost > 0 ? `¥${totalCost.toFixed(2)}` : ''}
             />
           </FormControl>
-          <FormDescription className="text-xs text-gray-500">
-            {hasPurchaseDamage
-              ? '系统按合格入库片数计算，破损金额单独参考。'
-              : '系统自动计算：入库片数 × 单位成本。'}
-          </FormDescription>
         </FormItem>
       )}
     />
@@ -381,7 +361,6 @@ export function InboundTotalCostField({ form }: InboundFormFieldsProps) {
 
 export function InboundPurchaseDamageSection({ form }: InboundFormFieldsProps) {
   const reason = form.watch('reason');
-  const inputUnit = form.watch('inputUnit');
   const acceptedQuantity = form.watch('quantity') ?? 0;
   const damagedQuantity = form.watch('damagedQuantity') ?? 0;
   const unitCost = form.watch('unitCost') ?? 0;
@@ -436,10 +415,6 @@ export function InboundPurchaseDamageSection({ form }: InboundFormFieldsProps) {
                   }
                 />
               </FormControl>
-              <FormDescription className="text-xs text-amber-700">
-                与上方录入单位保持一致，当前按“
-                {inputUnit === 'units' ? '件' : '片'}”填写。
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -463,9 +438,6 @@ export function InboundPurchaseDamageSection({ form }: InboundFormFieldsProps) {
                   value={field.value && field.value > 0 ? field.value : ''}
                 />
               </FormControl>
-              <FormDescription className="text-xs text-slate-500">
-                会按同样的每件片数自动换算，这部分不计入库存
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -505,17 +477,13 @@ export function InboundPurchaseDamageSection({ form }: InboundFormFieldsProps) {
 
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
         <div className="rounded-md border border-white/70 bg-white p-4">
-          <p className="text-[11px] font-semibold text-slate-400">
-            实际入库
-          </p>
+          <p className="text-[11px] font-semibold text-slate-400">实际入库</p>
           <p className="mt-1 text-lg font-semibold text-slate-900">
             {formatNumber(acceptedQuantity)}片
           </p>
         </div>
         <div className="rounded-md border border-white/70 bg-white p-4">
-          <p className="text-[11px] font-semibold text-slate-400">
-            到货合计
-          </p>
+          <p className="text-[11px] font-semibold text-slate-400">到货合计</p>
           <p className="mt-1 text-lg font-semibold text-slate-900">
             {formatNumber(summary.arrivalQuantity)}片
           </p>
@@ -574,9 +542,6 @@ export function InboundOptionalFields({ form }: InboundFormFieldsProps) {
                 {...field}
               />
             </FormControl>
-            <FormDescription className="text-xs text-gray-500">
-              瓷砖行业要求：同一项目必须使用相同批次/色号
-            </FormDescription>
             <FormMessage />
           </FormItem>
         )}
