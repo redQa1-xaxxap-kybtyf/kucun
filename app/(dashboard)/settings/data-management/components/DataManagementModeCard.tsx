@@ -54,7 +54,7 @@ export function DataManagementModeCard({
               <div className="flex items-start gap-2">
                 <Shield className="mt-0.5 h-4 w-4 text-amber-600" />
                 <span>
-                  正式账套受保护：这里只清理标记为测试的数据；已入账数据会作废/冲销，保证可追溯。
+                  正式账套受保护：这里只清理标记为测试的数据，并保留处理记录。
                 </span>
               </div>
               {canSwitchMode ? (

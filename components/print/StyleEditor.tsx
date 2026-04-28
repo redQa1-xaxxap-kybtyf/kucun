@@ -25,15 +25,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  factoryShipmentPrintConfig,
-} from '@/lib/config/print-fields/factory-shipment-fields';
-import {
-  purchaseOrderPrintConfig,
-} from '@/lib/config/print-fields/purchase-order-fields';
-import {
-  salesOrderPrintConfig,
-} from '@/lib/config/print-fields/sales-order-fields';
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -41,6 +32,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { factoryShipmentPrintConfig } from '@/lib/config/print-fields/factory-shipment-fields';
+import { purchaseOrderPrintConfig } from '@/lib/config/print-fields/purchase-order-fields';
+import { salesOrderPrintConfig } from '@/lib/config/print-fields/sales-order-fields';
 import { PrintTemplateService } from '@/lib/services/print-template-service';
 import type { DocumentType } from '@/lib/types/print-config';
 import {
@@ -276,23 +270,22 @@ export function StyleEditor({
   }, [documentType, config.header.companyName]);
 
   // 预览内容
-  const previewContent = useMemo(
-    () => {
-      const printConfig = getPrintConfigForDocumentType();
-      const summarySampleValues: Record<string, unknown> = {
-        totalQuantity: 300,
-        totalWeight: 5.5,
-        totalAmount: 3000,
-        totalAmountChinese: '叁仟元整',
-        customerOwnedAmount: 1800,
-        selfOwnedAmount: 1200,
-        costAmount: 2300,
-        expenseAmount: 260,
-        profitAmount: 440,
-      };
+  const previewContent = useMemo(() => {
+    const printConfig = getPrintConfigForDocumentType();
+    const summarySampleValues: Record<string, unknown> = {
+      totalQuantity: 300,
+      totalWeight: 5.5,
+      totalAmount: 3000,
+      totalAmountChinese: '叁仟元整',
+      customerOwnedAmount: 1800,
+      selfOwnedAmount: 1200,
+      costAmount: 2300,
+      expenseAmount: 260,
+      profitAmount: 440,
+    };
 
-      return (
-        <PrintLayout
+    return (
+      <PrintLayout
         size={config.page.size}
         orientation={config.page.orientation}
         margin={config.page.margin}
@@ -548,7 +541,8 @@ export function StyleEditor({
               return null;
             }
 
-            const fieldLabelColor = config.summary.fieldLabelColors?.[field.key];
+            const fieldLabelColor =
+              config.summary.fieldLabelColors?.[field.key];
             const fieldValueColor = config.summary.fieldColors?.[field.key];
             const shouldHighlight =
               config.summary.highlightTotal &&
@@ -631,20 +625,16 @@ export function StyleEditor({
               .replace('{time}', new Date().toLocaleTimeString())}
           </div>
         )}
-        </PrintLayout>
-      );
-    },
-    [config, getPrintConfigForDocumentType]
-  );
+      </PrintLayout>
+    );
+  }, [config, getPrintConfigForDocumentType]);
 
   return (
     <Dialog open={open} onOpenChange={open => !open && onClose()}>
       <DialogContent className={cn('flex h-[90vh] max-w-7xl flex-col')}>
         <DialogHeader>
           <DialogTitle>打印样式编辑器</DialogTitle>
-          <DialogDescription>
-            自定义打印样式，支持实时预览和模板保存
-          </DialogDescription>
+          <DialogDescription>打印样式设置</DialogDescription>
         </DialogHeader>
 
         {/* 顶部工具栏 */}

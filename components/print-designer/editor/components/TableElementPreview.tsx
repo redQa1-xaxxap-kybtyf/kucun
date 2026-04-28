@@ -101,12 +101,11 @@ export function TableElementPreview({
   } | null>(null);
 
   const [headerCells, setHeaderCells] = useState<HeaderCellMetrics[]>([]);
-  const [hoveredBoundaryIndex, setHoveredBoundaryIndex] = useState<number | null>(
-    null
-  );
-  const [resizeIndicator, setResizeIndicator] = useState<ResizeIndicator | null>(
-    null
-  );
+  const [hoveredBoundaryIndex, setHoveredBoundaryIndex] = useState<
+    number | null
+  >(null);
+  const [resizeIndicator, setResizeIndicator] =
+    useState<ResizeIndicator | null>(null);
 
   const previewData = useMemo(() => {
     const rows = Math.max(element.minRows ?? 0, 3);
@@ -242,8 +241,7 @@ export function TableElementPreview({
           Math.min(totalPx - minRightPx, startLeftPx + deltaPx)
         );
         const nextRightPx = Math.max(minRightPx, totalPx - nextLeftPx);
-        const boundaryX =
-          (headerCells[leftIndex]?.left ?? 0) + nextLeftPx;
+        const boundaryX = (headerCells[leftIndex]?.left ?? 0) + nextLeftPx;
 
         applyColumnResizeByPx(
           leftIndex,
@@ -297,12 +295,6 @@ export function TableElementPreview({
         <TableRenderer element={element} data={previewData} scale={zoom} />
       </div>
 
-      {isSelected ? (
-        <div className="pointer-events-none absolute top-1 left-1 rounded-full bg-slate-950/75 px-2 py-1 text-[10px] text-white shadow-sm">
-          拖拽表头分隔线可直接调列宽
-        </div>
-      ) : null}
-
       {resizeIndicator ? (
         <div
           className="pointer-events-none absolute top-8 z-10 -translate-x-1/2 rounded-2xl bg-slate-950/90 px-3 py-2 text-[10px] text-white shadow-lg"
@@ -327,16 +319,18 @@ export function TableElementPreview({
             data-testid={`table-resize-handle-${index}`}
             onMouseDown={e => handleResizeMouseDown(index, e)}
             onMouseEnter={() => setHoveredBoundaryIndex(index)}
-            onMouseLeave={() => setHoveredBoundaryIndex(current =>
-              current === index ? null : current
-            )}
+            onMouseLeave={() =>
+              setHoveredBoundaryIndex(current =>
+                current === index ? null : current
+              )
+            }
           >
             <div
               className={`mx-auto h-full transition-all ${
                 resizeIndicator?.boundaryIndex === index ||
                 hoveredBoundaryIndex === index
                   ? 'w-[2px] bg-amber-500'
-                  : 'w-px bg-primary/40'
+                  : 'bg-primary/40 w-px'
               }`}
             />
             <div

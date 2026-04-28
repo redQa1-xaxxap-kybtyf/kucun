@@ -99,13 +99,6 @@ export function DataBindingSection({
 
   return (
     <div className="space-y-3">
-      <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-3">
-        <Label className="text-xs font-semibold text-sky-900">数据绑定</Label>
-        <p className="mt-1 text-[11px] leading-5 text-sky-800/80">
-          先选数据项，再决定格式和空值显示，适合中文单据里常见的日期、金额、数量展示。
-        </p>
-      </div>
-
       {/* 当前绑定字段 */}
       <div className="rounded-xl border border-sky-200 bg-white p-3 shadow-sm">
         <div className="text-xs text-sky-600">当前数据项</div>

@@ -245,14 +245,8 @@ export function ComponentToolbar() {
         <div className="mb-2">
           <h3 className="text-sm font-semibold text-stone-900">添加内容</h3>
           <p className="mt-1 text-xs leading-5 text-stone-600">
-            当前模板：{templateMeta?.label ?? '打印模板'}
-            <br />
-            直接拖到中间画布即可新增。
+            {templateMeta?.label ?? '打印模板'}
           </p>
-        </div>
-        <div className="rounded-xl border border-amber-200 bg-white/80 px-3 py-2 text-[11px] leading-5 text-stone-600">
-          单击数据项会直接插入“标签 +
-          值”成对字段，更适合中文表单；拖拽到画布时则只插入字段值，适合自由排版。
         </div>
       </div>
 
@@ -341,9 +335,6 @@ export function ComponentToolbar() {
               <h4 className="text-xs font-medium text-stone-700">
                 {hasSearch ? '匹配的常用项' : '常用数据项'}
               </h4>
-              <span className="text-[10px] text-stone-400">
-                {hasSearch ? '可直接插入' : '先放这些更快'}
-              </span>
             </div>
             <div className="flex flex-wrap gap-2">
               {quickFieldSuggestions.map(field => (

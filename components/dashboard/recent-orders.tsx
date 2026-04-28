@@ -10,13 +10,7 @@ import {
 import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   SALES_ORDER_STATUS_LABELS,
@@ -78,7 +72,6 @@ export function RecentOrders({ orders, loading }: RecentOrdersProps) {
       <Card>
         <CardHeader>
           <CardTitle>实时订单动态</CardTitle>
-          <CardDescription>最近创建的销售订单</CardDescription>
         </CardHeader>
         <CardContent className="py-12 text-center">
           <Package className="text-muted-foreground/50 mx-auto mb-4 h-12 w-12" />
@@ -93,7 +86,6 @@ export function RecentOrders({ orders, loading }: RecentOrdersProps) {
       <CardHeader className="flex-row items-center justify-between">
         <div>
           <CardTitle>实时订单动态</CardTitle>
-          <CardDescription>最近创建的销售订单</CardDescription>
         </div>
         <Link
           href="/sales-orders"

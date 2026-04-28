@@ -138,12 +138,6 @@ function getWidthInputStep(widthUnit: TableColumn['widthUnit']) {
   return widthUnit === 'mm' ? '0.5' : '1';
 }
 
-function getWidthInputHint(widthUnit: TableColumn['widthUnit']) {
-  return widthUnit === 'mm'
-    ? '毫米更适合中文套打和精细对齐'
-    : '百分比更适合整体自适应排版';
-}
-
 export function TableColumnManager({
   templateType,
   columns,
@@ -197,7 +191,9 @@ export function TableColumnManager({
       return;
     }
 
-    const columnIndex = nextColumns.findIndex(column => column.key === columnKey);
+    const columnIndex = nextColumns.findIndex(
+      column => column.key === columnKey
+    );
     const targetColumn = columnIndex >= 0 ? nextColumns[columnIndex] : null;
 
     setHighlightedColumnKey(
@@ -205,7 +201,9 @@ export function TableColumnManager({
     );
   };
 
-  const getFirstAddedColumnKey = (nextColumns: TableColumn[]): string | null => {
+  const getFirstAddedColumnKey = (
+    nextColumns: TableColumn[]
+  ): string | null => {
     const existingKeys = new Set(columns.map(column => column.key));
     return (
       nextColumns.find(column => !existingKeys.has(column.key))?.key ?? null
@@ -234,9 +232,7 @@ export function TableColumnManager({
         currentIndex !== index && column.key === field.path
     );
     if (otherMatchedColumn) {
-      setMessage(
-        `数据项“${field.label}”已在其他列使用。当前列仍可继续保存，若只是想复用展示，建议直接复制已有列。`
-      );
+      setMessage(`数据项“${field.label}”已在其他列使用。`);
     } else {
       setMessage('');
     }
@@ -264,9 +260,7 @@ export function TableColumnManager({
       setHighlightedColumnKey(
         getTableColumnReactKey(existingColumn, existingIndex)
       );
-      setMessage(
-        `数据项“${field.label}”已存在，已为你定位到对应列。若需同一内容显示两次，请使用该列右侧的“复制列”。`
-      );
+      setMessage(`数据项“${field.label}”已存在。`);
       return;
     }
 
@@ -291,7 +285,7 @@ export function TableColumnManager({
       return;
     }
 
-    setMessage('已补齐常用列，并顺手整理了当前表格的列宽。');
+    setMessage('已补齐常用列。');
     focusColumnByKey(nextColumns, getFirstAddedColumnKey(nextColumns));
     updateColumns(nextColumns);
   };
@@ -340,7 +334,7 @@ export function TableColumnManager({
   };
 
   const handleRebalanceWidths = () => {
-    setMessage('已按常见中文单据习惯重新整理列宽，后面还可以继续拖拽微调。');
+    setMessage('已整理列宽。');
     setHighlightedColumnKey(null);
     updateColumns(rebalanceTableColumnWidths(columns));
   };
@@ -349,12 +343,12 @@ export function TableColumnManager({
     const nextColumns = applyTableColumnWidthPreset(columns, preset.key);
     const presetMessage =
       preset.key === 'equal'
-        ? '已按等宽排版整理当前列，适合简单清单和规整模板。'
+        ? '已按等宽整理。'
         : preset.key === 'text-first'
-          ? '已优先给名称、规格、备注等文本列留空间，中文内容更不容易挤。'
+          ? '已优先保留文本列宽。'
           : preset.key === 'compact-numeric'
-            ? '已把数量、单价、金额等数字列收紧，方便在一页里排下更多列。'
-            : '已按中文单据常见习惯重新整理列宽，后面还可以继续拖拽微调。';
+            ? '已收紧数字列宽。'
+            : '已整理列宽。';
 
     setMessage(presetMessage);
     setHighlightedColumnKey(null);
@@ -379,7 +373,7 @@ export function TableColumnManager({
           ? '已按“件”套用常用中文列头。'
           : '已套用常用中文列头。';
 
-    setMessage(`${modeMessage} 数量、单价、金额等常见列已一起整理。`);
+    setMessage(modeMessage);
     setHighlightedColumnKey(nextColumns[0]?.id ?? null);
     updateColumns(nextColumns);
   };
@@ -413,7 +407,7 @@ export function TableColumnManager({
     setMessage(
       rowNumberEnabled
         ? '已去掉序号列，列宽也一起重新整理好了。'
-        : '已加上序号列，并顺手整理了当前表格的列宽。'
+        : '已加上序号列。'
     );
     setHighlightedColumnKey(nextColumns[0]?.id ?? null);
     updateColumns(nextColumns);
@@ -444,9 +438,7 @@ export function TableColumnManager({
 
     const nextColumns = [...columns];
     nextColumns.splice(index + 1, 0, duplicate);
-    setMessage(
-      `已复制列“${current.label}”。现在可以保留同一数据项的两个展示版本。`
-    );
+    setMessage(`已复制列“${current.label}”。`);
     setHighlightedColumnKey(duplicate.id ?? null);
     updateColumns(nextColumns);
   };
@@ -490,19 +482,9 @@ export function TableColumnManager({
 
   return (
     <div className="space-y-3">
-      <div className="rounded-xl border border-stone-200 bg-stone-50 p-3">
-        <p className="text-xs font-medium text-stone-800">列设置建议</p>
-        <p className="mt-1 text-[11px] leading-5 text-stone-600">
-          从数据项添加会自动跳过已存在内容，避免误添加重复列。若要同一数据项显示两次，请先添加一次，再使用“复制列”。
-        </p>
-      </div>
-
       <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
         <div>
           <p className="text-xs font-medium text-slate-900">列头快捷</p>
-          <p className="text-muted-foreground mt-1 text-[11px] leading-5">
-            更适合中文单据。可以一键整理成常用列头，也可以按“片”或“件”带上单位副标题。
-          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button
@@ -548,12 +530,7 @@ export function TableColumnManager({
       {quickPresets.length > 0 && (
         <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
           <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-medium text-slate-900">常用列方案</p>
-              <p className="text-muted-foreground mt-1 text-[11px] leading-5">
-                直接替换当前列，可撤销，适合先快速成型再微调。
-              </p>
-            </div>
+            <p className="text-xs font-medium text-slate-900">常用列方案</p>
             <Button
               variant="ghost"
               size="sm"
@@ -575,9 +552,6 @@ export function TableColumnManager({
                 <div className="text-sm font-medium text-slate-900">
                   {preset.label}
                 </div>
-                <div className="mt-1 text-[11px] leading-5 text-slate-500">
-                  {preset.description}
-                </div>
               </button>
             ))}
           </div>
@@ -586,12 +560,7 @@ export function TableColumnManager({
 
       {(quickAddFilterOptions.length > 0 || quickInsertPresets.length > 0) && (
         <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-3">
-          <div>
-            <p className="text-xs font-medium text-slate-900">快速补列</p>
-            <p className="text-muted-foreground mt-1 text-[11px] leading-5">
-              不用每次打开数据项列表，直接补一组常用列，再微调就行。
-            </p>
-          </div>
+          <p className="text-xs font-medium text-slate-900">快速补列</p>
 
           {quickAddFilterOptions.length > 0 && (
             <div className="space-y-2">
@@ -626,9 +595,6 @@ export function TableColumnManager({
                     <div className="text-sm font-medium text-slate-900">
                       {preset.label}
                     </div>
-                    <div className="mt-1 text-[11px] leading-5 text-slate-500">
-                      {preset.description}
-                    </div>
                   </button>
                 ))}
               </div>
@@ -639,12 +605,7 @@ export function TableColumnManager({
 
       <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
         <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-medium text-slate-900">列宽策略</p>
-            <p className="text-muted-foreground mt-1 text-[11px] leading-5">
-              一键按中文单据常见版式整理列宽，不用一列列试。整理后仍可在画布里继续拖拽微调。
-            </p>
-          </div>
+          <p className="text-xs font-medium text-slate-900">列宽策略</p>
           <Button
             variant="ghost"
             size="sm"
@@ -665,9 +626,6 @@ export function TableColumnManager({
             >
               <div className="text-sm font-medium text-slate-900">
                 {preset.label}
-              </div>
-              <div className="mt-1 text-[11px] leading-5 text-slate-500">
-                {preset.description}
               </div>
             </button>
           ))}
@@ -751,9 +709,6 @@ export function TableColumnManager({
                       className="min-h-[52px] resize-none py-2 text-xs leading-4"
                     />
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-muted-foreground text-[10px] leading-4">
-                        支持打印为两行列头
-                      </p>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -907,10 +862,9 @@ export function TableColumnManager({
 
                 <div className="flex flex-wrap items-center gap-2 text-[10px] leading-4 text-slate-500">
                   <span className="rounded-full bg-slate-100 px-2 py-1">
-                    当前列宽 {col.width}{col.widthUnit}
+                    当前列宽 {col.width}
+                    {col.widthUnit}
                   </span>
-                  <span>{getWidthInputHint(col.widthUnit)}</span>
-                  <span>画布上也可以直接拖拽列头分隔线微调</span>
                 </div>
               </div>
 

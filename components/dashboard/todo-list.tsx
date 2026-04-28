@@ -19,13 +19,7 @@ import * as React from 'react';
 import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { dashboardUtils, useCompleteTodoItem } from '@/lib/api/dashboard';
@@ -398,12 +392,6 @@ const TodoList = React.forwardRef<HTMLDivElement, TodoListProps>(
                     </Badge>
                   )}
                 </CardTitle>
-                <CardDescription>
-                  {todoStats.urgent > 0 && `${todoStats.urgent} 紧急`}
-                  {todoStats.urgent === 0 &&
-                    todoStats.pending === 0 &&
-                    '暂无待办事项'}
-                </CardDescription>
               </div>
               <div className="flex items-center space-x-2">
                 {onAddTodo && (

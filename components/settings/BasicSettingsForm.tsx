@@ -16,7 +16,6 @@ import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -427,9 +426,6 @@ export function BasicSettingsForm() {
                     <FormLabel className="text-sm font-semibold text-slate-900">
                       自动预警通知
                     </FormLabel>
-                    <FormDescription className="max-w-[240px] text-[11px] leading-relaxed font-medium text-slate-400">
-                      启用后，系统将在看板首页显著位置推送预警简报。
-                    </FormDescription>
                   </div>
                   <div className="flex flex-col items-end gap-2 px-2">
                     <FormControl>
@@ -454,10 +450,7 @@ export function BasicSettingsForm() {
         </SettingsSection>
 
         {/* 订单流转规则 */}
-        <SettingsSection
-          title="订单编号规则与审批工作流"
-          description="定义销售订单的生成逻辑。启用审批流程后，所有订单在生效前需经过财务或主管确认。"
-        >
+        <SettingsSection title="订单规则" description="订单号和审批开关">
           <div className="grid gap-6 md:grid-cols-2">
             <FormField
               control={form.control}
@@ -466,7 +459,7 @@ export function BasicSettingsForm() {
                 <FormItem className="relative flex h-[130px] flex-col justify-between rounded-md border border-slate-100 bg-white p-6 shadow-sm hover:border-blue-100">
                   <div className="space-y-1">
                     <FormLabel className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                      订单唯一识别前缀
+                      订单号前缀
                     </FormLabel>
                     <p className="text-[11px] font-medium text-slate-400">
                       如：销售订单（SO）
@@ -492,11 +485,8 @@ export function BasicSettingsForm() {
                 <FormItem className="flex h-[130px] flex-row items-center justify-between rounded-md border border-slate-100 bg-white p-6 shadow-sm hover:border-blue-100">
                   <div className="space-y-1">
                     <FormLabel className="text-sm font-semibold text-slate-900">
-                      强制订单审批
+                      订单审批
                     </FormLabel>
-                    <FormDescription className="max-w-[240px] text-[11px] leading-relaxed font-medium text-slate-400">
-                      所有新建订单必须经过后台审批后方可启动出库流程。
-                    </FormDescription>
                   </div>
                   <div className="flex flex-col items-end gap-2 px-2">
                     <FormControl>
@@ -511,7 +501,7 @@ export function BasicSettingsForm() {
                         field.value ? 'text-blue-600' : 'text-slate-300'
                       )}
                     >
-                      {field.value ? 'Require / 已开启' : 'Bypass / 已关闭'}
+                      {field.value ? '已开启' : '已关闭'}
                     </span>
                   </div>
                 </FormItem>

@@ -19,22 +19,18 @@ interface TableStyleSectionProps {
 const BORDER_MODE_OPTIONS: Array<{
   value: TableBorderMode;
   label: string;
-  description: string;
 }> = [
   {
     value: 'full',
     label: '全边框',
-    description: '适合标准订单和常规打印单据',
   },
   {
     value: 'row',
     label: '横线式',
-    description: '更清爽，适合明细表和客户清单',
   },
   {
     value: 'outer',
     label: '外框式',
-    description: '更像纸质单据，适合套打和手写补充',
   },
 ];
 
@@ -45,12 +41,7 @@ export function TableStyleSection({ style, onChange }: TableStyleSectionProps) {
 
       <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
         <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-medium text-slate-900">常用样式</p>
-            <p className="text-muted-foreground mt-1 text-[11px] leading-5">
-              一键带上表头和表尾风格，后面再按需要微调即可。
-            </p>
-          </div>
+          <p className="text-xs font-medium text-slate-900">常用样式</p>
         </div>
 
         <div className="grid gap-2">
@@ -64,21 +55,13 @@ export function TableStyleSection({ style, onChange }: TableStyleSectionProps) {
               <div className="text-sm font-medium text-slate-900">
                 {preset.label}
               </div>
-              <div className="mt-1 text-[11px] leading-5 text-slate-500">
-                {preset.description}
-              </div>
             </button>
           ))}
         </div>
       </div>
 
       <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
-        <div>
-          <p className="text-xs font-medium text-slate-900">边框风格</p>
-          <p className="text-muted-foreground mt-1 text-[11px] leading-5">
-            直接切换成中文单据常见的边框表现，不用手动画线。
-          </p>
-        </div>
+        <p className="text-xs font-medium text-slate-900">边框风格</p>
 
         <div className="grid gap-2">
           {BORDER_MODE_OPTIONS.map(option => (
@@ -94,9 +77,6 @@ export function TableStyleSection({ style, onChange }: TableStyleSectionProps) {
             >
               <div className="text-sm font-medium text-slate-900">
                 {option.label}
-              </div>
-              <div className="mt-1 text-[11px] leading-5 text-slate-500">
-                {option.description}
               </div>
             </button>
           ))}
@@ -252,9 +232,6 @@ export function TableStyleSection({ style, onChange }: TableStyleSectionProps) {
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-sm font-medium text-slate-900">恢复默认样式</p>
-            <p className="text-xs leading-5 text-slate-500">
-              回到系统默认的标准表格，适合重新开始调整。
-            </p>
           </div>
           <Button
             variant="ghost"

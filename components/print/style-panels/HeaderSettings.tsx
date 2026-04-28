@@ -80,9 +80,6 @@ export function HeaderSettings({ value, onChange }: HeaderSettingsProps) {
                 onChange={e => onChange({ logoUrl: e.target.value })}
                 placeholder="https://example.com/logo.png"
               />
-              <p className="text-muted-foreground text-xs">
-                支持 http/https 或相对路径
-              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -216,9 +213,6 @@ export function HeaderSettings({ value, onChange }: HeaderSettingsProps) {
                 max={6}
                 step={1}
               />
-              <p className="text-muted-foreground text-xs">
-                控制标题下方横线粗细，2-3px 适合中国ERP发货单样式。
-              </p>
             </div>
           </div>
         )}

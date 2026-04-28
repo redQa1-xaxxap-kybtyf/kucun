@@ -48,9 +48,6 @@ export function PendingOrders({ orders, loading }: PendingOrdersProps) {
                 <h3 className="text-lg font-semibold text-[hsl(var(--color-text-primary))]">
                   待处理订单
                 </h3>
-                <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-                  需要及时处理的订单
-                </p>
               </div>
             </div>
             <Badge variant="warning" className="text-xs font-medium">
@@ -77,9 +74,6 @@ export function PendingOrders({ orders, loading }: PendingOrdersProps) {
               <h3 className="text-lg font-semibold text-[hsl(var(--color-text-primary))]">
                 待处理订单
               </h3>
-              <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-                需要及时处理的订单
-              </p>
             </div>
           </div>
         </CardHeader>
@@ -108,9 +102,6 @@ export function PendingOrders({ orders, loading }: PendingOrdersProps) {
               <h3 className="text-lg font-semibold text-[hsl(var(--color-text-primary))]">
                 待处理订单
               </h3>
-              <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-                需要及时处理的订单
-              </p>
             </div>
           </div>
           <div className="flex items-center gap-3">

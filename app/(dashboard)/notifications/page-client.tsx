@@ -114,17 +114,17 @@ export function NotificationsPageClient() {
           <SummaryCard
             title="提醒总数"
             value={notifications.length}
-            description="当前可见的重要业务提醒"
+            description="当前提醒"
           />
           <SummaryCard
             title="未读提醒"
             value={unreadCount}
-            description="建议优先处理这些事项"
+            description="未读事项"
           />
           <SummaryCard
             title="当前筛选"
             value={filterMode === 'all' ? '全部' : '未读'}
-            description="可随时切换查看范围"
+            description="筛选结果"
           />
         </div>
 
@@ -241,9 +241,7 @@ function SummaryCard({
   return (
     <Card>
       <CardContent className="space-y-2 p-5">
-        <div className="text-xs font-bold text-slate-500">
-          {title}
-        </div>
+        <div className="text-xs font-bold text-slate-500">{title}</div>
         <div className="text-2xl font-semibold tracking-tight text-slate-900">
           {value}
         </div>

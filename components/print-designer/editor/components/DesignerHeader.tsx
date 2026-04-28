@@ -72,7 +72,7 @@ export function DesignerHeader({
       elementCount > 0 &&
       // eslint-disable-next-line no-alert
       !window.confirm(
-        `确定切换为“${getTemplateTypeLabel(nextType)}”吗？\n\n已放置的内容和表格列不会自动替换，切换后建议检查对应数据项是否仍然正确。`
+        `确定切换为“${getTemplateTypeLabel(nextType)}”吗？已放置内容不会自动替换。`
       )
     ) {
       return;
@@ -128,7 +128,6 @@ export function DesignerHeader({
           </div>
 
           <div className="mt-1 flex items-center gap-3 text-xs text-slate-500">
-            <span>{templateMeta?.description ?? '打印模板编辑器'}</span>
             <span>元素 {elementCount} 个</span>
             <span className="inline-flex items-center gap-1">
               {hasUnsavedChanges && !isSaving ? (

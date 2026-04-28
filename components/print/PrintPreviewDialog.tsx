@@ -209,9 +209,7 @@ export function PrintPreviewDialog({
         <DialogContent className={cn('flex h-[90vh] max-w-7xl flex-col')}>
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
-            <DialogDescription>
-              调整打印样式和内容，预览后可直接打印或导出 PDF
-            </DialogDescription>
+            <DialogDescription>预览、打印、导出 PDF</DialogDescription>
           </DialogHeader>
 
           {/* 工具栏 */}
@@ -249,27 +247,16 @@ export function PrintPreviewDialog({
                 </TabsList>
 
                 <TabsContent value="preview" className="p-4">
-                  <div className="space-y-4">
-                    <h3 className="font-medium">预览说明</h3>
-                    <ul className="text-muted-foreground space-y-2 text-sm">
-                      <li>• 右侧显示实时预览效果</li>
-                      <li>• 点击&ldquo;样式设置&rdquo;自定义样式</li>
-                      <li>• 切换到&ldquo;打印内容&rdquo;选择要显示的信息</li>
-                      <li>• 点击&ldquo;打印&rdquo;直接打印</li>
-                      <li>• 点击&ldquo;导出PDF&rdquo;保存为PDF文件</li>
-                    </ul>
-
-                    <div className="bg-muted space-y-1 rounded-md p-3 text-sm">
-                      <div className="font-medium">当前配置</div>
-                      <div className="text-muted-foreground">
-                        纸张：{styleConfig.page.size}{' '}
-                        {styleConfig.page.orientation === 'landscape'
-                          ? '横向'
-                          : '纵向'}
-                      </div>
-                      <div className="text-muted-foreground">
-                        模板：{styleConfig.name}
-                      </div>
+                  <div className="bg-muted space-y-1 rounded-md p-3 text-sm">
+                    <div className="font-medium">当前打印设置</div>
+                    <div className="text-muted-foreground">
+                      纸张：{styleConfig.page.size}{' '}
+                      {styleConfig.page.orientation === 'landscape'
+                        ? '横向'
+                        : '纵向'}
+                    </div>
+                    <div className="text-muted-foreground">
+                      模板：{styleConfig.name}
                     </div>
                   </div>
                 </TabsContent>
@@ -277,9 +264,7 @@ export function PrintPreviewDialog({
                 <TabsContent value="fields" className="p-0">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between border-b p-4">
-                      <span className="text-sm font-medium">
-                        打印内容设置会自动保存
-                      </span>
+                      <span className="text-sm font-medium">打印内容</span>
                       <Button
                         variant="outline"
                         size="sm"

@@ -76,9 +76,6 @@ export function PageSettings({ value, onChange }: PageSettingsProps) {
             <SelectItem value="Letter">信纸 (216 × 279 mm)</SelectItem>
           </SelectContent>
         </Select>
-        <p className="text-muted-foreground text-xs">
-          选择打印纸张大小，A4为最常用规格
-        </p>
       </div>
 
       {/* 页面方向 */}
@@ -98,9 +95,6 @@ export function PageSettings({ value, onChange }: PageSettingsProps) {
             <SelectItem value="landscape">横向（横版）</SelectItem>
           </SelectContent>
         </Select>
-        <p className="text-muted-foreground text-xs">
-          横向适合表格较宽的单据，纵向适合表格较窄的单据
-        </p>
       </div>
 
       {/* 页边距 */}
@@ -180,18 +174,11 @@ export function PageSettings({ value, onChange }: PageSettingsProps) {
             />
           </div>
         </div>
-
-        <p className="text-muted-foreground text-xs">
-          调整页边距可控制内容区域大小，建议5-15mm之间
-        </p>
       </div>
 
       {/* 页面外边框 */}
       <div className="space-y-4">
         <Label>页面外边框</Label>
-        <p className="text-muted-foreground text-xs">
-          可选设置整张单据的外边框颜色和粗细，适合中国ERP发货单那种红色粗边框效果。
-        </p>
         <div className="space-y-2">
           <Label htmlFor="page-border-color">边框颜色</Label>
           <div className="flex gap-2">
@@ -229,9 +216,6 @@ export function PageSettings({ value, onChange }: PageSettingsProps) {
             max={10}
             step={1}
           />
-          <p className="text-muted-foreground text-xs">
-            0 表示不显示外边框，3px 左右适合粗红框发货单。
-          </p>
         </div>
       </div>
 

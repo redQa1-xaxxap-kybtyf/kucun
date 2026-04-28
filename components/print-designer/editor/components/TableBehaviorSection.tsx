@@ -144,9 +144,6 @@ export function TableBehaviorSection({
             maxLength={60}
             className="h-8"
           />
-          <p className="text-muted-foreground text-[11px] leading-5">
-            填了以后会显示在表格上方，适合明细、费用清单、对账明细这类标题。
-          </p>
           <div className="flex flex-wrap gap-2 pt-1">
             {COMMON_TABLE_TITLES.map(option => (
               <button
@@ -206,9 +203,6 @@ export function TableBehaviorSection({
               </button>
             ))}
           </div>
-          <p className="text-muted-foreground text-[11px] leading-5">
-            正式单据一般用居中，清单或附表标题也可以改成居左。
-          </p>
         </div>
 
         <div className="space-y-1">
@@ -220,9 +214,6 @@ export function TableBehaviorSection({
             maxLength={240}
             className="min-h-[72px] resize-none text-sm"
           />
-          <p className="text-muted-foreground text-[11px] leading-5">
-            会显示在表格底部，适合写结算说明、签收提醒、补充说明。
-          </p>
           <div className="flex flex-wrap gap-2 pt-1">
             {FOOTER_NOTE_STYLE_OPTIONS.map(option => (
               <button
@@ -262,12 +253,7 @@ export function TableBehaviorSection({
 
       {rowNumberEnabled ? (
         <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-          <div>
-            <Label className="text-xs font-medium">序号格式</Label>
-            <p className="text-muted-foreground mt-1 text-[11px] leading-5">
-              可以用常规编号，也可以用补零编号，打印出来更整齐。
-            </p>
-          </div>
+          <Label className="text-xs font-medium">序号格式</Label>
           <div className="flex flex-wrap gap-2">
             {[
               { value: 'numeric' as const, label: '1, 2, 3' },
@@ -306,9 +292,6 @@ export function TableBehaviorSection({
             }
             className="h-8"
           />
-          <p className="text-muted-foreground text-[11px] leading-5">
-            适合纸质单据预留固定行数，实际条目不足时自动补空白行。
-          </p>
           <div className="flex flex-wrap gap-2 pt-1">
             {minRowsQuickOptions.map(option => (
               <button
@@ -330,12 +313,7 @@ export function TableBehaviorSection({
 
         <div className="rounded-lg border bg-slate-50 p-3">
           <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-medium text-slate-900">显示合计行</p>
-              <p className="text-xs leading-5 text-slate-500">
-                数量、金额类字段可直接在表尾汇总。
-              </p>
-            </div>
+            <p className="text-sm font-medium text-slate-900">显示合计行</p>
             <Switch
               checked={showSummary}
               onCheckedChange={handleSummaryToggle}
@@ -346,12 +324,7 @@ export function TableBehaviorSection({
 
       {showSummary && (
         <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-          <div>
-            <Label className="text-xs font-medium">合计文案</Label>
-            <p className="text-muted-foreground mt-1 text-[11px] leading-5">
-              可以改成“本页合计”“总计”，更贴近实际单据习惯。
-            </p>
-          </div>
+          <Label className="text-xs font-medium">合计文案</Label>
 
           <Input
             value={summaryLabel ?? ''}
@@ -380,12 +353,7 @@ export function TableBehaviorSection({
           </div>
 
           <div className="flex items-center justify-between gap-3">
-            <div>
-              <Label className="text-xs font-medium">合计字段</Label>
-              <p className="text-muted-foreground mt-1 text-[11px] leading-5">
-                常见做法是勾选数量、金额、件数、片数，不勾单价。
-              </p>
-            </div>
+            <Label className="text-xs font-medium">合计字段</Label>
             {recommendedSummaryColumns.length > 0 && (
               <Button
                 variant="ghost"

@@ -285,9 +285,6 @@ export function OtherSettings({
             max={5}
             step={1}
           />
-          <p className="text-muted-foreground text-xs">
-            0 表示不显示汇总区域外边框，2px 左右常用于ERP单据中的粗线汇总栏。
-          </p>
         </div>
 
         <div className="space-y-2">
@@ -327,12 +324,7 @@ export function OtherSettings({
         </div>
 
         <div className="space-y-3 rounded-xl border p-3">
-          <div>
-            <Label className="text-sm font-medium">汇总字段颜色</Label>
-            <p className="text-muted-foreground mt-1 text-xs leading-5">
-              这里可以单独控制“合计金额、总重量”等汇总字段的标签颜色和数值颜色，优先级高于整块高亮背景。
-            </p>
-          </div>
+          <Label className="text-sm font-medium">汇总字段颜色</Label>
           <div className="space-y-3">
             {visibleSummaryFields.map(field => {
               const currentLabelColor =
@@ -445,7 +437,9 @@ export function OtherSettings({
                       variant="outline"
                       size="sm"
                       disabled={!currentValueColor}
-                      onClick={() => handleSummaryFieldColorChange(field.key, '')}
+                      onClick={() =>
+                        handleSummaryFieldColorChange(field.key, '')
+                      }
                     >
                       跟随默认
                     </Button>
@@ -483,10 +477,6 @@ export function OtherSettings({
                 rows={3}
                 placeholder="支持变量：{pageNumber}, {totalPages}, {date}, {time}"
               />
-              <p className="text-muted-foreground text-xs">
-                支持变量：{'{pageNumber}'} (页码), {'{totalPages}'} (总页数),{' '}
-                {'{date}'} (日期), {'{time}'} (时间)
-              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

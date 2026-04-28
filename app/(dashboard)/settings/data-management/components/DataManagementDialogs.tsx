@@ -142,7 +142,7 @@ export function DataManagementExecuteDialog({
           />
           {systemMode === 'production' && (
             <div className="text-muted-foreground text-xs">
-              提示：正式账套这里只会清理测试数据，不会直接清空全部初期资料。若当前仍是初始化阶段，请先切换为试用账套后再重置。退货结算相关退款会通过作废/冲销保证往来台账可追溯。
+              提示：正式账套这里只会清理测试数据，不会直接清空全部初期资料。若当前仍是初始化阶段，请先切换为试用账套后再重置。
             </div>
           )}
         </div>

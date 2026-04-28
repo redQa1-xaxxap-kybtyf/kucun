@@ -7,13 +7,7 @@ import { ArrowRight, Clock, Truck, User } from 'lucide-react';
 import Link from 'next/link';
 
 import { Badge, type BadgeProps } from '@/components/ui/badge';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { DashboardFactoryShipmentSummary } from '@/lib/types/dashboard';
 import {
@@ -76,7 +70,6 @@ export function FactoryShipments({ orders, loading }: FactoryShipmentsProps) {
       <Card>
         <CardHeader>
           <CardTitle>厂家发货订单</CardTitle>
-          <CardDescription>最近的发货订单</CardDescription>
         </CardHeader>
         <CardContent className="py-12 text-center">
           <Truck className="text-muted-foreground/50 mx-auto mb-4 h-12 w-12" />
@@ -91,7 +84,6 @@ export function FactoryShipments({ orders, loading }: FactoryShipmentsProps) {
       <CardHeader className="flex-row items-center justify-between">
         <div>
           <CardTitle>厂家发货订单</CardTitle>
-          <CardDescription>最近的发货订单</CardDescription>
         </div>
         <Link
           href="/factory-shipments"

@@ -18,13 +18,7 @@ import * as React from 'react';
 import { ContentLoading } from '@/components/common/loading';
 import { Badge, type BadgeProps } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { dashboardUtils, useDismissAlert } from '@/lib/api/dashboard';
 import type { InventoryAlert } from '@/lib/types/dashboard';
@@ -222,10 +216,6 @@ const InventoryAlertItem = React.forwardRef<
               )}
 
               <p className="text-muted-foreground text-xs">
-                建议: {alert.suggestedAction}
-              </p>
-
-              <p className="text-muted-foreground text-xs">
                 更新时间: {dashboardUtils.formatTimeAgo(alert.lastUpdated)}
               </p>
             </div>
@@ -352,14 +342,6 @@ const InventoryAlerts = React.forwardRef<HTMLDivElement, InventoryAlertsProps>(
                     </Badge>
                   )}
                 </CardTitle>
-                <CardDescription>
-                  {alertStats.critical > 0 && `${alertStats.critical} 紧急`}
-                  {alertStats.danger > 0 &&
-                    `${alertStats.danger > 0 && alertStats.critical > 0 ? ', ' : ''}${alertStats.danger} 危险`}
-                  {alertStats.warning > 0 &&
-                    `${alertStats.critical > 0 || alertStats.danger > 0 ? ', ' : ''}${alertStats.warning} 预警`}
-                  {alertStats.total === 0 && '暂无预警'}
-                </CardDescription>
               </div>
               {onRefresh && (
                 <Button

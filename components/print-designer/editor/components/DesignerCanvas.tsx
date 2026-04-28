@@ -112,7 +112,11 @@ function setNestedPreviewValue(
     }
 
     const nextValue = current[key];
-    if (!nextValue || typeof nextValue !== 'object' || Array.isArray(nextValue)) {
+    if (
+      !nextValue ||
+      typeof nextValue !== 'object' ||
+      Array.isArray(nextValue)
+    ) {
       current[key] = {};
     }
     current = current[key] as Record<string, unknown>;
@@ -261,12 +265,16 @@ export function DesignerCanvas({ companyProfile }: DesignerCanvasProps) {
   const addElement = useDesignerStore(s => s.addElement);
   const selectElement = useDesignerStore(s => s.selectElement);
   const selectElements = useDesignerStore(s => s.selectElements);
-  const arrangeSelectedElements = useDesignerStore(s => s.arrangeSelectedElements);
+  const arrangeSelectedElements = useDesignerStore(
+    s => s.arrangeSelectedElements
+  );
   const duplicateSelectedElements = useDesignerStore(
     s => s.duplicateSelectedElements
   );
   const moveElements = useDesignerStore(s => s.moveElements);
-  const removeSelectedElements = useDesignerStore(s => s.removeSelectedElements);
+  const removeSelectedElements = useDesignerStore(
+    s => s.removeSelectedElements
+  );
   const updateElement = useDesignerStore(s => s.updateElement);
   const updateElements = useDesignerStore(s => s.updateElements);
   const setDragging = useDesignerStore(s => s.setDragging);
@@ -455,10 +463,7 @@ export function DesignerCanvas({ companyProfile }: DesignerCanvasProps) {
         const nextX = moveEvent.clientX - contentRect.left;
         const nextY = moveEvent.clientY - contentRect.top;
 
-        if (
-          Math.abs(nextX - startX) > 3 ||
-          Math.abs(nextY - startY) > 3
-        ) {
+        if (Math.abs(nextX - startX) > 3 || Math.abs(nextY - startY) > 3) {
           isSelectionDraggingRef.current = true;
         }
 
@@ -600,26 +605,14 @@ export function DesignerCanvas({ companyProfile }: DesignerCanvasProps) {
             可打印区 {formatMillimeters(contentBounds.width)} ×{' '}
             {formatMillimeters(contentBounds.height)}
           </span>
-          <span className="rounded-full bg-amber-50 px-3 py-1 text-amber-800">
-            灰色为纸张，虚线框内为实际可打印区域
-          </span>
-          <span className="rounded-full bg-sky-50 px-3 py-1 text-sky-800">
-            靠近边线、中心线和其他元素时会自动吸附
-          </span>
-          <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-800">
-            方向键 1mm，Shift + 方向键 10mm
-          </span>
-          <span className="rounded-full bg-violet-50 px-3 py-1 text-violet-800">
-            Ctrl / Shift + 点击可多选
-          </span>
           {selectedElements.length > 1 ? (
             <span className="rounded-full bg-rose-50 px-3 py-1 text-rose-800">
-              已选 {selectedElements.length} 项，可直接批量对齐、锁定或隐藏
+              已选 {selectedElements.length} 项
             </span>
           ) : null}
           {lockedSelectedCount > 0 ? (
             <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">
-              其中 {lockedSelectedCount} 项已锁定，不参与拖动、微调和对齐
+              已锁定 {lockedSelectedCount} 项
             </span>
           ) : null}
         </div>
@@ -645,7 +638,7 @@ export function DesignerCanvas({ companyProfile }: DesignerCanvasProps) {
             mm
           </div>
           <div
-            className="absolute top-0 left-5 overflow-hidden rounded-tr-md border border-stone-300 border-l-0 bg-white/95 shadow-sm"
+            className="absolute top-0 left-5 overflow-hidden rounded-tr-md border border-l-0 border-stone-300 bg-white/95 shadow-sm"
             data-testid="canvas-rulers"
           >
             <Ruler
@@ -654,8 +647,12 @@ export function DesignerCanvas({ companyProfile }: DesignerCanvasProps) {
               zoom={zoom}
             />
           </div>
-          <div className="absolute top-5 left-0 overflow-hidden rounded-bl-md border border-stone-300 border-t-0 bg-white/95 shadow-sm">
-            <Ruler direction="vertical" length={pageDimensions.height} zoom={zoom} />
+          <div className="absolute top-5 left-0 overflow-hidden rounded-bl-md border border-t-0 border-stone-300 bg-white/95 shadow-sm">
+            <Ruler
+              direction="vertical"
+              length={pageDimensions.height}
+              zoom={zoom}
+            />
           </div>
           <div
             className={cn(
@@ -668,198 +665,199 @@ export function DesignerCanvas({ companyProfile }: DesignerCanvasProps) {
               height: pageHeight,
             }}
           >
-          <div
-            ref={contentRef}
-            className="absolute overflow-hidden rounded-[2px] border border-dashed border-amber-400/90 bg-[linear-gradient(180deg,rgba(245,158,11,0.07),rgba(245,158,11,0.02))]"
-            data-testid="canvas-content"
-            style={{
-              left: contentLeft,
-              top: contentTop,
-              width: contentWidth,
-              height: contentHeight,
-            }}
-            onMouseDown={handleContentMouseDown}
-            onClick={e => {
-              if (ignoreNextCanvasClickRef.current) {
-                ignoreNextCanvasClickRef.current = false;
-                return;
-              }
-
-              if (e.target === e.currentTarget) {
-                selectElement(null);
-              }
-            }}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-          >
             <div
-              className="pointer-events-none absolute inset-0"
+              ref={contentRef}
+              className="absolute overflow-hidden rounded-[2px] border border-dashed border-amber-400/90 bg-[linear-gradient(180deg,rgba(245,158,11,0.07),rgba(245,158,11,0.02))]"
+              data-testid="canvas-content"
               style={{
-                backgroundImage: gridBackgroundImage,
-                backgroundSize: gridBackgroundSize,
+                left: contentLeft,
+                top: contentTop,
+                width: contentWidth,
+                height: contentHeight,
               }}
-            />
-            <div className="pointer-events-none absolute top-2 left-2 rounded-full bg-white/90 px-2 py-1 text-[10px] text-amber-700 shadow-sm">
-              可打印区域
-            </div>
-            {selectionBox ? (
-              <div
-                className="pointer-events-none absolute rounded-md border border-sky-500 bg-sky-200/20 shadow-[inset_0_0_0_1px_rgba(14,165,233,0.2)]"
-                data-testid="marquee-selection"
-                style={getSelectionBoxStyle(selectionBox)}
-              />
-            ) : null}
-            <div
-              className="pointer-events-none absolute top-2 right-2 rounded-full bg-white/92 px-2 py-1 text-[10px] text-slate-600 shadow-sm"
-              data-testid="canvas-grid-badge"
+              onMouseDown={handleContentMouseDown}
+              onClick={e => {
+                if (ignoreNextCanvasClickRef.current) {
+                  ignoreNextCanvasClickRef.current = false;
+                  return;
+                }
+
+                if (e.target === e.currentTarget) {
+                  selectElement(null);
+                }
+              }}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
             >
-              {showMinorGrid ? '5mm/10mm 对齐网格' : '10mm 对齐网格'}
-            </div>
-            {selectedElements.length > 1 ? (
               <div
-                className="absolute top-10 right-2 z-10 max-w-[22rem] rounded-2xl border border-stone-200 bg-white/95 p-3 shadow-xl"
-                data-testid="multi-select-actions"
+                className="pointer-events-none absolute inset-0"
+                style={{
+                  backgroundImage: gridBackgroundImage,
+                  backgroundSize: gridBackgroundSize,
+                }}
+              />
+              <div className="pointer-events-none absolute top-2 left-2 rounded-full bg-white/90 px-2 py-1 text-[10px] text-amber-700 shadow-sm">
+                可打印区域
+              </div>
+              {selectionBox ? (
+                <div
+                  className="pointer-events-none absolute rounded-md border border-sky-500 bg-sky-200/20 shadow-[inset_0_0_0_1px_rgba(14,165,233,0.2)]"
+                  data-testid="marquee-selection"
+                  style={getSelectionBoxStyle(selectionBox)}
+                />
+              ) : null}
+              <div
+                className="pointer-events-none absolute top-2 right-2 rounded-full bg-white/92 px-2 py-1 text-[10px] text-slate-600 shadow-sm"
+                data-testid="canvas-grid-badge"
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-medium text-slate-900">
-                      已选 {selectedElements.length} 项
-                    </p>
-                    <p className="mt-1 text-[11px] leading-5 text-slate-500">
-                      先多选，再一键对齐、分布、锁定或隐藏，做中文表单会顺手很多。
-                    </p>
-                    {lockedSelectedCount > 0 ? (
-                      <p className="mt-1 text-[11px] leading-5 text-slate-500">
-                        已锁定元素会保留原位，不会跟着拖动、微调或批量对齐。
+                {showMinorGrid ? '5mm/10mm 对齐网格' : '10mm 对齐网格'}
+              </div>
+              {selectedElements.length > 1 ? (
+                <div
+                  className="absolute top-10 right-2 z-10 max-w-[22rem] rounded-2xl border border-stone-200 bg-white/95 p-3 shadow-xl"
+                  data-testid="multi-select-actions"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-medium text-slate-900">
+                        已选 {selectedElements.length} 项
                       </p>
-                    ) : null}
+                      {lockedSelectedCount > 0 ? (
+                        <p className="mt-1 text-[11px] leading-5 text-slate-500">
+                          已锁定 {lockedSelectedCount} 项
+                        </p>
+                      ) : null}
+                    </div>
                   </div>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {MULTI_SELECT_ACTIONS.map(action => (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {MULTI_SELECT_ACTIONS.map(action => (
+                      <Button
+                        key={action.mode}
+                        variant="outline"
+                        size="sm"
+                        className="h-7 rounded-full px-3 text-[11px]"
+                        onClick={() => arrangeSelectedElements(action.mode)}
+                      >
+                        {action.label}
+                      </Button>
+                    ))}
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2 border-t border-stone-200 pt-3">
                     <Button
-                      key={action.mode}
                       variant="outline"
                       size="sm"
                       className="h-7 rounded-full px-3 text-[11px]"
-                      onClick={() => arrangeSelectedElements(action.mode)}
+                      onClick={() =>
+                        handleSetSelectedLocked(!allSelectedLocked)
+                      }
                     >
-                      {action.label}
+                      {allSelectedLocked ? (
+                        <LockOpen className="mr-1.5 h-3.5 w-3.5" />
+                      ) : (
+                        <Lock className="mr-1.5 h-3.5 w-3.5" />
+                      )}
+                      {allSelectedLocked ? '解锁选中' : '锁定选中'}
                     </Button>
-                  ))}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 rounded-full px-3 text-[11px]"
+                      onClick={() =>
+                        handleSetSelectedVisible(hasHiddenSelected)
+                      }
+                    >
+                      {hasHiddenSelected ? (
+                        <Eye className="mr-1.5 h-3.5 w-3.5" />
+                      ) : (
+                        <EyeOff className="mr-1.5 h-3.5 w-3.5" />
+                      )}
+                      {hasHiddenSelected ? '显示选中' : '隐藏选中'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 rounded-full px-3 text-[11px]"
+                      onClick={duplicateSelectedElements}
+                    >
+                      <Copy className="mr-1.5 h-3.5 w-3.5" />
+                      复制选中
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 rounded-full px-3 text-[11px] text-rose-700"
+                      onClick={removeSelectedElements}
+                    >
+                      <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                      删除选中
+                    </Button>
+                  </div>
                 </div>
-                <div className="mt-3 flex flex-wrap gap-2 border-t border-stone-200 pt-3">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 rounded-full px-3 text-[11px]"
-                    onClick={() => handleSetSelectedLocked(!allSelectedLocked)}
-                  >
-                    {allSelectedLocked ? (
-                      <LockOpen className="mr-1.5 h-3.5 w-3.5" />
-                    ) : (
-                      <Lock className="mr-1.5 h-3.5 w-3.5" />
-                    )}
-                    {allSelectedLocked ? '解锁选中' : '锁定选中'}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 rounded-full px-3 text-[11px]"
-                    onClick={() => handleSetSelectedVisible(hasHiddenSelected)}
-                  >
-                    {hasHiddenSelected ? (
-                      <Eye className="mr-1.5 h-3.5 w-3.5" />
-                    ) : (
-                      <EyeOff className="mr-1.5 h-3.5 w-3.5" />
-                    )}
-                    {hasHiddenSelected ? '显示选中' : '隐藏选中'}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 rounded-full px-3 text-[11px]"
-                    onClick={duplicateSelectedElements}
-                  >
-                    <Copy className="mr-1.5 h-3.5 w-3.5" />
-                    复制选中
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 rounded-full px-3 text-[11px] text-rose-700"
-                    onClick={removeSelectedElements}
-                  >
-                    <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                    删除选中
-                  </Button>
+              ) : null}
+              {selectedElement && selectedElements.length === 1 ? (
+                <div
+                  className="pointer-events-none absolute top-10 right-2 rounded-2xl bg-slate-950/90 px-3 py-2 text-[11px] text-white shadow-lg"
+                  data-testid="selected-element-hud"
+                >
+                  {getElementDisplayName(selectedElement)} · X{' '}
+                  {formatMillimeters(selectedElement.position.x)} · Y{' '}
+                  {formatMillimeters(selectedElement.position.y)} · 宽{' '}
+                  {formatMillimeters(selectedElement.size.width)} · 高{' '}
+                  {formatMillimeters(selectedElement.size.height)}
                 </div>
-              </div>
-            ) : null}
-            {selectedElement && selectedElements.length === 1 ? (
-              <div
-                className="pointer-events-none absolute top-10 right-2 rounded-2xl bg-slate-950/90 px-3 py-2 text-[11px] text-white shadow-lg"
-                data-testid="selected-element-hud"
-              >
-                {getElementDisplayName(selectedElement)} · X{' '}
-                {formatMillimeters(selectedElement.position.x)} · Y{' '}
-                {formatMillimeters(selectedElement.position.y)} · 宽{' '}
-                {formatMillimeters(selectedElement.size.width)} · 高{' '}
-                {formatMillimeters(selectedElement.size.height)}
-              </div>
-            ) : null}
+              ) : null}
 
-            {elements.length === 0 ? (
-              <div className="pointer-events-none flex h-full items-center justify-center px-6">
-                <div className="max-w-sm rounded-2xl border border-stone-200 bg-white/92 px-5 py-4 text-center shadow-sm">
-                  <p className="text-sm font-medium text-slate-900">
-                    从左侧拖入组件或数据项开始设计
-                  </p>
-                  <p className="mt-2 text-xs leading-5 text-slate-500">
-                    常见做法是先放标题、公司信息，再放客户信息和明细表格。
-                  </p>
+              {elements.length === 0 ? (
+                <div className="pointer-events-none flex h-full items-center justify-center px-6">
+                  <div className="max-w-sm rounded-2xl border border-stone-200 bg-white/92 px-5 py-4 text-center shadow-sm">
+                    <p className="text-sm font-medium text-slate-900">
+                      从左侧拖入组件或数据项开始设计
+                    </p>
+                    <p className="mt-2 text-xs leading-5 text-slate-500">
+                      常见做法是先放标题、公司信息，再放客户信息和明细表格。
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ) : null}
+              ) : null}
 
-            {/* 对齐辅助线 */}
-            <AlignmentGuidesOverlay zoom={zoom} guides={alignmentGuides} />
+              {/* 对齐辅助线 */}
+              <AlignmentGuidesOverlay zoom={zoom} guides={alignmentGuides} />
 
-            {/* 渲染元素 */}
-            {elements.map(element => (
-              <CanvasElement
-                key={element.id}
-                element={element}
-                zoom={zoom}
-                isSelected={selectedElementIds.includes(element.id)}
-                isPrimarySelected={element.id === selectedElementId}
-                selectedCount={selectedElements.length}
-                selectedElementsForDrag={selectedElements}
-                bounds={contentBounds}
-                templateType={templateType}
-                companyProfile={companyProfile}
-                alignmentGuides={
-                  element.id === draggingElementId ? alignmentGuides : []
-                }
-                onSelect={options => selectElement(element.id, options)}
-                onFocusWithinSelection={() =>
-                  selectElements(selectedElementIds, element.id)
-                }
-                onMoveSelection={(startPositions, delta) =>
-                  moveElements({
-                    ids: selectedElementIds,
-                    startPositions,
-                    delta,
-                    bounds: contentBounds,
-                  })
-                }
-                onUpdate={updates => updateElement(element.id, updates)}
-                onDragStart={() => setDraggingElementId(element.id)}
-                onDragEnd={() => setDraggingElementId(null)}
-              />
-            ))}
+              {/* 渲染元素 */}
+              {elements.map(element => (
+                <CanvasElement
+                  key={element.id}
+                  element={element}
+                  zoom={zoom}
+                  isSelected={selectedElementIds.includes(element.id)}
+                  isPrimarySelected={element.id === selectedElementId}
+                  selectedCount={selectedElements.length}
+                  selectedElementsForDrag={selectedElements}
+                  bounds={contentBounds}
+                  templateType={templateType}
+                  companyProfile={companyProfile}
+                  alignmentGuides={
+                    element.id === draggingElementId ? alignmentGuides : []
+                  }
+                  onSelect={options => selectElement(element.id, options)}
+                  onFocusWithinSelection={() =>
+                    selectElements(selectedElementIds, element.id)
+                  }
+                  onMoveSelection={(startPositions, delta) =>
+                    moveElements({
+                      ids: selectedElementIds,
+                      startPositions,
+                      delta,
+                      bounds: contentBounds,
+                    })
+                  }
+                  onUpdate={updates => updateElement(element.id, updates)}
+                  onDragStart={() => setDraggingElementId(element.id)}
+                  onDragEnd={() => setDraggingElementId(null)}
+                />
+              ))}
+            </div>
           </div>
-        </div>
         </div>
       </div>
 
@@ -978,7 +976,11 @@ function CanvasElement({
     const previewData = cloneMockPrintData(templateType, companyProfile);
     const currentValue = getNestedValue(previewData, element.field);
 
-    if (currentValue === undefined || currentValue === null || currentValue === '') {
+    if (
+      currentValue === undefined ||
+      currentValue === null ||
+      currentValue === ''
+    ) {
       const previewValue =
         element.fallback.trim() || `示例${element.label || '字段内容'}`;
       setNestedPreviewValue(previewData, element.field, previewValue);
@@ -1220,7 +1222,7 @@ function CanvasElement({
         );
       case 'placeholder':
         return (
-          <div className="relative h-full w-full overflow-hidden rounded-sm bg-sky-50/25 ring-1 ring-inset ring-sky-200/70">
+          <div className="relative h-full w-full overflow-hidden rounded-sm bg-sky-50/25 ring-1 ring-sky-200/70 ring-inset">
             <PlaceholderRenderer
               element={element}
               data={placeholderPreviewData ?? {}}

@@ -490,9 +490,6 @@ export function PropertiesPanel({ companyProfile }: PropertiesPanelProps) {
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-muted-foreground text-[11px] leading-5">
-                决定当前表格读取哪组列表内容。业务单据通常选择明细数据，报表模板可以切换到趋势、季度或提醒数据。
-              </p>
             </div>
 
             <Separator className="my-4" />
@@ -602,9 +599,6 @@ export function PropertiesPanel({ companyProfile }: PropertiesPanelProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-slate-900">锁定位置</p>
-                <p className="text-xs text-slate-500">
-                  锁定后不可拖动和缩放，适合表头或固定章信息。
-                </p>
               </div>
               <Switch
                 checked={selectedElement.locked}
@@ -619,9 +613,6 @@ export function PropertiesPanel({ companyProfile }: PropertiesPanelProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-slate-900">显示元素</p>
-                <p className="text-xs text-slate-500">
-                  临时隐藏但不删除，方便对比不同版式方案。
-                </p>
               </div>
               <Switch
                 checked={selectedElement.visible}

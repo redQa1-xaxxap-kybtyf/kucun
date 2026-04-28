@@ -45,7 +45,6 @@ interface TableRecommendationSectionProps {
 interface TableRecommendationPreset {
   key: 'delivery-piece' | 'statement-piece' | 'loading-item';
   label: string;
-  description: string;
   title: string;
   titleBarStyle: TitleBarStyle;
   titleAlign: TextAlign;
@@ -63,7 +62,6 @@ const TABLE_RECOMMENDATION_PRESETS: TableRecommendationPreset[] = [
   {
     key: 'delivery-piece',
     label: '送货单常用',
-    description: '适合现场送货、客户签收，数量和单价按片展示。',
     title: '货品明细',
     titleBarStyle: 'filled',
     titleAlign: 'center',
@@ -79,7 +77,6 @@ const TABLE_RECOMMENDATION_PRESETS: TableRecommendationPreset[] = [
   {
     key: 'statement-piece',
     label: '对账单常用',
-    description: '适合月结对账、往来核对，列头更清楚。',
     title: '对账明细',
     titleBarStyle: 'outlined',
     titleAlign: 'center',
@@ -95,7 +92,6 @@ const TABLE_RECOMMENDATION_PRESETS: TableRecommendationPreset[] = [
   {
     key: 'loading-item',
     label: '装车单常用',
-    description: '适合配货装车、出库装载，数量和单价按件展示。',
     title: '装车明细',
     titleBarStyle: 'filled',
     titleAlign: 'center',
@@ -157,9 +153,6 @@ export function TableRecommendationSection({
     <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-3">
       <div>
         <p className="text-xs font-medium text-slate-900">整表推荐</p>
-        <p className="text-muted-foreground mt-1 text-[11px] leading-5">
-          一键把标题、列头、合计和常用样式一起带上，更接近中文单据实际使用。
-        </p>
       </div>
 
       <div className="grid gap-2">
@@ -172,9 +165,6 @@ export function TableRecommendationSection({
           >
             <div className="text-sm font-medium text-slate-900">
               {preset.label}
-            </div>
-            <div className="mt-1 text-[11px] leading-5 text-slate-500">
-              {preset.description}
             </div>
           </button>
         ))}

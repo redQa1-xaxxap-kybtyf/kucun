@@ -10,13 +10,7 @@ import { useEffect, useState, useTransition } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import {
   copyPrintTemplate,
@@ -27,19 +21,6 @@ import {
 } from '@/lib/print-designer/template-client';
 
 type TemplateItem = PrintTemplateListItem;
-
-const typeLabels: Record<string, string> = {
-  'sales-order': '销售订单',
-  'purchase-order': '采购订单',
-  'factory-shipment': '厂家发货',
-  'inbound-record': '仓库进货（入库记录）',
-  'return-order': '退货订单',
-  'delivery-note': '发货单',
-  'finance-monthly-report': '月度报表',
-  'finance-annual-report': '年度报表',
-  'finance-profit-loss-report': '盈亏分析',
-  custom: '自定义',
-};
 
 export function TemplateList() {
   const router = useRouter();
@@ -252,9 +233,6 @@ export function TemplateList() {
                     ) : null}
                   </div>
                 </div>
-                <CardDescription>
-                  {typeLabels[template.type] ?? template.type}
-                </CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground text-xs">
@@ -263,7 +241,7 @@ export function TemplateList() {
                 </p>
                 {template.isSystem ? (
                   <p className="text-muted-foreground mt-1 text-[11px]">
-                    系统基础模板可直接编辑、复制或设为默认，但不能删除。
+                    系统内置，不能删除。
                   </p>
                 ) : null}
               </CardContent>

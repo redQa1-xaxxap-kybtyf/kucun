@@ -190,10 +190,7 @@ function HeaderComponent({
           {systemMode && (
             <Popover>
               <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  className="flex items-center rounded-md"
-                >
+                <button type="button" className="flex items-center rounded-md">
                   <Badge
                     variant="secondary"
                     className={cn(
@@ -218,17 +215,13 @@ function HeaderComponent({
               <PopoverContent align="end" className="w-80 rounded-md">
                 <div className="space-y-2">
                   <div className="text-sm font-semibold text-slate-900">
-                    账套模式说明
+                    账套模式
                   </div>
                   <div className="text-xs leading-relaxed text-slate-600">
                     {systemMode === 'trial' ? (
-                      <>
-                        当前为试用账套：允许在“数据管理”中一键重置试用数据，重置后业务单据、报表与台账会清空/归零。
-                      </>
+                      <>试用账套：可重置试用数据。</>
                     ) : (
-                      <>
-                        当前为正式账套：受保护，禁止直接清空正式数据；仅支持清理标记为测试的数据，并通过作废/冲销保证可追溯。
-                      </>
+                      <>正式账套：保护业务数据。</>
                     )}
                   </div>
                   {currentUser.role === 'admin' ? (
@@ -237,9 +230,7 @@ function HeaderComponent({
                         size="sm"
                         variant="outline"
                         className="h-8 rounded-md text-xs font-medium"
-                        onClick={() =>
-                          router.push('/settings/data-management')
-                        }
+                        onClick={() => router.push('/settings/data-management')}
                       >
                         进入数据管理
                       </Button>

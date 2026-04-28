@@ -1,11 +1,6 @@
 'use client';
 
-import {
-  Building2,
-  ExternalLink,
-  LocateFixed,
-  Type,
-} from 'lucide-react';
+import { Building2, ExternalLink, LocateFixed, Type } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useMemo } from 'react';
 
@@ -70,7 +65,9 @@ function findCompanyNameElement(
     element => element.type === 'placeholder'
   ) as PlaceholderElement[];
 
-  const exactMatch = placeholders.find(element => element.field === 'company.name');
+  const exactMatch = placeholders.find(
+    element => element.field === 'company.name'
+  );
   if (exactMatch) {
     return exactMatch;
   }
@@ -126,10 +123,9 @@ export function CommonHeaderQuickEditSection({
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h4 className="text-sm font-semibold text-stone-900">常用抬头快捷编辑</h4>
-          <p className="mt-1 text-[11px] leading-5 text-stone-600">
-            标题可直接改，公司名称默认来自系统基本设置，不用再先去画布里找。
-          </p>
+          <h4 className="text-sm font-semibold text-stone-900">
+            常用抬头快捷编辑
+          </h4>
         </div>
       </div>
 
@@ -140,7 +136,10 @@ export function CommonHeaderQuickEditSection({
             单据标题
           </div>
           <div className="mt-2 space-y-2">
-            <Label htmlFor="quick-edit-title" className="text-xs text-stone-600">
+            <Label
+              htmlFor="quick-edit-title"
+              className="text-xs text-stone-600"
+            >
               标题内容
             </Label>
             <Input
@@ -163,7 +162,7 @@ export function CommonHeaderQuickEditSection({
               <p className="text-[11px] text-stone-500">
                 {titleElement
                   ? `已定位顶部标题文本，位置 ${formatElementLocation(titleElement)}`
-                  : '当前模板没有识别到主标题文本，仍可手动选中顶部文字后编辑。'}
+                  : '未识别到主标题。'}
               </p>
               <Button
                 type="button"
@@ -186,7 +185,10 @@ export function CommonHeaderQuickEditSection({
             公司名称
           </div>
           <div className="mt-2 space-y-2">
-            <Label htmlFor="quick-edit-company-name" className="text-xs text-stone-600">
+            <Label
+              htmlFor="quick-edit-company-name"
+              className="text-xs text-stone-600"
+            >
               系统公司名称
             </Label>
             <Input
@@ -198,9 +200,6 @@ export function CommonHeaderQuickEditSection({
                 companyProfile === undefined && 'text-stone-500'
               )}
             />
-            <p className="text-[11px] leading-5 text-stone-500">
-              打印预览会优先读取“系统设置 / 基本设置”里的公司名称、地址和电话。
-            </p>
             <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
@@ -236,7 +235,12 @@ export function CommonHeaderQuickEditSection({
                     })
                   }
                 >
-                  <Button type="button" variant="outline" size="sm" className="h-8">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8"
+                  >
                     更换绑定字段
                   </Button>
                 </FieldPicker>
@@ -245,7 +249,7 @@ export function CommonHeaderQuickEditSection({
             <p className="text-[11px] text-stone-500">
               {companyNameElement
                 ? `当前绑定字段：${companyNameElement.field}，位置 ${formatElementLocation(companyNameElement)}`
-                : '当前模板没有识别到公司名称字段，建议检查是否绑定了 company.name。'}
+                : '未识别到公司名称字段。'}
             </p>
           </div>
         </div>

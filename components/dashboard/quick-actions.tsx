@@ -24,13 +24,7 @@ import * as React from 'react';
 import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { QuickAction } from '@/lib/types/dashboard';
 import { cn } from '@/lib/utils';
 
@@ -366,7 +360,6 @@ const QuickActions = React.forwardRef<HTMLDivElement, QuickActionsProps>(
               <Plus className="h-5 w-5" />
               <span>快速操作</span>
             </CardTitle>
-            <CardDescription>常用功能快速入口</CardDescription>
           </CardHeader>
         )}
 
