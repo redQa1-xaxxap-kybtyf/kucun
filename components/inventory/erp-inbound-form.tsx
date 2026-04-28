@@ -2,10 +2,14 @@
 
 import {
   AlertCircle,
+  ArrowLeft,
   BarChart3,
   ClipboardList,
   FileText,
+  Loader2,
   Package,
+  RotateCcw,
+  Save,
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -170,9 +174,19 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
       createMutation: batchCreateMutation,
       onSuccess,
     });
+  const isFormSubmitting =
+    isSubmitting || isConfirmSubmitting || isBatchSubmitting;
+  const bottomSummaryTitle = isBatchPurchaseMode
+    ? `批量录入 ${batchRows.length} 条产品`
+    : selectedProduct?.label || '待选产品';
+  const bottomSummaryText = isBatchPurchaseMode
+    ? '按供应商和多条明细提交入库'
+    : selectedProduct?.code
+      ? `产品编码：${selectedProduct.code}`
+      : '选好产品、批次、数量和成本后提交';
   const hasUnsavedChanges =
     form.formState.isDirty &&
-    !(isSubmitting || isConfirmSubmitting || isBatchSubmitting);
+    !isFormSubmitting;
   const { confirmLeavePage } = useUnsavedChangesGuard({
     enabled: hasUnsavedChanges,
     message: '当前入库单内容尚未保存，确定要离开吗？',
@@ -617,9 +631,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
       <div className="space-y-4">
         {/* 页面标题卡片 */}
         <InboundFormToolbar
-          isSubmitting={
-            isSubmitting || isConfirmSubmitting || isBatchSubmitting
-          }
+          isSubmitting={isFormSubmitting}
           onReset={handleFormReset}
           onBack={handleBack}
           title={currentPageTitle}
@@ -1013,6 +1025,58 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                         </FormItem>
                       )}
                     />
+                  </div>
+                </div>
+
+                <div className="sticky bottom-0 z-20 -mx-6 mt-6 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur">
+                  <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-semibold text-slate-900">
+                        {bottomSummaryTitle}
+                      </div>
+                      <div className="mt-0.5 text-xs text-slate-500">
+                        {bottomSummaryText}
+                      </div>
+                    </div>
+                    <div className="grid w-full gap-2 sm:grid-cols-[minmax(96px,auto)_1fr_1fr] xl:w-auto xl:min-w-[420px]">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleBack}
+                        disabled={isFormSubmitting}
+                        className="h-10"
+                      >
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        返回
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleFormReset}
+                        disabled={isFormSubmitting}
+                        className="h-10"
+                      >
+                        <RotateCcw className="mr-2 h-4 w-4" />
+                        重新填写
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={isFormSubmitting}
+                        className="h-10 bg-blue-600 text-white hover:bg-blue-700"
+                      >
+                        {isFormSubmitting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            正在处理...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="mr-2 h-4 w-4" />
+                            {submitLabel}
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </form>
