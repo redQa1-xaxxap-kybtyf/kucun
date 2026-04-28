@@ -128,7 +128,7 @@ function TaskProgressSection({
       {status === 'running' && (
         <div className="text-muted-foreground flex items-center gap-2 text-xs">
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          <span>正在后台处理，请勿关闭页面（关闭后可用 taskId 继续查看）</span>
+          <span>正在后台处理，请勿关闭页面</span>
         </div>
       )}
     </div>

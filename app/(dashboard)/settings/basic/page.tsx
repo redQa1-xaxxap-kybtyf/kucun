@@ -24,7 +24,7 @@ const BasicSettingsForm = dynamic(
     ssr: false,
     loading: () => (
       <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
-        表单加载中...
+        设置加载中...
       </div>
     ),
   }
@@ -42,9 +42,9 @@ const BasicSettingsPage = () => {
           <Settings className="h-10 w-10" />
         </div>
         <div className="space-y-2">
-          <h2 className="text-xl font-semibold text-slate-900">权限受限</h2>
+          <h2 className="text-xl font-semibold text-slate-900">没有权限</h2>
           <p className="text-sm font-medium text-slate-500">
-            只有管理员可以查看和修改这里的设置。
+            当前账号不能修改系统设置。
           </p>
         </div>
         <Button
@@ -59,7 +59,7 @@ const BasicSettingsPage = () => {
   }
 
   return (
-    <SettingsLayout title="基本设置" description="系统资料和业务规则">
+    <SettingsLayout title="基本设置" description="公司信息和业务开关">
       <div className="w-full pb-20">
         <BasicSettingsForm />
       </div>

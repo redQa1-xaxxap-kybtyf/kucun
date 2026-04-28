@@ -9,7 +9,7 @@ import { getSystemMode } from '@/lib/services/system-mode-service';
 import { DataManagementPageClient } from './page-client';
 
 export const metadata: Metadata = {
-  title: '数据管理 - 系统设置',
+  title: '账套数据 - 系统设置',
   description: '试用账套重置与正式账套测试数据清理',
 };
 
@@ -32,10 +32,10 @@ export default async function DataManagementPage() {
             </div>
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                数据管理
+                账套数据
               </h1>
               <p className="mt-1 text-sm text-gray-600">
-                试用账套可一键重置；正式账套仅清理测试数据（可追溯）
+                试用账套可重置，正式账套仅清理测试数据
               </p>
             </div>
           </div>

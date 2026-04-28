@@ -40,7 +40,7 @@ export function DataManagementPreviewDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>预览清理范围</AlertDialogTitle>
           <AlertDialogDescription>
-            用于防误操作：先查看将被处理的数据范围（数量/金额）。不做任何修改。
+            只查看数量和金额，不会修改数据。
           </AlertDialogDescription>
         </AlertDialogHeader>
 
@@ -127,10 +127,10 @@ export function DataManagementExecuteDialog({
     >
       <AlertDialogContent className="max-w-xl">
         <AlertDialogHeader>
-          <AlertDialogTitle>强确认</AlertDialogTitle>
+          <AlertDialogTitle>确认操作</AlertDialogTitle>
           <AlertDialogDescription>
-            本操作不可撤销。请输入“{confirmExamples[0]}”或“
-            {confirmExamples[1] ?? confirmExamples[0]}”以继续。
+            操作不可撤销。输入“{confirmExamples[0]}”或“
+            {confirmExamples[1] ?? confirmExamples[0]}”继续。
           </AlertDialogDescription>
         </AlertDialogHeader>
 
@@ -142,7 +142,7 @@ export function DataManagementExecuteDialog({
           />
           {systemMode === 'production' && (
             <div className="text-muted-foreground text-xs">
-              提示：正式账套这里只会清理测试数据，不会直接清空全部初期资料。若当前仍是初始化阶段，请先切换为试用账套后再重置。
+              正式账套只清理测试数据。初始化阶段需要清空数据时，先切换为试用账套。
             </div>
           )}
         </div>
@@ -204,8 +204,7 @@ export function DataManagementSwitchModeDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>切换账套模式</AlertDialogTitle>
           <AlertDialogDescription>
-            该操作仅管理员可执行。本操作不可撤销。请输入“{switchConfirmWord}
-            ”以继续。
+            仅管理员可操作。输入“{switchConfirmWord}”继续。
           </AlertDialogDescription>
         </AlertDialogHeader>
 
@@ -225,7 +224,7 @@ export function DataManagementSwitchModeDialog({
             placeholder={`请输入：${switchConfirmWord}`}
           />
           <div className="text-muted-foreground text-xs">
-            提示：切换后页面会自动更新，账套状态通常会在约 5 秒内生效。
+            切换后页面会自动更新，通常 5 秒内生效。
           </div>
         </div>
 

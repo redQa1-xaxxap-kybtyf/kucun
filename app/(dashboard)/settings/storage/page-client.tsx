@@ -14,13 +14,7 @@ import React from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { queryKeys } from '@/lib/queryKeys';
 import type {
@@ -39,7 +33,7 @@ const QiniuStorageForm = dynamic(
     ssr: false,
     loading: () => (
       <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
-        表单加载中...
+        设置加载中...
       </div>
     ),
   }
@@ -107,8 +101,8 @@ export default function StorageSettingsPageClient({
     },
     onSuccess: () => {
       toast({
-        title: '成功',
-        description: '七牛云存储配置保存成功',
+        title: '保存成功',
+        description: '存储设置已保存',
         variant: 'success',
       });
       // 不刷新查询，避免表单被重置
@@ -162,7 +156,7 @@ export default function StorageSettingsPageClient({
       if (data.success) {
         toast({
           title: '测试成功',
-          description: '七牛云存储连接正常',
+          description: '存储连接正常',
           variant: 'success',
         });
       } else {
@@ -199,7 +193,7 @@ export default function StorageSettingsPageClient({
                   </div>
                   <div>
                     <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                      七牛云存储
+                      文件存储
                     </h1>
                     <p className="text-sm text-gray-600">文件上传设置</p>
                   </div>
@@ -223,9 +217,7 @@ export default function StorageSettingsPageClient({
                 <Cloud className="mr-2 h-5 w-5" />
                 权限不足
               </CardTitle>
-              <CardDescription className="text-amber-700">
-                仅管理员可访问。
-              </CardDescription>
+              <p className="text-sm text-amber-700">仅管理员可访问。</p>
             </CardHeader>
           </Card>
         </div>
@@ -263,18 +255,16 @@ export default function StorageSettingsPageClient({
             <div className="space-y-1">
               <div className="flex items-center gap-3">
                 <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
-                  七牛云存储
+                  文件存储
                 </h1>
                 <Badge
                   variant="outline"
                   className="border-slate-200 px-2.5 py-1 text-[10px] font-semibold text-slate-400"
                 >
-                  外部存储
+                  七牛云
                 </Badge>
               </div>
-              <p className="text-sm font-bold text-slate-400">
-                对象存储和访问域名
-              </p>
+              <p className="text-sm font-bold text-slate-400">图片和附件上传</p>
             </div>
           </div>
           <Button
@@ -283,24 +273,24 @@ export default function StorageSettingsPageClient({
             className="h-11 rounded-md border-slate-200 bg-white px-6 text-xs font-semibold text-slate-900 shadow-sm hover:bg-slate-50"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            返回设置
+            返回
           </Button>
         </div>
 
         <div className="grid gap-12 lg:grid-cols-[2.5fr_1fr]">
-          {/* 左侧：核心配置区域 */}
+          {/* 左侧：存储账号 */}
           <div className="space-y-10">
             <section className="space-y-6">
               <div className="flex flex-col gap-1 px-1">
                 <h3 className="text-sm font-semibold text-slate-900">
-                  服务接入
+                  存储账号
                 </h3>
               </div>
 
               {configError ? (
                 <div className="group flex h-64 flex-col items-center justify-center rounded-md border border-dashed border-slate-200 bg-white p-8 hover:border-slate-300">
                   <p className="text-sm font-bold text-slate-400">
-                    加载配置失败，请检查网络连接
+                    暂时无法加载存储设置
                   </p>
                   <Button
                     variant="outline"
@@ -339,7 +329,7 @@ export default function StorageSettingsPageClient({
           <div className="space-y-8">
             <section className="space-y-4">
               <h3 className="px-1 text-[11px] font-semibold text-slate-400">
-                操作提示
+                填写提示
               </h3>
               <div className="rounded-md border border-slate-100 bg-white p-6 shadow-sm">
                 <div className="space-y-6">

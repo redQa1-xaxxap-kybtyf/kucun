@@ -29,27 +29,26 @@ interface SettingsLayoutProps {
 
 export function SettingsLayout({
   children,
-  title = '系统设置中心',
-  description = '管理系统设置、用户权限与操作记录',
+  title = '系统设置',
+  description = '基础资料、成员和打印模板',
   className,
 }: SettingsLayoutProps) {
   return (
-    <div className={cn('min-h-full w-full space-y-10 p-6 lg:p-10', className)}>
+    <div
+      className={cn('min-h-full w-full space-y-8 p-4 sm:p-6 lg:p-8', className)}
+    >
       {/* 页面标题区 */}
-      <div className="mx-auto max-w-[1440px] px-2">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
+      <div className="mx-auto max-w-[1280px] px-1">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
             {title}
           </h1>
-          <div className="flex items-center gap-3">
-            <div className="h-4 w-1 rounded-full bg-blue-500 shadow-[0_2px_8px_rgba(59,130,246,0.3)]" />
-            <p className="text-sm font-medium text-slate-500">{description}</p>
-          </div>
+          <p className="text-sm font-medium text-slate-500">{description}</p>
         </div>
       </div>
 
       {/* 主内容区域 - 移除冗余 aside，直接占据主视野 */}
-      <div className="mx-auto max-w-[1440px]">{children}</div>
+      <div className="mx-auto max-w-[1280px]">{children}</div>
     </div>
   );
 }
@@ -91,11 +90,11 @@ export function SettingsSection({
   return (
     <div
       className={cn(
-        'rounded-md border border-slate-100 bg-slate-50/50 p-6',
+        'rounded-md border border-slate-100 bg-slate-50/50 p-5 sm:p-6',
         className
       )}
     >
-      <div className="mb-6 flex items-start gap-3">
+      <div className="mb-5 flex items-start gap-3">
         <div className="mt-1 h-4 w-1 rounded-full bg-blue-500" />
         <div className="space-y-1">
           <h3 className="text-sm font-semibold tracking-tight text-slate-900">

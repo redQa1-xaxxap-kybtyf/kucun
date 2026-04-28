@@ -244,8 +244,8 @@ export function BasicSettingsForm() {
             : inventoryConfig.defaultMinQuantity,
       });
       toast({
-        title: '重置成功',
-        description: '表单已重置',
+        title: '已恢复',
+        description: '已恢复到上次保存',
         variant: 'success',
       });
     }
@@ -256,7 +256,7 @@ export function BasicSettingsForm() {
     return (
       <div className="flex items-center justify-center py-8">
         <Loader2 className="h-6 w-6 animate-spin" />
-        <span className="ml-2">加载设置中...</span>
+        <span className="ml-2">设置加载中...</span>
       </div>
     );
   }
@@ -283,8 +283,8 @@ export function BasicSettingsForm() {
         onSubmit={form.handleSubmit(onSubmit)}
         className="space-y-12 pb-32 sm:pb-20"
       >
-        {/* 系统配置 */}
-        <SettingsSection title="系统信息" description="系统名称、语言和标语">
+        {/* 公司信息 */}
+        <SettingsSection title="公司信息" description="页面标题和打印抬头">
           <div className="grid gap-6 md:grid-cols-2">
             <FormField
               control={form.control}
@@ -293,7 +293,7 @@ export function BasicSettingsForm() {
                 <FormItem className="relative flex h-[130px] flex-col justify-between rounded-md border border-slate-100 bg-white p-6 shadow-sm hover:border-blue-100">
                   <div className="space-y-1">
                     <FormLabel className="text-sm font-semibold text-slate-900">
-                      系统显示名称 *
+                      系统名称 *
                     </FormLabel>
                   </div>
                   <FormControl>
@@ -315,7 +315,7 @@ export function BasicSettingsForm() {
                 <FormItem className="relative flex h-[130px] flex-col justify-between rounded-md border border-slate-100 bg-white p-6 shadow-sm hover:border-blue-100">
                   <div className="space-y-1">
                     <FormLabel className="text-sm font-semibold text-slate-900">
-                      系统默认语言
+                      默认语言
                     </FormLabel>
                   </div>
                   <Select
@@ -332,7 +332,7 @@ export function BasicSettingsForm() {
                         简体中文
                       </SelectItem>
                       <SelectItem value="en" className="font-medium">
-                        英语（美国）
+                        English
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -349,12 +349,12 @@ export function BasicSettingsForm() {
               <FormItem className="relative flex flex-col gap-4 rounded-md border border-slate-100 bg-white p-6 shadow-sm hover:border-blue-100">
                 <div className="space-y-1">
                   <FormLabel className="text-sm font-semibold text-slate-900">
-                    系统标语
+                    系统副标题
                   </FormLabel>
                 </div>
                 <FormControl>
                   <Textarea
-                    placeholder="例如：瓷砖销售、库存和财务一体化管理"
+                    placeholder="瓷砖销售、库存和财务一体化管理"
                     className="min-h-[100px] resize-none border-slate-100 bg-slate-50/50 p-4 font-medium italic transition-all focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10"
                     {...field}
                   />
@@ -365,8 +365,8 @@ export function BasicSettingsForm() {
           />
         </SettingsSection>
 
-        {/* 库存控制与预警阈值 */}
-        <SettingsSection title="库存预警" description="库存不足提醒">
+        {/* 库存提醒 */}
+        <SettingsSection title="库存提醒" description="库存不足时提醒">
           <div className="grid gap-6 md:grid-cols-2">
             <FormField
               control={form.control}
@@ -376,7 +376,7 @@ export function BasicSettingsForm() {
                   <div className="space-y-1">
                     <FormLabel className="flex items-center gap-2 text-sm font-semibold text-slate-900">
                       <RefreshCw className="h-4 w-4 text-blue-500" />
-                      低库存预警值
+                      低库存提醒数量
                     </FormLabel>
                   </div>
                   <FormControl>
@@ -406,7 +406,7 @@ export function BasicSettingsForm() {
                 <FormItem className="flex h-[130px] flex-row items-center justify-between rounded-md border border-slate-100 bg-white p-6 shadow-sm hover:border-blue-100">
                   <div className="space-y-1">
                     <FormLabel className="text-sm font-semibold text-slate-900">
-                      自动预警通知
+                      库存提醒
                     </FormLabel>
                   </div>
                   <div className="flex flex-col items-end gap-2 px-2">
@@ -431,8 +431,8 @@ export function BasicSettingsForm() {
           </div>
         </SettingsSection>
 
-        {/* 订单流转规则 */}
-        <SettingsSection title="订单规则" description="订单号和审批开关">
+        {/* 订单设置 */}
+        <SettingsSection title="订单设置" description="编号前缀和审批">
           <div className="grid gap-6 md:grid-cols-2">
             <FormField
               control={form.control}
@@ -444,12 +444,12 @@ export function BasicSettingsForm() {
                       订单号前缀
                     </FormLabel>
                     <p className="text-[11px] font-medium text-slate-400">
-                      如：销售订单（SO）
+                      例：SO
                     </p>
                   </div>
                   <FormControl>
                     <Input
-                      placeholder="如: SO"
+                      placeholder="SO"
                       maxLength={10}
                       className="mt-2 h-11 w-full max-w-[180px] border-slate-100 bg-slate-50/50 font-mono font-semibold text-blue-600 transition-all focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10"
                       {...field}
@@ -467,7 +467,7 @@ export function BasicSettingsForm() {
                 <FormItem className="flex h-[130px] flex-row items-center justify-between rounded-md border border-slate-100 bg-white p-6 shadow-sm hover:border-blue-100">
                   <div className="space-y-1">
                     <FormLabel className="text-sm font-semibold text-slate-900">
-                      订单审批
+                      下单审批
                     </FormLabel>
                   </div>
                   <div className="flex flex-col items-end gap-2 px-2">
@@ -504,7 +504,7 @@ export function BasicSettingsForm() {
             <RefreshCw
               className={cn('mr-2 h-4 w-4', isSubmitting && 'animate-spin')}
             />
-            撤销更改
+            恢复
           </Button>
 
           <Button
@@ -517,7 +517,7 @@ export function BasicSettingsForm() {
             ) : (
               <Save className="mr-2 h-4 w-4 text-blue-400" />
             )}
-            {isSubmitting ? '保存中...' : '保存设置'}
+            {isSubmitting ? '保存中...' : '保存'}
           </Button>
         </div>
       </form>
