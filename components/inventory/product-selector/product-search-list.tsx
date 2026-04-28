@@ -17,6 +17,7 @@ interface ProductSearchListProps {
   error: Error | null;
   onSearchChange: (query: string) => void;
   onSelect: (value: string) => void;
+  onCreateProduct?: () => void;
 }
 
 function ErrorState({ error }: { error: Error }) {
@@ -35,6 +36,7 @@ export function ProductSearchList({
   error,
   onSearchChange,
   onSelect,
+  onCreateProduct,
 }: ProductSearchListProps) {
   if (error) {
     return <ErrorState error={error} />;
@@ -52,6 +54,7 @@ export function ProductSearchList({
         selectedProduct={selectedProduct}
         isLoading={isLoading}
         onSelect={onSelect}
+        onCreateProduct={onCreateProduct}
       />
     </Command>
   );

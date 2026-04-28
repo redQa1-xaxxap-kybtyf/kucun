@@ -313,6 +313,7 @@ export function InboundSupplierField({ form }: InboundFormFieldsProps) {
               onValueChange={field.onChange}
               placeholder="请选择供应商"
               onBlur={field.onBlur}
+              allowCreate={isRequired}
             />
           </FormControl>
           <FormMessage />

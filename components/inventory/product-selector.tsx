@@ -5,6 +5,7 @@ import React from 'react';
 
 import { ProductSearchList } from '@/components/inventory/product-selector/product-search-list';
 import { SelectedProductDisplay } from '@/components/inventory/product-selector/selected-product-display';
+import { QuickCreateProductDialog } from '@/components/products/quick-create-product-dialog';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -13,6 +14,7 @@ import {
 } from '@/components/ui/popover';
 import { useProductSelector } from '@/hooks/use-product-selector';
 import type { ProductOption } from '@/lib/types/inbound';
+import type { Product } from '@/lib/types/product';
 import { cn } from '@/lib/utils';
 
 interface ProductSelectorProps
@@ -25,6 +27,7 @@ interface ProductSelectorProps
   placeholder?: string;
   containerClassName?: string;
   error?: boolean;
+  allowCreate?: boolean;
 }
 
 /**
@@ -44,6 +47,7 @@ export const ProductSelector = React.forwardRef<
       className,
       disabled = false,
       error = false,
+      allowCreate = false,
       ...buttonProps
     },
     ref
@@ -60,8 +64,10 @@ export const ProductSelector = React.forwardRef<
       error: selectorError,
       handleSearchChange,
       handleClear,
+      handleSelect,
       handleCommandSelect,
     } = useProductSelector(value, onChange);
+    const [quickCreateOpen, setQuickCreateOpen] = React.useState(false);
 
     const ariaInvalid = ariaInvalidProp;
     const isError =
@@ -70,6 +76,26 @@ export const ProductSelector = React.forwardRef<
       ariaInvalid === 'true' ||
       ariaInvalid === 'grammar' ||
       ariaInvalid === 'spelling';
+
+    const handleOpenQuickCreate = React.useCallback(() => {
+      setOpen(false);
+      setQuickCreateOpen(true);
+    }, [setOpen]);
+
+    const handleQuickCreateSuccess = React.useCallback(
+      (product: Product) => {
+        handleSelect({
+          value: product.id,
+          label: product.name,
+          code: product.code,
+          unit: product.unit,
+          specification: product.specification,
+          currentStock: 0,
+          batchSpecs: [],
+        });
+      },
+      [handleSelect]
+    );
 
     return (
       <div className={cn('relative', containerClassName)}>
@@ -105,6 +131,9 @@ export const ProductSelector = React.forwardRef<
               error={selectorError}
               onSearchChange={handleSearchChange}
               onSelect={handleCommandSelect}
+              onCreateProduct={
+                allowCreate && !disabled ? handleOpenQuickCreate : undefined
+              }
             />
           </PopoverContent>
         </Popover>
@@ -120,6 +149,13 @@ export const ProductSelector = React.forwardRef<
             <X className="h-3 w-3" />
           </Button>
         )}
+
+        <QuickCreateProductDialog
+          open={quickCreateOpen}
+          onOpenChange={setQuickCreateOpen}
+          onSuccess={handleQuickCreateSuccess}
+          defaultCode={searchInput}
+        />
       </div>
     );
   }

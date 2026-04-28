@@ -1,6 +1,7 @@
 'use client';
 
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronsUpDown, Plus } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import * as React from 'react';
 import { ZodError } from 'zod';
 
@@ -18,8 +19,17 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import type { Supplier as SupplierRecord } from '@/lib/types/supplier';
 import { cn } from '@/lib/utils';
 import { logger } from '@/lib/utils/console-logger';
+
+const QuickAddSupplierDialog = dynamic(
+  () =>
+    import('@/components/suppliers/quick-add-supplier-dialog').then(
+      mod => mod.QuickAddSupplierDialog
+    ),
+  { ssr: false, loading: () => null }
+);
 
 interface Supplier {
   id: string;
@@ -35,6 +45,7 @@ interface SupplierSelectorProps {
   placeholder?: string;
   className?: string;
   onBlur?: () => void | Promise<void>; // ✅ 支持同步和异步onBlur
+  allowCreate?: boolean;
 }
 
 /**
@@ -48,8 +59,10 @@ export function SupplierSelector({
   placeholder = '选择供应商...',
   className,
   onBlur,
+  allowCreate = false,
 }: SupplierSelectorProps) {
   const [open, setOpen] = React.useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
   const [suppliers, setSuppliers] = React.useState<Supplier[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [searchValue, setSearchValue] = React.useState('');
@@ -157,88 +170,146 @@ export function SupplierSelector({
   }, [open, searchValue]);
 
   const selectedSupplier = suppliers.find(s => s.id === value);
+  const canCreateSupplier = allowCreate && !disabled && !loading && !error;
+  const initialSupplierName = searchValue.trim();
+
+  const handleSupplierCreated = React.useCallback(
+    (supplier: SupplierRecord) => {
+      const nextSupplier: Supplier = {
+        id: supplier.id,
+        name: supplier.name,
+        phone: supplier.phone,
+      };
+
+      setSuppliers(current => {
+        const exists = current.some(item => item.id === supplier.id);
+        return exists
+          ? current.map(item =>
+              item.id === supplier.id ? { ...item, ...nextSupplier } : item
+            )
+          : [nextSupplier, ...current];
+      });
+      cacheRef.current.clear();
+      onValueChange(supplier.id);
+      setOpen(false);
+      notifyBlur();
+    },
+    [notifyBlur, onValueChange]
+  );
 
   return (
-    <Popover
-      open={open}
-      onOpenChange={nextOpen => {
-        setOpen(nextOpen);
-        if (!nextOpen) {
-          notifyBlur();
-        }
-      }}
-    >
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className={cn('w-full justify-between', className)}
-          disabled={disabled}
-        >
-          {selectedSupplier ? (
-            <span className="truncate">{selectedSupplier.name}</span>
-          ) : (
-            <span className="text-muted-foreground">{placeholder}</span>
-          )}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[400px] p-0" align="start">
-        <Command shouldFilter={false}>
-          <CommandInput
-            placeholder="搜索供应商名称..."
-            value={searchValue}
-            onValueChange={setSearchValue}
-          />
-          <CommandList>
-            {error ? (
-              <div className="text-destructive py-6 text-center text-sm">
-                {error}
-              </div>
-            ) : loading ? (
-              <div className="py-6 text-center text-sm">加载中...</div>
+    <>
+      <Popover
+        open={open}
+        onOpenChange={nextOpen => {
+          setOpen(nextOpen);
+          if (!nextOpen) {
+            notifyBlur();
+          }
+        }}
+      >
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className={cn('w-full justify-between', className)}
+            disabled={disabled}
+          >
+            {selectedSupplier ? (
+              <span className="truncate">{selectedSupplier.name}</span>
             ) : (
-              <>
-                <CommandEmpty>未找到相关供应商</CommandEmpty>
-                <CommandGroup>
-                  {suppliers.map(supplier => (
-                    <CommandItem
-                      key={supplier.id}
-                      value={supplier.id}
-                      onSelect={currentValue => {
-                        onValueChange(
-                          currentValue === value ? '' : currentValue
-                        );
-                        setOpen(false);
-                        notifyBlur();
-                      }}
-                    >
-                      <Check
-                        className={cn(
-                          'mr-2 h-4 w-4',
-                          value === supplier.id ? 'opacity-100' : 'opacity-0'
-                        )}
-                      />
-                      <div className="flex flex-1 flex-col">
-                        <span className="font-medium">{supplier.name}</span>
-                        {(supplier.contactPerson || supplier.phone) && (
-                          <span className="text-muted-foreground text-xs">
-                            {supplier.contactPerson &&
-                              `联系人：${supplier.contactPerson}`}
-                            {supplier.contactPerson && supplier.phone && ' | '}
-                            {supplier.phone && `电话：${supplier.phone}`}
-                          </span>
-                        )}
-                      </div>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </>
+              <span className="text-muted-foreground">{placeholder}</span>
             )}
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[400px] p-0" align="start">
+          <Command shouldFilter={false}>
+            <CommandInput
+              placeholder="搜索供应商名称..."
+              value={searchValue}
+              onValueChange={setSearchValue}
+            />
+            <CommandList>
+              {error ? (
+                <div className="text-destructive py-6 text-center text-sm">
+                  {error}
+                </div>
+              ) : loading ? (
+                <div className="py-6 text-center text-sm">加载中...</div>
+              ) : (
+                <>
+                  <CommandEmpty>
+                    <div className="flex flex-col items-center gap-2 py-4">
+                      <span>未找到相关供应商</span>
+                      {canCreateSupplier && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onMouseDown={event => event.preventDefault()}
+                          onClick={() => {
+                            setOpen(false);
+                            setCreateDialogOpen(true);
+                          }}
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          快速新增供应商
+                        </Button>
+                      )}
+                    </div>
+                  </CommandEmpty>
+                  <CommandGroup>
+                    {suppliers.map(supplier => (
+                      <CommandItem
+                        key={supplier.id}
+                        value={supplier.id}
+                        onSelect={currentValue => {
+                          onValueChange(
+                            currentValue === value ? '' : currentValue
+                          );
+                          setOpen(false);
+                          notifyBlur();
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            'mr-2 h-4 w-4',
+                            value === supplier.id ? 'opacity-100' : 'opacity-0'
+                          )}
+                        />
+                        <div className="flex flex-1 flex-col">
+                          <span className="font-medium">{supplier.name}</span>
+                          {(supplier.contactPerson || supplier.phone) && (
+                            <span className="text-muted-foreground text-xs">
+                              {supplier.contactPerson &&
+                                `联系人：${supplier.contactPerson}`}
+                              {supplier.contactPerson &&
+                                supplier.phone &&
+                                ' | '}
+                              {supplier.phone && `电话：${supplier.phone}`}
+                            </span>
+                          )}
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </>
+              )}
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+
+      {createDialogOpen && (
+        <QuickAddSupplierDialog
+          open={createDialogOpen}
+          onOpenChange={setCreateDialogOpen}
+          onSupplierCreated={handleSupplierCreated}
+          initialName={initialSupplierName}
+        />
+      )}
+    </>
   );
 }

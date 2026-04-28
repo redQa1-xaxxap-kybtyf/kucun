@@ -155,6 +155,7 @@ export function InboundProductSection({
                 }}
                 placeholder="搜索产品名称、编码..."
                 error={fieldState.invalid || showProductPrompt}
+                allowCreate
               />
             </FormControl>
             <FormMessage>{showProductPrompt ? '请选择产品' : null}</FormMessage>

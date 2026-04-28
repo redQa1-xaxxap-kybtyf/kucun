@@ -1,9 +1,11 @@
 'use client';
 
+import { Plus } from 'lucide-react';
 import React from 'react';
 
 import { InlineLoading } from '@/components/common/loading';
 import { ProductOptionItem } from '@/components/inventory/product-selector/product-option-item';
+import { Button } from '@/components/ui/button';
 import {
   CommandGroup,
   CommandItem,
@@ -16,6 +18,7 @@ interface ProductSearchResultsProps {
   selectedProduct: ProductOption | null;
   isLoading: boolean;
   onSelect: (value: string) => void;
+  onCreateProduct?: () => void;
 }
 
 function buildProductSearchValue(product: ProductOption) {
@@ -37,10 +40,22 @@ function LoadingState() {
   );
 }
 
-function EmptyState() {
+function EmptyState({ onCreateProduct }: { onCreateProduct?: () => void }) {
   return (
-    <div className="text-muted-foreground p-4 text-center text-sm">
-      未找到相关产品
+    <div className="text-muted-foreground flex flex-col items-center gap-2 p-4 text-center text-sm">
+      <span>未找到相关产品</span>
+      {onCreateProduct && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onMouseDown={event => event.preventDefault()}
+          onClick={onCreateProduct}
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          快速新增产品
+        </Button>
+      )}
     </div>
   );
 }
@@ -50,13 +65,14 @@ export function ProductSearchResults({
   selectedProduct,
   isLoading,
   onSelect,
+  onCreateProduct,
 }: ProductSearchResultsProps) {
   return (
     <CommandList>
       {isLoading ? (
         <LoadingState />
       ) : products.length === 0 ? (
-        <EmptyState />
+        <EmptyState onCreateProduct={onCreateProduct} />
       ) : (
         <CommandGroup>
           {products.map(product => (

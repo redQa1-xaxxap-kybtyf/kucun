@@ -245,6 +245,7 @@ export function BatchPurchaseInboundSection({
                       }
                       placeholder="搜索产品名称、编码..."
                       error={Boolean(rowError.productId)}
+                      allowCreate
                     />
                     <FieldError message={rowError.productId} />
                   </div>
