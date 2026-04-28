@@ -177,46 +177,40 @@ function FactoryShipmentOrderTable({
       {/* 桌面端：表格视图，支持横向滚动 */}
       <div className="hidden lg:block">
         <div className="overflow-x-auto">
-          <Table className="min-w-[1540px]">
+          <Table className="min-w-[1040px] 2xl:min-w-[1540px]">
             <TableHeader className="shadow-sm">
               <TableRow>
-                <TableHead className="w-[130px] min-w-[130px] whitespace-nowrap">
+                <TableHead className="w-[120px] min-w-[120px] whitespace-nowrap">
                   订单编号
                 </TableHead>
-                <TableHead className="min-w-[120px] whitespace-nowrap">
+                <TableHead className="w-[130px] min-w-[130px] whitespace-nowrap">
                   客户
                 </TableHead>
-                <TableHead className="hidden min-w-[220px] whitespace-nowrap xl:table-cell">
+                <TableHead className="hidden min-w-[220px] whitespace-nowrap 2xl:table-cell">
                   客户地址
                 </TableHead>
-                <TableHead className="w-[140px] min-w-[140px] whitespace-nowrap">
+                <TableHead className="w-[120px] min-w-[120px] whitespace-nowrap">
                   集装箱号码
                 </TableHead>
-                <TableHead className="min-w-[120px] whitespace-nowrap">
+                <TableHead className="w-[110px] min-w-[110px] whitespace-nowrap">
                   船运公司
                 </TableHead>
-                <TableHead className="w-[130px] min-w-[130px] whitespace-nowrap">
+                <TableHead className="w-[110px] min-w-[110px] whitespace-nowrap">
                   运输状态
                 </TableHead>
                 <TableHead className="w-[140px] min-w-[140px] whitespace-nowrap">
                   状态
                 </TableHead>
-                <TableHead className="w-[110px] min-w-[110px] text-right whitespace-nowrap">
-                  订单金额
+                <TableHead className="w-[220px] min-w-[220px] text-right whitespace-nowrap">
+                  金额
                 </TableHead>
-                <TableHead className="w-[110px] min-w-[110px] text-right whitespace-nowrap">
-                  应收金额
-                </TableHead>
-                <TableHead className="w-[110px] min-w-[110px] text-right whitespace-nowrap">
-                  应付金额
-                </TableHead>
-                <TableHead className="hidden w-[110px] min-w-[110px] whitespace-nowrap xl:table-cell">
+                <TableHead className="hidden w-[110px] min-w-[110px] whitespace-nowrap 2xl:table-cell">
                   发货时间
                 </TableHead>
                 <TableHead className="hidden w-[110px] min-w-[110px] whitespace-nowrap 2xl:table-cell">
                   预计到达
                 </TableHead>
-                <TableHead className="hidden w-[110px] min-w-[110px] whitespace-nowrap xl:table-cell">
+                <TableHead className="hidden w-[110px] min-w-[110px] whitespace-nowrap 2xl:table-cell">
                   创建时间
                 </TableHead>
                 <TableHead className="w-[80px] min-w-[80px] text-center whitespace-nowrap">
@@ -664,7 +658,7 @@ function FactoryShipmentOrderRow({
         role="button"
         tabIndex={0}
       >
-        <TableCell className="w-[130px] px-4 py-3 font-mono text-sm font-medium text-[hsl(var(--color-primary))]">
+        <TableCell className="w-[120px] px-3 py-3 font-mono text-xs font-medium text-[hsl(var(--color-primary))] 2xl:px-4 2xl:text-sm">
           <Link
             href={`/factory-shipments/${order.id}`}
             prefetch={false}
@@ -676,7 +670,7 @@ function FactoryShipmentOrderRow({
           </Link>
         </TableCell>
         <TableCell
-          className="px-4 py-3 font-medium text-[hsl(var(--color-text-primary))]"
+          className="w-[130px] px-3 py-3 font-medium text-[hsl(var(--color-text-primary))] 2xl:px-4"
           title={order.customer?.name || '-'}
         >
           <span className="block max-w-[200px] truncate">
@@ -684,7 +678,7 @@ function FactoryShipmentOrderRow({
           </span>
         </TableCell>
         <TableCell
-          className="hidden w-[240px] px-4 py-3 text-[hsl(var(--color-text-secondary))] md:table-cell"
+          className="hidden w-[240px] px-4 py-3 text-[hsl(var(--color-text-secondary))] 2xl:table-cell"
           title={order.customer?.address || '未填写'}
         >
           <span className="block max-w-[220px] truncate text-sm">
@@ -692,7 +686,7 @@ function FactoryShipmentOrderRow({
           </span>
         </TableCell>
         <TableCell
-          className={`w-[140px] px-4 py-3 text-[hsl(var(--color-text-secondary))] ${
+          className={`w-[120px] px-3 py-3 text-[hsl(var(--color-text-secondary))] 2xl:px-4 ${
             // 已发货、运输中和已到港的订单不允许编辑
             order.status === FACTORY_SHIPMENT_STATUS.SHIPPED ||
             order.status === FACTORY_SHIPMENT_STATUS.IN_TRANSIT ||
@@ -722,7 +716,7 @@ function FactoryShipmentOrderRow({
           >
             {order.containerNumber ? (
               <span className="flex items-center gap-1">
-                <span className="block max-w-[110px] truncate">
+                <span className="block max-w-[92px] truncate 2xl:max-w-[110px]">
                   {order.containerNumber}
                 </span>
                 {order.status === FACTORY_SHIPMENT_STATUS.SHIPPED ||
@@ -764,7 +758,7 @@ function FactoryShipmentOrderRow({
           </span>
         </TableCell>
         <TableCell
-          className={`px-4 py-3 text-[hsl(var(--color-text-secondary))] ${
+          className={`w-[110px] px-3 py-3 text-[hsl(var(--color-text-secondary))] 2xl:px-4 ${
             canEditShippingCompany
               ? 'cursor-pointer'
               : 'cursor-not-allowed opacity-60'
@@ -788,7 +782,7 @@ function FactoryShipmentOrderRow({
             >
               {order.shippingCompany ? (
                 <span className="flex items-center gap-1">
-                  <span className="block max-w-[150px] truncate">
+                  <span className="block max-w-[92px] truncate 2xl:max-w-[150px]">
                     {order.shippingCompany}
                   </span>
                   {canEditShippingCompany ? (
@@ -842,7 +836,7 @@ function FactoryShipmentOrderRow({
         </TableCell>
 
         {/* 运输状态列 */}
-        <TableCell className="w-[130px] px-4 py-3">
+        <TableCell className="w-[110px] px-3 py-3 2xl:px-4">
           {order.latestShippingStatus ? (
             <Badge
               variant={getShippingQueryStatusVariant(
@@ -859,7 +853,7 @@ function FactoryShipmentOrderRow({
           )}
         </TableCell>
 
-        <TableCell className="w-[170px] px-4 py-3">
+        <TableCell className="w-[140px] px-3 py-3 2xl:w-[170px] 2xl:px-4">
           <div className="flex flex-col gap-2">
             <div className="flex flex-wrap items-center gap-2">
               <Badge
@@ -918,34 +912,34 @@ function FactoryShipmentOrderRow({
             )}
           </div>
         </TableCell>
-        <TableCell className="w-[110px] px-4 py-3 text-right text-[hsl(var(--color-text-primary))] tabular-nums">
-          {formatAmount(order.totalAmount)}
-        </TableCell>
-        <TableCell className="w-[110px] px-4 py-3 text-right text-[hsl(var(--color-text-primary))] tabular-nums">
-          <div className="flex flex-col items-end gap-1 leading-tight">
-            <span className="font-semibold text-[hsl(var(--color-primary))]">
-              {formatAmount(order.receivableAmount)}
-            </span>
+        <TableCell className="w-[220px] px-3 py-3 text-right text-[hsl(var(--color-text-primary))] tabular-nums 2xl:w-[330px] 2xl:px-4">
+          <div className="grid grid-cols-3 gap-2 text-xs">
+            <div>
+              <div className="text-[hsl(var(--color-text-tertiary))]">订单</div>
+              <div className="font-medium">
+                {formatAmount(order.totalAmount)}
+              </div>
+            </div>
+            <div>
+              <div className="text-[hsl(var(--color-text-tertiary))]">应收</div>
+              <div className="font-semibold text-[hsl(var(--color-primary))]">
+                {formatAmount(order.receivableAmount)}
+              </div>
+            </div>
+            <div>
+              <div className="text-[hsl(var(--color-text-tertiary))]">应付</div>
+              <div className="font-semibold">{formatAmount(payableAmount)}</div>
+            </div>
+          </div>
+          <div className="mt-1 flex justify-end gap-2 text-[10px]">
             {order.depositAmount > 0 && (
-              <span className="text-xs font-medium text-[hsl(var(--color-warning))]">
+              <span className="text-[hsl(var(--color-warning))]">
                 定金 {formatAmount(order.depositAmount)}
               </span>
             )}
           </div>
         </TableCell>
-        <TableCell className="w-[110px] px-4 py-3 text-right text-[hsl(var(--color-text-primary))] tabular-nums">
-          <div className="flex flex-col items-end gap-1 leading-tight">
-            <span className="font-semibold text-[hsl(var(--color-text-primary))]">
-              {formatAmount(payableAmount)}
-            </span>
-            {order.depositAmount > 0 && (
-              <span className="text-xs font-medium text-[hsl(var(--color-success))]">
-                已付定金 {formatAmount(order.depositAmount)}
-              </span>
-            )}
-          </div>
-        </TableCell>
-        <TableCell className="hidden w-[110px] px-4 py-3 text-[hsl(var(--color-text-secondary))] lg:table-cell">
+        <TableCell className="hidden w-[110px] px-4 py-3 text-[hsl(var(--color-text-secondary))] 2xl:table-cell">
           {order.shipmentDate ? (
             <span className="whitespace-nowrap">
               {formatDateTime(order.shipmentDate)}
@@ -956,7 +950,7 @@ function FactoryShipmentOrderRow({
             </span>
           )}
         </TableCell>
-        <TableCell className="hidden w-[110px] px-4 py-3 text-[hsl(var(--color-text-secondary))] xl:table-cell">
+        <TableCell className="hidden w-[110px] px-4 py-3 text-[hsl(var(--color-text-secondary))] 2xl:table-cell">
           {order.estimatedArrival ? (
             <span className="whitespace-nowrap">
               {formatDateTime(order.estimatedArrival)}
@@ -967,12 +961,12 @@ function FactoryShipmentOrderRow({
             </span>
           )}
         </TableCell>
-        <TableCell className="hidden w-[110px] px-4 py-3 text-[hsl(var(--color-text-secondary))] md:table-cell">
+        <TableCell className="hidden w-[110px] px-4 py-3 text-[hsl(var(--color-text-secondary))] 2xl:table-cell">
           <span className="whitespace-nowrap">
             {formatDate(order.createdAt)}
           </span>
         </TableCell>
-        <TableCell className="w-[80px] px-4 py-3 text-center">
+        <TableCell className="w-[80px] px-3 py-3 text-center 2xl:px-4">
           <OrderActionMenu
             order={order}
             onCancelRequest={onCancelRequest}

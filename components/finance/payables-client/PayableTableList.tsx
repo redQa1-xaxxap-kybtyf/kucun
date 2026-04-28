@@ -60,18 +60,14 @@ const TABLE_HEADERS: Array<{
   key: string;
   label: string;
   align?: HeaderAlign;
+  className?: string;
 }> = [
-  { key: 'payableNumber', label: '应付单号' },
-  { key: 'supplier', label: '供应商' },
-  { key: 'sourceType', label: '来源类型' },
-  { key: 'status', label: '状态' },
-  { key: 'payableAmount', label: '应付金额', align: 'right' },
-  { key: 'paidAmount', label: '已付款金额', align: 'right' },
-  { key: 'remainingAmount', label: '待付金额', align: 'right' },
-  { key: 'paymentStatus', label: '付款进度' },
-  { key: 'dueDate', label: '到期日' },
-  { key: 'createdAt', label: '创建时间' },
-  { key: 'actions', label: '操作', align: 'center' },
+  { key: 'payableNumber', label: '单据/来源', className: 'w-[240px]' },
+  { key: 'supplier', label: '供应商', className: 'w-[200px]' },
+  { key: 'status', label: '状态', className: 'w-[140px]' },
+  { key: 'amounts', label: '金额', align: 'right', className: 'w-[270px]' },
+  { key: 'dates', label: '日期', className: 'w-[160px]' },
+  { key: 'actions', label: '操作', align: 'center', className: 'w-[100px]' },
 ];
 
 // 状态标签渲染
@@ -132,7 +128,7 @@ const getPaymentStatusBadge = (payable: PayableRecordDetail) => {
 };
 
 const PayableLoadingState = () => (
-  <TableSkeleton columns={11} rows={8} showPagination />
+  <TableSkeleton columns={6} rows={8} showPagination />
 );
 
 const PayableEmptyState = () => (
@@ -155,11 +151,16 @@ const PayableIdentifiersCell = ({
 }: {
   payable: PayableRecordDetail;
 }) => (
-  <TableCell className="h-8 text-xs">
+  <TableCell className="h-8 w-[240px] text-xs">
     <div className="flex flex-col gap-1">
       <span className="font-mono font-semibold text-[hsl(var(--color-primary))]">
         <CopyableText text={payable.payableNumber} />
       </span>
+      {payable.sourceType ? (
+        <Badge variant="outline" className="w-fit text-xs">
+          {PAYABLE_SOURCE_TYPE_LABELS[payable.sourceType]}
+        </Badge>
+      ) : null}
       {payable.sourceNumber && (
         <span className="text-[hsl(var(--color-text-tertiary))]">
           来源: <CopyableText text={payable.sourceNumber} />
@@ -170,9 +171,12 @@ const PayableIdentifiersCell = ({
 );
 
 const PayableSupplierCell = ({ payable }: { payable: PayableRecordDetail }) => (
-  <TableCell className="h-8 text-xs">
+  <TableCell className="h-8 w-[200px] text-xs">
     <div className="flex flex-col gap-1">
-      <span className="font-medium text-[hsl(var(--color-text-primary))]">
+      <span
+        className="truncate font-medium text-[hsl(var(--color-text-primary))]"
+        title={payable.supplier?.name || '未知供应商'}
+      >
         {payable.supplier?.name || '未知供应商'}
       </span>
       {payable.supplier?.phone && (
@@ -184,58 +188,43 @@ const PayableSupplierCell = ({ payable }: { payable: PayableRecordDetail }) => (
   </TableCell>
 );
 
-const PayableSourceTypeCell = ({
-  payable,
-}: {
-  payable: PayableRecordDetail;
-}) => (
-  <TableCell className="h-8 text-xs text-[hsl(var(--color-text-secondary))]">
-    {payable.sourceType ? (
-      <Badge variant="outline" className="text-xs">
-        {PAYABLE_SOURCE_TYPE_LABELS[payable.sourceType]}
-      </Badge>
-    ) : (
-      <span className="text-[hsl(var(--color-text-tertiary))]">-</span>
-    )}
+const PayableStatusCell = ({ payable }: { payable: PayableRecordDetail }) => (
+  <TableCell className="h-8 w-[140px] text-xs">
+    <div className="flex flex-col items-start gap-1.5">
+      {getStatusBadge(payable.status)}
+      {getPaymentStatusBadge(payable)}
+    </div>
   </TableCell>
 );
 
-const PayableStatusCell = ({ status }: { status: string }) => (
-  <TableCell className="h-8 text-xs">{getStatusBadge(status)}</TableCell>
-);
-
-const PayableAmountCell = ({
-  value,
-  className,
-}: {
-  value?: number;
-  className?: string;
-}) => (
-  <TableCell className={`h-8 text-right text-xs ${className ?? ''}`.trim()}>
-    {formatCurrency(value ?? 0)}
+const PayableAmountsCell = ({ payable }: { payable: PayableRecordDetail }) => (
+  <TableCell className="h-8 w-[270px] text-right text-xs">
+    <div className="grid grid-cols-3 gap-2">
+      <div>
+        <div className="text-[hsl(var(--color-text-tertiary))]">应付</div>
+        <div className="font-semibold text-[hsl(var(--color-text-primary))]">
+          {formatCurrency(payable.payableAmount ?? 0)}
+        </div>
+      </div>
+      <div>
+        <div className="text-[hsl(var(--color-text-tertiary))]">已付</div>
+        <div className="font-medium text-green-600">
+          {formatCurrency(payable.paidAmount ?? 0)}
+        </div>
+      </div>
+      <div>
+        <div className="text-[hsl(var(--color-text-tertiary))]">待付</div>
+        <div className="font-medium text-amber-600">
+          {formatCurrency(payable.remainingAmount ?? 0)}
+        </div>
+      </div>
+    </div>
   </TableCell>
 );
 
-const PayablePaymentStatusCell = ({
-  payable,
-}: {
-  payable: PayableRecordDetail;
-}) => (
-  <TableCell className="h-8 text-xs">
-    {getPaymentStatusBadge(payable)}
-  </TableCell>
-);
-
-const PayableDueDateCell = ({ payable }: { payable: PayableRecordDetail }) => {
-  if (!payable.dueDate) {
-    return (
-      <TableCell className="h-8 text-xs text-[hsl(var(--color-text-secondary))]">
-        <span className="text-[hsl(var(--color-text-tertiary))]">-</span>
-      </TableCell>
-    );
-  }
-
+const PayableDatesCell = ({ payable }: { payable: PayableRecordDetail }) => {
   const isOverdue =
+    payable.dueDate &&
     new Date(payable.dueDate) < new Date() &&
     (payable.remainingAmount ?? 0) > 0;
   const dueDateClassName = isOverdue
@@ -243,19 +232,21 @@ const PayableDueDateCell = ({ payable }: { payable: PayableRecordDetail }) => {
     : 'font-medium';
 
   return (
-    <TableCell className="h-8 text-xs text-[hsl(var(--color-text-secondary))]">
-      <span className={dueDateClassName}>
-        {formatDateTime(payable.dueDate, 'yyyy-MM-dd')}
-      </span>
+    <TableCell className="h-8 w-[160px] text-xs text-[hsl(var(--color-text-secondary))]">
+      <div className="flex flex-col gap-1">
+        <span className={dueDateClassName}>
+          到期:
+          {payable.dueDate
+            ? formatDateTime(payable.dueDate, 'yyyy-MM-dd')
+            : '-'}
+        </span>
+        <span className="text-[hsl(var(--color-text-tertiary))]">
+          创建: <RelativeTime date={payable.createdAt} />
+        </span>
+      </div>
     </TableCell>
   );
 };
-
-const PayableCreatedAtCell = ({ createdAt }: { createdAt: Date | string }) => (
-  <TableCell className="h-8 text-xs text-[hsl(var(--color-text-secondary))]">
-    <RelativeTime date={createdAt} />
-  </TableCell>
-);
 
 interface PayableActionsCellProps {
   payable: PayableRecordDetail;
@@ -270,7 +261,7 @@ const PayableActionsCell: React.FC<PayableActionsCellProps> = ({
   onView,
   onDelete,
 }) => (
-  <TableCell className="h-8 text-xs">
+  <TableCell className="h-8 w-[100px] text-xs">
     <div className="flex items-center justify-center gap-1">
       {payable.remainingAmount > 0 && payable.status !== 'cancelled' && (
         <Button
@@ -339,23 +330,9 @@ function PayableRow({ payable, onView, onPayNow, onDelete }: PayableRowProps) {
     >
       <PayableIdentifiersCell payable={payable} />
       <PayableSupplierCell payable={payable} />
-      <PayableSourceTypeCell payable={payable} />
-      <PayableStatusCell status={payable.status} />
-      <PayableAmountCell
-        value={payable.payableAmount}
-        className="font-semibold text-[hsl(var(--color-text-primary))]"
-      />
-      <PayableAmountCell
-        value={payable.paidAmount}
-        className="font-medium text-green-600"
-      />
-      <PayableAmountCell
-        value={payable.remainingAmount}
-        className="font-medium text-amber-600"
-      />
-      <PayablePaymentStatusCell payable={payable} />
-      <PayableDueDateCell payable={payable} />
-      <PayableCreatedAtCell createdAt={payable.createdAt} />
+      <PayableStatusCell payable={payable} />
+      <PayableAmountsCell payable={payable} />
+      <PayableDatesCell payable={payable} />
       <PayableActionsCell
         payable={payable}
         onPayNow={onPayNow}
@@ -656,19 +633,22 @@ export function PayableTableList({
     <>
       {/* 桌面端：宽表格 + 横向滚动 */}
       <div className="hidden overflow-x-auto rounded-md border lg:block">
-        <Table>
+        <Table className="min-w-[1080px]">
           <TableHeader>
             <TableRow>
               {TABLE_HEADERS.map(header => (
                 <TableHead
                   key={header.key}
-                  className={`${
+                  className={[
+                    header.className,
                     header.align === 'right'
                       ? 'text-right'
                       : header.align === 'center'
                         ? 'text-center'
-                        : ''
-                  }`}
+                        : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
                 >
                   {header.label}
                 </TableHead>

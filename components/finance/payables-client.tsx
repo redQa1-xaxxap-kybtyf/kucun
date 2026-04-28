@@ -61,7 +61,8 @@ export function PayablesClient({
     isSearchControlled: searchValue !== undefined,
   });
 
-  const effectiveSearchValue = searchValue ?? query.search ?? initialParams?.search ?? '';
+  const effectiveSearchValue =
+    searchValue ?? query.search ?? initialParams?.search ?? '';
 
   return (
     <div className="space-y-6">
@@ -69,7 +70,7 @@ export function PayablesClient({
       <PayablesSummary filters={query} initialStatistics={initialStatistics} />
 
       <Card className="border border-[hsl(var(--color-border-secondary))]">
-        <CardContent className="pt-6">
+        <CardContent className="p-4 xl:p-6">
           <PayablesFilterBar
             query={query}
             searchValue={effectiveSearchValue}

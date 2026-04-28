@@ -115,16 +115,13 @@ export function PaymentsOutTableList({
     <div className="space-y-4">
       {/* 桌面端：宽表格 + 横向滚动 */}
       <div className="hidden overflow-x-auto rounded-md border lg:block">
-        <Table>
+        <Table className="min-w-[1080px]">
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[140px]">付款单号</TableHead>
-              <TableHead className="w-[140px]">关联应付款</TableHead>
-              <TableHead className="w-[150px]">供应商</TableHead>
+              <TableHead className="w-[170px]">付款单号</TableHead>
+              <TableHead className="w-[280px]">应付款/供应商</TableHead>
               <TableHead className="w-[100px]">付款方式</TableHead>
-              <TableHead className="w-[110px] text-right">记账金额</TableHead>
-              <TableHead className="w-[110px] text-right">实际付款</TableHead>
-              <TableHead className="w-[100px] text-right">抹零金额</TableHead>
+              <TableHead className="w-[270px] text-right">金额</TableHead>
               <TableHead className="w-[140px]">付款日期</TableHead>
               <TableHead className="w-[100px]">状态</TableHead>
               <TableHead className="w-[120px] text-center">操作</TableHead>
@@ -192,8 +189,7 @@ function PaymentOutTableRow({
 }) {
   return (
     <TableRow className="hover:bg-muted/50">
-      {/* 付款单号 */}
-      <TableCell className="font-medium">
+      <TableCell className="w-[170px] font-medium">
         <div className="flex items-center gap-2">
           <span className="font-mono text-sm">
             <CopyableText text={payment.paymentNumber} />
@@ -201,66 +197,69 @@ function PaymentOutTableRow({
         </div>
       </TableCell>
 
-      {/* 关联应付款 */}
-      <TableCell>
-        {payment.payableRecord ? (
-          <Link
-            href={`/finance/payables/${payment.payableRecord.id}`}
-            className="text-primary font-mono text-sm hover:underline"
+      <TableCell className="w-[280px]">
+        <div className="flex flex-col gap-1">
+          {payment.payableRecord ? (
+            <Link
+              href={`/finance/payables/${payment.payableRecord.id}`}
+              className="text-primary font-mono text-sm hover:underline"
+            >
+              <CopyableText text={payment.payableRecord.payableNumber} />
+            </Link>
+          ) : (
+            <span className="text-muted-foreground text-sm">-</span>
+          )}
+          <div
+            className="max-w-[240px] truncate text-sm font-medium"
+            title={payment.supplier.name}
           >
-            <CopyableText text={payment.payableRecord.payableNumber} />
-          </Link>
-        ) : (
-          <span className="text-muted-foreground text-sm">-</span>
-        )}
-      </TableCell>
-
-      {/* 供应商 */}
-      <TableCell>
-        <div className="max-w-[150px] truncate" title={payment.supplier.name}>
-          {payment.supplier.name}
+            {payment.supplier.name}
+          </div>
+          {payment.supplier.phone ? (
+            <div className="text-muted-foreground text-xs">
+              {payment.supplier.phone}
+            </div>
+          ) : null}
         </div>
       </TableCell>
 
-      {/* 付款方式 */}
-      <TableCell>
+      <TableCell className="w-[100px]">
         <PaymentMethodBadge method={payment.paymentMethod} />
       </TableCell>
 
-      {/* 记账金额 */}
-      <TableCell className="text-right">
-        <div className="font-medium text-[hsl(var(--color-primary))]">
-          {formatCurrency(payment.paymentAmount)}
+      <TableCell className="w-[270px] text-right">
+        <div className="grid grid-cols-3 gap-2 text-xs">
+          <div>
+            <div className="text-muted-foreground">记账</div>
+            <div className="font-medium text-[hsl(var(--color-primary))]">
+              {formatCurrency(payment.paymentAmount)}
+            </div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">实付</div>
+            <div className="font-medium text-green-600">
+              {formatCurrency(payment.actualPaymentAmount)}
+            </div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">抹零</div>
+            <RoundingAmountDisplay amount={payment.roundingAmount} />
+          </div>
         </div>
       </TableCell>
 
-      {/* 实际付款 */}
-      <TableCell className="text-right">
-        <div className="font-medium text-green-600">
-          {formatCurrency(payment.actualPaymentAmount)}
-        </div>
-      </TableCell>
-
-      {/* 抹零差额 */}
-      <TableCell className="text-right">
-        <RoundingAmountDisplay amount={payment.roundingAmount} />
-      </TableCell>
-
-      {/* 付款日期 */}
-      <TableCell>
-        <div className="flex items-center gap-2 text-sm">
+      <TableCell className="w-[140px]">
+        <div className="flex items-center gap-2 text-xs">
           <Calendar className="text-muted-foreground h-3.5 w-3.5" />
           <RelativeTime date={payment.paymentDate} />
         </div>
       </TableCell>
 
-      {/* 状态 */}
-      <TableCell>
+      <TableCell className="w-[100px]">
         <StatusBadge status={payment.status} />
       </TableCell>
 
-      {/* 操作 */}
-      <TableCell>
+      <TableCell className="w-[120px]">
         <PaymentOutRowActions
           payment={payment}
           onConfirm={onConfirm}

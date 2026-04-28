@@ -100,18 +100,18 @@ export function ReceivablesTableList({
     <div className="space-y-4">
       {/* 桌面端：宽表格 + 横向滚动 */}
       <div className="hidden overflow-x-auto rounded-md border lg:block">
-        <Table>
+        <Table className="min-w-[1120px]">
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[120px]">订单号</TableHead>
-              <TableHead className="w-[150px]">客户名称</TableHead>
+              <TableHead className="w-[110px]">订单号</TableHead>
+              <TableHead className="w-[130px]">客户名称</TableHead>
               <TableHead className="w-[100px]">状态</TableHead>
-              <TableHead className="w-[120px] text-right">订单金额</TableHead>
-              <TableHead className="w-[120px] text-right">应收金额</TableHead>
-              <TableHead className="w-[120px] text-right">已收金额</TableHead>
-              <TableHead className="w-[120px] text-right">待收金额</TableHead>
-              <TableHead className="w-[140px]">订单日期</TableHead>
-              <TableHead className="w-[140px]">最后收款</TableHead>
+              <TableHead className="w-[110px] text-right">订单金额</TableHead>
+              <TableHead className="w-[110px] text-right">应收金额</TableHead>
+              <TableHead className="w-[110px] text-right">已收金额</TableHead>
+              <TableHead className="w-[110px] text-right">待收金额</TableHead>
+              <TableHead className="w-[120px]">订单日期</TableHead>
+              <TableHead className="w-[120px]">最后收款</TableHead>
               <TableHead className="w-[100px] text-center">操作</TableHead>
             </TableRow>
           </TableHeader>
@@ -179,7 +179,7 @@ function ReceivableTableRow({
       </TableCell>
 
       <TableCell>
-        <div className="max-w-[150px] truncate" title={receivable.customerName}>
+        <div className="max-w-[130px] truncate" title={receivable.customerName}>
           {receivable.customerName}
         </div>
       </TableCell>
