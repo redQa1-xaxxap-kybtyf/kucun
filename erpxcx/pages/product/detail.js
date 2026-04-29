@@ -10,12 +10,28 @@ function previewImages(urls, current) {
   });
 }
 
+function getGalleryImageUrls(product) {
+  const mainImages =
+    product.mainImageUrls && product.mainImageUrls.length > 0
+      ? product.mainImageUrls
+      : product.imageUrls;
+  const imageUrls = product.thumbnailUrl
+    ? [
+        product.thumbnailUrl,
+        ...(mainImages || []).filter(url => url !== product.thumbnailUrl),
+      ]
+    : mainImages || [];
+
+  return imageUrls.filter(Boolean);
+}
+
 Page({
   data: {
     loading: true,
     error: '',
     productId: '',
     product: null,
+    galleryImageUrls: [],
     currentImage: 0,
     currentImageNumber: 1,
     imageTotal: 0,
@@ -59,10 +75,12 @@ Page({
 
     try {
       const product = await getProduct(this.data.productId);
+      const galleryImageUrls = getGalleryImageUrls(product);
       this.setData({
         currentImage: 0,
         currentImageNumber: 1,
-        imageTotal: (product.imageUrls || []).length,
+        galleryImageUrls,
+        imageTotal: galleryImageUrls.length,
         product,
         loading: false,
       });
@@ -85,7 +103,10 @@ Page({
     const product = this.data.product;
     if (!product) return;
 
-    previewImages(product.imageUrls, event.currentTarget.dataset.current);
+    previewImages(
+      this.data.galleryImageUrls,
+      event.currentTarget.dataset.current
+    );
   },
 
   onPreviewEffectImage(event) {

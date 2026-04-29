@@ -30,7 +30,7 @@
         data-id="{{item.id}}"
         bindtap="onSeriesTap"
       >
-        <image wx:if="{{item.coverUrl}}" class="series-texture" src="{{item.coverUrl}}" mode="aspectFill" />
+        <image wx:if="{{item.coverUrl}}" class="series-texture" src="{{item.coverUrl}}" mode="aspectFill" lazy-load />
         <view wx:else class="series-texture placeholder"></view>
         <view class="series-name">{{item.name}}</view>
         <view class="series-count">{{item.productCount}}款</view>
@@ -68,12 +68,16 @@
           data-id="{{item.id}}"
           bindtap="onGroupTap"
         >
-          <image wx:if="{{item.coverUrl}}" class="group-cover" src="{{item.coverUrl}}" mode="aspectFill" />
+          <image wx:if="{{item.coverUrl}}" class="group-cover" src="{{item.coverUrl}}" mode="aspectFill" lazy-load />
           <view wx:else class="group-cover fallback">暂无图</view>
           <view class="group-body">
             <view class="group-title">{{item.title}}</view>
             <view class="group-meta">
-              {{item.productCount}}款产品 · {{item.specificationCount}}种规格
+              {{item.productCount}}款 · {{item.specificationCount}}规格
+            </view>
+            <view class="media-row" wx:if="{{item.imageCount > 0 || item.effectImageCount > 0}}">
+              <view wx:if="{{item.imageCount > 0}}" class="media-chip">{{item.imageCount}}张图</view>
+              <view wx:if="{{item.effectImageCount > 0}}" class="media-chip strong">效果案例</view>
             </view>
             <view class="sample-row">
               <view
@@ -82,11 +86,11 @@
                 wx:for-item="product"
                 class="sample-tag"
               >
-                {{product.code}}
+                {{product.specification || product.code}}
               </view>
             </view>
           </view>
-          <view class="group-action">看规格</view>
+          <view class="group-action">看全部</view>
         </view>
 
         <view class="quick-products" wx:if="{{products.length > 0}}">
@@ -98,7 +102,7 @@
             data-id="{{item.id}}"
             bindtap="onProductTap"
           >
-            <image wx:if="{{item.thumbnailUrl}}" class="product-thumb" src="{{item.thumbnailUrl}}" mode="aspectFill" />
+            <image wx:if="{{item.thumbnailUrl}}" class="product-thumb" src="{{item.thumbnailUrl}}" mode="aspectFill" lazy-load />
             <view wx:else class="product-thumb fallback">图</view>
             <view class="product-info">
               <view class="product-name line-clamp-1">{{item.name}}</view>

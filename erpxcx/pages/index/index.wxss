@@ -234,6 +234,27 @@
   font-size: 23rpx;
 }
 
+.media-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  margin-top: 10rpx;
+}
+
+.media-chip {
+  padding: 5rpx 10rpx;
+  border-radius: 999rpx;
+  background: #f6f1e8;
+  color: #7a6b58;
+  font-size: 20rpx;
+  font-weight: 800;
+}
+
+.media-chip.strong {
+  background: #e8f5ef;
+  color: #27594f;
+}
+
 .sample-row {
   display: flex;
   flex-wrap: wrap;
@@ -243,12 +264,15 @@
 
 .sample-tag {
   max-width: 150rpx;
+  overflow: hidden;
   padding: 6rpx 10rpx;
   border-radius: 10rpx;
   background: #f6f1e8;
   color: #7a6b58;
-  font-family: monospace;
   font-size: 20rpx;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .group-action {

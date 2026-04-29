@@ -281,6 +281,14 @@ function buildProductGroups(products: CatalogProductRecord[]) {
     const specificationCount = new Set(
       group.products.map(product => product.specification).filter(Boolean)
     ).size;
+    const imageCount = group.products.reduce(
+      (sum, product) => sum + product.imageCount,
+      0
+    );
+    const effectImageCount = group.products.reduce(
+      (sum, product) => sum + product.effectImageUrls.length,
+      0
+    );
 
     return {
       id: group.id,
@@ -292,6 +300,8 @@ function buildProductGroups(products: CatalogProductRecord[]) {
         null,
       productCount,
       specificationCount,
+      imageCount,
+      effectImageCount,
       hasStock: group.products.some(
         product => product.stockStatus !== 'out_of_stock'
       ),

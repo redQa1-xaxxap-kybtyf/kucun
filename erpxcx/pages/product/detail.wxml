@@ -8,11 +8,11 @@
         class="gallery"
         current="{{currentImage}}"
         bindchange="onImageChange"
-        indicator-dots="{{product.imageUrls.length > 1}}"
+        indicator-dots="{{galleryImageUrls.length > 1}}"
         indicator-color="rgba(255,255,255,0.45)"
         indicator-active-color="#ffffff"
       >
-        <swiper-item wx:for="{{product.imageUrls}}" wx:key="*this">
+        <swiper-item wx:for="{{galleryImageUrls}}" wx:key="*this">
           <image
             class="gallery-image"
             src="{{item}}"
@@ -21,7 +21,7 @@
             bindtap="onPreviewGallery"
           />
         </swiper-item>
-        <swiper-item wx:if="{{product.imageUrls.length == 0}}">
+        <swiper-item wx:if="{{galleryImageUrls.length == 0}}">
           <view class="gallery-image fallback">暂无图片</view>
         </swiper-item>
       </swiper>
