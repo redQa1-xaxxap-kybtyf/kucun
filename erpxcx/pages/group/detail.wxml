@@ -74,8 +74,7 @@
     </view>
 
     <view class="bottom-actions safe-bottom">
-      <button class="secondary" open-type="share">转发给客户</button>
-      <button class="primary" open-type="contact">咨询</button>
+      <button class="primary" open-type="share">转发给客户</button>
     </view>
   </view>
 </view>

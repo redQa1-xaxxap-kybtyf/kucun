@@ -97,8 +97,7 @@
     </view>
 
     <view class="bottom-actions safe-bottom">
-      <button class="secondary" open-type="share">分享产品</button>
-      <button class="primary" open-type="contact">咨询</button>
+      <button class="primary" open-type="share">分享产品</button>
     </view>
   </view>
 </view>
