@@ -1,6 +1,6 @@
 .page {
   min-height: 100vh;
-  padding: 28rpx 24rpx;
+  padding: 30rpx 24rpx;
   box-sizing: border-box;
   background: #f8f6f1;
 }
@@ -10,26 +10,26 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 20rpx;
-  padding: 12rpx 2rpx 28rpx;
+  padding: 8rpx 2rpx 28rpx;
 }
 
 .eyebrow {
   color: #8a8175;
-  font-size: 22rpx;
+  font-size: 23rpx;
   font-weight: 700;
 }
 
 .title {
   margin-top: 8rpx;
   color: #1f2328;
-  font-size: 42rpx;
+  font-size: 46rpx;
   font-weight: 900;
 }
 
 .desc {
-  margin-top: 8rpx;
+  margin-top: 6rpx;
   color: #73716d;
-  font-size: 26rpx;
+  font-size: 25rpx;
 }
 
 .logout {
@@ -42,14 +42,32 @@
   font-weight: 800;
 }
 
-.quick-grid {
+.primary-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 168rpx;
+  padding: 28rpx;
+  border-radius: 26rpx;
+  background: #27594f;
+  box-sizing: border-box;
+}
+
+.primary-action .action-title,
+.primary-action .action-desc,
+.primary-action .action-arrow {
+  color: #fff;
+}
+
+.action-pair {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 18rpx;
+  margin-top: 18rpx;
 }
 
-.quick-card {
-  min-height: 184rpx;
+.action-card {
+  min-height: 150rpx;
   padding: 24rpx;
   border: 1rpx solid #eee7dd;
   border-radius: 24rpx;
@@ -57,27 +75,59 @@
   box-sizing: border-box;
 }
 
-.quick-card.primary {
-  background: #27594f;
-}
-
-.quick-title {
+.action-title {
   color: #1f2328;
-  font-size: 31rpx;
+  font-size: 32rpx;
   font-weight: 900;
 }
 
-.quick-card.primary .quick-title {
-  color: #fff;
-}
-
-.quick-desc {
-  margin-top: 14rpx;
+.action-desc {
+  margin-top: 12rpx;
   color: #73716d;
   font-size: 24rpx;
-  line-height: 1.45;
+  line-height: 1.35;
 }
 
-.quick-card.primary .quick-desc {
-  color: rgba(255, 255, 255, 0.8);
+.action-arrow {
+  font-size: 54rpx;
+  font-weight: 300;
+}
+
+.section-title {
+  margin: 30rpx 4rpx 14rpx;
+  color: #8a8175;
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+.secondary-list {
+  border: 1rpx solid #eee7dd;
+  border-radius: 24rpx;
+  overflow: hidden;
+  background: #fff;
+}
+
+.secondary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+  padding: 24rpx;
+}
+
+.secondary-title {
+  color: #1f2328;
+  font-size: 29rpx;
+  font-weight: 900;
+}
+
+.secondary-desc {
+  margin-top: 8rpx;
+  color: #73716d;
+  font-size: 24rpx;
+}
+
+.row-arrow {
+  color: #b68a45;
+  font-size: 42rpx;
 }

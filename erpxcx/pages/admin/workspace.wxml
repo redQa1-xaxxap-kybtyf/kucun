@@ -1,29 +1,40 @@
 <view class="page">
   <view class="header">
     <view>
-      <view class="eyebrow">移动 ERP</view>
-      <view class="title">管理员工作台</view>
-      <view class="desc">{{user.name || user.username || '管理员'}}</view>
+      <view class="eyebrow">{{user.name || user.username || '管理员'}}</view>
+      <view class="title">工作台</view>
+      <view class="desc">常用操作</view>
     </view>
     <button class="logout" bindtap="onLogout">退出</button>
   </view>
 
-  <view class="quick-grid">
-    <view class="quick-card primary" bindtap="onInventoryTap">
-      <view class="quick-title">查库存</view>
-      <view class="quick-desc">按编码、名称、批次快速查可用库存</view>
+  <view class="primary-action" bindtap="onInventoryTap">
+    <view>
+      <view class="action-title">查库存</view>
+      <view class="action-desc">编码、名称、批次</view>
     </view>
-    <view class="quick-card" bindtap="onSalesOrderTap">
-      <view class="quick-title">开销售单</view>
-      <view class="quick-desc">选客户、选产品、快速开单</view>
+    <view class="action-arrow">›</view>
+  </view>
+
+  <view class="action-pair">
+    <view class="action-card" bindtap="onSalesOrderTap">
+      <view class="action-title">开销售单</view>
+      <view class="action-desc">快速开单</view>
     </view>
-    <view class="quick-card" bindtap="onPaymentTap">
-      <view class="quick-title">收付款</view>
-      <view class="quick-desc">登记收款、查看应收</view>
+    <view class="action-card" bindtap="onPaymentTap">
+      <view class="action-title">登记收款</view>
+      <view class="action-desc">订单/预收款</view>
     </view>
-    <view class="quick-card" bindtap="onProductsTap">
-      <view class="quick-title">产品维护</view>
-      <view class="quick-desc">新增、编辑、下架产品</view>
+  </view>
+
+  <view class="section-title">资料维护</view>
+  <view class="secondary-list">
+    <view class="secondary-row" bindtap="onProductsTap">
+      <view>
+        <view class="secondary-title">产品维护</view>
+        <view class="secondary-desc">新增、编辑、上架下架</view>
+      </view>
+      <view class="row-arrow">›</view>
     </view>
   </view>
 </view>

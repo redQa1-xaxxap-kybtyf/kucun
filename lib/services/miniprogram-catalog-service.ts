@@ -433,9 +433,17 @@ export async function getMiniProgramProduct(productId: string) {
     .filter(item => item.id !== product.id)
     .slice(0, 8)
     .map(toPublicProduct);
+  const relatedGroups = buildProductGroups(
+    filterProducts(products, {
+      seriesId: publicProduct.colorSeries.id,
+    })
+  )
+    .filter(item => item.componentType.id !== publicProduct.componentType.id)
+    .slice(0, 6);
 
   return {
     ...publicProduct,
     relatedProducts,
+    relatedGroups,
   };
 }

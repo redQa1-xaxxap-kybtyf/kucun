@@ -154,8 +154,34 @@
   color: #fff;
 }
 
+.selection-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  height: 62rpx;
+  padding: 0 4rpx;
+}
+
+.summary-title {
+  min-width: 0;
+  overflow: hidden;
+  color: #1f2328;
+  font-size: 28rpx;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.summary-count {
+  flex: none;
+  color: #8a8175;
+  font-size: 23rpx;
+  font-weight: 700;
+}
+
 .group-list {
-  height: calc(100% - 68rpx);
+  height: calc(100% - 130rpx);
 }
 
 .empty {

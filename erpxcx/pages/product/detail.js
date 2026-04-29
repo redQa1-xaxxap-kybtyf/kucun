@@ -7,6 +7,8 @@ Page({
     productId: '',
     product: null,
     currentImage: 0,
+    currentImageNumber: 1,
+    imageTotal: 0,
   },
 
   onLoad(options) {
@@ -47,7 +49,13 @@ Page({
 
     try {
       const product = await getProduct(this.data.productId);
-      this.setData({ product, loading: false });
+      this.setData({
+        currentImage: 0,
+        currentImageNumber: 1,
+        imageTotal: (product.imageUrls || []).length,
+        product,
+        loading: false,
+      });
     } catch (error) {
       this.setData({
         error: error.message || '加载失败',
@@ -57,12 +65,21 @@ Page({
   },
 
   onImageChange(event) {
-    this.setData({ currentImage: event.detail.current });
+    this.setData({
+      currentImage: event.detail.current,
+      currentImageNumber: event.detail.current + 1,
+    });
   },
 
   onRelatedProductTap(event) {
     wx.navigateTo({
       url: `/pages/product/detail?id=${event.currentTarget.dataset.id}`,
+    });
+  },
+
+  onRelatedGroupTap(event) {
+    wx.navigateTo({
+      url: `/pages/group/detail?id=${encodeURIComponent(event.currentTarget.dataset.id)}`,
     });
   },
 });

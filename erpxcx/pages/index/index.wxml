@@ -47,10 +47,15 @@
             data-id="{{item.id}}"
             bindtap="onComponentTap"
           >
-            {{item.label}}
+            {{item.label}} {{item.productCount}}
           </view>
         </view>
       </scroll-view>
+
+      <view class="selection-summary">
+        <view class="summary-title">{{selectedSeriesName}} · {{selectedComponentLabel}}</view>
+        <view class="summary-count">{{resultSummary}}</view>
+      </view>
 
       <scroll-view class="group-list" scroll-y enhanced>
         <view wx:if="{{loading}}" class="empty">正在整理花色货架...</view>
@@ -81,7 +86,7 @@
               </view>
             </view>
           </view>
-          <view class="group-action">查看</view>
+          <view class="group-action">看规格</view>
         </view>
 
         <view class="quick-products" wx:if="{{products.length > 0}}">

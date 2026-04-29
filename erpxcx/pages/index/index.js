@@ -1,11 +1,31 @@
 const { getCatalog } = require('../../utils/catalog');
 
+function resolveViewMeta(data, selectedSeriesId, selectedComponentType) {
+  const series =
+    (data.series || []).find(item => item.id === selectedSeriesId) ||
+    (data.series || [])[0] ||
+    {};
+  const component =
+    (data.components || []).find(item => item.id === selectedComponentType) ||
+    (data.components || [])[0] ||
+    {};
+
+  return {
+    resultSummary: `${(data.groups || []).length}组 · ${(data.products || []).length}款`,
+    selectedComponentLabel: component.label || '全部',
+    selectedSeriesName: series.name || '热门',
+  };
+}
+
 Page({
   data: {
     loading: true,
     error: '',
     selectedSeriesId: 'hot',
     selectedComponentType: 'all',
+    selectedSeriesName: '热门',
+    selectedComponentLabel: '全部',
+    resultSummary: '',
     search: '',
     series: [],
     components: [],
@@ -64,6 +84,11 @@ Page({
         components: data.components || [],
         groups: data.groups || [],
         products: data.products || [],
+        ...resolveViewMeta(
+          data,
+          this.data.selectedSeriesId,
+          this.data.selectedComponentType
+        ),
         loading: false,
       });
     } catch (error) {
