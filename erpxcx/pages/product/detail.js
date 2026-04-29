@@ -145,12 +145,6 @@ Page({
     openShelf(product.colorSeries.id, product.componentType.id);
   },
 
-  onRelatedProductTap(event) {
-    wx.navigateTo({
-      url: `/pages/product/detail?id=${event.currentTarget.dataset.id}`,
-    });
-  },
-
   onRelatedGroupTap(event) {
     wx.navigateTo({
       url: `/pages/group/detail?id=${encodeURIComponent(event.currentTarget.dataset.id)}`,

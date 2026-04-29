@@ -62,20 +62,18 @@
 
     <view class="section" wx:if="{{product.effectImageUrls.length > 0}}">
       <view class="section-title">效果案例</view>
-      <scroll-view scroll-x enhanced class="case-scroll">
-        <view class="case-row">
-          <image
-            wx:for="{{product.effectImageUrls}}"
-            wx:key="*this"
-            class="case-image"
-            src="{{item}}"
-            mode="aspectFill"
-            lazy-load
-            data-current="{{item}}"
-            bindtap="onPreviewEffectImage"
-          />
-        </view>
-      </scroll-view>
+      <view class="case-grid">
+        <image
+          wx:for="{{product.effectImageUrls}}"
+          wx:key="*this"
+          class="case-image"
+          src="{{item}}"
+          mode="aspectFill"
+          lazy-load
+          data-current="{{item}}"
+          bindtap="onPreviewEffectImage"
+        />
+      </view>
     </view>
 
     <view class="section" wx:if="{{product.description}}">
@@ -83,44 +81,22 @@
       <view class="description">{{product.description}}</view>
     </view>
 
-    <view class="section" wx:if="{{product.relatedProducts.length > 0}}">
-      <view class="section-title">同色同类</view>
-      <scroll-view scroll-x enhanced class="related-scroll">
-        <view class="related-row">
-          <view
-            wx:for="{{product.relatedProducts}}"
-            wx:key="id"
-            class="related-card"
-            data-id="{{item.id}}"
-            bindtap="onRelatedProductTap"
-          >
-            <image wx:if="{{item.thumbnailUrl}}" class="related-cover" src="{{item.thumbnailUrl}}" mode="aspectFill" />
-            <view wx:else class="related-cover fallback">图</view>
-            <view class="related-name line-clamp-2">{{item.name}}</view>
-            <view class="related-code">{{item.code}}</view>
-          </view>
-        </view>
-      </scroll-view>
-    </view>
-
     <view class="section" wx:if="{{product.relatedGroups.length > 0}}">
       <view class="section-title">同色配套</view>
-      <scroll-view scroll-x enhanced class="related-scroll">
-        <view class="related-row">
-          <view
-            wx:for="{{product.relatedGroups}}"
-            wx:key="id"
-            class="related-card"
-            data-id="{{item.id}}"
-            bindtap="onRelatedGroupTap"
-          >
-            <image wx:if="{{item.coverUrl}}" class="related-cover" src="{{item.coverUrl}}" mode="aspectFill" />
-            <view wx:else class="related-cover fallback">图</view>
-            <view class="related-name line-clamp-2">{{item.title}}</view>
-            <view class="related-code">{{item.productCount}}款</view>
-          </view>
+      <view class="match-grid">
+        <view
+          wx:for="{{product.relatedGroups}}"
+          wx:key="id"
+          class="match-card"
+          data-id="{{item.id}}"
+          bindtap="onRelatedGroupTap"
+        >
+          <image wx:if="{{item.coverUrl}}" class="match-cover" src="{{item.coverUrl}}" mode="aspectFill" />
+          <view wx:else class="match-cover fallback">图</view>
+          <view class="match-name line-clamp-2">{{item.title}}</view>
+          <view class="match-code">{{item.productCount}}款</view>
         </view>
-      </scroll-view>
+      </view>
     </view>
 
     <view class="bottom-actions safe-bottom">

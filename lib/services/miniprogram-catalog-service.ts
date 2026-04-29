@@ -450,13 +450,6 @@ export async function getMiniProgramProduct(productId: string) {
 
   const publicProduct = toPublicProduct(product);
   const products = await getActiveProducts();
-  const relatedProducts = filterProducts(products, {
-    seriesId: publicProduct.colorSeries.id,
-    componentType: publicProduct.componentType.id,
-  })
-    .filter(item => item.id !== product.id)
-    .slice(0, 8)
-    .map(toPublicProduct);
   const relatedGroups = buildProductGroups(
     filterProducts(products, {
       seriesId: publicProduct.colorSeries.id,
@@ -467,7 +460,6 @@ export async function getMiniProgramProduct(productId: string) {
 
   return {
     ...publicProduct,
-    relatedProducts,
     relatedGroups,
   };
 }
