@@ -12,7 +12,7 @@
 - 管理员登录，接入 ERP `/api/auth/mini-login`。
 - 管理员工作台。
 - 管理端库存查询，支持关键词和扫码查库存。
-- 管理端产品维护，支持搜索、新增、编辑、上架、下架和删除保护。
+- 管理端产品维护，支持搜索、新增、编辑、图片上传、上架、下架和删除保护。
 
 ## 数据来源
 
@@ -25,6 +25,7 @@
 - `/api/inventory`
 - `/api/products`
 - `/api/categories`
+- `/api/upload/qiniu-token`
 
 这些接口基于现有 ERP 的 `Product`、`Category`、`ProductVariant`、`Inventory` 生成前台展示数据、管理员库存数据和产品维护数据。
 
@@ -42,10 +43,10 @@ apiBaseUrl: 'http://localhost:3000';
 2. 用微信开发者工具导入 `erpxcx` 目录。
 3. 本地开发阶段可关闭“校验合法域名”。
 4. 上线前将 `apiBaseUrl` 改为 ERP 的 HTTPS 域名，并配置小程序 request 合法域名。
+5. 产品图片上传使用七牛直传，上线前需在小程序后台配置对应七牛上传域名。
 
 ## 下一批开发
 
-- 管理端产品图片上传。
 - 产品删除前更细的业务占用说明。
 - 销售单创建。
 - 收款登记。

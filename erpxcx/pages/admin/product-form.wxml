@@ -58,14 +58,84 @@
     </view>
 
     <view class="field">
-      <view class="label">主图地址</view>
-      <input
-        class="input"
-        placeholder="https://..."
-        value="{{form.thumbnailUrl}}"
-        data-field="thumbnailUrl"
-        bindinput="onInput"
-      />
+      <view class="label">产品封面</view>
+      <view class="image-uploader">
+        <image wx:if="{{form.thumbnailUrl}}" class="cover-preview" src="{{form.thumbnailUrl}}" mode="aspectFill" />
+        <view wx:else class="cover-preview placeholder">封面</view>
+        <view class="upload-side">
+          <button
+            class="upload-btn"
+            loading="{{uploadingKind == 'thumbnail'}}"
+            disabled="{{isUploading}}"
+            bindtap="onUploadThumbnail"
+          >
+            上传封面
+          </button>
+          <input
+            class="url-input"
+            placeholder="也可粘贴图片地址"
+            value="{{form.thumbnailUrl}}"
+            data-field="thumbnailUrl"
+            bindinput="onInput"
+          />
+        </view>
+      </view>
+    </view>
+
+    <view class="field">
+      <view class="section-head">
+        <view class="label">产品主图</view>
+        <button
+          class="small-btn"
+          loading="{{uploadingKind == 'main'}}"
+          disabled="{{isUploading}}"
+          bindtap="onUploadMainImage"
+        >
+          添加
+        </button>
+      </view>
+      <view wx:if="{{mainImages.length == 0}}" class="image-empty">未添加主图</view>
+      <view wx:else class="image-grid">
+        <view wx:for="{{mainImages}}" wx:key="url" class="image-item">
+          <image class="image-thumb" src="{{item.url}}" mode="aspectFill" />
+          <button
+            class="image-remove"
+            data-type="main"
+            data-index="{{index}}"
+            catchtap="onRemoveImage"
+          >
+            删除
+          </button>
+        </view>
+      </view>
+    </view>
+
+    <view class="field">
+      <view class="section-head">
+        <view class="label">效果案例</view>
+        <button
+          class="small-btn"
+          loading="{{uploadingKind == 'effect'}}"
+          disabled="{{isUploading}}"
+          bindtap="onUploadEffectImage"
+        >
+          添加
+        </button>
+      </view>
+      <view wx:if="{{effectImages.length == 0}}" class="image-empty">未添加效果案例</view>
+      <view wx:else class="image-grid">
+        <view wx:for="{{effectImages}}" wx:key="url" class="image-item">
+          <image class="image-thumb" src="{{item.url}}" mode="aspectFill" />
+          <button
+            class="image-remove"
+            data-type="effect"
+            data-index="{{index}}"
+            catchtap="onRemoveImage"
+          >
+            删除
+          </button>
+        </view>
+      </view>
     </view>
 
     <view class="field">
