@@ -12,6 +12,7 @@
 - 管理员登录，接入 ERP `/api/auth/mini-login`。
 - 管理员工作台。
 - 管理端库存查询，支持关键词和扫码查库存。
+- 管理端产品维护，支持搜索、新增、编辑、上架、下架和删除保护。
 
 ## 数据来源
 
@@ -22,8 +23,10 @@
 - `/api/miniprogram/products/:id`
 - `/api/auth/mini-login`
 - `/api/inventory`
+- `/api/products`
+- `/api/categories`
 
-这些接口基于现有 ERP 的 `Product`、`Category`、`ProductVariant`、`Inventory` 生成前台展示数据和管理员库存数据。
+这些接口基于现有 ERP 的 `Product`、`Category`、`ProductVariant`、`Inventory` 生成前台展示数据、管理员库存数据和产品维护数据。
 
 ## 开发配置
 
@@ -42,7 +45,7 @@ apiBaseUrl: 'http://localhost:3000';
 
 ## 下一批开发
 
-- 管理端产品新增/编辑/下架。
-- 产品删除前校验库存和业务单据。
+- 管理端产品图片上传。
+- 产品删除前更细的业务占用说明。
 - 销售单创建。
 - 收款登记。

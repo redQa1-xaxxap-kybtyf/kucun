@@ -1,0 +1,92 @@
+<view class="page">
+  <view class="header">
+    <view>
+      <view class="eyebrow">管理员</view>
+      <view class="title">产品维护</view>
+    </view>
+    <button class="add-btn" bindtap="onAddTap">新增</button>
+  </view>
+
+  <view class="search-card">
+    <input
+      class="search-input"
+      placeholder="输入编码、名称、规格"
+      value="{{search}}"
+      confirm-type="search"
+      bindinput="onSearchInput"
+      bindconfirm="onSearchConfirm"
+    />
+    <button wx:if="{{search}}" class="search-clear" bindtap="onClearSearch">清空</button>
+  </view>
+
+  <view class="status-tabs">
+    <view
+      wx:for="{{statusTabs}}"
+      wx:key="value"
+      class="status-tab {{status == item.value ? 'active' : ''}}"
+      data-status="{{item.value}}"
+      bindtap="onStatusTap"
+    >
+      {{item.label}}
+    </view>
+  </view>
+
+  <view wx:if="{{error}}" class="notice">{{error}}</view>
+  <view wx:if="{{loading && products.length == 0}}" class="empty">正在加载产品...</view>
+  <view wx:elif="{{products.length == 0}}" class="empty">暂无产品</view>
+
+  <view wx:else class="product-list">
+    <view wx:for="{{products}}" wx:key="id" class="product-card">
+      <view class="card-head">
+        <image wx:if="{{item.coverUrl}}" class="cover" src="{{item.coverUrl}}" mode="aspectFill" />
+        <view wx:else class="cover fallback">图</view>
+        <view class="main">
+          <view class="name line-clamp-1">{{item.name}}</view>
+          <view class="code">{{item.code}}</view>
+          <view class="spec line-clamp-1">{{item.specification}}</view>
+        </view>
+        <view class="badge {{item.status == 'active' ? 'ok' : 'off'}}">
+          {{item.statusLabel}}
+        </view>
+      </view>
+
+      <view class="info-row">
+        <view class="info-item">
+          <view class="info-value">{{item.categoryName}}</view>
+          <view class="info-label">分类</view>
+        </view>
+        <view class="info-item">
+          <view class="info-value">{{item.totalQuantity}}</view>
+          <view class="info-label">库存</view>
+        </view>
+        <view class="info-item strong">
+          <view class="info-value">{{item.availableQuantity}}</view>
+          <view class="info-label">可用</view>
+        </view>
+      </view>
+
+      <view class="actions">
+        <button class="action-btn" data-id="{{item.id}}" catchtap="onEditTap">编辑</button>
+        <button
+          class="action-btn"
+          loading="{{actionId == item.id}}"
+          data-id="{{item.id}}"
+          catchtap="onToggleStatus"
+        >
+          {{item.status == 'active' ? '下架' : '上架'}}
+        </button>
+        <button
+          class="action-btn danger {{item.canDelete ? '' : 'muted'}}"
+          loading="{{actionId == item.id}}"
+          data-id="{{item.id}}"
+          catchtap="onDeleteTap"
+        >
+          删除
+        </button>
+      </view>
+    </view>
+
+    <view wx:if="{{loading}}" class="list-more">正在加载...</view>
+    <view wx:elif="{{!hasMore}}" class="list-more">已到底</view>
+  </view>
+</view>

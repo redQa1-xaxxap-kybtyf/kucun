@@ -1,0 +1,99 @@
+<view class="page">
+  <view class="header">
+    <view>
+      <view class="eyebrow">产品维护</view>
+      <view class="title">{{isEdit ? '编辑产品' : '新增产品'}}</view>
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="empty">正在加载...</view>
+
+  <view wx:else class="form-card">
+    <view class="field">
+      <view class="label">产品编码</view>
+      <input
+        class="input"
+        placeholder="如 YSB-RMZ-001"
+        value="{{form.code}}"
+        data-field="code"
+        bindinput="onInput"
+      />
+    </view>
+
+    <view class="field">
+      <view class="label">产品名称</view>
+      <input
+        class="input"
+        placeholder="如 雅士白罗马柱"
+        value="{{form.name}}"
+        data-field="name"
+        bindinput="onInput"
+      />
+    </view>
+
+    <view class="field">
+      <view class="label">规格</view>
+      <input
+        class="input"
+        placeholder="如 300x600"
+        value="{{form.specification}}"
+        data-field="specification"
+        bindinput="onInput"
+      />
+    </view>
+
+    <view class="field">
+      <view class="label">分类</view>
+      <picker
+        mode="selector"
+        range="{{categories}}"
+        range-key="name"
+        value="{{categoryIndex}}"
+        bindchange="onCategoryChange"
+      >
+        <view class="picker-value {{categoryIndex >= 0 ? '' : 'placeholder'}}">
+          {{selectedCategoryName}}
+        </view>
+      </picker>
+    </view>
+
+    <view class="field">
+      <view class="label">主图地址</view>
+      <input
+        class="input"
+        placeholder="https://..."
+        value="{{form.thumbnailUrl}}"
+        data-field="thumbnailUrl"
+        bindinput="onInput"
+      />
+    </view>
+
+    <view class="field">
+      <view class="label">备注</view>
+      <textarea
+        class="textarea"
+        placeholder="可填写花色、用途或注意事项"
+        value="{{form.description}}"
+        data-field="description"
+        bindinput="onInput"
+      />
+    </view>
+
+    <view class="status-row">
+      <view>
+        <view class="label">前台展示</view>
+        <view class="hint">{{form.status == 'active' ? '正常展示' : '已下架'}}</view>
+      </view>
+      <switch checked="{{form.status == 'active'}}" color="#27594f" bindchange="onStatusChange" />
+    </view>
+
+    <button
+      class="submit"
+      loading="{{saving}}"
+      disabled="{{saving}}"
+      bindtap="onSubmit"
+    >
+      保存
+    </button>
+  </view>
+</view>

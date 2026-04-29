@@ -20,6 +20,12 @@ Page({
     });
   },
 
+  onProductsTap() {
+    wx.navigateTo({
+      url: '/pages/admin/products',
+    });
+  },
+
   onComingSoon() {
     wx.showToast({
       title: '下一批接入',

@@ -21,7 +21,7 @@
       <view class="quick-title">收付款</view>
       <view class="quick-desc">登记收款、查看应收</view>
     </view>
-    <view class="quick-card" bindtap="onComingSoon">
+    <view class="quick-card" bindtap="onProductsTap">
       <view class="quick-title">产品维护</view>
       <view class="quick-desc">新增、编辑、下架产品</view>
     </view>
