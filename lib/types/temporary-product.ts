@@ -1,8 +1,8 @@
 /**
- * 临时产品相关类型定义
+ * 外采产品相关类型定义
  */
 
-// 历史临时产品项
+// 外采产品项（销售订单调货开单使用）
 export interface HistoricalTemporaryProduct {
   id: string;
   code: string;
@@ -11,8 +11,18 @@ export interface HistoricalTemporaryProduct {
   unit: string;
   weight: number | null;
   piecesPerUnit: number;
+  description?: string | null;
+  thumbnailUrl?: string | null;
+  showInMiniProgram?: boolean;
+  latestCostPrice?: number | null;
+  latestSalePrice?: number | null;
+  latestPriceSource?: string | null;
+  latestPriceOrderNumber?: string | null;
+  latestPriceDate?: string | Date | null;
+  priceUpdatedAt?: string | Date | null;
+  priceRemarks?: string | null;
   usageCount: number;
-  lastUsedAt: Date | null;
+  lastUsedAt: string | Date | null;
   supplierId: string;
   supplier: {
     id: string;
@@ -20,7 +30,7 @@ export interface HistoricalTemporaryProduct {
   };
 }
 
-// 历史临时产品查询参数
+// 外采产品查询参数
 export interface HistoricalTemporaryProductQueryParams {
   supplierId?: string;
   search?: string;
@@ -28,7 +38,7 @@ export interface HistoricalTemporaryProductQueryParams {
   limit?: number;
 }
 
-// 历史临时产品列表响应
+// 外采产品列表响应
 export interface HistoricalTemporaryProductListResponse {
   data: HistoricalTemporaryProduct[];
   pagination: {

@@ -47,6 +47,7 @@ const protectedPaths = [
   '/api/upload',
   '/api/batch-specifications',
   '/api/product-variants',
+  '/api/temporary-products',
   '/api/seed-test-data',
   '/api/notifications', // 通知 API
   '/api/print-templates', // 打印模板 API
