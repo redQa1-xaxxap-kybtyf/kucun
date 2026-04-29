@@ -86,7 +86,7 @@ export function useOutboundRecords(
     [queryParams]
   );
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, isFetching, error } = useQuery({
     queryKey: queryKeys.inventory.outboundsList(keyParams),
     queryFn: async () => {
       const searchParams = new URLSearchParams();
@@ -124,9 +124,12 @@ export function useOutboundRecords(
     staleTime: INVENTORY_ACTIVITY_STALE_TIME_MS,
     gcTime: INVENTORY_ACTIVITY_GC_TIME_MS,
     refetchOnWindowFocus: true,
+    placeholderData: previousData => previousData,
   });
 
   const outboundRecords = data?.data || [];
+  const isInitialLoading = isLoading && !data;
+  const isListRefreshing = !isInitialLoading && isFetching;
 
   const filters: OutboundFilters = {
     startDate: (queryParams.startDate as string) || '',
@@ -162,6 +165,9 @@ export function useOutboundRecords(
     pagination: data?.pagination,
     filters,
     isLoading,
+    isFetching,
+    isInitialLoading,
+    isListRefreshing,
     error,
     resetFilters,
     updateFilter,

@@ -4,6 +4,7 @@ import * as React from 'react';
 
 import { OutboundRecordsTable } from '@/components/inventory/forms/outbound-records-table';
 import { OutboundRecordsSearchToolbar } from '@/components/inventory/outbound-records-search-toolbar';
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 import { useOutboundRecords } from '@/hooks/use-outbound-records';
 import type { OutboundRecordQueryParams } from '@/lib/types/inventory';
 
@@ -21,39 +22,50 @@ export function ERPOutboundRecords({ initialParams }: ERPOutboundRecordsProps) {
     outboundRecords,
     pagination,
     filters,
-    isLoading,
+    isInitialLoading,
+    isListRefreshing,
     resetFilters,
     updateFilter,
     onPageChange,
   } = useOutboundRecords(initialParams);
 
-  // 本地同步搜索值（可选，为了更好的搜索体验）
-  const [searchValue, setSearchValue] = React.useState(filters.search || '');
-  React.useEffect(() => {
-    setSearchValue(filters.search || '');
-  }, [filters.search]);
+  const {
+    searchInput,
+    isSearching,
+    handleSearchChange,
+    cancelPendingCommit,
+    setSearchInput,
+  } = useListSearchController({
+    committedValue: filters.search,
+    onCommit: value => {
+      updateFilter('search', value ?? '');
+    },
+  });
+
+  const handleClearFilters = React.useCallback(() => {
+    cancelPendingCommit();
+    setSearchInput('');
+    resetFilters();
+  }, [cancelPendingCommit, resetFilters, setSearchInput]);
 
   return (
     <div className="space-y-4">
       {/* 搜索工具栏 */}
       <OutboundRecordsSearchToolbar
-        searchValue={searchValue}
+        searchValue={searchInput}
         typeFilter={filters.type || 'all'}
         dateRange={{
           startDate: filters.startDate,
           endDate: filters.endDate,
         }}
-        isSearching={isLoading}
-        onSearch={val => {
-          setSearchValue(val);
-          updateFilter('search', val);
-        }}
+        isSearching={isSearching || isListRefreshing}
+        onSearch={handleSearchChange}
         onTypeChange={val => updateFilter('type', val)}
         onDateRangeChange={range => {
           updateFilter('startDate', range.startDate || '');
           updateFilter('endDate', range.endDate || '');
         }}
-        onClearFilters={resetFilters}
+        onClearFilters={handleClearFilters}
       />
 
       {/* 出库记录表格 */}
@@ -61,7 +73,8 @@ export function ERPOutboundRecords({ initialParams }: ERPOutboundRecordsProps) {
         <OutboundRecordsTable
           records={outboundRecords}
           pagination={pagination}
-          isLoading={isLoading}
+          isLoading={isInitialLoading}
+          isRefreshing={isSearching || isListRefreshing}
           onPageChange={onPageChange}
         />
       </div>
