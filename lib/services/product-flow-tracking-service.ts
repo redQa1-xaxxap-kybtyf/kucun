@@ -44,6 +44,27 @@ export interface ProductFlowTrackingResult {
     salesOrderCount: number;
     lastOutboundAt: string;
   }>;
+  customerPullRecords: Array<{
+    id: string;
+    sourceType: 'warehouse_outbound' | 'factory_shipment';
+    sourceLabel: string;
+    flowDate: string;
+    productCode: string;
+    productName: string;
+    specification?: string | null;
+    batchNumber?: string | null;
+    customerId?: string | null;
+    customerName: string;
+    orderId?: string | null;
+    orderNumber?: string | null;
+    recordNumber?: string | null;
+    quantity: number;
+    status?: string | null;
+    variantName?: string | null;
+    location?: string | null;
+    operatorName?: string | null;
+    supplierName?: string | null;
+  }>;
   outboundRecords: Array<{
     id: string;
     recordNumber: string;
@@ -188,10 +209,18 @@ export async function getProductFlowTracking(
     gte: range.startDate,
     lte: range.endDate,
   };
+  const customerWhere = query.customerId
+    ? {
+        OR: [
+          { customerId: query.customerId },
+          { salesOrder: { customerId: query.customerId } },
+        ],
+      }
+    : {};
   const outboundWhere = {
     productId,
     createdAt: dateWhere,
-    ...(query.customerId ? { customerId: query.customerId } : {}),
+    ...customerWhere,
   };
 
   const [
@@ -227,6 +256,7 @@ export async function getProductFlowTracking(
             id: true,
             orderNumber: true,
             status: true,
+            customer: { select: { id: true, name: true } },
           },
         },
         variant: { select: { colorCode: true, colorName: true } },
@@ -259,7 +289,10 @@ export async function getProductFlowTracking(
         createdAt: true,
         updatedAt: true,
         supplier: { select: { name: true } },
-        product: { select: { code: true, name: true } },
+        productCode: true,
+        displayName: true,
+        specification: true,
+        product: { select: { code: true, name: true, specification: true } },
         factoryShipmentOrder: {
           select: {
             id: true,
@@ -309,22 +342,49 @@ export async function getProductFlowTracking(
   const customerIds = new Set<string>();
   const orderIds = new Set<string>();
   const factoryShipmentOrderIds = new Set<string>();
+  const customerPullRecords: ProductFlowTrackingResult['customerPullRecords'] =
+    [];
 
   for (const record of outbounds) {
     const month = formatMonth(record.createdAt);
-    const customerKey = record.customerId ?? 'unknown';
+    const effectiveCustomerId =
+      record.customerId ?? record.salesOrder?.customer?.id ?? null;
+    const effectiveCustomerName =
+      record.customer?.name ??
+      record.salesOrder?.customer?.name ??
+      '未关联客户';
+    const customerKey = effectiveCustomerId ?? 'unknown';
     const key = `${month}:${customerKey}`;
-    const customerName = record.customer?.name ?? '未关联客户';
     const existing = monthlyMap.get(key);
 
-    if (record.customerId) customerIds.add(record.customerId);
+    if (effectiveCustomerId) customerIds.add(effectiveCustomerId);
     if (record.salesOrderId) orderIds.add(record.salesOrderId);
+    customerPullRecords.push({
+      id: record.id,
+      sourceType: 'warehouse_outbound',
+      sourceLabel: '仓库出库',
+      flowDate: record.createdAt.toISOString(),
+      productCode: product.code,
+      productName: product.name,
+      specification: product.specification,
+      batchNumber: record.batchNumber,
+      customerId: effectiveCustomerId,
+      customerName: effectiveCustomerName,
+      orderId: record.salesOrderId,
+      orderNumber: record.salesOrder?.orderNumber ?? null,
+      recordNumber: record.recordNumber,
+      quantity: record.quantity,
+      status: record.salesOrder?.status ?? null,
+      variantName: formatVariantName(record.variant),
+      location: record.inventory.location,
+      operatorName: record.operator.name,
+    });
 
     if (!existing) {
       monthlyMap.set(key, {
         month,
-        customerId: record.customerId ?? undefined,
-        customerName,
+        customerId: effectiveCustomerId ?? undefined,
+        customerName: effectiveCustomerName,
         quantity: record.quantity,
         outboundRecordCount: 1,
         salesOrderIds: record.salesOrderId
@@ -361,9 +421,30 @@ export async function getProductFlowTracking(
     const key = `${month}:${customerKey}`;
     const customerName = order.customer?.name ?? '未关联客户';
     const existing = monthlyMap.get(key);
+    const itemProductCode = item.product?.code ?? item.productCode;
+    const itemProductName = item.product?.name ?? item.displayName;
+    const itemSpecification =
+      item.product?.specification ?? item.specification ?? null;
 
     if (order.customerId) customerIds.add(order.customerId);
     factoryShipmentOrderIds.add(order.id);
+    customerPullRecords.push({
+      id: item.id,
+      sourceType: 'factory_shipment',
+      sourceLabel: '厂家直发',
+      flowDate: flowDate.toISOString(),
+      productCode: itemProductCode,
+      productName: itemProductName,
+      specification: itemSpecification,
+      batchNumber: item.batchNumber,
+      customerId: order.customerId,
+      customerName,
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      quantity: item.quantity,
+      status: order.status,
+      supplierName: item.supplier?.name ?? null,
+    });
 
     if (!existing) {
       monthlyMap.set(key, {
@@ -437,6 +518,12 @@ export async function getProductFlowTracking(
           ? b.quantity - a.quantity
           : b.month.localeCompare(a.month)
       ),
+    customerPullRecords: customerPullRecords
+      .sort(
+        (a, b) =>
+          new Date(b.flowDate).getTime() - new Date(a.flowDate).getTime()
+      )
+      .slice(0, 800),
     outboundRecords: outbounds.slice(0, 500).map(record => ({
       id: record.id,
       recordNumber: record.recordNumber,
@@ -444,8 +531,11 @@ export async function getProductFlowTracking(
       quantity: record.quantity,
       reason: record.reason,
       batchNumber: record.batchNumber,
-      customerId: record.customerId,
-      customerName: record.customer?.name ?? '未关联客户',
+      customerId: record.customerId ?? record.salesOrder?.customer?.id ?? null,
+      customerName:
+        record.customer?.name ??
+        record.salesOrder?.customer?.name ??
+        '未关联客户',
       salesOrderId: record.salesOrderId,
       salesOrderNumber: record.salesOrder?.orderNumber ?? null,
       salesOrderStatus: record.salesOrder?.status ?? null,
@@ -478,7 +568,7 @@ export async function getProductFlowTracking(
         customerId: order.customerId,
         customerName: order.customer?.name ?? '未关联客户',
         supplierName: item.supplier?.name ?? null,
-        variantName: item.product?.code ?? null,
+        variantName: item.product?.code ?? item.productCode,
       };
     }),
     inboundRecords: inbounds.map(record => ({
