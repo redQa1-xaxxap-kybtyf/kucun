@@ -7,6 +7,7 @@ import {
   ChevronRight,
   FileText,
   History,
+  Loader2,
   Search,
   SlidersHorizontal,
   TrendingDown,
@@ -16,11 +17,13 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 import {
   useCustomerStatementStatistics,
   useCustomerStatements,
@@ -37,6 +40,11 @@ interface CustomerStatementsPageClientProps {
   initialParams?: CustomerStatementQuery;
 }
 
+function normalizeSearch(value?: string) {
+  const trimmed = value?.trim() ?? '';
+  return trimmed ? trimmed : undefined;
+}
+
 export function CustomerStatementsPageClient({
   initialParams = {},
 }: CustomerStatementsPageClientProps) {
@@ -45,10 +53,27 @@ export function CustomerStatementsPageClient({
   const [queryParams, setQueryParams] =
     useState<CustomerStatementQuery>(initialParams);
 
+  const {
+    searchInput,
+    isSearching,
+    handleSearchChange,
+    cancelPendingCommit,
+  } = useListSearchController({
+    committedValue: queryParams.customerName,
+    onCommit: customerName => {
+      setQueryParams(prev => ({
+        ...prev,
+        customerName,
+        page: 1,
+      }));
+    },
+  });
+
   // 使用TanStack Query获取数据
   const {
     data,
     isLoading,
+    isFetching,
     error: _error,
   } = useCustomerStatements(queryParams, {
     enabled: true,
@@ -56,6 +81,9 @@ export function CustomerStatementsPageClient({
 
   const statements = data?.statements ?? [];
   const pagination = data?.pagination;
+  const isInitialLoading = isLoading && !data;
+  const isListRefreshing =
+    !isInitialLoading && (isFetching || isSearching);
 
   const {
     data: statisticsData,
@@ -112,33 +140,37 @@ export function CustomerStatementsPageClient({
   const totalPendingRefundBalance =
     statisticsData?.totalPendingRefundBalance ?? fallbackTotals.refundPending;
 
-  // 处理搜索
-  const handleSearch = (customerName: string) => {
-    setQueryParams(prev => ({
-      ...prev,
-      customerName,
-      page: 1,
-    }));
-  };
+  const syncPendingSearch = useCallback(() => {
+    cancelPendingCommit();
+    return normalizeSearch(searchInput);
+  }, [cancelPendingCommit, searchInput]);
 
   // 处理余额类型筛选
-  const handleBalanceTypeChange = (
-    balanceType: 'receivable' | 'payable' | 'all'
-  ) => {
-    setQueryParams(prev => ({
-      ...prev,
-      balanceType,
-      page: 1,
-    }));
-  };
+  const handleBalanceTypeChange = useCallback(
+    (balanceType: 'receivable' | 'payable' | 'all') => {
+      const customerName = syncPendingSearch();
+      setQueryParams(prev => ({
+        ...prev,
+        customerName,
+        balanceType,
+        page: 1,
+      }));
+    },
+    [syncPendingSearch]
+  );
 
   // 处理分页
-  const handlePageChange = (page: number) => {
-    setQueryParams(prev => ({
-      ...prev,
-      page,
-    }));
-  };
+  const handlePageChange = useCallback(
+    (page: number) => {
+      const customerName = syncPendingSearch();
+      setQueryParams(prev => ({
+        ...prev,
+        customerName,
+        page,
+      }));
+    },
+    [syncPendingSearch]
+  );
 
   // 格式化余额显示
   const formatBalance = (balance: number) => {
@@ -187,9 +219,9 @@ export function CustomerStatementsPageClient({
           {/* 检索输入框 */}
           <div className="group relative flex-1">
             <Input
-              placeholder="搜索客户名称或电话"
-              value={queryParams.customerName || ''}
-              onChange={e => handleSearch(e.target.value)}
+              placeholder="搜索客户名称、电话"
+              value={searchInput}
+              onChange={e => handleSearchChange(e.target.value)}
               className="h-11 rounded-lg border-[hsl(var(--color-border-primary))] bg-white pl-10"
             />
             <Search className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-[hsl(var(--color-text-tertiary))]" />
@@ -299,160 +331,172 @@ export function CustomerStatementsPageClient({
             </div>
           </div>
 
-          {isLoading ? (
-            <div className="border-border bg-card flex min-h-[320px] items-center justify-center rounded-md border">
-              <div className="flex flex-col items-center gap-4">
-                <div className="relative h-16 w-16">
-                  <div className="absolute inset-0 rounded-full border-4 border-slate-100" />
-                  <div className="absolute inset-0 animate-spin rounded-full border-4 border-slate-900 border-t-transparent" />
-                </div>
-                <p className="text-sm font-medium text-slate-500">
-                  正在加载客户往来数据...
-                </p>
+          <div
+            className="relative"
+            aria-busy={isInitialLoading || isListRefreshing}
+          >
+            {isListRefreshing && (
+              <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-center border-b border-[hsl(var(--color-border-primary))] bg-white/95 px-3 py-2 text-xs font-medium text-[hsl(var(--color-text-secondary))] shadow-sm">
+                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin text-[hsl(var(--color-primary))]" />
+                正在更新
               </div>
-            </div>
-          ) : statements.length === 0 ? (
-            <div className="bg-card flex flex-col items-center justify-center rounded-md border border-dashed border-slate-200 py-16">
-              <FileText className="mb-4 h-12 w-12 text-slate-200" />
-              <p className="text-sm font-medium text-slate-500">
-                暂无客户往来记录
-              </p>
-            </div>
-          ) : (
-            <div className="grid gap-4">
-              {statements.map((statement: CustomerStatementListItem) => {
-                const refundMetrics = getRefundMetrics(statement.summary);
-                const netBalance = statement.summary.netBalance;
+            )}
 
-                return (
-                  <div
-                    key={statement.customerId}
-                    onClick={() =>
-                      router.push(
-                        `/finance/customer-statements/${statement.customerId}`
-                      )
-                    }
-                    className="group border-border bg-card cursor-pointer rounded-md border p-4 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50/50"
-                  >
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
-                      {/* Left: Identity */}
-                      <div className="flex items-center gap-3 lg:min-w-[260px]">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-700">
-                          <User className="h-5 w-5" />
-                        </div>
-                        <div className="space-y-1.5">
-                          <h3 className="text-base font-semibold text-slate-900 transition-colors group-hover:text-blue-600">
-                            {statement.customerName}
-                          </h3>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <div className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-medium text-slate-600">
-                              <Wallet className="h-3 w-3" />
-                              {statement.customerPhone || '未留联系方式'}
+            <div
+              className={cn(
+                'transition-opacity',
+                isListRefreshing && 'opacity-60'
+              )}
+            >
+              {isInitialLoading ? (
+                <CustomerStatementListSkeleton />
+              ) : statements.length === 0 ? (
+                <div className="bg-card flex flex-col items-center justify-center rounded-md border border-dashed border-slate-200 py-16">
+                  <FileText className="mb-4 h-12 w-12 text-slate-200" />
+                  <p className="text-sm font-medium text-slate-500">
+                    暂无客户往来记录
+                  </p>
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {statements.map((statement: CustomerStatementListItem) => {
+                    const refundMetrics = getRefundMetrics(statement.summary);
+                    const netBalance = statement.summary.netBalance;
+
+                    return (
+                      <div
+                        key={statement.customerId}
+                        onClick={() =>
+                          router.push(
+                            `/finance/customer-statements/${statement.customerId}`
+                          )
+                        }
+                        className="group border-border bg-card cursor-pointer rounded-md border p-4 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50/50"
+                      >
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+                          {/* Left: Identity */}
+                          <div className="flex items-center gap-3 lg:min-w-[260px]">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-700">
+                              <User className="h-5 w-5" />
                             </div>
-                            <span className="text-xs font-medium tracking-normal text-slate-400">
-                              客户编号: {statement.customerId.slice(-6)}
-                            </span>
+                            <div className="space-y-1.5">
+                              <h3 className="text-base font-semibold text-slate-900 transition-colors group-hover:text-blue-600">
+                                {statement.customerName}
+                              </h3>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <div className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-medium text-slate-600">
+                                  <Wallet className="h-3 w-3" />
+                                  {statement.customerPhone || '未留联系方式'}
+                                </div>
+                                <span className="text-xs font-medium tracking-normal text-slate-400">
+                                  客户编号: {statement.customerId.slice(-6)}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Middle: Financial Insight Grid */}
+                          <div className="grid flex-1 grid-cols-2 gap-3 border-slate-100 lg:border-x lg:px-6 xl:grid-cols-4">
+                            <div className="space-y-1">
+                              <span className="text-xs font-bold text-slate-500">
+                                应收金额
+                              </span>
+                              <p className="text-lg font-semibold text-emerald-600">
+                                {formatCurrency(
+                                  statement.summary.receivables
+                                    .receivableBalance
+                                )}
+                              </p>
+                            </div>
+                            <div className="space-y-1">
+                              <span className="text-xs font-bold text-slate-500">
+                                应付金额
+                              </span>
+                              <p className="text-lg font-semibold text-rose-600">
+                                {formatCurrency(
+                                  statement.summary.payables.payableBalance
+                                )}
+                              </p>
+                            </div>
+                            <div className="space-y-1">
+                              <span className="text-xs font-bold text-slate-500">
+                                往来净额
+                              </span>
+                              <div
+                                className={cn(
+                                  'text-lg font-semibold',
+                                  netBalance > 0
+                                    ? 'text-emerald-600'
+                                    : netBalance < 0
+                                      ? 'text-rose-600'
+                                      : 'text-slate-400'
+                                )}
+                              >
+                                {formatBalance(netBalance)}
+                              </div>
+                            </div>
+                            <div className="space-y-1">
+                              <span className="text-xs font-bold text-slate-500">
+                                待退款
+                              </span>
+                              <p
+                                className={cn(
+                                  'text-lg font-semibold',
+                                  refundMetrics.pendingRefundAmount > 0
+                                    ? 'text-amber-600'
+                                    : 'text-slate-300'
+                                )}
+                              >
+                                {formatCurrency(
+                                  refundMetrics.pendingRefundAmount
+                                )}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3 lg:justify-end">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-9 w-9 rounded-md text-slate-400 transition-colors group-hover:text-slate-900"
+                            >
+                              <ChevronRight className="h-6 w-6" />
+                            </Button>
                           </div>
                         </div>
-                      </div>
 
-                      {/* Middle: Financial Insight Grid */}
-                      <div className="grid flex-1 grid-cols-2 gap-3 border-slate-100 lg:border-x lg:px-6 xl:grid-cols-4">
-                        <div className="space-y-1">
-                          <span className="text-xs font-bold text-slate-500">
-                            应收金额
-                          </span>
-                          <p className="text-lg font-semibold text-emerald-600">
-                            {formatCurrency(
-                              statement.summary.receivables.receivableBalance
-                            )}
-                          </p>
-                        </div>
-                        <div className="space-y-1">
-                          <span className="text-xs font-bold text-slate-500">
-                            应付金额
-                          </span>
-                          <p className="text-lg font-semibold text-rose-600">
-                            {formatCurrency(
-                              statement.summary.payables.payableBalance
-                            )}
-                          </p>
-                        </div>
-                        <div className="space-y-1">
-                          <span className="text-xs font-bold text-slate-500">
-                            往来净额
-                          </span>
-                          <div
-                            className={cn(
-                              'text-lg font-semibold',
-                              netBalance > 0
-                                ? 'text-emerald-600'
-                                : netBalance < 0
-                                  ? 'text-rose-600'
-                                  : 'text-slate-400'
-                            )}
-                          >
-                            {formatBalance(netBalance)}
+                        {/* Footer: Metadata & Audit Indicators */}
+                        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
+                          <div className="flex flex-wrap items-center gap-4">
+                            <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
+                              <History className="h-3.5 w-3.5 text-slate-400" />
+                              最后交易时间{' '}
+                              <span className="ml-1 text-slate-900">
+                                {statement.lastTransactionDate
+                                  ? formatDate(statement.lastTransactionDate)
+                                  : '--'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
+                              <ArrowUpRight className="h-3.5 w-3.5 text-slate-400" />
+                              交易笔数{' '}
+                              <span className="ml-1 text-blue-600">
+                                {statement.transactionCount} 笔
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                        <div className="space-y-1">
-                          <span className="text-xs font-bold text-slate-500">
-                            待退款
-                          </span>
-                          <p
-                            className={cn(
-                              'text-lg font-semibold',
-                              refundMetrics.pendingRefundAmount > 0
-                                ? 'text-amber-600'
-                                : 'text-slate-300'
-                            )}
-                          >
-                            {formatCurrency(refundMetrics.pendingRefundAmount)}
-                          </p>
-                        </div>
-                      </div>
 
-                      <div className="flex items-center gap-3 lg:justify-end">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-9 w-9 rounded-md text-slate-400 transition-colors group-hover:text-slate-900"
-                        >
-                          <ChevronRight className="h-6 w-6" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Footer: Metadata & Audit Indicators */}
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
-                      <div className="flex flex-wrap items-center gap-4">
-                        <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
-                          <History className="h-3.5 w-3.5 text-slate-400" />
-                          最后交易时间{' '}
-                          <span className="ml-1 text-slate-900">
-                            {statement.lastTransactionDate
-                              ? formatDate(statement.lastTransactionDate)
-                              : '--'}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
-                          <ArrowUpRight className="h-3.5 w-3.5 text-slate-400" />
-                          交易笔数{' '}
-                          <span className="ml-1 text-blue-600">
-                            {statement.transactionCount} 笔
+                          <span className="text-xs font-medium text-slate-400">
+                            点击查看明细
                           </span>
                         </div>
                       </div>
-
-                      <span className="text-xs font-medium text-slate-400">
-                        点击查看明细
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
 
         {/* 分页 */}
@@ -466,7 +510,7 @@ export function CustomerStatementsPageClient({
               <Button
                 variant="ghost"
                 size="lg"
-                disabled={pagination.page === 1}
+                disabled={isListRefreshing || pagination.page === 1}
                 onClick={() => handlePageChange(pagination.page - 1)}
                 className="h-10 rounded-md border bg-white font-semibold text-slate-900 shadow-sm transition-colors hover:bg-slate-900 hover:text-white disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-slate-900"
               >
@@ -475,7 +519,9 @@ export function CustomerStatementsPageClient({
               <Button
                 variant="ghost"
                 size="lg"
-                disabled={pagination.page === pagination.totalPages}
+                disabled={
+                  isListRefreshing || pagination.page === pagination.totalPages
+                }
                 onClick={() => handlePageChange(pagination.page + 1)}
                 className="h-10 rounded-md border bg-white font-semibold text-slate-900 shadow-sm transition-colors hover:bg-slate-900 hover:text-white disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-slate-900"
               >
@@ -485,6 +531,56 @@ export function CustomerStatementsPageClient({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function CustomerStatementListSkeleton() {
+  return (
+    <div className="grid gap-4">
+      {Array.from({ length: 4 }).map((_, index) => (
+        <div
+          key={`customer-statement-skeleton-${index}`}
+          className="border-border bg-card rounded-md border p-4 shadow-sm"
+        >
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+            <div className="flex items-center gap-3 lg:min-w-[260px]">
+              <Skeleton className="h-10 w-10 shrink-0 rounded-md" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <Skeleton className="h-5 w-36" />
+                <div className="flex flex-wrap items-center gap-2">
+                  <Skeleton className="h-6 w-32" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid flex-1 grid-cols-2 gap-3 border-slate-100 lg:border-x lg:px-6 xl:grid-cols-4">
+              {Array.from({ length: 4 }).map((__, metricIndex) => (
+                <div
+                  key={`customer-statement-metric-${index}-${metricIndex}`}
+                  className="space-y-2"
+                >
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-6 w-24" />
+                </div>
+              ))}
+            </div>
+
+            <div className="hidden lg:block">
+              <Skeleton className="h-9 w-9 rounded-md" />
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
+            <div className="flex flex-wrap items-center gap-4">
+              <Skeleton className="h-4 w-36" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+            <Skeleton className="h-4 w-20" />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
