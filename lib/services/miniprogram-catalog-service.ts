@@ -107,7 +107,7 @@ const COMPONENT_TYPES: Array<{
 
 const HOT_SERIES = {
   id: 'hot',
-  name: '热门',
+  name: '全部',
 };
 
 function buildSearchText(product: CatalogProductRecord) {
@@ -233,9 +233,14 @@ function toPublicProduct(product: CatalogProductRecord) {
       id: component.id,
       label: component.label,
     },
-    stockStatus: getProductStockStatus(product),
     updatedAt: product.updatedAt.toISOString(),
   };
+}
+
+function toPublicGroup<T extends { hasStock: boolean }>(group: T) {
+  const publicGroup = { ...group };
+  delete (publicGroup as Partial<T>).hasStock;
+  return publicGroup as Omit<T, 'hasStock'>;
 }
 
 async function getActiveProducts() {
@@ -254,16 +259,19 @@ function buildProductGroups(products: CatalogProductRecord[]) {
       id: string;
       colorSeries: { id: string; name: string };
       componentType: { id: MiniProgramComponentType; label: string };
+      hasStock: boolean;
       products: ReturnType<typeof toPublicProduct>[];
     }
   >();
 
   for (const product of products) {
     const item = toPublicProduct(product);
+    const productHasStock = getProductStockStatus(product) !== 'out_of_stock';
     const key = `${item.colorSeries.id}__${item.componentType.id}`;
     const existing = groupMap.get(key);
 
     if (existing) {
+      existing.hasStock = existing.hasStock || productHasStock;
       existing.products.push(item);
       continue;
     }
@@ -272,6 +280,7 @@ function buildProductGroups(products: CatalogProductRecord[]) {
       id: key,
       colorSeries: item.colorSeries,
       componentType: item.componentType,
+      hasStock: productHasStock,
       products: [item],
     });
   }
@@ -302,9 +311,7 @@ function buildProductGroups(products: CatalogProductRecord[]) {
       specificationCount,
       imageCount,
       effectImageCount,
-      hasStock: group.products.some(
-        product => product.stockStatus !== 'out_of_stock'
-      ),
+      hasStock: group.hasStock,
       sampleProducts: group.products.slice(0, 4),
       updatedAt: group.products[0]?.updatedAt ?? null,
     };
@@ -411,7 +418,7 @@ export async function getMiniProgramCatalog(params: {
   return {
     series: buildSeriesSummary(products),
     components: buildComponentSummary(currentSeriesProducts),
-    groups,
+    groups: groups.map(toPublicGroup),
     products: filteredProducts.slice(0, 30).map(toPublicProduct),
   };
 }
@@ -434,9 +441,9 @@ export async function getMiniProgramProductGroup(groupId: string) {
     .slice(0, 6);
 
   return {
-    ...group,
+    ...toPublicGroup(group),
     products: filteredProducts.map(toPublicProduct),
-    relatedGroups: sameSeriesGroups,
+    relatedGroups: sameSeriesGroups.map(toPublicGroup),
   };
 }
 
@@ -460,6 +467,6 @@ export async function getMiniProgramProduct(productId: string) {
 
   return {
     ...publicProduct,
-    relatedGroups,
+    relatedGroups: relatedGroups.map(toPublicGroup),
   };
 }

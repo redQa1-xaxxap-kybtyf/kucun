@@ -13,7 +13,7 @@ function resolveViewMeta(data, selectedSeriesId, selectedComponentType) {
   return {
     resultSummary: `${(data.groups || []).length}组 · ${(data.products || []).length}款`,
     selectedComponentLabel: component.label || '全部',
-    selectedSeriesName: series.name || '热门',
+    selectedSeriesName: series.name || '全部',
   };
 }
 
@@ -23,10 +23,11 @@ Page({
     error: '',
     selectedSeriesId: 'hot',
     selectedComponentType: 'all',
-    selectedSeriesName: '热门',
+    selectedSeriesName: '全部',
     selectedComponentLabel: '全部',
     resultSummary: '',
     search: '',
+    searchKeyword: '',
     series: [],
     components: [],
     groups: [],
@@ -76,7 +77,7 @@ Page({
       const data = await getCatalog({
         seriesId: this.data.selectedSeriesId,
         componentType: this.data.selectedComponentType,
-        search: this.data.search,
+        search: this.data.searchKeyword,
       });
 
       this.setData({
@@ -122,15 +123,17 @@ Page({
   },
 
   onSearchConfirm() {
+    const searchKeyword = this.data.search.trim();
     this.setData({
-      selectedSeriesId: this.data.search ? 'hot' : this.data.selectedSeriesId,
+      searchKeyword,
+      selectedSeriesId: searchKeyword ? 'hot' : this.data.selectedSeriesId,
       selectedComponentType: 'all',
     });
     this.loadCatalog();
   },
 
   onClearSearch() {
-    this.setData({ search: '' });
+    this.setData({ search: '', searchKeyword: '' });
     this.loadCatalog();
   },
 

@@ -1,8 +1,8 @@
 <view class="page">
   <view class="header">
     <view>
-      <view class="eyebrow">外墙瓷砖 · 罗马柱</view>
-      <view class="title">按花色快速找货</view>
+      <view class="eyebrow">外墙瓷砖 · 罗马柱图册</view>
+      <view class="title">按花色选款</view>
     </view>
     <button class="share-btn" open-type="share">分享</button>
   </view>
@@ -10,7 +10,7 @@
   <view class="search-card">
     <input
       class="search-input"
-      placeholder="知道型号时可搜索编码/名称"
+      placeholder="知道型号时可搜索"
       value="{{search}}"
       confirm-type="search"
       bindinput="onSearchInput"
@@ -58,8 +58,8 @@
       </view>
 
       <scroll-view class="group-list" scroll-y enhanced>
-        <view wx:if="{{loading}}" class="empty">正在整理花色货架...</view>
-        <view wx:elif="{{groups.length === 0}}" class="empty">暂无匹配产品</view>
+        <view wx:if="{{loading}}" class="empty">正在整理花色...</view>
+        <view wx:elif="{{groups.length === 0}}" class="empty">暂无匹配款式</view>
 
         <view
           wx:for="{{groups}}"
@@ -73,7 +73,7 @@
           <view class="group-body">
             <view class="group-title">{{item.title}}</view>
             <view class="group-meta">
-              {{item.productCount}}款 · {{item.specificationCount}}规格
+              {{item.productCount}}款 · {{item.specificationCount}}种规格
             </view>
             <view class="media-row" wx:if="{{item.imageCount > 0 || item.effectImageCount > 0}}">
               <view wx:if="{{item.imageCount > 0}}" class="media-chip">{{item.imageCount}}张图</view>
@@ -90,11 +90,11 @@
               </view>
             </view>
           </view>
-          <view class="group-action">看全部</view>
+          <view class="group-action">查看</view>
         </view>
 
-        <view class="quick-products" wx:if="{{products.length > 0}}">
-          <view class="section-title">快速查看</view>
+        <view class="quick-products" wx:if="{{searchKeyword && products.length > 0}}">
+          <view class="section-title">搜索结果</view>
           <view
             wx:for="{{products}}"
             wx:key="id"
@@ -106,7 +106,7 @@
             <view wx:else class="product-thumb fallback">图</view>
             <view class="product-info">
               <view class="product-name line-clamp-1">{{item.name}}</view>
-              <view class="product-code">{{item.code}}</view>
+              <view class="product-code">型号 {{item.code}}</view>
             </view>
           </view>
         </view>

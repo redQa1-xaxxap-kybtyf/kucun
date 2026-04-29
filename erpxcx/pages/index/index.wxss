@@ -323,6 +323,5 @@
 .product-code {
   margin-top: 6rpx;
   color: #8a8175;
-  font-family: monospace;
   font-size: 22rpx;
 }

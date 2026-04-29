@@ -156,7 +156,6 @@
 .product-code {
   margin-top: 8rpx;
   color: #b68a45;
-  font-family: monospace;
   font-size: 24rpx;
   font-weight: 800;
 }
@@ -165,20 +164,6 @@
   margin-top: 8rpx;
   color: #73716d;
   font-size: 23rpx;
-}
-
-.stock {
-  padding: 10rpx 14rpx;
-  border-radius: 999rpx;
-  background: #e8f5ef;
-  color: #27594f;
-  font-size: 22rpx;
-  font-weight: 800;
-}
-
-.stock.out_of_stock {
-  background: #f2eee8;
-  color: #8a8175;
 }
 
 .match-grid {

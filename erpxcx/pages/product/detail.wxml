@@ -47,15 +47,12 @@
       <view class="tag-row">
         <view class="tag">{{product.colorSeries.name}}</view>
         <view class="tag">{{product.componentType.label}}</view>
-        <view class="stock {{product.stockStatus}}">
-          {{product.stockStatus == 'out_of_stock' ? '暂缺' : '有货'}}
-        </view>
       </view>
       <view class="product-name">{{product.name}}</view>
-      <view class="product-code">{{product.code}}</view>
+      <view class="product-code">型号 {{product.code}}</view>
       <view class="spec">{{product.specification || '未填写规格'}}</view>
       <view class="shelf-link" bindtap="onSeriesShelfTap">
-        <view class="shelf-link-text">查看{{product.colorSeries.name}}花色货架</view>
+        <view class="shelf-link-text">看{{product.colorSeries.name}}全部款式</view>
         <view class="shelf-link-arrow">›</view>
       </view>
     </view>
@@ -77,7 +74,7 @@
     </view>
 
     <view class="section" wx:if="{{product.description}}">
-      <view class="section-title">产品说明</view>
+      <view class="section-title">产品介绍</view>
       <view class="description">{{product.description}}</view>
     </view>
 

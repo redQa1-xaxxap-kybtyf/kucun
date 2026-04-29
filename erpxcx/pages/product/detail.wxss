@@ -91,24 +91,13 @@
   gap: 10rpx;
 }
 
-.tag,
-.stock {
+.tag {
   padding: 9rpx 14rpx;
   border-radius: 999rpx;
   background: #f6f1e8;
   color: #7a6b58;
   font-size: 22rpx;
   font-weight: 800;
-}
-
-.stock {
-  background: #e8f5ef;
-  color: #27594f;
-}
-
-.stock.out_of_stock {
-  background: #f2eee8;
-  color: #8a8175;
 }
 
 .product-name {
@@ -122,7 +111,6 @@
 .product-code {
   margin-top: 12rpx;
   color: #b68a45;
-  font-family: monospace;
   font-size: 28rpx;
   font-weight: 900;
 }

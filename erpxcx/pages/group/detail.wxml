@@ -17,10 +17,10 @@
         <view class="hero-tag">{{group.colorSeries.name}} · {{group.componentType.label}}</view>
         <view class="hero-title">{{group.title}}</view>
         <view class="hero-meta">
-          {{group.productCount}}款产品 · {{group.specificationCount}}种规格
+          {{group.productCount}}款 · {{group.specificationCount}}种规格
         </view>
         <view class="hero-shelf-link" bindtap="onSeriesShelfTap">
-          查看{{group.colorSeries.name}}花色货架
+          看{{group.colorSeries.name}}全部款式
         </view>
       </view>
       <button class="share-btn" open-type="share">分享</button>
@@ -45,7 +45,7 @@
 
     <view class="section">
       <view class="section-head">
-        <view class="section-title">规格产品</view>
+        <view class="section-title">可选规格</view>
         <view class="section-count">{{group.productCount}}款</view>
       </view>
       <view
@@ -67,10 +67,9 @@
         <view wx:else class="product-cover fallback">图</view>
         <view class="product-body">
           <view class="product-name line-clamp-2">{{item.name}}</view>
-          <view class="product-code">{{item.code}}</view>
+          <view class="product-code">型号 {{item.code}}</view>
           <view class="product-spec line-clamp-1">{{item.specification || '未填写规格'}}</view>
         </view>
-        <view class="stock {{item.stockStatus}}">{{item.stockStatus == 'out_of_stock' ? '暂缺' : '有货'}}</view>
       </view>
     </view>
 
