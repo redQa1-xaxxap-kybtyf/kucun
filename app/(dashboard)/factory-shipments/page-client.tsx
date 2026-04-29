@@ -10,6 +10,7 @@ import { useDebouncedCallback } from 'use-debounce';
 
 import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
+import { FactoryShipmentsSkeleton } from '@/components/ui/skeleton-compositions';
 import { useFinanceExport } from '@/hooks/use-finance-export';
 import type { FactoryShipmentStatus } from '@/lib/types/factory-shipment';
 
@@ -36,11 +37,7 @@ const FactoryShipmentOrderList = dynamic(
     ),
   {
     ssr: false,
-    loading: () => (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-muted-foreground">加载中...</div>
-      </div>
-    ),
+    loading: () => <FactoryShipmentsSkeleton />,
   }
 );
 
@@ -362,11 +359,7 @@ export function FactoryShipmentsPageClient({
       <div className="flex-1">
         {/* 厂家发货列表 */}
         <Suspense
-          fallback={
-            <div className="flex items-center justify-center py-12">
-              <div className="text-muted-foreground">加载中...</div>
-            </div>
-          }
+          fallback={<FactoryShipmentsSkeleton />}
         >
           <FactoryShipmentOrderList
             initialParams={initialParams}

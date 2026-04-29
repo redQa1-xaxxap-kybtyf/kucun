@@ -159,7 +159,7 @@ function FactoryShipmentToolbarView({
     <SearchFilterCard
       searchValue={searchValue}
       onSearchChange={onSearch}
-      searchPlaceholder="搜索集装箱号码或订单编号..."
+      searchPlaceholder="搜索集装箱号、订单编号"
       isSearching={isSearching}
       // Toggle 按钮
       toggleButtons={[

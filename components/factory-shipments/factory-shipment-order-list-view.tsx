@@ -15,7 +15,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
-import { ContentLoading } from '@/components/common/loading';
 import { ConfirmShipmentDialog } from '@/components/factory-shipments/confirm-shipment-dialog';
 import { ContainerNumberEditDialog } from '@/components/factory-shipments/container-number-edit-dialog';
 import { FactoryShipmentSearchToolbar } from '@/components/factory-shipments/factory-shipment-search-toolbar';
@@ -29,6 +28,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Pagination } from '@/components/ui/pagination';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -48,6 +48,7 @@ import {
   type FactoryShipmentOrder,
   type FactoryShipmentStatus,
 } from '@/lib/types/factory-shipment';
+import { cn } from '@/lib/utils';
 import {
   canCancelOrder,
   canDeleteOrder,
@@ -57,7 +58,6 @@ import {
   getFactoryShipmentStatusBadgeVariant,
   getShippingQueryStatusVariant,
 } from '@/lib/utils/factory-shipment-helpers';
-import { cn } from '@/lib/utils';
 
 const MANUAL_QUERY_COOLDOWN_MS = 6 * 60 * 60 * 1000;
 
@@ -86,14 +86,7 @@ export function FactoryShipmentOrderListView({
   onRetry,
 }: FactoryShipmentOrderListViewProps) {
   const label = mode === 'customer_direct' ? '客户直发订单' : '厂家发货订单';
-
-  if (isLoading) {
-    return <ContentLoading text={`加载${label}...`} />;
-  }
-
-  if (error) {
-    return <ErrorStateCard label={label} onRetry={onRetry} />;
-  }
+  const isInitialLoading = isLoading && orders.length === 0;
 
   return (
     <div className="space-y-4">
@@ -108,24 +101,33 @@ export function FactoryShipmentOrderListView({
         onClearFilters={onClearFilters}
       />
 
-      <div className="relative" aria-busy={isRefreshing}>
+      <div
+        className="relative"
+        aria-busy={isInitialLoading || isRefreshing}
+      >
         {isRefreshing && (
           <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-center border-b border-[hsl(var(--color-border-primary))] bg-white/95 px-3 py-2 text-xs font-medium text-[hsl(var(--color-text-secondary))] shadow-sm">
             <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin text-[hsl(var(--color-primary))]" />
-            正在更新列表...
+            正在更新
           </div>
         )}
         <div className={cn('transition-opacity', isRefreshing && 'opacity-60')}>
-          <FactoryShipmentOrderTable
-            label={label}
-            orders={orders}
-            onCancelRequest={onCancelRequest}
-            onDeleteRequest={onDeleteRequest}
-            onOrderSelect={onOrderSelect}
-          />
+          {error && !orders.length ? (
+            <ErrorStateCard label={label} onRetry={onRetry} />
+          ) : isInitialLoading ? (
+            <FactoryShipmentOrderTableSkeleton />
+          ) : (
+            <FactoryShipmentOrderTable
+              label={label}
+              orders={orders}
+              onCancelRequest={onCancelRequest}
+              onDeleteRequest={onDeleteRequest}
+              onOrderSelect={onOrderSelect}
+            />
+          )}
         </div>
 
-        {pagination && (
+        {pagination && !isInitialLoading && !(error && !orders.length) && (
           <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
             <Pagination
               pagination={{
@@ -141,6 +143,106 @@ export function FactoryShipmentOrderListView({
             />
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function FactoryShipmentOrderTableSkeleton() {
+  const headers = [
+    '订单编号',
+    '客户',
+    '集装箱号码',
+    '船运公司',
+    '运输状态',
+    '状态',
+    '金额',
+    '操作',
+  ];
+
+  return (
+    <div className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm">
+      <div className="hidden lg:block">
+        <div className="overflow-x-auto">
+          <Table className="min-w-[1040px]">
+            <TableHeader className="shadow-sm">
+              <TableRow>
+                {headers.map(header => (
+                  <TableHead key={header} className="whitespace-nowrap">
+                    {header}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Array.from({ length: 8 }).map((_, rowIndex) => (
+                <TableRow key={`factory-shipment-skeleton-row-${rowIndex}`}>
+                  {Array.from({ length: headers.length }).map(
+                    (__, colIndex) => (
+                      <TableCell
+                        key={`factory-shipment-skeleton-cell-${rowIndex}-${colIndex}`}
+                      >
+                        <Skeleton
+                          className={cn(
+                            'h-4',
+                            colIndex === 0 && 'w-28',
+                            colIndex === 1 && 'w-24',
+                            colIndex === 4 && 'h-6 w-16',
+                            colIndex === 5 && 'h-6 w-20',
+                            colIndex > 1 &&
+                              colIndex !== 4 &&
+                              colIndex !== 5 &&
+                              'w-24'
+                          )}
+                        />
+                      </TableCell>
+                    )
+                  )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      <div className="space-y-3 px-3 py-3 lg:hidden">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div
+            key={`factory-shipment-mobile-skeleton-${index}`}
+            className="rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3 shadow-sm"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1 space-y-2">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-44" />
+                <Skeleton className="h-3 w-36" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-20" />
+              </div>
+            </div>
+
+            <div className="mt-3 flex items-start justify-between gap-2">
+              <div className="space-y-2">
+                <Skeleton className="h-5 w-24" />
+                <Skeleton className="h-5 w-20" />
+                <Skeleton className="h-3 w-28" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-3 w-28" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+            </div>
+
+            <div className="mt-3 flex justify-end gap-2">
+              <Skeleton className="h-7 w-14" />
+              <Skeleton className="h-7 w-14" />
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
