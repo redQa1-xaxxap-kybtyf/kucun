@@ -17,7 +17,7 @@
       <view class="quick-title">开销售单</view>
       <view class="quick-desc">选客户、选产品、快速开单</view>
     </view>
-    <view class="quick-card" bindtap="onComingSoon">
+    <view class="quick-card" bindtap="onPaymentTap">
       <view class="quick-title">收付款</view>
       <view class="quick-desc">登记收款、查看应收</view>
     </view>

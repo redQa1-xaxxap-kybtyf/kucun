@@ -32,6 +32,12 @@ Page({
     });
   },
 
+  onPaymentTap() {
+    wx.navigateTo({
+      url: '/pages/admin/payment',
+    });
+  },
+
   onComingSoon() {
     wx.showToast({
       title: '下一批接入',

@@ -1,0 +1,124 @@
+<view class="page">
+  <view class="header">
+    <view>
+      <view class="eyebrow">管理员</view>
+      <view class="title">登记收款</view>
+    </view>
+  </view>
+
+  <view class="type-tabs">
+    <view
+      wx:for="{{paymentTypes}}"
+      wx:key="value"
+      class="type-tab {{paymentType == item.value ? 'active' : ''}}"
+      data-type="{{item.value}}"
+      bindtap="onTypeTap"
+    >
+      {{item.label}}
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">客户</view>
+    <view wx:if="{{selectedCustomer}}" class="selected-box">
+      <view class="selected-name">{{selectedCustomer.name}}</view>
+      <view class="selected-meta">{{selectedCustomer.phone || selectedCustomer.address || '已选择客户'}}</view>
+    </view>
+    <view class="search-card">
+      <input
+        class="search-input"
+        placeholder="输入客户名、电话"
+        value="{{customerSearch}}"
+        confirm-type="search"
+        bindinput="onCustomerSearchInput"
+        bindconfirm="onCustomerSearchConfirm"
+      />
+      <button class="search-btn" loading="{{loadingCustomers}}" bindtap="onCustomerSearchConfirm">查找</button>
+    </view>
+    <view class="chip-list">
+      <view
+        wx:for="{{customers}}"
+        wx:key="id"
+        class="customer-chip {{selectedCustomer && selectedCustomer.id == item.id ? 'active' : ''}}"
+        data-id="{{item.id}}"
+        bindtap="onCustomerTap"
+      >
+        <view class="chip-name">{{item.name}}</view>
+        <view class="chip-meta">{{item.phone || item.address || '客户'}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{paymentType == 'order_payment'}}" class="section">
+    <view class="section-head">
+      <view class="section-title">应收订单</view>
+      <button wx:if="{{selectedCustomer}}" class="small-btn" loading="{{loadingOrders}}" bindtap="onRefreshOrders">刷新</button>
+    </view>
+    <view wx:if="{{!selectedCustomer}}" class="empty">请先选择客户</view>
+    <view wx:elif="{{orders.length == 0}}" class="empty">暂无可收款订单</view>
+    <view wx:else class="order-list">
+      <view
+        wx:for="{{orders}}"
+        wx:key="id"
+        class="order-card {{selectedOrder && selectedOrder.id == item.id ? 'active' : ''}}"
+        data-id="{{item.id}}"
+        bindtap="onOrderTap"
+      >
+        <view>
+          <view class="order-number">{{item.orderNumber}}</view>
+          <view class="order-meta">总额 ¥{{item.totalAmount}} · 已收 ¥{{item.paidAmount}}</view>
+        </view>
+        <view class="remaining">¥{{item.remainingAmount}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">收款信息</view>
+    <view class="field">
+      <view class="label">收款金额</view>
+      <input
+        class="input"
+        type="digit"
+        placeholder="0.00"
+        value="{{amount}}"
+        bindinput="onAmountInput"
+      />
+    </view>
+    <view class="field">
+      <view class="label">收款方式</view>
+      <picker
+        mode="selector"
+        range="{{paymentMethods}}"
+        range-key="label"
+        value="{{methodIndex}}"
+        bindchange="onMethodChange"
+      >
+        <view class="picker-value">{{selectedMethodLabel}}</view>
+      </picker>
+    </view>
+    <picker mode="date" value="{{paymentDate}}" bindchange="onPaymentDateChange">
+      <view class="date-row">
+        <view>收款日期</view>
+        <view>{{paymentDate}}</view>
+      </view>
+    </picker>
+    <textarea
+      class="remarks"
+      placeholder="备注"
+      value="{{remarks}}"
+      bindinput="onRemarksInput"
+    />
+  </view>
+
+  <view class="bottom-bar">
+    <button
+      class="primary"
+      loading="{{isSaving}}"
+      disabled="{{isSaving}}"
+      bindtap="onSubmit"
+    >
+      登记收款
+    </button>
+  </view>
+</view>

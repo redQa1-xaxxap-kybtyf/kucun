@@ -14,6 +14,7 @@
 - 管理端库存查询，支持关键词和扫码查库存。
 - 管理端产品维护，支持搜索、新增、编辑、图片上传、上架、下架和删除保护。
 - 管理端快速开销售单，支持选客户、选产品、保存草稿和确认开单。
+- 管理端收款登记，支持订单收款和客户预收款。
 
 ## 数据来源
 
@@ -29,6 +30,7 @@
 - `/api/upload/qiniu-token`
 - `/api/customers`
 - `/api/sales-orders`
+- `/api/payments`
 
 这些接口基于现有 ERP 的 `Product`、`Category`、`ProductVariant`、`Inventory` 生成前台展示数据、管理员库存数据和产品维护数据。
 
@@ -51,4 +53,4 @@ apiBaseUrl: 'http://localhost:3000';
 ## 下一批开发
 
 - 产品删除前更细的业务占用说明。
-- 收款登记。
+- 付款登记。
