@@ -20,9 +20,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { formatDateTime } from '@/lib/utils/datetime';
 import { formatCurrency } from '@/lib/utils/format';
-import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { getFriendlyErrorMessage } from '@/lib/utils/user-friendly-error';
 
 import type { SalesOrderDetail } from './types';

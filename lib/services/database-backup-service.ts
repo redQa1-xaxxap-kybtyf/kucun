@@ -1,6 +1,5 @@
 import { spawn } from 'child_process';
-import { createWriteStream } from 'fs';
-import { promises as fs } from 'fs';
+import { createWriteStream, promises as fs } from 'fs';
 import path from 'path';
 import { pipeline } from 'stream/promises';
 import { createGzip } from 'zlib';

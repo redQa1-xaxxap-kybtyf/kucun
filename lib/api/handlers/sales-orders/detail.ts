@@ -1,8 +1,8 @@
 import type { Prisma, SalesOrder } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
-import { calculateSalesOrderSettledAmount } from '@/lib/services/sales-order-settlement';
 import { isAutoReceivableConfirmationPayment } from '@/lib/services/receivables-helpers';
+import { calculateSalesOrderSettledAmount } from '@/lib/services/sales-order-settlement';
 import { getSalesOrderReceivableTotal } from '@/lib/utils/sample-order';
 
 import {

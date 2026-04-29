@@ -22,8 +22,10 @@ import type {
   FilterConfig,
 } from '@/components/common/unified-search-bar';
 import { Button } from '@/components/ui/button';
-import type { DateRangeValue } from '@/components/ui/date-range-picker';
-import { DateRangePicker } from '@/components/ui/date-range-picker';
+import {
+  DateRangePicker,
+  type DateRangeValue,
+} from '@/components/ui/date-range-picker';
 import { Input } from '@/components/ui/input';
 import {
   buildInventorySortMode,

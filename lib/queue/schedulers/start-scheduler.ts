@@ -10,9 +10,9 @@ import 'dotenv/config';
 import { shippingQuerySchedulerConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
 
-import { getOperationsMaintenanceScheduler } from './operations-maintenance-scheduler';
 import { createShippingQueryWorker } from '../workers/shipping-query-worker';
 
+import { getOperationsMaintenanceScheduler } from './operations-maintenance-scheduler';
 import { getShippingQueryScheduler } from './shipping-query-scheduler';
 
 /**

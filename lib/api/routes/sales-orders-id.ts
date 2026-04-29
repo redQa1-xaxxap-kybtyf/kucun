@@ -13,13 +13,13 @@ import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 import {
-  calculateSalesOrderRemainingAmount,
-  calculateSalesOrderSettledAmount,
-} from '@/lib/services/sales-order-settlement';
-import {
   createTransferPayableRecord,
   validateStatusTransition,
 } from '@/lib/services/sales-order-service';
+import {
+  calculateSalesOrderRemainingAmount,
+  calculateSalesOrderSettledAmount,
+} from '@/lib/services/sales-order-settlement';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { toNumber } from '@/lib/utils/number';
 import { getSalesOrderReceivableTotal } from '@/lib/utils/sample-order';

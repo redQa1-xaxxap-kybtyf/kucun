@@ -16,6 +16,7 @@ import {
   type UseFormReturn,
 } from 'react-hook-form';
 
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import {
   Dialog,
   DialogContent,
@@ -23,7 +24,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { useToast } from '@/components/ui/use-toast';
 import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard';
 import { invalidateFinanceCaches } from '@/lib/cache/invalidation-helpers';
