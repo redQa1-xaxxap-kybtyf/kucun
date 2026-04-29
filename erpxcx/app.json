@@ -3,7 +3,9 @@
     "pages/index/index",
     "pages/group/detail",
     "pages/product/detail",
-    "pages/admin/login"
+    "pages/admin/login",
+    "pages/admin/workspace",
+    "pages/admin/inventory"
   ],
   "window": {
     "navigationBarTitleText": "外墙罗马柱选型",

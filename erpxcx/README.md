@@ -1,6 +1,6 @@
 # ERP 小程序
 
-这是瓷砖 ERP 的微信小程序项目，当前第一批实现客户侧“花色货架”。
+这是瓷砖 ERP 的微信小程序项目，当前第一批实现客户侧“花色货架”，并接入管理员移动端工作台。
 
 ## 当前功能
 
@@ -9,7 +9,9 @@
 - 产品组详情页。
 - 产品详情页。
 - 产品组/产品/首页分享与转发。
-- 管理员登录页占位。
+- 管理员登录，接入 ERP `/api/auth/mini-login`。
+- 管理员工作台。
+- 管理端库存查询，支持关键词和扫码查库存。
 
 ## 数据来源
 
@@ -18,8 +20,10 @@
 - `/api/miniprogram/catalog`
 - `/api/miniprogram/groups/:id`
 - `/api/miniprogram/products/:id`
+- `/api/auth/mini-login`
+- `/api/inventory`
 
-这些接口基于现有 ERP 的 `Product`、`Category`、`ProductVariant`、`Inventory` 生成前台展示数据。
+这些接口基于现有 ERP 的 `Product`、`Category`、`ProductVariant`、`Inventory` 生成前台展示数据和管理员库存数据。
 
 ## 开发配置
 
@@ -38,8 +42,6 @@ apiBaseUrl: 'http://localhost:3000';
 
 ## 下一批开发
 
-- 管理员登录接入 `/api/auth/mini-login`。
-- 管理端库存查询。
 - 管理端产品新增/编辑/下架。
 - 产品删除前校验库存和业务单据。
 - 销售单创建。

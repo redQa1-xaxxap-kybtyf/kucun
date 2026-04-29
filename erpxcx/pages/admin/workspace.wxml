@@ -1,0 +1,29 @@
+<view class="page">
+  <view class="header">
+    <view>
+      <view class="eyebrow">移动 ERP</view>
+      <view class="title">管理员工作台</view>
+      <view class="desc">{{user.name || user.username || '管理员'}}</view>
+    </view>
+    <button class="logout" bindtap="onLogout">退出</button>
+  </view>
+
+  <view class="quick-grid">
+    <view class="quick-card primary" bindtap="onInventoryTap">
+      <view class="quick-title">查库存</view>
+      <view class="quick-desc">按编码、名称、批次快速查可用库存</view>
+    </view>
+    <view class="quick-card" bindtap="onComingSoon">
+      <view class="quick-title">开销售单</view>
+      <view class="quick-desc">选客户、选产品、快速开单</view>
+    </view>
+    <view class="quick-card" bindtap="onComingSoon">
+      <view class="quick-title">收付款</view>
+      <view class="quick-desc">登记收款、查看应收</view>
+    </view>
+    <view class="quick-card" bindtap="onComingSoon">
+      <view class="quick-title">产品维护</view>
+      <view class="quick-desc">新增、编辑、下架产品</view>
+    </view>
+  </view>
+</view>

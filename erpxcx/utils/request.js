@@ -2,6 +2,7 @@ const config = require('./config');
 
 function request(options) {
   const token = wx.getStorageSync('mini_admin_token');
+  const useMiniProgramHeader = options.miniProgramHeader !== false;
 
   return new Promise((resolve, reject) => {
     wx.request({
@@ -9,7 +10,7 @@ function request(options) {
       method: options.method || 'GET',
       data: options.data || {},
       header: {
-        'x-client-from': 'mini-program',
+        ...(useMiniProgramHeader ? { 'x-client-from': 'mini-program' } : {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(options.header || {}),
       },

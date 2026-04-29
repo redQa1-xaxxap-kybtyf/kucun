@@ -1,0 +1,83 @@
+.page {
+  min-height: 100vh;
+  padding: 28rpx 24rpx;
+  box-sizing: border-box;
+  background: #f8f6f1;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20rpx;
+  padding: 12rpx 2rpx 28rpx;
+}
+
+.eyebrow {
+  color: #8a8175;
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.title {
+  margin-top: 8rpx;
+  color: #1f2328;
+  font-size: 42rpx;
+  font-weight: 900;
+}
+
+.desc {
+  margin-top: 8rpx;
+  color: #73716d;
+  font-size: 26rpx;
+}
+
+.logout {
+  height: 60rpx;
+  padding: 0 22rpx;
+  border-radius: 999rpx;
+  background: #fff;
+  color: #8a8175;
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+.quick-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18rpx;
+}
+
+.quick-card {
+  min-height: 184rpx;
+  padding: 24rpx;
+  border: 1rpx solid #eee7dd;
+  border-radius: 24rpx;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.quick-card.primary {
+  background: #27594f;
+}
+
+.quick-title {
+  color: #1f2328;
+  font-size: 31rpx;
+  font-weight: 900;
+}
+
+.quick-card.primary .quick-title {
+  color: #fff;
+}
+
+.quick-desc {
+  margin-top: 14rpx;
+  color: #73716d;
+  font-size: 24rpx;
+  line-height: 1.45;
+}
+
+.quick-card.primary .quick-desc {
+  color: rgba(255, 255, 255, 0.8);
+}

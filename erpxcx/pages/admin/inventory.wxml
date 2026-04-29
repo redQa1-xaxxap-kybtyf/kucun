@@ -1,0 +1,64 @@
+<view class="page">
+  <view class="header">
+    <view>
+      <view class="eyebrow">管理员</view>
+      <view class="title">查库存</view>
+    </view>
+    <button class="scan-btn" bindtap="onScanTap">扫码</button>
+  </view>
+
+  <view class="search-card">
+    <input
+      class="search-input"
+      placeholder="输入产品编码、名称、批次"
+      value="{{search}}"
+      confirm-type="search"
+      bindinput="onSearchInput"
+      bindconfirm="onSearchConfirm"
+    />
+    <button wx:if="{{search}}" class="search-clear" bindtap="onClearSearch">清空</button>
+  </view>
+
+  <view wx:if="{{error}}" class="notice">{{error}}</view>
+  <view wx:if="{{loading}}" class="empty">正在查询库存...</view>
+  <view wx:elif="{{inventories.length == 0}}" class="empty">暂无库存记录</view>
+
+  <view wx:else class="inventory-list">
+    <view wx:for="{{inventories}}" wx:key="id" class="inventory-card">
+      <view class="card-head">
+        <view class="product-main">
+          <view class="product-name line-clamp-1">{{item.name}}</view>
+          <view class="product-code">{{item.code}}</view>
+        </view>
+        <view class="stock {{item.availableQuantity > 0 ? 'ok' : 'empty-stock'}}">
+          {{item.stockStatus}}
+        </view>
+      </view>
+      <view class="spec line-clamp-1">{{item.specification || '未填写规格'}}</view>
+      <view class="meta-row">
+        <view>
+          <view class="meta-label">批次</view>
+          <view class="meta-value">{{item.batchNumber}}</view>
+        </view>
+        <view>
+          <view class="meta-label">库位</view>
+          <view class="meta-value">{{item.location}}</view>
+        </view>
+      </view>
+      <view class="quantity-row">
+        <view class="quantity-item">
+          <view class="quantity-value">{{item.quantity}}</view>
+          <view class="quantity-label">库存</view>
+        </view>
+        <view class="quantity-item">
+          <view class="quantity-value">{{item.reservedQuantity}}</view>
+          <view class="quantity-label">锁定</view>
+        </view>
+        <view class="quantity-item strong">
+          <view class="quantity-value">{{item.availableQuantity}}</view>
+          <view class="quantity-label">可用</view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>
