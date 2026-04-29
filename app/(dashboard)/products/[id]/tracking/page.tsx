@@ -25,11 +25,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { requirePagePermission } from '@/lib/auth/page-permission';
-import { getProductFlowTracking } from '@/lib/services/product-flow-tracking-service';
-import type { ProductFlowTrackingResult } from '@/lib/services/product-flow-tracking-service';
+import {
+  getProductFlowTracking,
+  type ProductFlowTrackingResult,
+} from '@/lib/services/product-flow-tracking-service';
 import { FACTORY_SHIPMENT_STATUS_LABELS } from '@/lib/types/factory-shipment';
 import { INBOUND_REASON_LABELS } from '@/lib/types/inbound';
 import { OUTBOUND_REASON_LABELS } from '@/lib/types/inventory';
+import { SALES_ORDER_STATUS_LABELS } from '@/lib/types/sales-order';
 import { formatDateTimeCN } from '@/lib/utils/datetime';
 import { formatNumber } from '@/lib/utils/format';
 import { formatPieceSummary } from '@/lib/utils/piece-calculation';
@@ -61,6 +64,21 @@ const getOutboundReasonLabel = (reason: string) =>
 
 const getInboundReasonLabel = (reason: string) =>
   INBOUND_REASON_LABELS[reason as keyof typeof INBOUND_REASON_LABELS] ?? reason;
+
+type CustomerPullRecord =
+  ProductFlowTrackingResult['customerPullRecords'][number];
+
+const getFlowStatusLabel = (record: CustomerPullRecord) => {
+  if (!record.status) return '—';
+
+  return record.sourceType === 'factory_shipment'
+    ? (FACTORY_SHIPMENT_STATUS_LABELS[
+        record.status as keyof typeof FACTORY_SHIPMENT_STATUS_LABELS
+      ] ?? record.status)
+    : (SALES_ORDER_STATUS_LABELS[
+        record.status as keyof typeof SALES_ORDER_STATUS_LABELS
+      ] ?? record.status);
+};
 
 export default async function ProductTrackingPage({
   params,
@@ -172,6 +190,8 @@ function ProductTrackingScreen({
             icon={<ShoppingCart className="h-5 w-5" />}
           />
         </div>
+
+        <CustomerPullRecordCard tracking={tracking} />
 
         <MonthlyCustomerFlowCard tracking={tracking} />
 
@@ -319,6 +339,161 @@ function MonthlyCustomerFlowCard({
                     </TableCell>
                     <TableCell className="pr-4 text-right text-xs text-slate-500">
                       {formatDateTimeCN(item.lastOutboundAt)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function CustomerPullRecordCard({
+  tracking,
+}: {
+  tracking: ProductFlowTrackingResult;
+}) {
+  const isTruncated =
+    tracking.summary.flowRecordCount > tracking.customerPullRecords.length;
+
+  return (
+    <Card className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+      <CardHeader className="border-b border-slate-100 bg-slate-50/60 px-4 py-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <CardTitle className="text-sm font-semibold text-slate-800">
+              客户拉货明细
+            </CardTitle>
+            <p className="mt-1 text-xs font-medium text-slate-500">
+              按产品编码、名称、批次和客户核对销售去向
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="secondary">
+              {tracking.summary.outboundCustomerCount} 个客户
+            </Badge>
+            {isTruncated && <Badge variant="secondary">显示最近 800 条</Badge>}
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="p-0">
+        {tracking.customerPullRecords.length === 0 ? (
+          <EmptyState label="当前时间范围内没有客户拉货记录" />
+        ) : (
+          <div className="max-h-[620px] overflow-auto">
+            <Table className="min-w-[980px]">
+              <TableHeader className="sticky top-0 bg-slate-50">
+                <TableRow>
+                  <TableHead className="pl-4">日期</TableHead>
+                  <TableHead>产品编码/名称</TableHead>
+                  <TableHead>批次/色号</TableHead>
+                  <TableHead>拉货客户</TableHead>
+                  <TableHead>来源单据</TableHead>
+                  <TableHead>状态/经办</TableHead>
+                  <TableHead className="pr-4 text-right">数量</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {tracking.customerPullRecords.map(record => (
+                  <TableRow key={`${record.sourceType}-${record.id}`}>
+                    <TableCell className="pl-4 text-xs whitespace-nowrap text-slate-500">
+                      {formatDateTimeCN(record.flowDate)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex min-w-0 flex-col gap-1">
+                        <span className="font-mono text-xs font-bold text-slate-900">
+                          {record.productCode}
+                        </span>
+                        <span className="max-w-[240px] truncate text-xs font-semibold text-slate-700">
+                          {record.productName}
+                        </span>
+                        {record.specification && (
+                          <span className="max-w-[240px] truncate text-[10px] font-semibold text-slate-400">
+                            {record.specification}
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-1 text-xs text-slate-500">
+                        <span className="font-mono font-semibold text-slate-700">
+                          {record.batchNumber || '未填批次'}
+                        </span>
+                        <span>
+                          {record.variantName || record.location || '—'}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs font-semibold text-slate-700">
+                      {record.customerId ? (
+                        <Link
+                          href={`/customers/${record.customerId}`}
+                          className="text-blue-600 hover:underline"
+                        >
+                          {record.customerName}
+                        </Link>
+                      ) : (
+                        record.customerName
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-1">
+                        {record.sourceType === 'factory_shipment' &&
+                        record.orderId ? (
+                          <Link
+                            href={`/factory-shipments/${record.orderId}`}
+                            className="font-mono text-xs font-bold text-blue-600 hover:underline"
+                          >
+                            {record.orderNumber || '厂家发货单'}
+                          </Link>
+                        ) : record.recordNumber ? (
+                          <Link
+                            href={`/inventory/outbound/${record.recordNumber}`}
+                            className="font-mono text-xs font-bold text-blue-600 hover:underline"
+                          >
+                            {record.recordNumber}
+                          </Link>
+                        ) : (
+                          <span className="font-mono text-xs font-bold text-slate-500">
+                            {record.orderNumber || '—'}
+                          </span>
+                        )}
+                        <span className="text-[10px] font-semibold text-slate-400">
+                          {record.sourceLabel}
+                          {record.orderId &&
+                            record.sourceType === 'warehouse_outbound' &&
+                            record.orderNumber && (
+                              <>
+                                {' / '}
+                                <Link
+                                  href={`/sales-orders/${record.orderId}`}
+                                  className="text-blue-600 hover:underline"
+                                >
+                                  {record.orderNumber}
+                                </Link>
+                              </>
+                            )}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-1 text-xs">
+                        <span className="font-semibold text-slate-700">
+                          {getFlowStatusLabel(record)}
+                        </span>
+                        <span className="text-[10px] font-semibold text-slate-400">
+                          {record.operatorName ||
+                            record.supplierName ||
+                            record.location ||
+                            '—'}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="pr-4 text-right font-mono text-xs font-semibold text-rose-600">
+                      {formatQuantity(record.quantity, tracking.product)}
                     </TableCell>
                   </TableRow>
                 ))}

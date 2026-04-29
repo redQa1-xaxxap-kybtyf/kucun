@@ -223,7 +223,7 @@ export function ProductTable({
               <TableHead>厚度(mm)</TableHead>
               <TableHead>状态</TableHead>
               <TableHead>创建时间</TableHead>
-              <TableHead className="text-right">操作</TableHead>
+              <TableHead className="w-[178px] text-right">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -284,51 +284,59 @@ export function ProductTable({
                     {formatDateTime(product.createdAt)}
                   </TableCell>
                   <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          className="h-8 w-8 p-0"
-                          disabled={isLoading}
-                        >
-                          <span className="sr-only">打开菜单</span>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          disabled={isLoading}
-                          onClick={() => handleViewProduct(product)}
-                        >
-                          <Eye className="mr-2 h-4 w-4" />
-                          查看详情
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          disabled={isLoading}
-                          onClick={() => handleTrackProduct(product.id)}
-                        >
-                          <Route className="mr-2 h-4 w-4" />
-                          流向跟踪
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          disabled={isLoading}
-                          onClick={() => handleEditProduct(product.id)}
-                        >
-                          <Edit className="mr-2 h-4 w-4" />
-                          编辑
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          disabled={isLoading}
-                          onClick={() =>
-                            onDeleteProduct(product.id, product.code)
-                          }
-                          className="text-destructive"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          删除
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-2"
+                        disabled={isLoading}
+                        onClick={() => handleViewProduct(product)}
+                      >
+                        <Eye className="h-4 w-4" />
+                        查看
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 px-2"
+                        disabled={isLoading}
+                        onClick={() => handleTrackProduct(product.id)}
+                      >
+                        <Route className="h-4 w-4" />
+                        流向
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className="h-8 w-8 p-0"
+                            disabled={isLoading}
+                          >
+                            <span className="sr-only">打开菜单</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            disabled={isLoading}
+                            onClick={() => handleEditProduct(product.id)}
+                          >
+                            <Edit className="mr-2 h-4 w-4" />
+                            编辑
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            disabled={isLoading}
+                            onClick={() =>
+                              onDeleteProduct(product.id, product.code)
+                            }
+                            className="text-destructive"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            删除
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
