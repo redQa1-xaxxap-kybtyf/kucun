@@ -1,4 +1,4 @@
-import { Clock, Package, Plus } from 'lucide-react';
+import { Package, Plus } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import React from 'react';
 import type {
@@ -202,16 +202,11 @@ export function OrderItemsSection({
 
   const handleHistoricalProductSelect = React.useCallback(
     (product: HistoricalTemporaryProduct) => {
-      // 添加一个新的订单明细行
       onAddItem();
 
-      // 获取新添加行的索引
       const newIndex = fields.length;
 
-      // 使用 setTimeout 确保新行已经添加到 DOM
       setTimeout(() => {
-        // 填充临时产品信息
-        // 标记为手动产品，并清空库存产品选择
         form.setValue(`items.${newIndex}.productId`, undefined, {
           shouldDirty: true,
           shouldValidate: false,
@@ -221,7 +216,6 @@ export function OrderItemsSection({
           shouldValidate: false,
         });
 
-        // 手动产品专用字段
         form.setValue(`items.${newIndex}.manualProductName`, product.name);
         form.setValue(
           `items.${newIndex}.manualSpecification`,
@@ -230,8 +224,11 @@ export function OrderItemsSection({
         form.setValue(`items.${newIndex}.manualUnit`, product.unit);
         form.setValue(`items.${newIndex}.piecesPerUnit`, product.piecesPerUnit);
         form.setValue(`items.${newIndex}.productCode`, product.code);
+        form.setValue(
+          `items.${newIndex}.manualWeight`,
+          product.weight ?? undefined
+        );
 
-        // 通用显示字段（规格/单位）与手动字段保持一致，确保行内能看到信息
         form.setValue(
           `items.${newIndex}.specification`,
           product.specification || ''
@@ -244,10 +241,38 @@ export function OrderItemsSection({
         );
         form.setValue(`items.${newIndex}.displayQuantity`, 1);
         form.setValue(`items.${newIndex}.quantity`, 1);
+        form.setValue(`items.${newIndex}.localQuantity`, 0);
+        form.setValue(`items.${newIndex}.transferQuantity`, 1);
+        form.setValue(
+          `items.${newIndex}.unitPrice`,
+          product.latestSalePrice ?? 0
+        );
+        form.setValue(
+          `items.${newIndex}.unitCost`,
+          product.latestCostPrice ?? undefined
+        );
+        form.setValue(
+          `items.${newIndex}.subtotal`,
+          product.latestSalePrice ?? 0
+        );
+        form.setValue(`items.${newIndex}.remarks`, '');
+
+        const filledPrices = [
+          product.latestCostPrice !== null &&
+          product.latestCostPrice !== undefined
+            ? '成本'
+            : null,
+          product.latestSalePrice !== null &&
+          product.latestSalePrice !== undefined
+            ? '参考售价'
+            : null,
+        ].filter(Boolean);
 
         toast({
-          title: '已添加历史临时产品',
-          description: `产品: ${product.name}，请填写数量和单价`,
+          title: '已添加外采产品',
+          description: filledPrices.length
+            ? `${product.name} 已带出${filledPrices.join('、')}，请确认数量`
+            : `${product.name} 已带出基础信息，请填写数量和价格`,
           duration: 3000,
         });
       }, 100);
@@ -274,8 +299,8 @@ export function OrderItemsSection({
                   className="h-9 w-full gap-1 sm:w-auto"
                   disabled={isSubmitting}
                 >
-                  <Clock className="h-3 w-3" />
-                  从历史选择
+                  <Package className="h-3 w-3" />
+                  外采产品
                 </Button>
               )}
               <Button
@@ -413,7 +438,7 @@ export function OrderItemsSection({
         </CardContent>
       </Card>
 
-      {/* 历史临时产品选择对话框 */}
+      {/* 外采产品选择对话框 */}
       {showHistoricalDialog && (
         <HistoricalTemporaryProductDialog
           open={showHistoricalDialog}

@@ -6,7 +6,7 @@ import type {
 } from '@/lib/types/temporary-product';
 
 /**
- * 查询历史临时产品列表
+ * 查询外采产品列表
  */
 export function useHistoricalTemporaryProducts(
   params: HistoricalTemporaryProductQueryParams
@@ -34,7 +34,7 @@ export function useHistoricalTemporaryProducts(
       );
 
       if (!response.ok) {
-        throw new Error('查询历史临时产品失败');
+        throw new Error('查询外采产品失败');
       }
 
       return response.json();

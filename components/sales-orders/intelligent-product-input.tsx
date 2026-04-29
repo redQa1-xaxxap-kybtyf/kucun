@@ -27,14 +27,14 @@ interface IntelligentProductInputProps<T extends FieldValues = FieldValues> {
   orderType?: 'NORMAL' | 'TRANSFER';
   placeholder?: string;
   /**
-   * 强制开启“临时产品”模式（用于客户直发等没有订单类型的场景）
+   * 强制开启手动录入模式（用于客户直发等没有订单类型的场景）
    */
   enableTemporaryProducts?: boolean;
 }
 
 /**
  * 智能产品输入组件
- * 集成智能搜索和临时产品添加功能
+ * 集成智能搜索和手动录入产品功能
  *
  * @template T - 表单数据类型，必须包含 items 数组字段
  *
@@ -61,11 +61,11 @@ export function IntelligentProductInput<T extends FieldValues = FieldValues>({
   const [extraProducts, setExtraProducts] = React.useState<Product[]>([]);
   const [isSearchingProducts, setIsSearchingProducts] = React.useState(false);
 
-  // 调货销售：要求临时产品必须有编码
+  // 调货销售：要求手动录入产品必须有编码
   // 其他场景（如客户直发）：编码可选
   const requireManualCode = _orderType === 'TRANSFER';
   const requireManualName = false;
-  // 是否允许添加临时产品
+  // 是否允许手动录入产品
   const allowTemporaryProducts =
     _orderType === 'TRANSFER' || enableTemporaryProducts;
 
@@ -155,7 +155,7 @@ export function IntelligentProductInput<T extends FieldValues = FieldValues>({
     (productId: string) => {
       const product = allProducts.find(p => p.id === productId);
       if (product) {
-        // 清空临时产品字段
+        // 清空手动录入字段
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const setFormValue = form.setValue as any;
         setFormValue(`items.${index}.isManualProduct`, false);
@@ -198,7 +198,7 @@ export function IntelligentProductInput<T extends FieldValues = FieldValues>({
     [allProducts, form, index, onProductChange]
   );
 
-  // 处理临时产品添加
+  // 处理手动录入产品添加
   const handleTemporaryProductAdd = React.useCallback(
     (productData: {
       productCode?: string;
@@ -216,7 +216,7 @@ export function IntelligentProductInput<T extends FieldValues = FieldValues>({
       // 清空库存产品选择
       setFormValue(`items.${index}.productId`, undefined);
 
-      // 设置临时产品标识和信息
+      // 设置手动录入产品标识和信息
       setFormValue(`items.${index}.isManualProduct`, true);
       const manualName = productData.name?.trim() ?? '';
       const manualCodeInput = productData.productCode?.trim() ?? '';
@@ -375,7 +375,7 @@ export function IntelligentProductInput<T extends FieldValues = FieldValues>({
 
           if (isManual) {
             if (requireManualCode && manualCode.length === 0) {
-              return '临时产品必须填写产品编码';
+              return '手动录入产品必须填写产品编码';
             }
             return true;
           }
@@ -407,7 +407,7 @@ export function IntelligentProductInput<T extends FieldValues = FieldValues>({
               onTemporaryProductAdd={handleTemporaryProductAdd}
               onSearchChange={handleProductSearch}
               isSearching={isSearchingProducts}
-              placeholder={placeholder ?? '搜索产品或添加临时产品'}
+              placeholder={placeholder ?? '搜索产品或手动录入'}
               className="h-8 text-xs"
               allowTemporaryProducts={allowTemporaryProducts}
               temporaryProductRequirements={{

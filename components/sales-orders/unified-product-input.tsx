@@ -182,7 +182,7 @@ export function UnifiedProductInput({
               className="h-8 w-full border-dashed text-xs"
             >
               <Plus className="mr-1 h-3 w-3" />
-              手动输入临时产品信息
+              手动录入外采产品
             </Button>
           ) : showManualFields || manualProductName ? (
             // 手动输入字段
@@ -190,7 +190,7 @@ export function UnifiedProductInput({
               <div className="mb-2 flex items-center gap-1">
                 <AlertCircle className="h-3 w-3 text-amber-600" />
                 <span className="text-xs font-medium text-amber-700">
-                  临时产品信息
+                  外采产品信息
                 </span>
                 <Badge variant="outline" className="text-xs">
                   不会保存到产品库

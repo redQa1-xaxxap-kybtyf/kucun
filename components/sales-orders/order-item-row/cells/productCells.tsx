@@ -118,7 +118,7 @@ export function ProductNameCell({
                   value={field.value ?? ''}
                   className="h-8 text-xs"
                   placeholder={
-                    requireManualName ? '手动产品名称' : '手动产品名称（可选）'
+                    requireManualName ? '产品名称' : '产品名称（可选）'
                   }
                   onChange={event => {
                     const next = event.target.value;

@@ -304,7 +304,7 @@ export function EnhancedProductInput({
               <div className="flex items-center gap-1">
                 <PenTool className="h-3 w-3 text-amber-600" />
                 <span className="text-xs text-amber-700">
-                  手动输入模式：输入临时产品信息，不会保存到产品库存
+                  手动录入模式：不会保存到产品库存
                 </span>
               </div>
             </div>

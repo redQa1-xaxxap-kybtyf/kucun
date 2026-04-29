@@ -43,7 +43,7 @@ export function ProductSearchEmptyState({
             className="mx-auto"
           >
             <Plus className="mr-2 h-4 w-4" />
-            添加为临时产品
+            手动录入产品
           </Button>
         )}
       </div>

@@ -33,7 +33,7 @@ export function AddTemporaryProductDialog(
       <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" /> 添加临时产品
+            <Package className="h-5 w-5" /> 手动录入产品
           </DialogTitle>
         </DialogHeader>
 

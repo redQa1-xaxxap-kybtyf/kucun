@@ -1,6 +1,6 @@
 'use client';
 
-import { Clock, Package, Search } from 'lucide-react';
+import { Package, Search } from 'lucide-react';
 import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -55,40 +55,38 @@ export function HistoricalTemporaryProductDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[680px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            选择历史临时产品
+            <Package className="h-5 w-5" />
+            选择外采产品
           </DialogTitle>
           <DialogDescription>
-            从历史记录中快速选择常用的临时产品，自动填充产品信息
+            从该供应商维护的外采产品库中选择，自动带出编码、规格、包装、重量和内部参考价格
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* 搜索框 */}
           <div className="relative">
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <Input
-              placeholder="搜索产品名称或规格..."
+              placeholder="搜索编码、名称或规格"
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="pl-9"
             />
           </div>
 
-          {/* 产品列表 */}
           <ScrollArea className="h-[400px] rounded-md border">
             {isLoading ? (
               <div className="text-muted-foreground flex h-full items-center justify-center">
-                加载中...
+                正在加载外采产品...
               </div>
             ) : !data?.data.length ? (
               <div className="text-muted-foreground flex h-full flex-col items-center justify-center gap-2">
                 <Package className="h-12 w-12 opacity-20" />
-                <p>暂无历史临时产品</p>
-                {search && <p className="text-sm">尝试修改搜索关键词</p>}
+                <p>暂无外采产品</p>
+                {search && <p className="text-sm">换个编码、名称或规格试试</p>}
               </div>
             ) : (
               <div className="space-y-2 p-4">
@@ -103,7 +101,6 @@ export function HistoricalTemporaryProductDialog({
             )}
           </ScrollArea>
 
-          {/* 分页信息 */}
           {data && data.pagination.totalPages > 1 && (
             <div className="text-muted-foreground flex items-center justify-between text-sm">
               <span>
@@ -137,53 +134,97 @@ export function HistoricalTemporaryProductDialog({
   );
 }
 
+function formatCurrency(
+  value: number | null | undefined,
+  fractionDigits: number
+) {
+  if (value === null || value === undefined) {
+    return '未维护';
+  }
+
+  return `￥${value.toLocaleString('zh-CN', {
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  })}`;
+}
+
+function formatDate(value: string | Date | null | undefined) {
+  if (!value) return null;
+  return new Date(value).toLocaleDateString('zh-CN');
+}
+
 interface ProductCardProps {
   product: HistoricalTemporaryProduct;
   onSelect: (product: HistoricalTemporaryProduct) => void;
 }
 
 function ProductCard({ product, onSelect }: ProductCardProps) {
+  const latestDate = formatDate(
+    product.latestPriceDate ?? product.priceUpdatedAt ?? product.lastUsedAt
+  );
+
   return (
     <button
       type="button"
       onClick={() => onSelect(product)}
-      className="bg-card hover:bg-accent w-full rounded-lg border p-4 text-left transition-colors"
+      className="bg-card hover:bg-accent w-full rounded-md border p-3 text-left transition-colors"
     >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1 space-y-2">
-          {/* 产品名称 */}
-          <div className="flex items-center gap-2">
-            <h4 className="font-medium">{product.name}</h4>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary" className="text-xs">
+              外采
+            </Badge>
+            <Badge variant="outline" className="font-mono text-xs">
               {product.code}
             </Badge>
+            {!product.showInMiniProgram && (
+              <Badge variant="outline" className="text-xs">
+                小程序隐藏
+              </Badge>
+            )}
+            <h4 className="min-w-0 font-medium text-[hsl(var(--color-text-primary))]">
+              {product.name}
+            </h4>
           </div>
 
-          {/* 规格信息 */}
-          {product.specification && (
-            <p className="text-muted-foreground text-sm">
-              规格: {product.specification}
-            </p>
-          )}
-
-          {/* 单位和重量 */}
-          <div className="text-muted-foreground flex items-center gap-4 text-sm">
-            <span>单位: {product.unit}</span>
-            <span>装箱数: {product.piecesPerUnit}</span>
-            {product.weight && <span>重量: {product.weight}kg</span>}
+          <div className="text-muted-foreground mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+            <span>规格：{product.specification || '-'}</span>
+            <span>单位：{product.unit}</span>
+            <span>装箱数：{product.piecesPerUnit} 片/件</span>
+            {product.weight ? <span>重量：{product.weight} kg</span> : null}
           </div>
+
+          {product.priceRemarks ? (
+            <div className="mt-2 line-clamp-1 text-xs text-[hsl(var(--color-text-tertiary))]">
+              价格备注：{product.priceRemarks}
+            </div>
+          ) : null}
         </div>
 
-        {/* 使用统计 */}
-        <div className="flex flex-col items-end gap-1 text-sm">
-          <Badge variant="outline" className="text-xs">
-            使用 {product.usageCount} 次
-          </Badge>
-          {product.lastUsedAt && (
-            <span className="text-muted-foreground text-xs">
-              {new Date(product.lastUsedAt).toLocaleDateString('zh-CN')}
+        <div className="grid min-w-[210px] grid-cols-2 gap-2 text-xs">
+          <div className="rounded-md bg-[hsl(var(--color-bg-secondary))] px-2 py-1.5">
+            <div className="text-[hsl(var(--color-text-tertiary))]">
+              成本
+            </div>
+            <div className="mt-0.5 font-semibold text-[hsl(var(--color-text-primary))]">
+              {formatCurrency(product.latestCostPrice, 3)}
+            </div>
+          </div>
+          <div className="rounded-md bg-[hsl(var(--color-bg-secondary))] px-2 py-1.5">
+            <div className="text-[hsl(var(--color-text-tertiary))]">
+              参考售价
+            </div>
+            <div className="mt-0.5 font-semibold text-orange-600">
+              {formatCurrency(product.latestSalePrice, 2)}
+            </div>
+          </div>
+          <div className="col-span-2 flex items-center justify-between gap-2 text-[hsl(var(--color-text-tertiary))]">
+            <span>{product.latestPriceSource || '产品库'}</span>
+            <span>
+              使用 {product.usageCount} 次{latestDate ? ` · ${latestDate}` : ''}
             </span>
-          )}
+          </div>
         </div>
       </div>
     </button>

@@ -144,7 +144,7 @@ export function OrderItemMobileCard({
               </span>
             ) : isManualProduct ? (
               <span className="truncate text-[hsl(var(--color-text-primary))]">
-                临时产品
+                {orderType === 'TRANSFER' ? '外采产品' : '手动录入产品'}
               </span>
             ) : null}
           </div>
