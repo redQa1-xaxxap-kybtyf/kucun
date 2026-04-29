@@ -1,5 +1,15 @@
 const { getProductGroup } = require('../../utils/catalog');
 
+function previewImages(urls, current) {
+  const imageUrls = (urls || []).filter(Boolean);
+  if (imageUrls.length === 0) return;
+
+  wx.previewImage({
+    current: current || imageUrls[0],
+    urls: imageUrls,
+  });
+}
+
 Page({
   data: {
     loading: true,
@@ -59,6 +69,24 @@ Page({
     wx.navigateTo({
       url: `/pages/product/detail?id=${event.currentTarget.dataset.id}`,
     });
+  },
+
+  onPreviewGroupCover() {
+    const group = this.data.group;
+    if (!group || !group.coverUrl) return;
+
+    previewImages([group.coverUrl], group.coverUrl);
+  },
+
+  onPreviewProductImage(event) {
+    const group = this.data.group;
+    const productId = event.currentTarget.dataset.id;
+    if (!group || !productId) return;
+
+    const product = (group.products || []).find(item => item.id === productId);
+    if (!product) return;
+
+    previewImages(product.imageUrls, product.thumbnailUrl);
   },
 
   onRelatedGroupTap(event) {

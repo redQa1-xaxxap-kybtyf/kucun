@@ -1,5 +1,15 @@
 const { getProduct } = require('../../utils/catalog');
 
+function previewImages(urls, current) {
+  const imageUrls = (urls || []).filter(Boolean);
+  if (imageUrls.length === 0) return;
+
+  wx.previewImage({
+    current: current || imageUrls[0],
+    urls: imageUrls,
+  });
+}
+
 Page({
   data: {
     loading: true,
@@ -69,6 +79,23 @@ Page({
       currentImage: event.detail.current,
       currentImageNumber: event.detail.current + 1,
     });
+  },
+
+  onPreviewGallery(event) {
+    const product = this.data.product;
+    if (!product) return;
+
+    previewImages(product.imageUrls, event.currentTarget.dataset.current);
+  },
+
+  onPreviewEffectImage(event) {
+    const product = this.data.product;
+    if (!product) return;
+
+    previewImages(
+      product.effectImageUrls,
+      event.currentTarget.dataset.current
+    );
   },
 
   onRelatedProductTap(event) {

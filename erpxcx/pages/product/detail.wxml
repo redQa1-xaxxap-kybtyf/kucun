@@ -13,7 +13,13 @@
         indicator-active-color="#ffffff"
       >
         <swiper-item wx:for="{{product.imageUrls}}" wx:key="*this">
-          <image class="gallery-image" src="{{item}}" mode="aspectFill" />
+          <image
+            class="gallery-image"
+            src="{{item}}"
+            mode="aspectFill"
+            data-current="{{item}}"
+            bindtap="onPreviewGallery"
+          />
         </swiper-item>
         <swiper-item wx:if="{{product.imageUrls.length == 0}}">
           <view class="gallery-image fallback">暂无图片</view>
@@ -45,6 +51,9 @@
             class="case-image"
             src="{{item}}"
             mode="aspectFill"
+            lazy-load
+            data-current="{{item}}"
+            bindtap="onPreviewEffectImage"
           />
         </view>
       </scroll-view>
