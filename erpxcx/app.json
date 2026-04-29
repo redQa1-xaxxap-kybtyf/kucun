@@ -7,7 +7,8 @@
     "pages/admin/workspace",
     "pages/admin/inventory",
     "pages/admin/products",
-    "pages/admin/product-form"
+    "pages/admin/product-form",
+    "pages/admin/sales-order"
   ],
   "window": {
     "navigationBarTitleText": "外墙罗马柱选型",

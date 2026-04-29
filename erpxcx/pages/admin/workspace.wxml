@@ -13,7 +13,7 @@
       <view class="quick-title">查库存</view>
       <view class="quick-desc">按编码、名称、批次快速查可用库存</view>
     </view>
-    <view class="quick-card" bindtap="onComingSoon">
+    <view class="quick-card" bindtap="onSalesOrderTap">
       <view class="quick-title">开销售单</view>
       <view class="quick-desc">选客户、选产品、快速开单</view>
     </view>

@@ -20,6 +20,12 @@ Page({
     });
   },
 
+  onSalesOrderTap() {
+    wx.navigateTo({
+      url: '/pages/admin/sales-order',
+    });
+  },
+
   onProductsTap() {
     wx.navigateTo({
       url: '/pages/admin/products',
