@@ -147,10 +147,28 @@
   min-width: 0;
 }
 
+.product-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10rpx;
+}
+
 .product-name {
+  flex: 1;
+  min-width: 0;
   color: #1f2328;
   font-size: 29rpx;
   font-weight: 800;
+}
+
+.source-badge {
+  flex: none;
+  padding: 5rpx 10rpx;
+  border-radius: 10rpx;
+  background: #fff4dc;
+  color: #9a5f00;
+  font-size: 20rpx;
+  font-weight: 900;
 }
 
 .product-code {

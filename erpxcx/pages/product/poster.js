@@ -112,7 +112,10 @@ function buildLines(ctx, text, maxWidth, maxLines) {
     lines.push(line);
   }
 
-  if (lines.length === maxLines && chars.join('').length > lines.join('').length) {
+  if (
+    lines.length === maxLines &&
+    chars.join('').length > lines.join('').length
+  ) {
     const lastIndex = lines.length - 1;
     let lastLine = lines[lastIndex];
     while (lastLine && ctx.measureText(`${lastLine}...`).width > maxWidth) {
@@ -166,9 +169,7 @@ function drawPosterPlaceholder(ctx, x, y, width, height) {
 
 async function drawPoster(canvas, ctx, product) {
   const imageUrl =
-    product.thumbnailUrl ||
-    (product.imageUrls && product.imageUrls[0]) ||
-    '';
+    product.thumbnailUrl || (product.imageUrls && product.imageUrls[0]) || '';
   const image = await loadCanvasImage(canvas, imageUrl);
 
   ctx.clearRect(0, 0, POSTER_WIDTH, POSTER_HEIGHT);
@@ -190,26 +191,28 @@ async function drawPoster(canvas, ctx, product) {
   }
 
   let tagX = 58;
+  if (product.source === 'external') {
+    tagX = drawPill(ctx, product.sourceLabel || '外采款', tagX, 710);
+  }
   tagX = drawPill(ctx, product.colorSeries.name, tagX, 710);
   drawPill(ctx, product.componentType.label, tagX, 710);
 
   setFont(ctx, 42, 900);
   ctx.fillStyle = '#1f2328';
-  const titleEndY = drawWrappedText(
-    ctx,
-    product.name,
-    58,
-    776,
-    634,
-    54,
-    2
-  );
+  const titleEndY = drawWrappedText(ctx, product.name, 58, 776, 634, 54, 2);
 
   const rowWidth = 634;
   let rowY = titleEndY + 22;
   drawInfoRow(ctx, '型号', product.code, 58, rowY, rowWidth);
   rowY += 92;
-  drawInfoRow(ctx, '规格', product.specification || '未填写', 58, rowY, rowWidth);
+  drawInfoRow(
+    ctx,
+    '规格',
+    product.specification || '未填写',
+    58,
+    rowY,
+    rowWidth
+  );
   rowY += 92;
   drawInfoRow(ctx, '包装', product.packageText || '未填写', 58, rowY, rowWidth);
   rowY += 92;
@@ -292,7 +295,7 @@ Page({
 
     try {
       const product = await getProduct(this.data.productId);
-      this.setData({ product });
+      this.setData({ product, productId: product.id || this.data.productId });
       this.tryRenderPoster();
     } catch (error) {
       this.setData({

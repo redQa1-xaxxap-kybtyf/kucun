@@ -255,6 +255,12 @@
   color: #27594f;
 }
 
+.media-chip.external,
+.source-badge {
+  background: #fff4dc;
+  color: #9a5f00;
+}
+
 .sample-row {
   display: flex;
   flex-wrap: wrap;
@@ -324,4 +330,13 @@
   margin-top: 6rpx;
   color: #8a8175;
   font-size: 22rpx;
+}
+
+.source-badge {
+  display: inline-flex;
+  margin-right: 8rpx;
+  padding: 3rpx 8rpx;
+  border-radius: 8rpx;
+  font-size: 20rpx;
+  font-weight: 800;
 }

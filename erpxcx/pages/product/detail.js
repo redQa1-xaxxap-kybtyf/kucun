@@ -111,6 +111,7 @@ Page({
         galleryImageUrls,
         imageTotal: galleryImageUrls.length,
         product,
+        productId: product.id || this.data.productId,
         loading: false,
       });
     } catch (error) {
@@ -150,10 +151,7 @@ Page({
     const product = this.data.product;
     if (!product) return;
 
-    previewImages(
-      product.effectImageUrls,
-      event.currentTarget.dataset.current
-    );
+    previewImages(product.effectImageUrls, event.currentTarget.dataset.current);
   },
 
   onSeriesShelfTap() {

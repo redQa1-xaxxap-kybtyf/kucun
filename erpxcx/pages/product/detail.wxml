@@ -45,6 +45,7 @@
 
     <view class="info-card">
       <view class="tag-row">
+        <view wx:if="{{product.source == 'external'}}" class="tag external">外采款</view>
         <view class="tag">{{product.colorSeries.name}}</view>
         <view class="tag">{{product.componentType.label}}</view>
       </view>

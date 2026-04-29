@@ -100,6 +100,11 @@
   font-weight: 800;
 }
 
+.tag.external {
+  background: #fff4dc;
+  color: #9a5f00;
+}
+
 .product-name {
   margin-top: 20rpx;
   color: #1f2328;

@@ -48,9 +48,75 @@ const PRODUCT_SELECT = {
   },
 } as const;
 
+const TEMPORARY_PRODUCT_SELECT = {
+  id: true,
+  code: true,
+  name: true,
+  specification: true,
+  weight: true,
+  unit: true,
+  piecesPerUnit: true,
+  description: true,
+  thumbnailUrl: true,
+  images: true,
+  showInMiniProgram: true,
+  usageCount: true,
+  lastUsedAt: true,
+  updatedAt: true,
+  supplier: {
+    select: {
+      id: true,
+      name: true,
+      status: true,
+    },
+  },
+} as const;
+
 type CatalogProductRecord = Prisma.ProductGetPayload<{
   select: typeof PRODUCT_SELECT;
 }>;
+
+type ExternalCatalogProductRecord = Prisma.TemporaryProductGetPayload<{
+  select: typeof TEMPORARY_PRODUCT_SELECT;
+}>;
+
+type PublicMiniProgramProduct = {
+  id: string;
+  source: 'own' | 'external';
+  sourceLabel: string;
+  code: string;
+  name: string;
+  specification: string | null;
+  packageText: string;
+  weightText: string;
+  shareTitle: string;
+  description: string | null;
+  thumbnailUrl: string | null;
+  imageUrls: string[];
+  mainImageUrls: string[];
+  effectImageUrls: string[];
+  imageCount: number;
+  category: {
+    id: string;
+    name: string;
+    code: string;
+  } | null;
+  colorSeries: {
+    id: string;
+    name: string;
+  };
+  componentType: {
+    id: MiniProgramComponentType;
+    label: string;
+  };
+  updatedAt: string;
+};
+
+type CatalogItem = {
+  publicProduct: PublicMiniProgramProduct;
+  searchText: string;
+  hasStock: boolean;
+};
 
 export type MiniProgramComponentType =
   | 'roman_column'
@@ -114,7 +180,22 @@ const HOT_SERIES = {
   name: '全部',
 };
 
-function buildSearchText(product: CatalogProductRecord) {
+function normalizeLookupText(value?: string | null) {
+  return (value ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+function buildNameSpecificationKey(input: {
+  name?: string | null;
+  specification?: string | null;
+}) {
+  const name = normalizeLookupText(input.name);
+  const specification = normalizeLookupText(input.specification);
+
+  if (!name) return '';
+  return `${name}__${specification}`;
+}
+
+function buildOwnSearchText(product: CatalogProductRecord) {
   const categoryText = [
     product.category?.name,
     product.category?.code,
@@ -144,8 +225,22 @@ function buildSearchText(product: CatalogProductRecord) {
     .toLowerCase();
 }
 
-function resolveColorSeries(product: CatalogProductRecord) {
-  const text = buildSearchText(product);
+function buildExternalSearchText(product: ExternalCatalogProductRecord) {
+  return [
+    product.code,
+    product.name,
+    product.specification,
+    '外采',
+    '外采款',
+    '调货',
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+}
+
+function resolveColorSeries(searchText: string) {
+  const text = searchText.toLowerCase();
   const matched = COLOR_SERIES.find(
     series =>
       series.id !== 'other' &&
@@ -155,8 +250,8 @@ function resolveColorSeries(product: CatalogProductRecord) {
   return matched ?? COLOR_SERIES[COLOR_SERIES.length - 1];
 }
 
-function resolveComponentType(product: CatalogProductRecord) {
-  const text = buildSearchText(product);
+function resolveComponentType(searchText: string) {
+  const text = searchText.toLowerCase();
   const matched = COMPONENT_TYPES.find(
     component =>
       component.id !== 'other' &&
@@ -209,7 +304,7 @@ function getUnitLabel(unit: string) {
   return PRODUCT_UNIT_LABELS[unit as keyof typeof PRODUCT_UNIT_LABELS] ?? unit;
 }
 
-function getProductPackageText(product: CatalogProductRecord) {
+function getProductPackageText(product: { piecesPerUnit?: number | null }) {
   if (typeof product.piecesPerUnit === 'number' && product.piecesPerUnit > 1) {
     return `1件=${product.piecesPerUnit}片`;
   }
@@ -217,7 +312,10 @@ function getProductPackageText(product: CatalogProductRecord) {
   return '';
 }
 
-function getProductWeightText(product: CatalogProductRecord) {
+function getProductWeightText(product: {
+  weight?: Prisma.Decimal | number | null;
+  unit: string;
+}) {
   const weight = product.weight === null ? null : Number(product.weight);
   if (!weight || !Number.isFinite(weight) || weight <= 0) return '';
 
@@ -242,9 +340,10 @@ function buildProductShareTitle(input: {
     .join('｜');
 }
 
-function toPublicProduct(product: CatalogProductRecord) {
-  const series = resolveColorSeries(product);
-  const component = resolveComponentType(product);
+function toPublicOwnProduct(product: CatalogProductRecord) {
+  const searchText = buildOwnSearchText(product);
+  const series = resolveColorSeries(searchText);
+  const component = resolveComponentType(searchText);
   const productImages = getProductImages(product);
   const imageUrls = getProductImageUrls(product);
   const mainImageUrls = productImages
@@ -258,6 +357,8 @@ function toPublicProduct(product: CatalogProductRecord) {
 
   return {
     id: product.id,
+    source: 'own' as const,
+    sourceLabel: '本厂款',
     code: product.code,
     name: product.name,
     specification: product.specification,
@@ -295,6 +396,65 @@ function toPublicProduct(product: CatalogProductRecord) {
   };
 }
 
+function toPublicExternalProduct(product: ExternalCatalogProductRecord) {
+  const searchText = buildExternalSearchText(product);
+  const series = resolveColorSeries(searchText);
+  const component = resolveComponentType(searchText);
+  const packageText = getProductPackageText(product);
+  const weightText = getProductWeightText(product);
+  const productImages = parseProductImages(product.images, product.id).filter(
+    image => typeof image.url === 'string' && image.url.length > 0
+  );
+  const imageUrls = product.thumbnailUrl
+    ? [
+        product.thumbnailUrl,
+        ...productImages
+          .map(image => image.url)
+          .filter(url => url !== product.thumbnailUrl),
+      ]
+    : productImages.map(image => image.url);
+  const mainImageUrls = productImages
+    .filter(image => image.type === 'main')
+    .map(image => image.url);
+  const effectImageUrls = productImages
+    .filter(image => image.type === 'effect')
+    .map(image => image.url);
+
+  return {
+    id: product.id,
+    source: 'external' as const,
+    sourceLabel: '外采款',
+    code: product.code,
+    name: product.name,
+    specification: product.specification,
+    packageText,
+    weightText,
+    shareTitle: buildProductShareTitle({
+      code: product.code,
+      name: product.name,
+      specification: product.specification,
+      packageText,
+      weightText,
+    }),
+    description: product.description,
+    thumbnailUrl: imageUrls[0] ?? null,
+    imageUrls,
+    mainImageUrls,
+    effectImageUrls,
+    imageCount: imageUrls.length,
+    category: null,
+    colorSeries: {
+      id: series.id,
+      name: series.name,
+    },
+    componentType: {
+      id: component.id,
+      label: component.label,
+    },
+    updatedAt: product.updatedAt.toISOString(),
+  };
+}
+
 function toPublicGroup<T extends { hasStock: boolean }>(group: T) {
   const publicGroup = { ...group };
   delete (publicGroup as Partial<T>).hasStock;
@@ -310,7 +470,108 @@ async function getActiveProducts() {
   });
 }
 
-function buildProductGroups(products: CatalogProductRecord[]) {
+async function getPublicTemporaryProducts() {
+  return prisma.temporaryProduct.findMany({
+    where: {
+      showInMiniProgram: true,
+      supplier: {
+        status: 'active',
+      },
+    },
+    select: TEMPORARY_PRODUCT_SELECT,
+    orderBy: [
+      { usageCount: 'desc' },
+      { lastUsedAt: 'desc' },
+      { updatedAt: 'desc' },
+      { id: 'desc' },
+    ],
+    take: 600,
+  });
+}
+
+function buildProductIdentityIndex(products: CatalogProductRecord[]) {
+  const codes = new Set<string>();
+  const nameSpecifications = new Set<string>();
+
+  for (const product of products) {
+    const code = normalizeLookupText(product.code);
+    if (code) codes.add(code);
+
+    const nameSpecificationKey = buildNameSpecificationKey(product);
+    if (nameSpecificationKey) nameSpecifications.add(nameSpecificationKey);
+  }
+
+  return { codes, nameSpecifications };
+}
+
+function isDuplicateExternalProduct(
+  product: ExternalCatalogProductRecord,
+  identityIndex: ReturnType<typeof buildProductIdentityIndex>
+) {
+  const code = normalizeLookupText(product.code);
+  if (code && identityIndex.codes.has(code)) return true;
+
+  const nameSpecificationKey = buildNameSpecificationKey(product);
+  return (
+    Boolean(nameSpecificationKey) &&
+    identityIndex.nameSpecifications.has(nameSpecificationKey)
+  );
+}
+
+function dedupeExternalProducts(products: ExternalCatalogProductRecord[]) {
+  const seen = new Set<string>();
+  const result: ExternalCatalogProductRecord[] = [];
+
+  for (const product of products) {
+    const code = normalizeLookupText(product.code);
+    const nameSpecificationKey = buildNameSpecificationKey(product);
+    const key = code ? `code:${code}` : `name:${nameSpecificationKey}`;
+
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    result.push(product);
+  }
+
+  return result;
+}
+
+function toOwnCatalogItem(product: CatalogProductRecord): CatalogItem {
+  return {
+    publicProduct: toPublicOwnProduct(product),
+    searchText: buildOwnSearchText(product),
+    hasStock: getProductStockStatus(product) !== 'out_of_stock',
+  };
+}
+
+function toExternalCatalogItem(
+  product: ExternalCatalogProductRecord
+): CatalogItem {
+  return {
+    publicProduct: toPublicExternalProduct(product),
+    searchText: buildExternalSearchText(product),
+    hasStock: false,
+  };
+}
+
+async function getCatalogItems() {
+  const [ownProducts, temporaryProducts] = await Promise.all([
+    getActiveProducts(),
+    getPublicTemporaryProducts(),
+  ]);
+  const identityIndex = buildProductIdentityIndex(ownProducts);
+  const externalProducts = dedupeExternalProducts(
+    temporaryProducts.filter(
+      product => !isDuplicateExternalProduct(product, identityIndex)
+    )
+  );
+
+  return [
+    ...ownProducts.map(toOwnCatalogItem),
+    ...externalProducts.map(toExternalCatalogItem),
+  ];
+}
+
+function buildProductGroups(products: CatalogItem[]) {
   const groupMap = new Map<
     string,
     {
@@ -318,13 +579,13 @@ function buildProductGroups(products: CatalogProductRecord[]) {
       colorSeries: { id: string; name: string };
       componentType: { id: MiniProgramComponentType; label: string };
       hasStock: boolean;
-      products: ReturnType<typeof toPublicProduct>[];
+      products: PublicMiniProgramProduct[];
     }
   >();
 
   for (const product of products) {
-    const item = toPublicProduct(product);
-    const productHasStock = getProductStockStatus(product) !== 'out_of_stock';
+    const item = product.publicProduct;
+    const productHasStock = product.hasStock;
     const key = `${item.colorSeries.id}__${item.componentType.id}`;
     const existing = groupMap.get(key);
 
@@ -356,6 +617,9 @@ function buildProductGroups(products: CatalogProductRecord[]) {
       (sum, product) => sum + product.effectImageUrls.length,
       0
     );
+    const externalProductCount = group.products.filter(
+      product => product.source === 'external'
+    ).length;
 
     return {
       id: group.id,
@@ -369,6 +633,7 @@ function buildProductGroups(products: CatalogProductRecord[]) {
       specificationCount,
       imageCount,
       effectImageCount,
+      externalProductCount,
       hasStock: group.hasStock,
       sampleProducts: group.products.slice(0, 4),
       updatedAt: group.products[0]?.updatedAt ?? null,
@@ -376,8 +641,8 @@ function buildProductGroups(products: CatalogProductRecord[]) {
   });
 }
 
-function buildSeriesSummary(products: CatalogProductRecord[]) {
-  const publicProducts = products.map(toPublicProduct);
+function buildSeriesSummary(products: CatalogItem[]) {
+  const publicProducts = products.map(product => product.publicProduct);
   const countBySeries = new Map<string, number>();
   const coverBySeries = new Map<string, string | null>();
 
@@ -412,12 +677,13 @@ function buildSeriesSummary(products: CatalogProductRecord[]) {
 }
 
 function filterProducts(
-  products: CatalogProductRecord[],
+  products: CatalogItem[],
   params: { seriesId?: string; componentType?: string; search?: string }
 ) {
+  const search = normalizeLookupText(params.search);
+
   return products.filter(product => {
-    const publicProduct = toPublicProduct(product);
-    const text = buildSearchText(product);
+    const publicProduct = product.publicProduct;
     const seriesMatched =
       !params.seriesId ||
       params.seriesId === HOT_SERIES.id ||
@@ -426,18 +692,17 @@ function filterProducts(
       !params.componentType ||
       params.componentType === 'all' ||
       publicProduct.componentType.id === params.componentType;
-    const searchMatched =
-      !params.search || text.includes(params.search.toLowerCase());
+    const searchMatched = !search || product.searchText.includes(search);
 
     return seriesMatched && componentMatched && searchMatched;
   });
 }
 
-function buildComponentSummary(products: CatalogProductRecord[]) {
+function buildComponentSummary(products: CatalogItem[]) {
   const countByComponent = new Map<string, number>();
 
   for (const product of products) {
-    const publicProduct = toPublicProduct(product);
+    const publicProduct = product.publicProduct;
     countByComponent.set(
       publicProduct.componentType.id,
       (countByComponent.get(publicProduct.componentType.id) ?? 0) + 1
@@ -461,7 +726,7 @@ export async function getMiniProgramCatalog(params: {
   componentType?: string;
   search?: string;
 }) {
-  const products = await getActiveProducts();
+  const products = await getCatalogItems();
   const currentSeriesProducts = filterProducts(products, {
     seriesId: params.seriesId,
   });
@@ -477,13 +742,15 @@ export async function getMiniProgramCatalog(params: {
     series: buildSeriesSummary(products),
     components: buildComponentSummary(currentSeriesProducts),
     groups: groups.map(toPublicGroup),
-    products: filteredProducts.slice(0, 30).map(toPublicProduct),
+    products: filteredProducts
+      .slice(0, 30)
+      .map(product => product.publicProduct),
   };
 }
 
 export async function getMiniProgramProductGroup(groupId: string) {
   const [seriesId, componentType] = groupId.split('__');
-  const products = await getActiveProducts();
+  const products = await getCatalogItems();
   const filteredProducts = filterProducts(products, {
     seriesId,
     componentType,
@@ -500,21 +767,36 @@ export async function getMiniProgramProductGroup(groupId: string) {
 
   return {
     ...toPublicGroup(group),
-    products: filteredProducts.map(toPublicProduct),
+    products: filteredProducts.map(product => product.publicProduct),
     relatedGroups: sameSeriesGroups.map(toPublicGroup),
   };
 }
 
-export async function getMiniProgramProduct(productId: string) {
+async function findCanonicalProductForExternal(
+  externalProduct: ExternalCatalogProductRecord
+) {
   const product = await prisma.product.findFirst({
-    where: { id: productId, status: 'active' },
+    where: {
+      status: 'active',
+      OR: [
+        { code: externalProduct.code },
+        {
+          name: externalProduct.name,
+          specification: externalProduct.specification,
+        },
+      ],
+    },
     select: PRODUCT_SELECT,
+    orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
   });
 
-  if (!product) return null;
+  return product;
+}
 
-  const publicProduct = toPublicProduct(product);
-  const products = await getActiveProducts();
+async function buildProductDetailResponse(
+  publicProduct: PublicMiniProgramProduct
+) {
+  const products = await getCatalogItems();
   const relatedGroups = buildProductGroups(
     filterProducts(products, {
       seriesId: publicProduct.colorSeries.id,
@@ -527,4 +809,35 @@ export async function getMiniProgramProduct(productId: string) {
     ...publicProduct,
     relatedGroups: relatedGroups.map(toPublicGroup),
   };
+}
+
+export async function getMiniProgramProduct(productId: string) {
+  const product = await prisma.product.findFirst({
+    where: { id: productId, status: 'active' },
+    select: PRODUCT_SELECT,
+  });
+
+  if (product) {
+    return buildProductDetailResponse(toPublicOwnProduct(product));
+  }
+
+  const temporaryProduct = await prisma.temporaryProduct.findFirst({
+    where: {
+      id: productId,
+      supplier: {
+        status: 'active',
+      },
+    },
+    select: TEMPORARY_PRODUCT_SELECT,
+  });
+
+  if (!temporaryProduct) return null;
+
+  const canonicalProduct =
+    await findCanonicalProductForExternal(temporaryProduct);
+  if (canonicalProduct) {
+    return buildProductDetailResponse(toPublicOwnProduct(canonicalProduct));
+  }
+
+  return buildProductDetailResponse(toPublicExternalProduct(temporaryProduct));
 }

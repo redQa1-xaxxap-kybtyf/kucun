@@ -75,9 +75,10 @@
             <view class="group-meta">
               {{item.productCount}}款 · {{item.specificationCount}}种规格
             </view>
-            <view class="media-row" wx:if="{{item.imageCount > 0 || item.effectImageCount > 0}}">
+            <view class="media-row" wx:if="{{item.imageCount > 0 || item.effectImageCount > 0 || item.externalProductCount > 0}}">
               <view wx:if="{{item.imageCount > 0}}" class="media-chip">{{item.imageCount}}张图</view>
               <view wx:if="{{item.effectImageCount > 0}}" class="media-chip strong">效果案例</view>
+              <view wx:if="{{item.externalProductCount > 0}}" class="media-chip external">{{item.externalProductCount}}款外采</view>
             </view>
             <view class="sample-row">
               <view
@@ -106,7 +107,10 @@
             <view wx:else class="product-thumb fallback">图</view>
             <view class="product-info">
               <view class="product-name line-clamp-1">{{item.name}}</view>
-              <view class="product-code">型号 {{item.code}}</view>
+              <view class="product-code">
+                <text wx:if="{{item.source == 'external'}}" class="source-badge">外采款</text>
+                型号 {{item.code}}
+              </view>
             </view>
           </view>
         </view>
