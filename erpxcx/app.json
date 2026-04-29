@@ -1,0 +1,16 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/group/detail",
+    "pages/product/detail",
+    "pages/admin/login"
+  ],
+  "window": {
+    "navigationBarTitleText": "外墙罗马柱选型",
+    "navigationBarBackgroundColor": "#F8F6F1",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#F8F6F1"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

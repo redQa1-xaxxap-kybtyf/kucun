@@ -1,0 +1,278 @@
+.page {
+  min-height: 100vh;
+  padding: 22rpx 22rpx 0;
+  box-sizing: border-box;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  padding: 12rpx 4rpx 20rpx;
+}
+
+.eyebrow {
+  color: #8a8175;
+  font-size: 22rpx;
+  font-weight: 600;
+}
+
+.title {
+  margin-top: 6rpx;
+  color: #1f2328;
+  font-size: 42rpx;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.share-btn {
+  height: 64rpx;
+  padding: 0 24rpx;
+  border-radius: 999rpx;
+  background: #27594f;
+  color: #fff;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.search-card {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  height: 76rpx;
+  padding: 0 22rpx;
+  border: 1rpx solid #e7e0d6;
+  border-radius: 20rpx;
+  background: #fff;
+}
+
+.search-input {
+  flex: 1;
+  height: 76rpx;
+  color: #1f2328;
+  font-size: 26rpx;
+}
+
+.search-clear {
+  color: #b68a45;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.notice {
+  margin-top: 16rpx;
+  padding: 18rpx;
+  border-radius: 16rpx;
+  background: #fff3ed;
+  color: #9a3412;
+  font-size: 24rpx;
+}
+
+.shelf {
+  display: flex;
+  gap: 18rpx;
+  height: calc(100vh - 168rpx);
+  margin-top: 18rpx;
+}
+
+.series-list {
+  width: 154rpx;
+  height: 100%;
+}
+
+.series-item {
+  margin-bottom: 14rpx;
+  padding: 12rpx 10rpx;
+  border: 1rpx solid transparent;
+  border-radius: 18rpx;
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.series-item.active {
+  border-color: #27594f;
+  background: #fff;
+  box-shadow: 0 10rpx 24rpx rgba(39, 89, 79, 0.12);
+}
+
+.series-texture {
+  width: 100%;
+  height: 72rpx;
+  border-radius: 12rpx;
+  background: #e7e0d6;
+}
+
+.series-texture.placeholder {
+  background: linear-gradient(135deg, #faf7f0, #d8cec1);
+}
+
+.series-name {
+  margin-top: 8rpx;
+  color: #1f2328;
+  font-size: 24rpx;
+  font-weight: 800;
+  text-align: center;
+}
+
+.series-count {
+  margin-top: 2rpx;
+  color: #8a8175;
+  font-size: 20rpx;
+  text-align: center;
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+}
+
+.component-tabs {
+  width: 100%;
+  height: 68rpx;
+  white-space: nowrap;
+}
+
+.component-row {
+  display: flex;
+  gap: 12rpx;
+}
+
+.component-tab {
+  flex: 0 0 auto;
+  height: 56rpx;
+  padding: 0 22rpx;
+  border-radius: 999rpx;
+  background: #fff;
+  color: #5f5a53;
+  font-size: 24rpx;
+  font-weight: 700;
+  line-height: 56rpx;
+}
+
+.component-tab.active {
+  background: #27594f;
+  color: #fff;
+}
+
+.group-list {
+  height: calc(100% - 68rpx);
+}
+
+.empty {
+  padding: 90rpx 20rpx;
+  color: #8a8175;
+  font-size: 26rpx;
+  text-align: center;
+}
+
+.group-card {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  margin-bottom: 18rpx;
+  padding: 16rpx;
+  border: 1rpx solid #eee7dd;
+  border-radius: 22rpx;
+  background: #fff;
+}
+
+.group-cover {
+  width: 148rpx;
+  height: 148rpx;
+  border-radius: 18rpx;
+  background: #efe8dc;
+}
+
+.fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9a9388;
+  font-size: 22rpx;
+}
+
+.group-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.group-title {
+  color: #1f2328;
+  font-size: 30rpx;
+  font-weight: 800;
+}
+
+.group-meta {
+  margin-top: 8rpx;
+  color: #73716d;
+  font-size: 23rpx;
+}
+
+.sample-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  margin-top: 12rpx;
+}
+
+.sample-tag {
+  max-width: 150rpx;
+  padding: 6rpx 10rpx;
+  border-radius: 10rpx;
+  background: #f6f1e8;
+  color: #7a6b58;
+  font-family: monospace;
+  font-size: 20rpx;
+}
+
+.group-action {
+  color: #b68a45;
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+.quick-products {
+  padding-bottom: 40rpx;
+}
+
+.section-title {
+  margin: 24rpx 0 14rpx;
+  color: #1f2328;
+  font-size: 28rpx;
+  font-weight: 800;
+}
+
+.product-row {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  margin-bottom: 12rpx;
+  padding: 12rpx;
+  border-radius: 18rpx;
+  background: #fff;
+}
+
+.product-thumb {
+  width: 82rpx;
+  height: 82rpx;
+  border-radius: 14rpx;
+  background: #efe8dc;
+}
+
+.product-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.product-name {
+  color: #1f2328;
+  font-size: 25rpx;
+  font-weight: 700;
+}
+
+.product-code {
+  margin-top: 6rpx;
+  color: #8a8175;
+  font-family: monospace;
+  font-size: 22rpx;
+}

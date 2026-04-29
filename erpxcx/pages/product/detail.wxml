@@ -1,0 +1,65 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="empty">正在加载产品...</view>
+  <view wx:elif="{{error}}" class="empty error">{{error}}</view>
+
+  <view wx:elif="{{product}}">
+    <swiper
+      class="gallery"
+      current="{{currentImage}}"
+      bindchange="onImageChange"
+      indicator-dots="{{product.imageUrls.length > 1}}"
+      indicator-color="rgba(255,255,255,0.45)"
+      indicator-active-color="#ffffff"
+    >
+      <swiper-item wx:for="{{product.imageUrls}}" wx:key="*this">
+        <image class="gallery-image" src="{{item}}" mode="aspectFill" />
+      </swiper-item>
+      <swiper-item wx:if="{{product.imageUrls.length == 0}}">
+        <view class="gallery-image fallback">暂无图片</view>
+      </swiper-item>
+    </swiper>
+
+    <view class="info-card">
+      <view class="tag-row">
+        <view class="tag">{{product.colorSeries.name}}</view>
+        <view class="tag">{{product.componentType.label}}</view>
+        <view class="stock {{product.stockStatus}}">
+          {{product.stockStatus == 'out_of_stock' ? '暂缺' : '有货'}}
+        </view>
+      </view>
+      <view class="product-name">{{product.name}}</view>
+      <view class="product-code">{{product.code}}</view>
+      <view class="spec">{{product.specification || '未填写规格'}}</view>
+    </view>
+
+    <view class="section" wx:if="{{product.description}}">
+      <view class="section-title">产品说明</view>
+      <view class="description">{{product.description}}</view>
+    </view>
+
+    <view class="section" wx:if="{{product.relatedProducts.length > 0}}">
+      <view class="section-title">同色同类</view>
+      <scroll-view scroll-x enhanced class="related-scroll">
+        <view class="related-row">
+          <view
+            wx:for="{{product.relatedProducts}}"
+            wx:key="id"
+            class="related-card"
+            data-id="{{item.id}}"
+            bindtap="onRelatedProductTap"
+          >
+            <image wx:if="{{item.thumbnailUrl}}" class="related-cover" src="{{item.thumbnailUrl}}" mode="aspectFill" />
+            <view wx:else class="related-cover fallback">图</view>
+            <view class="related-name line-clamp-2">{{item.name}}</view>
+            <view class="related-code">{{item.code}}</view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <view class="bottom-actions safe-bottom">
+      <button class="secondary" open-type="share">分享产品</button>
+      <button class="primary" open-type="contact">咨询</button>
+    </view>
+  </view>
+</view>

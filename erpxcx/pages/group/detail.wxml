@@ -1,0 +1,64 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="empty">正在加载产品组...</view>
+  <view wx:elif="{{error}}" class="empty error">{{error}}</view>
+
+  <view wx:elif="{{group}}">
+    <view class="hero">
+      <image wx:if="{{group.coverUrl}}" class="hero-image" src="{{group.coverUrl}}" mode="aspectFill" />
+      <view wx:else class="hero-image fallback">暂无主图</view>
+      <view class="hero-mask"></view>
+      <view class="hero-content">
+        <view class="hero-tag">{{group.colorSeries.name}} · {{group.componentType.label}}</view>
+        <view class="hero-title">{{group.title}}</view>
+        <view class="hero-meta">
+          {{group.productCount}}款产品 · {{group.specificationCount}}种规格
+        </view>
+      </view>
+      <button class="share-btn" open-type="share">分享</button>
+    </view>
+
+    <view class="section">
+      <view class="section-title">规格产品</view>
+      <view
+        wx:for="{{group.products}}"
+        wx:key="id"
+        class="product-card"
+        data-id="{{item.id}}"
+        bindtap="onProductTap"
+      >
+        <image wx:if="{{item.thumbnailUrl}}" class="product-cover" src="{{item.thumbnailUrl}}" mode="aspectFill" />
+        <view wx:else class="product-cover fallback">图</view>
+        <view class="product-body">
+          <view class="product-name line-clamp-2">{{item.name}}</view>
+          <view class="product-code">{{item.code}}</view>
+          <view class="product-spec line-clamp-1">{{item.specification || '未填写规格'}}</view>
+        </view>
+        <view class="stock {{item.stockStatus}}">{{item.stockStatus == 'out_of_stock' ? '暂缺' : '有货'}}</view>
+      </view>
+    </view>
+
+    <view class="section" wx:if="{{group.relatedGroups.length > 0}}">
+      <view class="section-title">同色配套</view>
+      <scroll-view scroll-x enhanced class="related-scroll">
+        <view class="related-row">
+          <view
+            wx:for="{{group.relatedGroups}}"
+            wx:key="id"
+            class="related-card"
+            data-id="{{item.id}}"
+            bindtap="onRelatedGroupTap"
+          >
+            <image wx:if="{{item.coverUrl}}" class="related-cover" src="{{item.coverUrl}}" mode="aspectFill" />
+            <view wx:else class="related-cover fallback">图</view>
+            <view class="related-name line-clamp-2">{{item.title}}</view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <view class="bottom-actions safe-bottom">
+      <button class="secondary" open-type="share">转发给客户</button>
+      <button class="primary" open-type="contact">咨询</button>
+    </view>
+  </view>
+</view>

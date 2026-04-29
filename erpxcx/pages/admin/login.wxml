@@ -1,0 +1,9 @@
+<view class="page">
+  <view class="card">
+    <view class="title">管理员工作台</view>
+    <view class="desc">下一批接入库存查询、开销售单、收付款和产品维护。</view>
+    <input class="input" placeholder="账号" value="{{username}}" bindinput="onUsernameInput" />
+    <input class="input" placeholder="密码" password value="{{password}}" bindinput="onPasswordInput" />
+    <button class="primary" bindtap="onSubmit">登录</button>
+  </view>
+</view>

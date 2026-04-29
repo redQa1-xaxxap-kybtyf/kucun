@@ -1,0 +1,46 @@
+.page {
+  min-height: 100vh;
+  padding: 48rpx 28rpx;
+  box-sizing: border-box;
+  background: #f8f6f1;
+}
+
+.card {
+  padding: 34rpx;
+  border: 1rpx solid #eee7dd;
+  border-radius: 28rpx;
+  background: #fff;
+}
+
+.title {
+  color: #1f2328;
+  font-size: 40rpx;
+  font-weight: 900;
+}
+
+.desc {
+  margin-top: 12rpx;
+  color: #73716d;
+  font-size: 26rpx;
+  line-height: 1.6;
+}
+
+.input {
+  height: 82rpx;
+  margin-top: 22rpx;
+  padding: 0 22rpx;
+  border: 1rpx solid #e7e0d6;
+  border-radius: 18rpx;
+  background: #f8f6f1;
+  font-size: 28rpx;
+}
+
+.primary {
+  height: 86rpx;
+  margin-top: 28rpx;
+  border-radius: 999rpx;
+  background: #27594f;
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 900;
+}

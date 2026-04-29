@@ -1,0 +1,107 @@
+<view class="page">
+  <view class="header">
+    <view>
+      <view class="eyebrow">外墙瓷砖 · 罗马柱</view>
+      <view class="title">按花色快速找货</view>
+    </view>
+    <button class="share-btn" open-type="share">分享</button>
+  </view>
+
+  <view class="search-card">
+    <input
+      class="search-input"
+      placeholder="知道型号时可搜索编码/名称"
+      value="{{search}}"
+      confirm-type="search"
+      bindinput="onSearchInput"
+      bindconfirm="onSearchConfirm"
+    />
+    <button wx:if="{{search}}" class="search-clear" bindtap="onClearSearch">清空</button>
+  </view>
+
+  <view wx:if="{{error}}" class="notice">{{error}}</view>
+
+  <view class="shelf">
+    <scroll-view class="series-list" scroll-y enhanced>
+      <view
+        wx:for="{{series}}"
+        wx:key="id"
+        class="series-item {{selectedSeriesId == item.id ? 'active' : ''}}"
+        data-id="{{item.id}}"
+        bindtap="onSeriesTap"
+      >
+        <image wx:if="{{item.coverUrl}}" class="series-texture" src="{{item.coverUrl}}" mode="aspectFill" />
+        <view wx:else class="series-texture placeholder"></view>
+        <view class="series-name">{{item.name}}</view>
+        <view class="series-count">{{item.productCount}}款</view>
+      </view>
+    </scroll-view>
+
+    <view class="content">
+      <scroll-view class="component-tabs" scroll-x enhanced>
+        <view class="component-row">
+          <view
+            wx:for="{{components}}"
+            wx:key="id"
+            class="component-tab {{selectedComponentType == item.id ? 'active' : ''}}"
+            data-id="{{item.id}}"
+            bindtap="onComponentTap"
+          >
+            {{item.label}}
+          </view>
+        </view>
+      </scroll-view>
+
+      <scroll-view class="group-list" scroll-y enhanced>
+        <view wx:if="{{loading}}" class="empty">正在整理花色货架...</view>
+        <view wx:elif="{{groups.length === 0}}" class="empty">暂无匹配产品</view>
+
+        <view
+          wx:for="{{groups}}"
+          wx:key="id"
+          class="group-card"
+          data-id="{{item.id}}"
+          bindtap="onGroupTap"
+        >
+          <image wx:if="{{item.coverUrl}}" class="group-cover" src="{{item.coverUrl}}" mode="aspectFill" />
+          <view wx:else class="group-cover fallback">暂无图</view>
+          <view class="group-body">
+            <view class="group-title">{{item.title}}</view>
+            <view class="group-meta">
+              {{item.productCount}}款产品 · {{item.specificationCount}}种规格
+            </view>
+            <view class="sample-row">
+              <view
+                wx:for="{{item.sampleProducts}}"
+                wx:key="id"
+                wx:for-item="product"
+                class="sample-tag"
+              >
+                {{product.code}}
+              </view>
+            </view>
+          </view>
+          <view class="group-action">查看</view>
+        </view>
+
+        <view class="quick-products" wx:if="{{products.length > 0}}">
+          <view class="section-title">快速查看</view>
+          <view
+            wx:for="{{products}}"
+            wx:key="id"
+            class="product-row"
+            data-id="{{item.id}}"
+            bindtap="onProductTap"
+          >
+            <image wx:if="{{item.thumbnailUrl}}" class="product-thumb" src="{{item.thumbnailUrl}}" mode="aspectFill" />
+            <view wx:else class="product-thumb fallback">图</view>
+            <view class="product-info">
+              <view class="product-name line-clamp-1">{{item.name}}</view>
+              <view class="product-code">{{item.code}}</view>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+</view>
