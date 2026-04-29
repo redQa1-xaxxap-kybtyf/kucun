@@ -29,6 +29,11 @@ type LatestQueryState = {
   limit?: number;
 };
 
+function normalizeSearch(value?: string) {
+  const trimmed = value?.trim() ?? '';
+  return trimmed ? trimmed : undefined;
+}
+
 // eslint-disable-next-line max-lines-per-function -- URL sync, selection state, and debounced search are intentionally managed together in this shared hook.
 export function useProductListState(initialParams?: ProductQueryParams) {
   const router = useRouter();
@@ -104,7 +109,13 @@ export function useProductListState(initialParams?: ProductQueryParams) {
     [router]
   );
 
-  const { searchInput, isSearching, handleSearchChange } =
+  const {
+    searchInput,
+    isSearching,
+    handleSearchChange,
+    cancelPendingCommit,
+    setSearchInput,
+  } =
     useListSearchController({
       committedValue: initialParams?.search,
       onCommit: search => {
@@ -116,6 +127,11 @@ export function useProductListState(initialParams?: ProductQueryParams) {
         replaceURL(overrides);
       },
     });
+
+  const syncPendingSearch = useCallback(() => {
+    cancelPendingCommit();
+    return normalizeSearch(searchInput) ?? '';
+  }, [cancelPendingCommit, searchInput]);
 
   // 删除确认对话框状态
   const [deleteDialog, setDeleteDialog] = useState<DeleteDialogState>({
@@ -137,26 +153,54 @@ export function useProductListState(initialParams?: ProductQueryParams) {
   // 筛选处理
   const handleFilter = useCallback(
     (filters: Partial<Pick<ProductQueryParams, 'status' | 'categoryId'>>) => {
-      const overrides: Partial<LatestQueryState> = { ...filters, page: 1 };
+      const search = syncPendingSearch();
+      const overrides: Partial<LatestQueryState> = {
+        ...filters,
+        search,
+        page: 1,
+      };
       latestParamsRef.current = { ...latestParamsRef.current, ...overrides };
       replaceURL(overrides);
     },
-    [replaceURL]
+    [replaceURL, syncPendingSearch]
   );
 
   // 分页处理 - 参考销售订单模块的实现
   const handlePageChange = useCallback(
     (nextPage: number) => {
-      if (nextPage === latestParamsRef.current.page) {
+      const search = syncPendingSearch();
+
+      if (
+        nextPage === latestParamsRef.current.page &&
+        search === latestParamsRef.current.search
+      ) {
         return;
       }
 
-      const overrides: Partial<LatestQueryState> = { page: nextPage };
+      const overrides: Partial<LatestQueryState> = {
+        search,
+        page: nextPage,
+      };
       latestParamsRef.current = { ...latestParamsRef.current, ...overrides };
       replaceURL(overrides);
     },
-    [replaceURL]
+    [replaceURL, syncPendingSearch]
   );
+
+  const handleClearFilters = useCallback(() => {
+    cancelPendingCommit();
+    setSearchInput('');
+
+    const overrides: Partial<LatestQueryState> = {
+      search: '',
+      status: undefined,
+      categoryId: undefined,
+      page: 1,
+    };
+
+    latestParamsRef.current = { ...latestParamsRef.current, ...overrides };
+    replaceURL(overrides);
+  }, [cancelPendingCommit, replaceURL, setSearchInput]);
 
   // 删除产品处理
   const handleDeleteProduct = (productId: string, productCode: string) => {
@@ -223,6 +267,7 @@ export function useProductListState(initialParams?: ProductQueryParams) {
     // 事件处理函数
     handleSearch: handleSearchChange,
     handleFilter,
+    handleClearFilters,
     handlePageChange,
     handleDeleteProduct,
     handleSelectProduct,

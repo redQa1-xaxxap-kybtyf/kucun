@@ -4,11 +4,11 @@ import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 
 import { CategorySelector } from '@/components/categories/category-selector';
-import { ContentLoading } from '@/components/common/loading';
 import { SearchFilterCard } from '@/components/common/search-filter-card';
 import { ProductDeleteDialog } from '@/components/products/product-delete-dialogs';
 import { ProductTable } from '@/components/products/product-table';
 import { Pagination, type PaginationInfo } from '@/components/ui/pagination';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useProductDelete } from '@/hooks/use-product-delete';
 import { useProductListState } from '@/hooks/use-product-list-state';
 import {
@@ -49,6 +49,7 @@ interface ERPProductListFiltersProps {
   isSearching: boolean;
   handleSearch: ProductListState['handleSearch'];
   handleFilter: ProductListState['handleFilter'];
+  handleClearFilters: ProductListState['handleClearFilters'];
 }
 
 function ERPProductListFilters({
@@ -58,6 +59,7 @@ function ERPProductListFilters({
   isSearching,
   handleSearch,
   handleFilter,
+  handleClearFilters,
 }: ERPProductListFiltersProps) {
   return (
     <SearchFilterCard
@@ -88,12 +90,7 @@ function ERPProductListFilters({
           });
         }
       }}
-      onClearFilters={() =>
-        handleFilter({
-          status: undefined,
-          categoryId: undefined,
-        })
-      }
+      onClearFilters={handleClearFilters}
       variant="pro"
       compact={true}
       customFilters={
@@ -120,6 +117,7 @@ interface ERPProductListTableCardProps {
   onProductSelect?: (product: Product) => void;
   onDeleteProduct: ProductListState['handleDeleteProduct'];
   onPageChange: ProductListState['handlePageChange'];
+  isLoading?: boolean;
   isRefreshing?: boolean;
 }
 
@@ -130,12 +128,13 @@ function ERPProductListTableCard({
   onProductSelect,
   onDeleteProduct,
   onPageChange,
+  isLoading = false,
   isRefreshing = false,
 }: ERPProductListTableCardProps) {
   return (
     <div
       className="relative overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm"
-      aria-busy={isRefreshing}
+      aria-busy={isLoading || isRefreshing}
     >
       {isRefreshing && (
         <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-center border-b border-[hsl(var(--color-border-primary))] bg-white/95 px-3 py-2 text-xs font-medium text-[hsl(var(--color-text-secondary))] shadow-sm">
@@ -144,16 +143,20 @@ function ERPProductListTableCard({
         </div>
       )}
       <div className={cn('transition-opacity', isRefreshing && 'opacity-60')}>
-        <ProductTable
-          products={products}
-          categoryPathById={categoryPathById}
-          onProductSelect={onProductSelect}
-          onDeleteProduct={onDeleteProduct}
-          isLoading={isRefreshing}
-        />
+        {isLoading ? (
+          <ProductListTableSkeleton />
+        ) : (
+          <ProductTable
+            products={products}
+            categoryPathById={categoryPathById}
+            onProductSelect={onProductSelect}
+            onDeleteProduct={onDeleteProduct}
+            isLoading={isRefreshing}
+          />
+        )}
       </div>
 
-      {pagination && (
+      {pagination && !isLoading && (
         <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
           <Pagination
             pagination={pagination}
@@ -224,6 +227,7 @@ export function ERPProductList({
     isNavigationPending,
     handleSearch,
     handleFilter,
+    handleClearFilters,
     handlePageChange,
     handleDeleteProduct,
   } = useProductListState(initialParams);
@@ -259,14 +263,11 @@ export function ERPProductList({
     placeholderData: previousData => previousData,
     refetchOnMount: false,
   });
+  const isInitialLoading = isLoading && !data;
   const isListRefreshing =
-    !isLoading && (isFetching || isSearching || isNavigationPending);
+    !isInitialLoading && (isFetching || isSearching || isNavigationPending);
 
-  if (isLoading) {
-    return <ContentLoading text="产品加载中..." />;
-  }
-
-  if (error) {
+  if (error && !data) {
     return (
       <div className="text-muted-foreground flex h-32 items-center justify-center">
         产品列表加载失败
@@ -283,9 +284,10 @@ export function ERPProductList({
         categories={categories}
         initialParams={initialParams}
         searchValue={searchInput}
-        isSearching={isSearching || isFetching}
+        isSearching={isSearching || isListRefreshing}
         handleSearch={handleSearch}
         handleFilter={handleFilter}
+        handleClearFilters={handleClearFilters}
       />
 
       <ERPProductListTableCard
@@ -295,6 +297,7 @@ export function ERPProductList({
         onProductSelect={onProductSelect}
         onDeleteProduct={handleDeleteProduct}
         onPageChange={handlePageChange}
+        isLoading={isInitialLoading}
         isRefreshing={isListRefreshing}
       />
 
@@ -305,5 +308,78 @@ export function ERPProductList({
         confirmDeleteProduct={confirmDeleteProduct}
       />
     </div>
+  );
+}
+
+function ProductListTableSkeleton() {
+  return (
+    <>
+      <div className="space-y-3 p-3 md:hidden">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div
+            key={`product-mobile-skeleton-${index}`}
+            className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3 shadow-[var(--shadow-light)]"
+          >
+            <div className="flex items-start gap-3">
+              <Skeleton className="h-16 w-16 shrink-0 rounded-lg" />
+              <div className="min-w-0 flex-1 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <Skeleton className="h-4 w-28" />
+                    <Skeleton className="h-5 w-40" />
+                  </div>
+                  <Skeleton className="h-6 w-16" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="col-span-2 h-4 w-3/4" />
+                </div>
+                <Skeleton className="h-4 w-32" />
+              </div>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              {Array.from({ length: 4 }).map((__, buttonIndex) => (
+                <Skeleton
+                  key={`product-mobile-action-skeleton-${index}-${buttonIndex}`}
+                  className="h-9 w-full"
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="hidden md:block">
+        <div className="border-b bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
+          <div className="grid grid-cols-[64px_1fr_1.2fr_1fr_1fr_90px_90px_130px_64px] gap-4">
+            {Array.from({ length: 9 }).map((_, index) => (
+              <Skeleton
+                key={`product-header-skeleton-${index}`}
+                className="h-4 w-full"
+              />
+            ))}
+          </div>
+        </div>
+        {Array.from({ length: 8 }).map((_, rowIndex) => (
+          <div
+            key={`product-row-skeleton-${rowIndex}`}
+            className="border-b px-4 py-3 last:border-b-0"
+          >
+            <div className="grid grid-cols-[64px_1fr_1.2fr_1fr_1fr_90px_90px_130px_64px] items-center gap-4">
+              <Skeleton className="h-10 w-10 rounded" />
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-36" />
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-4 w-12" />
+              <Skeleton className="h-6 w-14" />
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="ml-auto h-8 w-8 rounded-md" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
