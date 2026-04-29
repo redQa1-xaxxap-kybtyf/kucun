@@ -21,12 +21,33 @@ function openShelf(seriesId, componentType) {
   });
 }
 
+function filterProducts(products, search, stockFilter) {
+  const keyword = (search || '').trim().toLowerCase();
+
+  return (products || []).filter(product => {
+    const stockMatched =
+      stockFilter !== 'in_stock' || product.stockStatus !== 'out_of_stock';
+    const searchMatched =
+      !keyword ||
+      [product.name, product.code, product.specification]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        .includes(keyword);
+
+    return stockMatched && searchMatched;
+  });
+}
+
 Page({
   data: {
     loading: true,
     error: '',
     groupId: '',
     group: null,
+    filteredProducts: [],
+    productSearch: '',
+    stockFilter: 'all',
   },
 
   onLoad(options) {
@@ -67,7 +88,15 @@ Page({
 
     try {
       const group = await getProductGroup(this.data.groupId);
-      this.setData({ group, loading: false });
+      this.setData({
+        filteredProducts: filterProducts(
+          group.products,
+          this.data.productSearch,
+          this.data.stockFilter
+        ),
+        group,
+        loading: false,
+      });
     } catch (error) {
       this.setData({
         error: error.message || '加载失败',
@@ -79,6 +108,44 @@ Page({
   onProductTap(event) {
     wx.navigateTo({
       url: `/pages/product/detail?id=${event.currentTarget.dataset.id}`,
+    });
+  },
+
+  applyProductFilters(options = {}) {
+    const group = this.data.group;
+    if (!group) return;
+
+    const productSearch =
+      options.productSearch !== undefined
+        ? options.productSearch
+        : this.data.productSearch;
+    const stockFilter =
+      options.stockFilter !== undefined
+        ? options.stockFilter
+        : this.data.stockFilter;
+
+    this.setData({
+      filteredProducts: filterProducts(
+        group.products,
+        productSearch,
+        stockFilter
+      ),
+      productSearch,
+      stockFilter,
+    });
+  },
+
+  onProductSearchInput(event) {
+    this.applyProductFilters({ productSearch: event.detail.value });
+  },
+
+  onClearProductSearch() {
+    this.applyProductFilters({ productSearch: '' });
+  },
+
+  onStockFilterTap(event) {
+    this.applyProductFilters({
+      stockFilter: event.currentTarget.dataset.value,
     });
   },
 

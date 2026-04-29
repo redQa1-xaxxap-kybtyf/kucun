@@ -110,6 +110,14 @@ Page({
     });
   },
 
+  onThumbTap(event) {
+    const index = Number(event.currentTarget.dataset.index || 0);
+    this.setData({
+      currentImage: index,
+      currentImageNumber: index + 1,
+    });
+  },
+
   onPreviewGallery(event) {
     const product = this.data.product;
     if (!product) return;

@@ -48,10 +48,38 @@
     <view class="section">
       <view class="section-head">
         <view class="section-title">规格产品</view>
-        <view class="section-count">{{group.productCount}}款</view>
+        <view class="section-count">{{filteredProducts.length}}/{{group.productCount}}款</view>
+      </view>
+      <view class="filter-card">
+        <view class="filter-tabs">
+          <view
+            class="filter-tab {{stockFilter == 'all' ? 'active' : ''}}"
+            data-value="all"
+            bindtap="onStockFilterTap"
+          >
+            全部
+          </view>
+          <view
+            class="filter-tab {{stockFilter == 'in_stock' ? 'active' : ''}}"
+            data-value="in_stock"
+            bindtap="onStockFilterTap"
+          >
+            只看有货
+          </view>
+        </view>
+        <view class="filter-search">
+          <input
+            class="filter-input"
+            placeholder="按规格/编码快速找"
+            value="{{productSearch}}"
+            confirm-type="search"
+            bindinput="onProductSearchInput"
+          />
+          <button wx:if="{{productSearch}}" class="filter-clear" bindtap="onClearProductSearch">清空</button>
+        </view>
       </view>
       <view
-        wx:for="{{group.products}}"
+        wx:for="{{filteredProducts}}"
         wx:key="id"
         class="product-card"
         data-id="{{item.id}}"
@@ -74,6 +102,7 @@
         </view>
         <view class="stock {{item.stockStatus}}">{{item.stockStatus == 'out_of_stock' ? '暂缺' : '有货'}}</view>
       </view>
+      <view wx:if="{{filteredProducts.length == 0}}" class="empty small">没有匹配的规格</view>
     </view>
 
     <view class="bottom-actions safe-bottom">

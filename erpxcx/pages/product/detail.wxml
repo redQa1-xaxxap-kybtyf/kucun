@@ -28,6 +28,21 @@
       <view wx:if="{{imageTotal > 1}}" class="image-counter">{{currentImageNumber}}/{{imageTotal}}</view>
     </view>
 
+    <scroll-view wx:if="{{imageTotal > 1}}" scroll-x enhanced class="thumb-scroll">
+      <view class="thumb-row">
+        <image
+          wx:for="{{galleryImageUrls}}"
+          wx:key="*this"
+          wx:for-index="index"
+          class="thumb-image {{currentImage == index ? 'active' : ''}}"
+          src="{{item}}"
+          mode="aspectFill"
+          data-index="{{index}}"
+          bindtap="onThumbTap"
+        />
+      </view>
+    </scroll-view>
+
     <view class="info-card">
       <view class="tag-row">
         <view class="tag">{{product.colorSeries.name}}</view>

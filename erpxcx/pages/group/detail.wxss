@@ -124,6 +124,60 @@
   font-weight: 800;
 }
 
+.filter-card {
+  margin-bottom: 18rpx;
+  padding: 16rpx;
+  border: 1rpx solid #eee7dd;
+  border-radius: 20rpx;
+  background: #fff;
+}
+
+.filter-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12rpx;
+}
+
+.filter-tab {
+  height: 58rpx;
+  border-radius: 999rpx;
+  background: #f8f6f1;
+  color: #73716d;
+  font-size: 24rpx;
+  font-weight: 900;
+  line-height: 58rpx;
+  text-align: center;
+}
+
+.filter-tab.active {
+  background: #27594f;
+  color: #fff;
+}
+
+.filter-search {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  height: 68rpx;
+  margin-top: 14rpx;
+  padding: 0 16rpx;
+  border-radius: 16rpx;
+  background: #f8f6f1;
+}
+
+.filter-input {
+  flex: 1;
+  height: 68rpx;
+  color: #1f2328;
+  font-size: 25rpx;
+}
+
+.filter-clear {
+  color: #b68a45;
+  font-size: 24rpx;
+  font-weight: 900;
+}
+
 .product-card {
   display: flex;
   align-items: center;
@@ -179,6 +233,14 @@
 .stock.out_of_stock {
   background: #f2eee8;
   color: #8a8175;
+}
+
+.empty.small {
+  margin-top: 0;
+  padding: 48rpx 20rpx;
+  border-radius: 18rpx;
+  background: #fff;
+  font-size: 25rpx;
 }
 
 .related-scroll {

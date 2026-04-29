@@ -50,8 +50,34 @@
   font-weight: 800;
 }
 
+.thumb-scroll {
+  width: 100%;
+  margin-top: 16rpx;
+  white-space: nowrap;
+}
+
+.thumb-row {
+  display: flex;
+  gap: 12rpx;
+  padding: 0 22rpx 4rpx;
+}
+
+.thumb-image {
+  width: 108rpx;
+  height: 108rpx;
+  flex: none;
+  border: 4rpx solid transparent;
+  border-radius: 18rpx;
+  background: #efe8dc;
+  box-sizing: border-box;
+}
+
+.thumb-image.active {
+  border-color: #27594f;
+}
+
 .info-card {
-  margin: -42rpx 22rpx 0;
+  margin: 18rpx 22rpx 0;
   padding: 24rpx;
   border: 1rpx solid #eee7dd;
   border-radius: 26rpx;
