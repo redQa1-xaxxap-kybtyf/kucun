@@ -14,7 +14,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
-import { ContentLoading } from '@/components/common/loading';
 import { ReturnOrderSearchToolbar } from '@/components/return-orders/return-order-search-toolbar';
 import {
   AlertDialog,
@@ -85,11 +84,7 @@ export function ReturnOrderListView({
   onOrderSelect,
   onRetry,
 }: ReturnOrderListViewProps) {
-  if (isLoading) {
-    return <ContentLoading text="退货单加载中..." />;
-  }
-
-  if (error) {
+  if (error && !isLoading) {
     return <ErrorStateCard onRetry={onRetry} />;
   }
 
@@ -113,7 +108,10 @@ export function ReturnOrderListView({
         onClearFilters={onClearFilters}
       />
 
-      <div className="relative" aria-busy={isRefreshing}>
+      <div
+        className="relative"
+        aria-busy={isLoading || isRefreshing}
+      >
         {isRefreshing && (
           <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-center border-b border-[hsl(var(--color-border-primary))] bg-white/95 px-3 py-2 text-xs font-medium text-[hsl(var(--color-text-secondary))] shadow-sm">
             <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin text-[hsl(var(--color-primary))]" />
@@ -121,14 +119,18 @@ export function ReturnOrderListView({
           </div>
         )}
         <div className={cn('transition-opacity', isRefreshing && 'opacity-60')}>
-          <ReturnOrderTable
-            orders={orders}
-            onDeleteRequest={onDeleteRequest}
-            onOrderSelect={onOrderSelect}
-          />
+          {isLoading ? (
+            <ReturnOrderTableSkeleton />
+          ) : (
+            <ReturnOrderTable
+              orders={orders}
+              onDeleteRequest={onDeleteRequest}
+              onOrderSelect={onOrderSelect}
+            />
+          )}
         </div>
 
-        {pagination && (
+        {pagination && !isLoading && (
           <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
             <Pagination
               pagination={{
@@ -153,6 +155,63 @@ interface ReturnOrderTableProps {
   orders: ReturnOrder[];
   onDeleteRequest: (order: ReturnOrder) => void;
   onOrderSelect?: (order: ReturnOrder) => void;
+}
+
+function ReturnOrderTableSkeleton() {
+  return (
+    <div className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm">
+      <div className="hidden md:block">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="shadow-sm">
+              <TableRow>
+                <TableHead>退货单号</TableHead>
+                <TableHead>关联销售单</TableHead>
+                <TableHead>客户</TableHead>
+                <TableHead>退货类型</TableHead>
+                <TableHead className="text-right">实际退款金额</TableHead>
+                <TableHead>状态</TableHead>
+                <TableHead>创建时间</TableHead>
+                <TableHead>操作</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Array.from({ length: 8 }).map((_, rowIndex) => (
+                <TableRow key={`return-order-loading-row-${rowIndex}`}>
+                  {Array.from({ length: 8 }).map((__, colIndex) => (
+                    <TableCell key={colIndex} className="h-12">
+                      <div className="h-3 w-full max-w-[150px] animate-pulse rounded bg-slate-100" />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      <div className="space-y-3 px-3 py-3 md:hidden">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <div
+            key={`return-order-card-loading-${index}`}
+            className="rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3 shadow-sm"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-2">
+                <div className="h-3 w-28 animate-pulse rounded bg-slate-100" />
+                <div className="h-3 w-40 animate-pulse rounded bg-slate-100" />
+                <div className="h-3 w-32 animate-pulse rounded bg-slate-100" />
+              </div>
+              <div className="space-y-2">
+                <div className="h-3 w-20 animate-pulse rounded bg-slate-100" />
+                <div className="h-5 w-16 animate-pulse rounded bg-slate-100" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function ReturnOrderTable({

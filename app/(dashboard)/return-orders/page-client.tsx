@@ -119,6 +119,8 @@ export function ReturnOrdersPageClient({
     searchInput,
     isSearching: isSearchPending,
     handleSearchChange,
+    cancelPendingCommit,
+    setSearchInput,
   } = useListSearchController({
     committedValue: initialParams?.search,
     onCommit: search => {
@@ -205,6 +207,8 @@ export function ReturnOrdersPageClient({
   );
 
   const handleClearFilters = React.useCallback(() => {
+    cancelPendingCommit();
+    setSearchInput('');
     updateUrlParams(params => {
       params.delete('search');
       params.delete('uiStatus');
@@ -217,7 +221,7 @@ export function ReturnOrdersPageClient({
       params.delete('includeVoided');
       params.delete('page');
     });
-  }, [updateUrlParams]);
+  }, [cancelPendingCommit, setSearchInput, updateUrlParams]);
 
   const handleIncludeVoidedToggle = React.useCallback(() => {
     updateUrlParams(params => {
@@ -286,7 +290,7 @@ export function ReturnOrdersPageClient({
             startDate: initialParams?.startDate,
             endDate: initialParams?.endDate,
           }}
-          isSearching={isLoading || isFetching || isSearchPending}
+          isSearching={isSearchPending || isListRefreshing}
           onSearch={handleSearch}
           onStatusChange={handleStatusChange}
           onTypeChange={handleTypeChange}
