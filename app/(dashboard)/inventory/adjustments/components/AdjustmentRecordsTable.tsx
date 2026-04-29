@@ -5,9 +5,8 @@
 
 'use client';
 
-import { Eye, Package, User } from 'lucide-react';
+import { Eye, Loader2, Package, User } from 'lucide-react';
 
-import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
@@ -23,6 +22,7 @@ import {
   getAdjustmentReasonLabel,
   type InventoryAdjustment,
 } from '@/lib/types/inventory';
+import { cn } from '@/lib/utils';
 import { formatDateTimeCN } from '@/lib/utils/datetime';
 import { formatDetailedPieceSummary } from '@/lib/utils/piece-calculation';
 
@@ -35,6 +35,7 @@ interface AdjustmentRecordsTableProps {
     totalPages: number;
   };
   isLoading: boolean;
+  isRefreshing?: boolean;
   onViewDetail?: (adjustment: InventoryAdjustment) => void;
   onPageChange?: (page: number) => void;
 }
@@ -43,6 +44,7 @@ export function AdjustmentRecordsTable({
   adjustments,
   pagination,
   isLoading,
+  isRefreshing = false,
   onViewDetail,
   onPageChange,
 }: AdjustmentRecordsTableProps) {
@@ -120,14 +122,24 @@ export function AdjustmentRecordsTable({
   const getPiecesPerUnit = (adjustment: InventoryAdjustment) =>
     adjustment.batchPiecesPerUnit ?? adjustment.product?.piecesPerUnit ?? 0;
 
-  if (isLoading) {
-    return <ContentLoading text="加载调整记录..." />;
-  }
-
   return (
-    <div className="overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm">
+    <div
+      className="relative overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm"
+      aria-busy={isLoading || isRefreshing}
+    >
+      {isRefreshing && (
+        <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-center border-b border-[hsl(var(--color-border-primary))] bg-white/95 px-3 py-2 text-xs font-medium text-[hsl(var(--color-text-secondary))] shadow-sm">
+          <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin text-[hsl(var(--color-primary))]" />
+          正在更新
+        </div>
+      )}
       {/* 桌面端表格视图 */}
-      <div className="hidden overflow-x-auto lg:block">
+      <div
+        className={cn(
+          'hidden overflow-x-auto transition-opacity lg:block',
+          isRefreshing && 'opacity-60'
+        )}
+      >
         <Table className="min-w-[980px] table-fixed [&_th]:whitespace-nowrap">
           <TableHeader className="shadow-sm">
             <TableRow>
@@ -140,7 +152,9 @@ export function AdjustmentRecordsTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {adjustments.length === 0 ? (
+            {isLoading ? (
+              <TableLoadingRows />
+            ) : adjustments.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="h-24 text-center">
                   <div className="text-muted-foreground flex flex-col items-center gap-2">
@@ -234,8 +248,15 @@ export function AdjustmentRecordsTable({
       </div>
 
       {/* 移动端卡片视图 */}
-      <div className="space-y-3 p-3 lg:hidden">
-        {adjustments.length === 0 ? (
+      <div
+        className={cn(
+          'space-y-3 p-3 transition-opacity lg:hidden',
+          isRefreshing && 'opacity-60'
+        )}
+      >
+        {isLoading ? (
+          <MobileLoadingSkeleton />
+        ) : adjustments.length === 0 ? (
           <div className="text-muted-foreground flex flex-col items-center gap-2 py-6 text-sm">
             <Package className="h-8 w-8" />
             <span>暂无调整记录</span>
@@ -335,5 +356,46 @@ export function AdjustmentRecordsTable({
         </div>
       )}
     </div>
+  );
+}
+
+function TableLoadingRows() {
+  return (
+    <>
+      {Array.from({ length: 8 }).map((_, rowIndex) => (
+        <TableRow key={`adjustment-loading-row-${rowIndex}`}>
+          {Array.from({ length: 6 }).map((__, colIndex) => (
+            <TableCell key={colIndex} className="h-12">
+              <div className="h-3 w-full max-w-[150px] animate-pulse rounded bg-slate-100" />
+            </TableCell>
+          ))}
+        </TableRow>
+      ))}
+    </>
+  );
+}
+
+function MobileLoadingSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 6 }).map((_, index) => (
+        <div
+          key={`adjustment-card-loading-${index}`}
+          className="rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3 shadow-sm"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="space-y-2">
+              <div className="h-3 w-24 animate-pulse rounded bg-slate-100" />
+              <div className="h-3 w-36 animate-pulse rounded bg-slate-100" />
+              <div className="h-3 w-44 animate-pulse rounded bg-slate-100" />
+            </div>
+            <div className="space-y-2">
+              <div className="h-3 w-16 animate-pulse rounded bg-slate-100" />
+              <div className="h-3 w-20 animate-pulse rounded bg-slate-100" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </>
   );
 }

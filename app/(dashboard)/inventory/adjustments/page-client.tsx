@@ -65,7 +65,8 @@ export function AdjustmentRecordsPageClient({
   const {
     adjustments,
     pagination,
-    isLoading,
+    isInitialLoading,
+    isListRefreshing,
     isSearching,
     error,
     queryParams,
@@ -175,7 +176,7 @@ export function AdjustmentRecordsPageClient({
         <AdjustmentRecordsFilters
           filters={queryParams}
           searchValue={searchInput}
-          isSearching={isSearching}
+          isSearching={isSearching || isListRefreshing}
           onSearchChange={handleSearchChange}
           onFiltersChange={updateQueryParams}
           onReset={resetFilters}
@@ -185,7 +186,8 @@ export function AdjustmentRecordsPageClient({
         <AdjustmentRecordsTable
           adjustments={adjustments}
           pagination={pagination}
-          isLoading={isLoading}
+          isLoading={isInitialLoading}
+          isRefreshing={isSearching || isListRefreshing}
           onViewDetail={viewDetail}
           onPageChange={handlePageChange}
         />

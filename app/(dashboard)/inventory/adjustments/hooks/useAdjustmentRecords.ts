@@ -85,8 +85,6 @@ export function useAdjustmentRecords(
     [initialParams]
   );
 
-  const defaultParamsRef = React.useRef(mergedInitial);
-
   const [queryParams, setQueryParams] =
     React.useState<AdjustmentQueryParams>(mergedInitial);
   const [selectedAdjustment, setSelectedAdjustment] =
@@ -95,7 +93,6 @@ export function useAdjustmentRecords(
 
   React.useEffect(() => {
     const next = normalizeQueryParams({ ...mergedInitial });
-    defaultParamsRef.current = next;
     setQueryParams(next);
   }, [mergedInitial]);
 
@@ -113,7 +110,13 @@ export function useAdjustmentRecords(
     []
   );
 
-  const { searchInput, isSearching, handleSearchChange } =
+  const {
+    searchInput,
+    isSearching,
+    handleSearchChange,
+    cancelPendingCommit,
+    setSearchInput,
+  } =
     useListSearchController({
       committedValue: queryParams.search,
       onCommit: search => {
@@ -121,11 +124,14 @@ export function useAdjustmentRecords(
       },
     });
 
-  const { data, isLoading, error, refetch } = useQuery(
-    getAdjustmentQueryOptions(queryParams)
-  );
+  const { data, isLoading, isFetching, error, refetch } = useQuery({
+    ...getAdjustmentQueryOptions(queryParams),
+    placeholderData: previousData => previousData,
+  });
 
   const adjustments = data?.adjustments || [];
+  const isInitialLoading = isLoading && !data;
+  const isListRefreshing = !isInitialLoading && isFetching;
   const fallbackPage =
     queryParams.page ??
     (typeof DEFAULT_QUERY_PARAMS.page === 'number'
@@ -145,7 +151,9 @@ export function useAdjustmentRecords(
   };
 
   const resetFilters = () => {
-    setQueryParams({ ...defaultParamsRef.current });
+    cancelPendingCommit();
+    setSearchInput('');
+    setQueryParams({ ...DEFAULT_QUERY_PARAMS });
   };
 
   const handlePageChange = (page: number) => {
@@ -177,6 +185,9 @@ export function useAdjustmentRecords(
     adjustments,
     pagination,
     isLoading,
+    isFetching,
+    isInitialLoading,
+    isListRefreshing,
     isSearching,
     error,
     queryParams,
