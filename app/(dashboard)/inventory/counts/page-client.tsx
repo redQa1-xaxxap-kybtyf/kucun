@@ -137,7 +137,13 @@ export function CountsPageClient({
     [updateURL]
   );
 
-  const { searchInput, isSearching, handleSearchChange } =
+  const {
+    searchInput,
+    isSearching,
+    handleSearchChange,
+    cancelPendingCommit,
+    setSearchInput,
+  } =
     useListSearchController({
       committedValue: filters.search,
       onCommit: search => {
@@ -155,6 +161,8 @@ export function CountsPageClient({
 
   // 重置筛选条件
   const handleResetFilters = React.useCallback(() => {
+    cancelPendingCommit();
+    setSearchInput('');
     const resetFilters: InventoryCountQueryParams = {
       page: 1,
       pageSize: initialParams.pageSize,
@@ -164,7 +172,12 @@ export function CountsPageClient({
 
     setFilters(resetFilters);
     updateURL(resetFilters);
-  }, [initialParams.pageSize, updateURL]);
+  }, [
+    cancelPendingCommit,
+    initialParams.pageSize,
+    setSearchInput,
+    updateURL,
+  ]);
 
   return (
     // 与库存总览等页面保持一致的布局容器，统一滚动和边距
@@ -200,7 +213,7 @@ export function CountsPageClient({
 
         {/* 盘点单列表 */}
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <CountList filters={filters} />
+          <CountList filters={filters} isSearching={isSearching} />
         </div>
       </div>
     </div>

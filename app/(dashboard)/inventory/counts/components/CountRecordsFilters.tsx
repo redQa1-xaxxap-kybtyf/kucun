@@ -45,7 +45,7 @@ export function CountRecordsFilters({
       onSearchChange={val =>
         onSearchChange ? onSearchChange(val) : onFiltersChange({ search: val })
       }
-      searchPlaceholder="搜索盘点单名称或盘点编号..."
+      searchPlaceholder="搜索盘点单名称、编号..."
       isSearching={isSearching}
       // 筛选器配置
       filters={[
@@ -76,7 +76,7 @@ export function CountRecordsFilters({
               location: event.target.value || undefined,
             })
           }
-          placeholder="输入库位/存放区域"
+          placeholder="库位/存放区域"
           className="h-11 w-full rounded-lg border-[hsl(var(--color-border-primary))] bg-white font-medium sm:w-48"
         />
       }

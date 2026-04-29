@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Eye, Pencil, Play, Trash2 } from 'lucide-react';
+import { Eye, Loader2, Pencil, Play, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import * as React from 'react';
@@ -35,11 +35,13 @@ import {
   type CountStatus,
   type InventoryCountQueryParams,
 } from '@/lib/types/inventory-count';
+import { cn } from '@/lib/utils';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { formatDate } from '@/lib/utils/datetime';
 
 interface CountListProps {
   filters: InventoryCountQueryParams;
+  isSearching?: boolean;
 }
 
 interface CountListItem {
@@ -54,7 +56,7 @@ interface CountListItem {
   completedItems: number;
 }
 
-export function CountList({ filters }: CountListProps) {
+export function CountList({ filters, isSearching = false }: CountListProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: session } = useSession();
@@ -68,7 +70,7 @@ export function CountList({ filters }: CountListProps) {
   );
 
   // 查询盘点计划列表
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isFetching } = useQuery({
     queryKey: queryKeys.inventory.countsList(filters),
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -92,6 +94,7 @@ export function CountList({ filters }: CountListProps) {
       }
       return response.json();
     },
+    placeholderData: previousData => previousData,
   });
 
   // 删除盘点计划
@@ -206,13 +209,11 @@ export function CountList({ filters }: CountListProps) {
     return variants[status];
   };
 
-  if (isLoading) {
-    return <div className="py-8 text-center">加载中...</div>;
-  }
-
   const counts = data?.data?.counts || [];
+  const isInitialLoading = isLoading && !data;
+  const isListRefreshing = !isInitialLoading && (isFetching || isSearching);
 
-  if (counts.length === 0) {
+  if (!isInitialLoading && counts.length === 0) {
     return (
       <div className="text-muted-foreground flex flex-col items-center justify-center gap-3 py-10 text-sm">
         <span>暂无盘点单</span>
@@ -226,9 +227,24 @@ export function CountList({ filters }: CountListProps) {
   }
 
   return (
-    <>
+    <div
+      className="relative overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm"
+      aria-busy={isInitialLoading || isListRefreshing}
+    >
+      {isListRefreshing && (
+        <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-center border-b border-[hsl(var(--color-border-primary))] bg-white/95 px-3 py-2 text-xs font-medium text-[hsl(var(--color-text-secondary))] shadow-sm">
+          <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin text-[hsl(var(--color-primary))]" />
+          正在更新
+        </div>
+      )}
+
       {/* 桌面端表格视图 */}
-      <div className="hidden overflow-x-auto rounded-md border lg:block">
+      <div
+        className={cn(
+          'hidden overflow-x-auto transition-opacity lg:block',
+          isListRefreshing && 'opacity-60'
+        )}
+      >
         <Table className="min-w-[960px] [&_th]:whitespace-nowrap">
           <TableHeader>
             <TableRow>
@@ -243,77 +259,89 @@ export function CountList({ filters }: CountListProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {counts.map((count: CountListItem) => (
-              <TableRow key={count.id}>
-                <TableCell className="font-medium whitespace-nowrap">
-                  {count.countNumber}
-                </TableCell>
-                <TableCell className="min-w-[180px]">
-                  <div className="max-w-[220px] truncate">
-                    {count.countName}
-                  </div>
-                </TableCell>
-                <TableCell className="whitespace-nowrap">
-                  {COUNT_TYPE_LABELS[count.countType]}
-                </TableCell>
-                <TableCell className="whitespace-nowrap">
-                  <Badge variant={getStatusBadgeVariant(count.status)}>
-                    {COUNT_STATUS_LABELS[count.status]}
-                  </Badge>
-                </TableCell>
-                <TableCell className="whitespace-nowrap">
-                  {formatDate(count.planDate)}
-                </TableCell>
-                <TableCell className="whitespace-nowrap">
-                  {count.location || '全部库存'}
-                </TableCell>
-                <TableCell className="whitespace-nowrap">
-                  {formatProgress(count.completedItems, count.totalItems)}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link href={`/inventory/counts/${count.id}`}>
-                        <Eye className="h-4 w-4" />
-                      </Link>
-                    </Button>
+            {isInitialLoading ? (
+              <TableLoadingRows />
+            ) : (
+              counts.map((count: CountListItem) => (
+                <TableRow key={count.id}>
+                  <TableCell className="font-medium whitespace-nowrap">
+                    {count.countNumber}
+                  </TableCell>
+                  <TableCell className="min-w-[180px]">
+                    <div className="max-w-[220px] truncate">
+                      {count.countName}
+                    </div>
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {COUNT_TYPE_LABELS[count.countType]}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    <Badge variant={getStatusBadgeVariant(count.status)}>
+                      {COUNT_STATUS_LABELS[count.status]}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {formatDate(count.planDate)}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {count.location || '全部库存'}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {formatProgress(count.completedItems, count.totalItems)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link href={`/inventory/counts/${count.id}`}>
+                          <Eye className="h-4 w-4" />
+                        </Link>
+                      </Button>
 
-                    {hasManagePermission && count.status === 'draft' && (
-                      <>
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link href={`/inventory/counts/${count.id}/edit`}>
-                            <Pencil className="h-4 w-4" />
-                          </Link>
-                        </Button>
+                      {hasManagePermission && count.status === 'draft' && (
+                        <>
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link href={`/inventory/counts/${count.id}/edit`}>
+                              <Pencil className="h-4 w-4" />
+                            </Link>
+                          </Button>
 
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleStart(count.id)}
-                        >
-                          <Play className="h-4 w-4" />
-                        </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleStart(count.id)}
+                          >
+                            <Play className="h-4 w-4" />
+                          </Button>
 
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(count.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(count.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>
 
       {/* 移动端卡片视图 */}
-      <div className="space-y-3 lg:hidden">
-        {counts.map((count: CountListItem) => (
+      <div
+        className={cn(
+          'space-y-3 p-3 transition-opacity lg:hidden',
+          isListRefreshing && 'opacity-60'
+        )}
+      >
+        {isInitialLoading ? (
+          <MobileLoadingSkeleton />
+        ) : (
+          counts.map((count: CountListItem) => (
           <div
             key={count.id}
             className="rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4 shadow-sm"
@@ -381,7 +409,8 @@ export function CountList({ filters }: CountListProps) {
               )}
             </div>
           </div>
-        ))}
+          ))
+        )}
       </div>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -400,6 +429,44 @@ export function CountList({ filters }: CountListProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </div>
+  );
+}
+
+function TableLoadingRows() {
+  return (
+    <>
+      {Array.from({ length: 8 }).map((_, rowIndex) => (
+        <TableRow key={`count-loading-row-${rowIndex}`}>
+          {Array.from({ length: 8 }).map((__, colIndex) => (
+            <TableCell key={colIndex} className="h-12">
+              <div className="h-3 w-full max-w-[140px] animate-pulse rounded bg-slate-100" />
+            </TableCell>
+          ))}
+        </TableRow>
+      ))}
+    </>
+  );
+}
+
+function MobileLoadingSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 6 }).map((_, index) => (
+        <div
+          key={`count-card-loading-${index}`}
+          className="rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4 shadow-sm"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="space-y-2">
+              <div className="h-3 w-24 animate-pulse rounded bg-slate-100" />
+              <div className="h-3 w-36 animate-pulse rounded bg-slate-100" />
+              <div className="h-3 w-44 animate-pulse rounded bg-slate-100" />
+            </div>
+            <div className="h-5 w-16 animate-pulse rounded bg-slate-100" />
+          </div>
+        </div>
+      ))}
     </>
   );
 }
