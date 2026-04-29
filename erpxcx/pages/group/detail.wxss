@@ -166,6 +166,13 @@
   font-size: 23rpx;
 }
 
+.product-extra {
+  margin-top: 8rpx;
+  color: #8a8175;
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
 .match-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

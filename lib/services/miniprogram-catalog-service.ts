@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client';
 
 import { computeStockStatusFromInventoryLike } from '@/lib/api/mini-program-sanitize';
+import { PRODUCT_UNIT_LABELS } from '@/lib/config/product';
 import { prisma } from '@/lib/db';
 import { parseProductImages } from '@/lib/utils/product-transforms';
 
@@ -9,6 +10,9 @@ const PRODUCT_SELECT = {
   code: true,
   name: true,
   specification: true,
+  unit: true,
+  piecesPerUnit: true,
+  weight: true,
   description: true,
   thumbnailUrl: true,
   images: true,
@@ -195,6 +199,49 @@ function getProductStockStatus(product: CatalogProductRecord) {
   });
 }
 
+function formatNumberText(value: number) {
+  return Number.isInteger(value)
+    ? String(value)
+    : value.toFixed(2).replace(/\.?0+$/, '');
+}
+
+function getUnitLabel(unit: string) {
+  return PRODUCT_UNIT_LABELS[unit as keyof typeof PRODUCT_UNIT_LABELS] ?? unit;
+}
+
+function getProductPackageText(product: CatalogProductRecord) {
+  if (typeof product.piecesPerUnit === 'number' && product.piecesPerUnit > 1) {
+    return `1件=${product.piecesPerUnit}片`;
+  }
+
+  return '';
+}
+
+function getProductWeightText(product: CatalogProductRecord) {
+  const weight = product.weight === null ? null : Number(product.weight);
+  if (!weight || !Number.isFinite(weight) || weight <= 0) return '';
+
+  return `${formatNumberText(weight)}kg/${getUnitLabel(product.unit)}`;
+}
+
+function buildProductShareTitle(input: {
+  code: string;
+  name: string;
+  specification?: string | null;
+  packageText?: string;
+  weightText?: string;
+}) {
+  return [
+    input.code,
+    input.name,
+    input.specification,
+    input.packageText,
+    input.weightText,
+  ]
+    .filter(Boolean)
+    .join('｜');
+}
+
 function toPublicProduct(product: CatalogProductRecord) {
   const series = resolveColorSeries(product);
   const component = resolveComponentType(product);
@@ -206,12 +253,23 @@ function toPublicProduct(product: CatalogProductRecord) {
   const effectImageUrls = productImages
     .filter(image => image.type === 'effect')
     .map(image => image.url);
+  const packageText = getProductPackageText(product);
+  const weightText = getProductWeightText(product);
 
   return {
     id: product.id,
     code: product.code,
     name: product.name,
     specification: product.specification,
+    packageText,
+    weightText,
+    shareTitle: buildProductShareTitle({
+      code: product.code,
+      name: product.name,
+      specification: product.specification,
+      packageText,
+      weightText,
+    }),
     description: product.description,
     thumbnailUrl: imageUrls[0] ?? null,
     imageUrls,

@@ -36,6 +36,24 @@ function openShelf(seriesId, componentType) {
   });
 }
 
+function getProductShareTitle(product) {
+  if (!product) return '外墙罗马柱产品';
+
+  return (
+    product.shareTitle ||
+    [
+      product.code,
+      product.name,
+      product.specification,
+      product.packageText,
+      product.weightText,
+    ]
+      .filter(Boolean)
+      .join('｜') ||
+    '外墙罗马柱产品'
+  );
+}
+
 Page({
   data: {
     loading: true,
@@ -64,7 +82,7 @@ Page({
   onShareAppMessage() {
     const product = this.data.product;
     return {
-      title: product ? `${product.name}｜${product.code}` : '外墙罗马柱产品',
+      title: getProductShareTitle(product),
       path: `/pages/product/detail?id=${this.data.productId}`,
       imageUrl:
         product && product.thumbnailUrl ? product.thumbnailUrl : undefined,
@@ -74,7 +92,7 @@ Page({
   onShareTimeline() {
     const product = this.data.product;
     return {
-      title: product ? `${product.name}｜${product.code}` : '外墙罗马柱产品',
+      title: getProductShareTitle(product),
       query: `id=${this.data.productId}`,
       imageUrl:
         product && product.thumbnailUrl ? product.thumbnailUrl : undefined,

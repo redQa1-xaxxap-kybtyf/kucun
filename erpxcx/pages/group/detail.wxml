@@ -69,6 +69,11 @@
           <view class="product-name line-clamp-2">{{item.name}}</view>
           <view class="product-code">型号 {{item.code}}</view>
           <view class="product-spec line-clamp-1">{{item.specification || '未填写规格'}}</view>
+          <view class="product-extra" wx:if="{{item.packageText || item.weightText}}">
+            <text wx:if="{{item.packageText}}">{{item.packageText}}</text>
+            <text wx:if="{{item.packageText && item.weightText}}"> · </text>
+            <text wx:if="{{item.weightText}}">{{item.weightText}}</text>
+          </view>
         </view>
       </view>
     </view>
