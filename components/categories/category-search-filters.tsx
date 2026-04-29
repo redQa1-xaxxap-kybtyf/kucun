@@ -39,7 +39,7 @@ export function CategorySearchFilters({
     <SearchFilterCard
       searchValue={searchValue ?? (queryParams.search || '')}
       onSearchChange={onSearchChange ?? onSearch}
-      searchPlaceholder="搜索分类..."
+      searchPlaceholder="搜索分类名称、编码"
       isSearching={isSearching}
       // 筛选器配置
       filters={[

@@ -5,15 +5,16 @@
  * 严格遵循全栈项目统一约定规范
  */
 
+import { Loader2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
 import { CategoryPageHeader } from '@/components/categories/category-page-header';
 import { CategorySearchFilters } from '@/components/categories/category-search-filters';
-import { ContentLoading } from '@/components/common/loading';
 import { Card, CardContent } from '@/components/ui/card';
 import { Pagination } from '@/components/ui/pagination';
 import { TableSkeleton } from '@/components/ui/skeleton-compositions';
 import { type Category, type CategoryQueryParams } from '@/lib/api/categories';
+import { cn } from '@/lib/utils';
 
 const CategoryList = dynamic(
   () =>
@@ -42,6 +43,7 @@ interface DeleteDialogState {
 
 interface CategoryPageContentProps {
   isLoading: boolean;
+  isFetching: boolean;
   error: Error | null;
   categories: Category[];
   pagination?: {
@@ -74,6 +76,7 @@ interface CategoryPageContentProps {
 
 export function CategoryPageContent({
   isLoading,
+  isFetching,
   error,
   categories,
   pagination,
@@ -92,29 +95,9 @@ export function CategoryPageContent({
   confirmDelete,
   toggleCategoryStatus,
 }: CategoryPageContentProps) {
-  // 加载状态
-  if (isLoading) {
-    return <ContentLoading text="加载分类列表中..." />;
-  }
-
-  // 错误状态
-  if (error) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">分类管理</h1>
-          <p className="text-muted-foreground">管理产品分类和层级结构</p>
-        </div>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center text-red-600">
-              加载失败: {error instanceof Error ? error.message : '未知错误'}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const isInitialLoading = isLoading && categories.length === 0;
+  const isListRefreshing = !isInitialLoading && isFetching;
+  const showErrorState = Boolean(error && categories.length === 0);
 
   return (
     <div className="flex h-full flex-col p-6">
@@ -124,25 +107,58 @@ export function CategoryPageContent({
         <CategorySearchFilters
           queryParams={queryParams}
           searchValue={searchValue}
-          isSearching={isSearching}
+          isSearching={isSearching || isListRefreshing}
           onSearchChange={onSearchChange}
           onSearch={handleSearch}
           onFilter={handleFilter}
         />
 
-        <CategoryList
-          categories={categories}
-          updatingStatusId={updatingStatusId}
-          onToggleStatus={toggleCategoryStatus}
-          onDeleteCategory={handleDeleteCategory}
-        />
+        <div
+          className="relative"
+          aria-busy={isInitialLoading || isListRefreshing}
+        >
+          {isListRefreshing && (
+            <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-center border-b border-[hsl(var(--color-border-primary))] bg-white/95 px-3 py-2 text-xs font-medium text-[hsl(var(--color-text-secondary))] shadow-sm">
+              <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin text-[hsl(var(--color-primary))]" />
+              正在更新
+            </div>
+          )}
 
-        {pagination && (
+          <div
+            className={cn(
+              'transition-opacity',
+              isListRefreshing && 'opacity-60'
+            )}
+          >
+            {showErrorState ? (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-center text-red-600">
+                    加载失败:{' '}
+                    {error instanceof Error ? error.message : '未知错误'}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : isInitialLoading ? (
+              <TableSkeleton columns={6} rows={8} showPagination />
+            ) : (
+              <CategoryList
+                categories={categories}
+                updatingStatusId={updatingStatusId}
+                onToggleStatus={toggleCategoryStatus}
+                onDeleteCategory={handleDeleteCategory}
+              />
+            )}
+          </div>
+        </div>
+
+        {pagination && !isInitialLoading && !showErrorState && (
           <Pagination
             pagination={pagination}
             onPageChange={handlePageChange}
             showRange
             showTotal
+            disabled={isListRefreshing}
           />
         )}
 

@@ -51,12 +51,15 @@ export function useCategories(initialParams?: CategoryQueryParams) {
     null
   );
 
-  const { data, isLoading, error } = useQuery<PaginatedResponse<Category>>({
+  const { data, isLoading, isFetching, error } = useQuery<
+    PaginatedResponse<Category>
+  >({
     queryKey: categoryQueryKeys.list({
       ...queryParams,
       parentId: queryParams.parentId ?? undefined,
     }),
     queryFn: () => getCategories(queryParams),
+    placeholderData: previousData => previousData,
   });
 
   const deleteMutation = useMutation({
@@ -110,6 +113,7 @@ export function useCategories(initialParams?: CategoryQueryParams) {
     // 数据
     data,
     isLoading,
+    isFetching,
     error,
     queryParams,
     deleteDialog,

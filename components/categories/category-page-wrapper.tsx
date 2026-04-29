@@ -1,9 +1,9 @@
 'use client';
 
 import { CategoryPageContent } from '@/components/categories/category-page-content';
-import { useListSearchController } from '@/hooks/use-list-search-controller';
 import { useCategories } from '@/hooks/use-categories';
 import { useCategoryActions } from '@/hooks/use-category-actions';
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 import type { CategoryQueryParams } from '@/lib/api/categories';
 
 interface CategoryPageWrapperProps {
@@ -20,6 +20,7 @@ export function CategoryPageWrapper({
   const {
     data,
     isLoading,
+    isFetching,
     error,
     queryParams,
     deleteDialog,
@@ -62,6 +63,7 @@ export function CategoryPageWrapper({
   return (
     <CategoryPageContent
       isLoading={isLoading}
+      isFetching={isFetching}
       error={error}
       categories={categories}
       pagination={pagination}
