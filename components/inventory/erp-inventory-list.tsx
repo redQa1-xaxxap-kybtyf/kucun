@@ -1,5 +1,6 @@
 'use client';
 
+import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
@@ -7,6 +8,7 @@ import { InventoryTable } from '@/components/inventory/erp/inventory-table';
 import { InventorySearchToolbar } from '@/components/inventory/InventorySearchToolbar';
 import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   buildInventorySortMode,
   DEFAULT_INVENTORY_SORT_MODE,
@@ -49,7 +51,6 @@ interface ERPInventoryListProps {
   onPrevPageHover?: () => void;
   isLoading?: boolean;
   isFetching?: boolean;
-  /** ✅ 新增：搜索状态指示 */
   /** ✅ 新增：搜索状态指示 */
   isSearching?: boolean;
   isExporting?: boolean;
@@ -96,7 +97,7 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
     onPageChange,
     onNextPageHover,
     onPrevPageHover,
-    isLoading: _isLoading = false,
+    isLoading = false,
     isFetching = false,
     isSearching = false,
     isExporting = false,
@@ -233,11 +234,17 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
     const totalGroups = data.pagination?.total ?? data.data.length;
     const totalPages = data.pagination?.totalPages ?? 1;
     const currentPage = data.pagination?.page ?? 1;
-    const resultHeadline = hasActiveFilters
-      ? `当前匹配 ${totalGroups} 个产品`
-      : `当前共 ${totalGroups} 个产品`;
-    const resultDescription =
-      totalPages > 1
+    const isInitialLoading = isLoading && data.data.length === 0;
+    const isListRefreshing =
+      !isInitialLoading && (isFetching || isSearching);
+    const resultHeadline = isInitialLoading
+      ? '正在加载库存数据'
+      : hasActiveFilters
+        ? `当前匹配 ${totalGroups} 个产品`
+        : `当前共 ${totalGroups} 个产品`;
+    const resultDescription = isInitialLoading
+      ? `按产品归并展示，不同批次分开展示，${INVENTORY_SEARCH_HINT}`
+      : totalPages > 1
         ? `第 ${currentPage} / ${totalPages} 页，按产品归并展示，不同批次分开展示，${INVENTORY_SEARCH_HINT}`
         : `按产品归并展示，不同批次分开展示，${INVENTORY_SEARCH_HINT}`;
 
@@ -252,7 +259,7 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
           onFilter={onFilter}
           onFilterPatch={onFilterPatch}
           onClearFilters={onClearFilters}
-          isSearching={isSearching || isFetching}
+          isSearching={isSearching || isListRefreshing}
           isExporting={isExporting}
           density={density}
           onDensityChange={onDensityChange}
@@ -302,31 +309,41 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
         </div>
 
         {/* 库存列表 */}
-        <div className="relative rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm">
-          {/* ✅ 加载中提示 */}
-          {isFetching && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/50">
-              <div className="flex items-center gap-2 rounded-md bg-white px-4 py-2 shadow-sm">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-[hsl(var(--color-primary))] border-t-transparent" />
-                <span className="text-sm text-gray-600">加载中...</span>
-              </div>
+        <div
+          className="relative overflow-hidden rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm"
+          aria-busy={isInitialLoading || isListRefreshing}
+        >
+          {isListRefreshing && (
+            <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-center border-b border-[hsl(var(--color-border-primary))] bg-white/95 px-3 py-2 text-xs font-medium text-[hsl(var(--color-text-secondary))] shadow-sm">
+              <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin text-[hsl(var(--color-primary))]" />
+              正在更新
             </div>
           )}
 
-          <div className="overflow-x-auto">
-            <InventoryTable
-              data={data.data}
-              onAdjust={handleAdjust}
-              useVirtualization={data.data.length > 50}
-              searchQuery={queryParams.search}
-              hasActiveFilters={hasActiveFilters}
-              onClearFilters={onClearFilters}
-              density={density}
-            />
+          <div
+            className={
+              isListRefreshing
+                ? 'overflow-x-auto opacity-60 transition-opacity'
+                : 'overflow-x-auto transition-opacity'
+            }
+          >
+            {isInitialLoading ? (
+              <InventoryListTableSkeleton />
+            ) : (
+              <InventoryTable
+                data={data.data}
+                onAdjust={handleAdjust}
+                useVirtualization={data.data.length > 50}
+                searchQuery={queryParams.search}
+                hasActiveFilters={hasActiveFilters}
+                onClearFilters={onClearFilters}
+                density={density}
+              />
+            )}
           </div>
 
           {/* 分页器 */}
-          {data.pagination && (
+          {data.pagination && !isInitialLoading && (
             <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
               <Pagination
                 pagination={data.pagination}
@@ -335,6 +352,7 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
                 onPrevPageHover={onPrevPageHover}
                 showRange={false}
                 showTotal={false}
+                disabled={isListRefreshing}
               />
             </div>
           )}
@@ -345,3 +363,79 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
 );
 
 ERPInventoryList.displayName = 'ERPInventoryList';
+
+function InventoryListTableSkeleton() {
+  return (
+    <>
+      <div className="space-y-3 p-3 md:hidden">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div
+            key={`inventory-mobile-skeleton-${index}`}
+            className="rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3"
+          >
+            <div className="flex items-start gap-3">
+              <Skeleton className="h-14 w-14 shrink-0 rounded-md" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-5 w-40" />
+                <div className="flex flex-wrap gap-1.5">
+                  <Skeleton className="h-6 w-20 rounded-full" />
+                  <Skeleton className="h-6 w-24 rounded-full" />
+                  <Skeleton className="h-6 w-24 rounded-full" />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              {Array.from({ length: 3 }).map((__, metricIndex) => (
+                <div
+                  key={`inventory-mobile-metric-skeleton-${index}-${metricIndex}`}
+                  className="rounded-lg bg-[hsl(var(--color-bg-secondary))] px-2.5 py-2"
+                >
+                  <Skeleton className="h-3 w-10" />
+                  <Skeleton className="mt-2 h-4 w-14" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="hidden md:block">
+        <div className="border-b bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
+          <div className="grid min-w-[980px] grid-cols-[1.4fr_1fr_1fr_1fr_1fr_1fr_90px] gap-4">
+            {Array.from({ length: 7 }).map((_, index) => (
+              <Skeleton
+                key={`inventory-header-skeleton-${index}`}
+                className="h-4 w-full"
+              />
+            ))}
+          </div>
+        </div>
+
+        {Array.from({ length: 8 }).map((_, rowIndex) => (
+          <div
+            key={`inventory-row-skeleton-${rowIndex}`}
+            className="border-b px-4 py-3 last:border-b-0"
+          >
+            <div className="grid min-w-[980px] grid-cols-[1.4fr_1fr_1fr_1fr_1fr_1fr_90px] items-center gap-4">
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-10 w-10 rounded-md" />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-4 w-40" />
+                </div>
+              </div>
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="ml-auto h-8 w-16 rounded-md" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}

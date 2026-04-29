@@ -246,11 +246,8 @@ function useInventoryController(initialParams: Partial<InventoryQueryParams>) {
     handlePrevPageHover,
   } = useInventoryData(params, !!params.search); // ✅ 搜索模式：当有搜索词时启用
 
-  // ✅ 优化搜索状态管理:使用useTransition的isPending状态
-  const shouldShowSearchingIndicator = React.useMemo(
-    () => isPending || isFetching,
-    [isPending, isFetching]
-  );
+  // 搜索输入只反映本地提交状态，列表刷新由列表区统一展示。
+  const shouldShowSearchingIndicator = isPending;
   const {
     handleFilter,
     handleFilterPatch,
