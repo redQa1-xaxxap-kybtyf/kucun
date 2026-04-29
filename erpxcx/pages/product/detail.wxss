@@ -246,12 +246,18 @@
   background: rgba(248, 246, 241, 0.96);
 }
 
+.secondary,
 .primary {
   flex: 1;
   height: 82rpx;
   border-radius: 999rpx;
   font-size: 28rpx;
   font-weight: 900;
+}
+
+.secondary {
+  background: #fff;
+  color: #27594f;
 }
 
 .primary {

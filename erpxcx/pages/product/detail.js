@@ -163,6 +163,12 @@ Page({
     openShelf(product.colorSeries.id, product.componentType.id);
   },
 
+  onPosterTap() {
+    wx.navigateTo({
+      url: `/pages/product/poster?id=${this.data.productId}`,
+    });
+  },
+
   onRelatedGroupTap(event) {
     wx.navigateTo({
       url: `/pages/group/detail?id=${encodeURIComponent(event.currentTarget.dataset.id)}`,

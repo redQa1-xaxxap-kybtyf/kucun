@@ -3,6 +3,7 @@
     "pages/index/index",
     "pages/group/detail",
     "pages/product/detail",
+    "pages/product/poster",
     "pages/admin/login",
     "pages/admin/workspace",
     "pages/admin/inventory",

@@ -113,7 +113,8 @@
     </view>
 
     <view class="bottom-actions safe-bottom">
-      <button class="primary" open-type="share">分享产品</button>
+      <button class="secondary" open-type="share">转发产品</button>
+      <button class="primary" bindtap="onPosterTap">生成海报</button>
     </view>
   </view>
 </view>

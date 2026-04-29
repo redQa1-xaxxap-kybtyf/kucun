@@ -1,0 +1,28 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="empty">正在生成产品海报...</view>
+  <view wx:elif="{{error}}" class="empty error">{{error}}</view>
+
+  <view wx:else class="poster-page">
+    <view class="poster-frame">
+      <canvas
+        id="posterCanvas"
+        type="2d"
+        class="poster-canvas"
+        style="width: {{canvasStyleWidth}}px; height: {{canvasStyleHeight}}px;"
+        bindtap="onPreviewPoster"
+      ></canvas>
+    </view>
+    <view class="poster-tip">保存后可直接发给客户，产品信息会自动带上。</view>
+  </view>
+
+  <view wx:if="{{product && !error}}" class="bottom-bar safe-bottom">
+    <button
+      class="primary"
+      loading="{{saving || drawing}}"
+      disabled="{{saving || drawing}}"
+      bindtap="onSavePoster"
+    >
+      保存海报
+    </button>
+  </view>
+</view>
