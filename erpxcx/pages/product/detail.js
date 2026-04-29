@@ -25,6 +25,17 @@ function getGalleryImageUrls(product) {
   return imageUrls.filter(Boolean);
 }
 
+function openShelf(seriesId, componentType) {
+  const url = `/pages/index/index?seriesId=${encodeURIComponent(seriesId)}&componentType=${encodeURIComponent(componentType || 'all')}`;
+
+  wx.navigateTo({
+    url,
+    fail() {
+      wx.redirectTo({ url });
+    },
+  });
+}
+
 Page({
   data: {
     loading: true,
@@ -117,6 +128,13 @@ Page({
       product.effectImageUrls,
       event.currentTarget.dataset.current
     );
+  },
+
+  onSeriesShelfTap() {
+    const product = this.data.product;
+    if (!product) return;
+
+    openShelf(product.colorSeries.id, product.componentType.id);
   },
 
   onRelatedProductTap(event) {

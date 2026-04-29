@@ -19,6 +19,9 @@
         <view class="hero-meta">
           {{group.productCount}}款产品 · {{group.specificationCount}}种规格
         </view>
+        <view class="hero-shelf-link" bindtap="onSeriesShelfTap">
+          查看{{group.colorSeries.name}}花色货架
+        </view>
       </view>
       <button class="share-btn" open-type="share">分享</button>
     </view>

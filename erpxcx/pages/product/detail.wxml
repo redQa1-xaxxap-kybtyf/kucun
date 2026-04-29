@@ -39,6 +39,10 @@
       <view class="product-name">{{product.name}}</view>
       <view class="product-code">{{product.code}}</view>
       <view class="spec">{{product.specification || '未填写规格'}}</view>
+      <view class="shelf-link" bindtap="onSeriesShelfTap">
+        <view class="shelf-link-text">查看{{product.colorSeries.name}}花色货架</view>
+        <view class="shelf-link-arrow">›</view>
+      </view>
     </view>
 
     <view class="section" wx:if="{{product.effectImageUrls.length > 0}}">
