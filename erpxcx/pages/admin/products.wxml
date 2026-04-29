@@ -81,7 +81,7 @@
           data-id="{{item.id}}"
           catchtap="onDeleteTap"
         >
-          删除
+          {{item.deleteText}}
         </button>
       </view>
     </view>

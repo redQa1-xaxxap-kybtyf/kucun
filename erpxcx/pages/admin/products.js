@@ -16,6 +16,25 @@ function formatQuantity(value) {
   return Number.isFinite(numberValue) ? numberValue : 0;
 }
 
+function buildDeleteBlockReason(counts) {
+  const reasons = [];
+
+  if (counts.totalQuantity > 0) {
+    reasons.push(`当前库存 ${counts.totalQuantity}`);
+  }
+  if (counts.inventoryRecordsCount > 0) {
+    reasons.push(`库存流水 ${counts.inventoryRecordsCount} 条`);
+  }
+  if (counts.inboundRecordsCount > 0) {
+    reasons.push(`入库记录 ${counts.inboundRecordsCount} 条`);
+  }
+  if (counts.salesOrderItemsCount > 0) {
+    reasons.push(`销售记录 ${counts.salesOrderItemsCount} 条`);
+  }
+
+  return `不能删除：${reasons.join('、')}。为保证账实一致，请下架，不要删除。`;
+}
+
 function normalizeProduct(item) {
   const inventory = item.inventory || {};
   const statistics = item.statistics || {};
@@ -47,8 +66,13 @@ function normalizeProduct(item) {
     totalQuantity,
     availableQuantity,
     canDelete: !hasBusinessRecords,
-    blockReason:
-      '已有库存、入库记录或销售记录。为保证账实一致，请下架，不要删除。',
+    deleteText: hasBusinessRecords ? '不可删' : '删除',
+    blockReason: buildDeleteBlockReason({
+      totalQuantity,
+      inventoryRecordsCount,
+      inboundRecordsCount,
+      salesOrderItemsCount,
+    }),
   };
 }
 
