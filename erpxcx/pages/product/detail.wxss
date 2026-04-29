@@ -128,6 +128,24 @@
   line-height: 1.7;
 }
 
+.case-scroll {
+  width: 100%;
+  white-space: nowrap;
+}
+
+.case-row {
+  display: flex;
+  gap: 16rpx;
+}
+
+.case-image {
+  width: 520rpx;
+  height: 360rpx;
+  flex: none;
+  border-radius: 22rpx;
+  background: #efe8dc;
+}
+
 .related-scroll {
   width: 100%;
   white-space: nowrap;

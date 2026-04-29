@@ -96,6 +96,23 @@
   font-weight: 900;
 }
 
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.section-head .section-title {
+  margin-bottom: 16rpx;
+}
+
+.section-count {
+  color: #8a8175;
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
 .product-card {
   display: flex;
   align-items: center;

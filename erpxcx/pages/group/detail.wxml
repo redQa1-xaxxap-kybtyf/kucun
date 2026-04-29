@@ -17,26 +17,6 @@
       <button class="share-btn" open-type="share">分享</button>
     </view>
 
-    <view class="section">
-      <view class="section-title">规格产品</view>
-      <view
-        wx:for="{{group.products}}"
-        wx:key="id"
-        class="product-card"
-        data-id="{{item.id}}"
-        bindtap="onProductTap"
-      >
-        <image wx:if="{{item.thumbnailUrl}}" class="product-cover" src="{{item.thumbnailUrl}}" mode="aspectFill" />
-        <view wx:else class="product-cover fallback">图</view>
-        <view class="product-body">
-          <view class="product-name line-clamp-2">{{item.name}}</view>
-          <view class="product-code">{{item.code}}</view>
-          <view class="product-spec line-clamp-1">{{item.specification || '未填写规格'}}</view>
-        </view>
-        <view class="stock {{item.stockStatus}}">{{item.stockStatus == 'out_of_stock' ? '暂缺' : '有货'}}</view>
-      </view>
-    </view>
-
     <view class="section" wx:if="{{group.relatedGroups.length > 0}}">
       <view class="section-title">同色配套</view>
       <scroll-view scroll-x enhanced class="related-scroll">
@@ -54,6 +34,29 @@
           </view>
         </view>
       </scroll-view>
+    </view>
+
+    <view class="section">
+      <view class="section-head">
+        <view class="section-title">规格产品</view>
+        <view class="section-count">{{group.productCount}}款</view>
+      </view>
+      <view
+        wx:for="{{group.products}}"
+        wx:key="id"
+        class="product-card"
+        data-id="{{item.id}}"
+        bindtap="onProductTap"
+      >
+        <image wx:if="{{item.thumbnailUrl}}" class="product-cover" src="{{item.thumbnailUrl}}" mode="aspectFill" />
+        <view wx:else class="product-cover fallback">图</view>
+        <view class="product-body">
+          <view class="product-name line-clamp-2">{{item.name}}</view>
+          <view class="product-code">{{item.code}}</view>
+          <view class="product-spec line-clamp-1">{{item.specification || '未填写规格'}}</view>
+        </view>
+        <view class="stock {{item.stockStatus}}">{{item.stockStatus == 'out_of_stock' ? '暂缺' : '有货'}}</view>
+      </view>
     </view>
 
     <view class="bottom-actions safe-bottom">

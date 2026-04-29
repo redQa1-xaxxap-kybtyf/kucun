@@ -35,6 +35,21 @@
       <view class="spec">{{product.specification || '未填写规格'}}</view>
     </view>
 
+    <view class="section" wx:if="{{product.effectImageUrls.length > 0}}">
+      <view class="section-title">效果案例</view>
+      <scroll-view scroll-x enhanced class="case-scroll">
+        <view class="case-row">
+          <image
+            wx:for="{{product.effectImageUrls}}"
+            wx:key="*this"
+            class="case-image"
+            src="{{item}}"
+            mode="aspectFill"
+          />
+        </view>
+      </scroll-view>
+    </view>
+
     <view class="section" wx:if="{{product.description}}">
       <view class="section-title">产品说明</view>
       <view class="description">{{product.description}}</view>

@@ -162,10 +162,14 @@ function resolveComponentType(product: CatalogProductRecord) {
   return matched ?? COMPONENT_TYPES[COMPONENT_TYPES.length - 1];
 }
 
+function getProductImages(product: CatalogProductRecord) {
+  return parseProductImages(product.images, product.id).filter(
+    image => typeof image.url === 'string' && image.url.length > 0
+  );
+}
+
 function getProductImageUrls(product: CatalogProductRecord) {
-  const imageUrls = parseProductImages(product.images, product.id)
-    .map(image => image.url)
-    .filter(Boolean);
+  const imageUrls = getProductImages(product).map(image => image.url);
 
   return product.thumbnailUrl
     ? [
@@ -194,7 +198,14 @@ function getProductStockStatus(product: CatalogProductRecord) {
 function toPublicProduct(product: CatalogProductRecord) {
   const series = resolveColorSeries(product);
   const component = resolveComponentType(product);
+  const productImages = getProductImages(product);
   const imageUrls = getProductImageUrls(product);
+  const mainImageUrls = productImages
+    .filter(image => image.type === 'main')
+    .map(image => image.url);
+  const effectImageUrls = productImages
+    .filter(image => image.type === 'effect')
+    .map(image => image.url);
 
   return {
     id: product.id,
@@ -204,6 +215,9 @@ function toPublicProduct(product: CatalogProductRecord) {
     description: product.description,
     thumbnailUrl: imageUrls[0] ?? null,
     imageUrls,
+    mainImageUrls,
+    effectImageUrls,
+    imageCount: imageUrls.length,
     category: product.category
       ? {
           id: product.category.id,
