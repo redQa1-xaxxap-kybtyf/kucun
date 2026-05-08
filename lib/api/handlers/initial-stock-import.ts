@@ -1062,7 +1062,10 @@ async function prepareInitialStockImportRows(rows: InitialStockRowInput[]) {
   }
 
   const context = await loadImportContext(parsedRows);
-  const seenRowKeys = new Map<string, number>();
+  const seenRowKeys = new Map<
+    string,
+    { row: number; piecesPerUnit?: number }
+  >();
   const preliminaryRows: PreparedInitialStockRow[] = [];
   const errors = [...parseErrors];
   const duplicates: InitialStockImportDuplicate[] = [];
@@ -1097,14 +1100,40 @@ async function prepareInitialStockImportRows(rows: InitialStockRowInput[]) {
       variantResolution.variantId,
       finalBatchNumber
     );
-    const firstSeenRow = seenRowKeys.get(rowKey);
 
-    if (firstSeenRow !== undefined) {
+    // 装箱数提前解析（仅依赖当前行），用于判定"同产品+批次但不同包装规格"的真冲突。
+    const piecesPerUnitResolution = resolvePiecesPerUnit(
+      parsedRow,
+      productResolution.product
+    );
+
+    const firstSeen = seenRowKeys.get(rowKey);
+
+    if (firstSeen !== undefined) {
+      const samePiecesPerUnit =
+        firstSeen.piecesPerUnit === piecesPerUnitResolution.piecesPerUnit;
+
+      if (!samePiecesPerUnit) {
+        errors.push(
+          createImportError(
+            parsedRow.rowNumber,
+            `与第 ${firstSeen.row} 行的产品/色号/批次相同，但装箱数不一致（${
+              firstSeen.piecesPerUnit ?? '未填写'
+            } vs ${
+              piecesPerUnitResolution.piecesPerUnit ?? '未填写'
+            }）。同一批次的装箱数必须一致，请核对后修改`,
+            '装箱数',
+            productResolution.product.code
+          )
+        );
+        continue;
+      }
+
       duplicates.push(
         createImportDuplicate(
           parsedRow.rowNumber,
           'file',
-          `与第 ${firstSeenRow} 行的产品/色号/批次重复，本次将自动跳过`,
+          `与第 ${firstSeen.row} 行的产品/色号/批次重复，本次将自动跳过`,
           {
             productCode: productResolution.product.code,
             batchNumber: finalBatchNumber,
@@ -1114,12 +1143,11 @@ async function prepareInitialStockImportRows(rows: InitialStockRowInput[]) {
       continue;
     }
 
-    seenRowKeys.set(rowKey, parsedRow.rowNumber);
+    seenRowKeys.set(rowKey, {
+      row: parsedRow.rowNumber,
+      piecesPerUnit: piecesPerUnitResolution.piecesPerUnit,
+    });
 
-    const piecesPerUnitResolution = resolvePiecesPerUnit(
-      parsedRow,
-      productResolution.product
-    );
     const quantityResolution = resolveQuantity(
       parsedRow,
       productResolution.product.code,

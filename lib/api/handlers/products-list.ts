@@ -9,6 +9,7 @@ import type { Prisma } from '@prisma/client';
 import { getBatchCachedInventorySummary } from '@/lib/cache/inventory-cache';
 import {
   PRODUCT_DEFAULT_SORT,
+  PRODUCT_SORT_FIELDS,
   type ProductStatus,
   type ProductUnit,
 } from '@/lib/config/product';
@@ -57,6 +58,13 @@ export function parseProductListParams(searchParams: URLSearchParams) {
   const rawCategoryId = searchParams.get('categoryId');
   const filterUncategorized = rawCategoryId === 'none';
 
+  const allowedSortFields = new Set<string>(Object.values(PRODUCT_SORT_FIELDS));
+  const requestedSortBy = searchParams.get('sortBy');
+  const sortBy =
+    requestedSortBy && allowedSortFields.has(requestedSortBy)
+      ? requestedSortBy
+      : PRODUCT_DEFAULT_SORT.sortBy;
+
   return {
     includeInventory,
     finalIncludeStatistics,
@@ -67,7 +75,7 @@ export function parseProductListParams(searchParams: URLSearchParams) {
         searchParams.get('limit') ||
         paginationConfig.defaultPageSize.toString(),
       search: searchParams.get('search') || undefined,
-      sortBy: searchParams.get('sortBy') || PRODUCT_DEFAULT_SORT.sortBy,
+      sortBy,
       sortOrder:
         searchParams.get('sortOrder') || PRODUCT_DEFAULT_SORT.sortOrder,
       status: rawStatus && rawStatus !== 'all' ? rawStatus : undefined,
@@ -133,6 +141,23 @@ export function buildProductSelect(includeStatistics: boolean) {
         id: true,
         name: true,
         code: true,
+        parentId: true,
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            parentId: true,
+            parent: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+                parentId: true,
+              },
+            },
+          },
+        },
       },
     },
     createdAt: true,
@@ -376,6 +401,62 @@ export async function getProductsBatchSpecifications(productIds: string[]) {
 }
 
 /**
+ * 格式化产品分类路径
+ */
+function formatProductCategory(
+  category: {
+    id: string;
+    name: string;
+    code: string;
+    parentId: string | null;
+    parent: {
+      id: string;
+      name: string;
+      code: string;
+      parentId: string | null;
+      parent: {
+        id: string;
+        name: string;
+        code: string;
+        parentId: string | null;
+      } | null;
+    } | null;
+  } | null
+) {
+  if (!category) return null;
+
+  const parent = category.parent;
+  const grandparent = parent?.parent;
+  const fullPath = [grandparent?.name, parent?.name, category.name]
+    .filter(Boolean)
+    .join(' / ');
+
+  return {
+    id: category.id,
+    name: category.name,
+    code: category.code,
+    parentId: category.parentId,
+    fullPath,
+    parent: parent
+      ? {
+          id: parent.id,
+          name: parent.name,
+          code: parent.code,
+          parentId: parent.parentId,
+          parent: grandparent
+            ? {
+                id: grandparent.id,
+                name: grandparent.name,
+                code: grandparent.code,
+                parentId: grandparent.parentId,
+              }
+            : null,
+        }
+      : null,
+  };
+}
+
+/**
  * 格式化产品列表数据
  */
 export function formatProductList(params: {
@@ -397,6 +478,19 @@ export function formatProductList(params: {
       id: string;
       name: string;
       code: string;
+      parentId: string | null;
+      parent: {
+        id: string;
+        name: string;
+        code: string;
+        parentId: string | null;
+        parent: {
+          id: string;
+          name: string;
+          code: string;
+          parentId: string | null;
+        } | null;
+      } | null;
     } | null;
     createdAt: Date;
     updatedAt: Date;
@@ -524,13 +618,7 @@ export function formatProductList(params: {
         product.thickness === null ? undefined : Number(product.thickness),
       status,
       categoryId: product.categoryId,
-      category: product.category
-        ? {
-            id: product.category.id,
-            name: product.category.name,
-            code: product.category.code,
-          }
-        : null,
+      category: formatProductCategory(product.category),
       description: product.description ?? undefined,
       thumbnailUrl: product.thumbnailUrl ?? undefined,
       images: parseProductImages(product.images ?? null, product.id),

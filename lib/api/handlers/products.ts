@@ -33,6 +33,23 @@ const PRODUCT_WITH_RELATIONS_SELECT = {
       id: true,
       name: true,
       code: true,
+      parentId: true,
+      parent: {
+        select: {
+          id: true,
+          name: true,
+          code: true,
+          parentId: true,
+          parent: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+              parentId: true,
+            },
+          },
+        },
+      },
     },
   },
   variants: {
@@ -374,13 +391,7 @@ function formatProduct(product: ProductWithRelations) {
     images: parseProductImages(product.images ?? null, product.id),
     createdAt: product.createdAt.toISOString(),
     updatedAt: product.updatedAt.toISOString(),
-    category: product.category
-      ? {
-          id: product.category.id,
-          name: product.category.name,
-          code: product.category.code,
-        }
-      : null,
+    category: formatProductCategory(product.category),
     variants:
       product.variants?.map((variant: ProductVariantWithRelations) => ({
         id: variant.id,
@@ -399,5 +410,41 @@ function formatProduct(product: ProductWithRelations) {
       salesOrderItems: product._count?.salesOrderItems || 0,
       inboundRecords: product._count?.inboundRecords || 0,
     },
+  };
+}
+
+function formatProductCategory(
+  category: ProductWithRelations['category']
+) {
+  if (!category) return null;
+
+  const parent = category.parent;
+  const grandparent = parent?.parent;
+  const fullPath = [grandparent?.name, parent?.name, category.name]
+    .filter(Boolean)
+    .join(' / ');
+
+  return {
+    id: category.id,
+    name: category.name,
+    code: category.code,
+    parentId: category.parentId,
+    fullPath,
+    parent: parent
+      ? {
+          id: parent.id,
+          name: parent.name,
+          code: parent.code,
+          parentId: parent.parentId,
+          parent: grandparent
+            ? {
+                id: grandparent.id,
+                name: grandparent.name,
+                code: grandparent.code,
+                parentId: grandparent.parentId,
+              }
+            : null,
+        }
+      : null,
   };
 }

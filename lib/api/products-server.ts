@@ -84,6 +84,7 @@ export const getProductsForServer = cache(
       includeStatistics: finalIncludeStatistics,
       includeBatchSpecs,
       uncategorized: filterUncategorized,
+      categoryPathVersion: 1,
     });
 
     // 性能监控：记录查询开始时间
