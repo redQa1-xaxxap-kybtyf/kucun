@@ -3,6 +3,7 @@ import dynamic from 'next/dynamic';
 import React from 'react';
 import type {
   FieldArrayWithId,
+  UseFieldArrayInsert,
   UseFieldArrayRemove,
   UseFormReturn,
 } from 'react-hook-form';
@@ -78,6 +79,7 @@ const OrderItemMobileCard = dynamic(
 interface OrderItemsSectionProps {
   fields: FieldArrayWithId<SalesOrderCreateFormData, 'items', 'id'>[];
   remove: UseFieldArrayRemove;
+  insert: UseFieldArrayInsert<SalesOrderCreateFormData, 'items'>;
   onAddItem: () => void;
   isSubmitting: boolean;
   highlightedRowIndexes?: ReadonlySet<number>;
@@ -152,6 +154,7 @@ function populateProductSelection({
 export function OrderItemsSection({
   fields,
   remove,
+  insert,
   onAddItem,
   isSubmitting,
   highlightedRowIndexes,
@@ -170,6 +173,25 @@ export function OrderItemsSection({
 }: OrderItemsSectionProps) {
   const isMobile = useIsMobile();
   const [showHistoricalDialog, setShowHistoricalDialog] = React.useState(false);
+
+  const handleDuplicate = React.useCallback(
+    (index: number) => {
+      const sourceItem = form.getValues(`items.${index}`);
+      if (!sourceItem) {
+        return;
+      }
+      // 浅拷贝即可（字段都是基本类型 / undefined），不带回上一行的 id
+      const cloned = { ...sourceItem } as typeof sourceItem;
+      delete (cloned as { id?: unknown }).id;
+      insert(index + 1, cloned, { shouldFocus: false });
+      toast({
+        title: '已复制本行',
+        description: `第 ${index + 1} 行已复制到第 ${index + 2} 行`,
+        duration: 2000,
+      });
+    },
+    [form, insert, toast]
+  );
 
   const handleProductChange = React.useCallback(
     (index: number, product: Product | null) => {
@@ -325,16 +347,31 @@ export function OrderItemsSection({
           </div>
 
           {fields.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-[hsl(var(--color-border-primary))] py-10 text-center text-xs text-[hsl(var(--color-text-secondary))]">
-              <Package className="h-6 w-6 text-[hsl(var(--color-text-tertiary))]" />
-              <div>
-                <p className="text-sm text-[hsl(var(--color-text-primary))]">
+            <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-[hsl(var(--color-border-primary))] py-10 text-center">
+              <Package className="h-7 w-7 text-[hsl(var(--color-text-tertiary))]" />
+              <div className="space-y-0.5">
+                <p className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
                   暂无产品明细
                 </p>
-                <p className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
-                  点击“添加产品”按钮开始添加
+                <p className="text-xs text-[hsl(var(--color-text-secondary))]">
+                  {orderType === 'TRANSFER' && !supplierId
+                    ? '请先选择供应商，再添加产品'
+                    : '点击下方按钮开始录入'}
                 </p>
               </div>
+              <Button
+                type="button"
+                variant="default"
+                size="sm"
+                onClick={onAddItem}
+                className="h-9 gap-1"
+                disabled={
+                  isSubmitting || (orderType === 'TRANSFER' && !supplierId)
+                }
+              >
+                <Plus className="h-4 w-4" />
+                添加产品
+              </Button>
             </div>
           ) : (
             <>
@@ -350,6 +387,7 @@ export function OrderItemsSection({
                       isHighlighted={highlightedRowIndexes?.has(index) ?? false}
                       products={products}
                       onRemove={remove}
+                      onDuplicate={handleDuplicate}
                       onProductChange={handleProductChange}
                       orderType={orderType as 'NORMAL' | 'TRANSFER'}
                       transferMode={transferMode}
@@ -362,53 +400,53 @@ export function OrderItemsSection({
                   <Table
                     className={
                       orderType === 'TRANSFER'
-                        ? 'min-w-[1480px]'
-                        : 'min-w-[1220px]'
+                        ? 'min-w-[1320px]'
+                        : 'min-w-[1120px]'
                     }
                   >
                     <TableHeader>
                       <TableRow className="bg-muted/40">
-                        <TableHead className="min-w-[180px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
+                        <TableHead className="min-w-[140px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
                           产品编码
                         </TableHead>
                         <TableHead className="min-w-[140px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
                           产品名称
                         </TableHead>
-                        <TableHead className="min-w-[80px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
+                        <TableHead className="min-w-[72px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
                           装箱数
                         </TableHead>
-                        <TableHead className="min-w-[160px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
+                        <TableHead className="min-w-[132px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
                           批次号
                         </TableHead>
-                        <TableHead className="min-w-[140px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
+                        <TableHead className="min-w-[112px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
                           规格
                         </TableHead>
-                        <TableHead className="min-w-[70px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
+                        <TableHead className="min-w-[64px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
                           单位
                         </TableHead>
-                        <TableHead className="min-w-[90px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
+                        <TableHead className="min-w-[80px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
                           数量
                         </TableHead>
-                        <TableHead className="min-w-[90px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
+                        <TableHead className="min-w-[88px] border-r border-[hsl(var(--color-border-primary))] px-3 text-right text-[hsl(var(--color-text-secondary))]">
                           销售单价
                         </TableHead>
                         {orderType === 'TRANSFER' && (
                           <>
-                            <TableHead className="min-w-[100px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
+                            <TableHead className="min-w-[88px] border-r border-[hsl(var(--color-border-primary))] px-3 text-right text-[hsl(var(--color-text-secondary))]">
                               成本单价
                             </TableHead>
-                            <TableHead className="min-w-[120px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
+                            <TableHead className="min-w-[112px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
                               调货信息
                             </TableHead>
                           </>
                         )}
-                        <TableHead className="min-w-[100px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
+                        <TableHead className="min-w-[92px] border-r border-[hsl(var(--color-border-primary))] px-3 text-right text-[hsl(var(--color-text-secondary))]">
                           金额
                         </TableHead>
-                        <TableHead className="min-w-[120px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
+                        <TableHead className="min-w-[128px] border-r border-[hsl(var(--color-border-primary))] px-3 text-[hsl(var(--color-text-secondary))]">
                           备注
                         </TableHead>
-                        <TableHead className="min-w-[70px] px-3 text-center text-[hsl(var(--color-text-secondary))]">
+                        <TableHead className="min-w-[80px] px-3 text-center text-[hsl(var(--color-text-secondary))]">
                           操作
                         </TableHead>
                       </TableRow>
@@ -423,6 +461,7 @@ export function OrderItemsSection({
                           }
                           products={products}
                           onRemove={remove}
+                          onDuplicate={handleDuplicate}
                           onProductChange={handleProductChange}
                           orderType={orderType as 'NORMAL' | 'TRANSFER'}
                           transferMode={transferMode}

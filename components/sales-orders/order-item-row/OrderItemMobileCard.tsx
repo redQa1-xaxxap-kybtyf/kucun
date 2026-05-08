@@ -1,7 +1,7 @@
 /* eslint-disable max-lines, max-lines-per-function */
 'use client';
 
-import { Package, Trash2 } from 'lucide-react';
+import { Copy, Package, Trash2 } from 'lucide-react';
 import * as React from 'react';
 import { useWatch } from 'react-hook-form';
 
@@ -37,6 +37,7 @@ interface OrderItemMobileCardProps {
   isHighlighted?: boolean;
   products: Product[];
   onRemove: (index: number) => void;
+  onDuplicate?: (index: number) => void;
   onProductChange?: (index: number, product: Product | null) => void;
   orderType: 'NORMAL' | 'TRANSFER';
   transferMode?: TransferFulfillmentMode;
@@ -48,6 +49,7 @@ export function OrderItemMobileCard({
   isHighlighted = false,
   products,
   onRemove,
+  onDuplicate,
   onProductChange,
   orderType,
   transferMode,
@@ -149,16 +151,31 @@ export function OrderItemMobileCard({
             ) : null}
           </div>
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => onRemove(index)}
-          className="h-8 w-8 shrink-0 rounded-md p-0 text-red-500 hover:bg-red-50 hover:text-red-600"
-          aria-label={`删除第 ${index + 1} 项`}
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
+        <div className="flex shrink-0 items-center gap-1">
+          {onDuplicate ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => onDuplicate(index)}
+              className="h-8 w-8 rounded-md p-0 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+              aria-label={`复制第 ${index + 1} 项`}
+              title="复制本行"
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+          ) : null}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => onRemove(index)}
+            className="h-8 w-8 rounded-md p-0 text-red-500 hover:bg-red-50 hover:text-red-600"
+            aria-label={`删除第 ${index + 1} 项`}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       <div className="mt-3 space-y-3">
@@ -452,10 +469,12 @@ export function OrderItemMobileCard({
                         onBlur={event => {
                           const inputValue = event.target.value;
                           if (!inputValue || inputValue === '.') {
-                            field.onChange(1);
+                            field.onChange(undefined);
                           } else {
                             const parsed = parseFloat(inputValue);
-                            field.onChange(Number.isNaN(parsed) ? 1 : parsed);
+                            field.onChange(
+                              Number.isNaN(parsed) ? undefined : parsed
+                            );
                           }
                           field.onBlur();
                         }}
@@ -485,9 +504,18 @@ export function OrderItemMobileCard({
               control={form.control}
               name={unitPricePath}
               rules={{
-                required: '销售单价不能为空',
                 validate: value => {
+                  if (
+                    value === undefined ||
+                    value === null ||
+                    (typeof value === 'string' && value === '')
+                  ) {
+                    return '销售单价不能为空';
+                  }
                   const numeric = Number(value);
+                  if (!Number.isFinite(numeric)) {
+                    return '销售单价格式有误';
+                  }
                   return numeric > 0 || '销售单价必须大于 0';
                 },
               }}
@@ -517,10 +545,12 @@ export function OrderItemMobileCard({
                       onBlur={event => {
                         const value = event.target.value;
                         if (!value || value === '.') {
-                          field.onChange(0);
+                          field.onChange(undefined);
                         } else {
                           const parsed = Number.parseFloat(value);
-                          field.onChange(Number.isNaN(parsed) ? 0 : parsed);
+                          field.onChange(
+                            Number.isNaN(parsed) ? undefined : parsed
+                          );
                         }
                         field.onBlur();
                       }}

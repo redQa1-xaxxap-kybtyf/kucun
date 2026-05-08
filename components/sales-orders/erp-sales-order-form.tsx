@@ -3,9 +3,8 @@
 
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertCircle, Loader2, Save } from 'lucide-react';
+import { AlertCircle, ChevronDown, Loader2, Save } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 import React from 'react';
 import {
   useFieldArray,
@@ -20,6 +19,11 @@ import { FeeItemsFormField } from '@/components/sales-orders/fee-items';
 import { InventoryChecker } from '@/components/sales-orders/inventory-checker';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import {
   Form,
   FormControl,
@@ -67,6 +71,7 @@ import {
   type SalesOrderFeeItem,
 } from '@/lib/types/sales-order-fee';
 import type { Supplier } from '@/lib/types/supplier';
+import { cn } from '@/lib/utils';
 import { logger } from '@/lib/utils/console-logger';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { formatDate } from '@/lib/utils/datetime';
@@ -135,23 +140,43 @@ function OptionalFormSection({
   defaultOpen?: boolean;
   children: React.ReactNode;
 }) {
+  const [open, setOpen] = React.useState(defaultOpen);
+
+  // 当 defaultOpen 由 false 变 true（例如预收款大于 0），自动展开但不再强制收起
+  React.useEffect(() => {
+    if (defaultOpen) {
+      setOpen(true);
+    }
+  }, [defaultOpen]);
+
   return (
-    <details
-      open={defaultOpen || undefined}
-      className="group bg-card rounded border"
+    <Collapsible
+      open={open}
+      onOpenChange={setOpen}
+      className="bg-card rounded border"
     >
-      <summary className="bg-muted/30 flex cursor-pointer list-none items-center justify-between gap-4 border-b px-3 py-2 text-sm font-medium [&::-webkit-details-marker]:hidden">
-        <span>{title}</span>
-        <span className="text-xs font-normal text-slate-500 group-open:hidden">
-          展开
-        </span>
-        <span className="hidden text-xs font-normal text-slate-500 group-open:inline">
-          收起
-        </span>
-      </summary>
-      <div className="space-y-3 p-3">{children}</div>
-      <p className="border-t px-3 py-2 text-xs text-slate-500">{summary}</p>
-    </details>
+      <CollapsibleTrigger asChild>
+        <button
+          type="button"
+          className="bg-muted/30 group flex w-full cursor-pointer items-center justify-between gap-4 border-b px-3 py-2 text-left text-sm font-medium hover:bg-muted/50"
+        >
+          <span>{title}</span>
+          <span className="flex items-center gap-1.5 text-xs font-normal text-slate-500">
+            <span>{open ? '收起' : '展开'}</span>
+            <ChevronDown
+              className={cn(
+                'h-3.5 w-3.5 transition-transform',
+                open && 'rotate-180'
+              )}
+            />
+          </span>
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="space-y-3 p-3">{children}</div>
+        <p className="border-t px-3 py-2 text-xs text-slate-500">{summary}</p>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 
@@ -233,7 +258,7 @@ function InventoryBlockingEntryButton({
     <button
       type="button"
       onClick={() => onLocate(entry)}
-      className="block w-full rounded px-2 py-1 text-left leading-5 text-slate-700 transition-colors hover:bg-white hover:text-slate-900"
+      className="block w-full rounded px-2 py-1 text-left leading-5 text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900"
     >
       <div>{entry.message}</div>
       <div className="text-[11px] text-red-700">查看 {rowLabel}</div>
@@ -428,11 +453,10 @@ export function ERPSalesOrderForm({
   duplicateSourceOrder,
   prefillCustomer,
   successHref,
-  cancelHref,
+  cancelHref: _cancelHref,
   onSuccess,
-  onCancel,
+  onCancel: _onCancel,
 }: ERPSalesOrderFormProps) {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -523,7 +547,7 @@ export function ERPSalesOrderForm({
     },
   });
 
-  const { fields, append, remove } = useFieldArray<
+  const { fields, append, insert, remove } = useFieldArray<
     CreateSalesOrderData,
     'items'
   >({
@@ -1456,7 +1480,7 @@ export function ERPSalesOrderForm({
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
   const isDirty = form.formState.isDirty;
   const hasUnsavedChanges = isDirty && !isSubmitting;
-  const { confirmLeavePage, navigateWithinApp } = useUnsavedChangesGuard({
+  const { navigateWithinApp } = useUnsavedChangesGuard({
     enabled: hasUnsavedChanges,
     message: '当前订单内容尚未保存，确定要离开吗？',
   });
@@ -1477,35 +1501,6 @@ export function ERPSalesOrderForm({
     },
     [successHref]
   );
-
-  const handleCancel = React.useCallback(() => {
-    if (isSubmitting) {
-      return;
-    }
-
-    if (!confirmLeavePage()) {
-      return;
-    }
-
-    if (cancelHref) {
-      navigateWithinApp(cancelHref, { replace: true });
-      return;
-    }
-
-    if (onCancel) {
-      onCancel();
-      return;
-    }
-
-    router.back();
-  }, [
-    cancelHref,
-    confirmLeavePage,
-    isSubmitting,
-    navigateWithinApp,
-    onCancel,
-    router,
-  ]);
 
   const handleSupplierCreated = (supplier: Supplier) => {
     // ✅ 确保新建供应商后，订单仍保持在“调货销售”模式
@@ -1747,7 +1742,13 @@ export function ERPSalesOrderForm({
             </div>
             <div className="p-3 sm:p-4">
               {/* 第一行：订单号、销售日期和创建日期 */}
-              <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+              <div
+                className={
+                  mode === 'edit'
+                    ? 'mb-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3'
+                    : 'mb-4 grid grid-cols-1 gap-3 md:grid-cols-2'
+                }
+              >
                 {/* 订单号 */}
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-gray-700">
@@ -1784,14 +1785,16 @@ export function ERPSalesOrderForm({
                   )}
                 />
 
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-gray-700">
-                    创建日期
-                  </Label>
-                  <div className="rounded-md border bg-gray-50 px-3 py-1.5 text-sm text-gray-700">
-                    {creationDisplayText}
+                {mode === 'edit' && (
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-gray-700">
+                      创建日期
+                    </Label>
+                    <div className="rounded-md border bg-gray-50 px-3 py-1.5 text-sm text-gray-700">
+                      {creationDisplayText}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* 第二行：客户和订单类型 */}
@@ -1872,108 +1875,129 @@ export function ERPSalesOrderForm({
                 />
               </div>
 
-              <FormField
-                control={form.control}
-                name="isSampleOrder"
-                render={({ field }) => (
-                  <FormItem className="mb-4 rounded-lg border border-amber-200 bg-amber-50/70 p-3">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="space-y-1">
-                        <FormLabel className="text-sm font-semibold text-amber-900">
-                          样品单
-                        </FormLabel>
-                      </div>
-                      <FormControl>
-                        <div className="flex items-center gap-3 rounded-md bg-white px-3 py-2 shadow-sm">
-                          <span className="text-xs font-semibold text-slate-500">
-                            {field.value ? '已启用' : '普通订单'}
-                          </span>
-                          <Switch
-                            checked={Boolean(field.value)}
-                            onCheckedChange={field.onChange}
-                          />
-                        </div>
-                      </FormControl>
-                    </div>
-                    <FormMessage className="mt-2 text-xs" />
-                  </FormItem>
-                )}
-              />
-
-              {isSampleOrder && (
+              <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50/70 p-3">
                 <FormField
                   control={form.control}
-                  name="sampleSettlementType"
+                  name="isSampleOrder"
                   render={({ field }) => (
-                    <FormItem className="mb-4 rounded-lg border border-amber-200/80 bg-amber-50/70 p-3">
-                      <div className="mb-3">
-                        <FormLabel className="text-sm font-semibold text-slate-800">
-                          样品结算方式
-                        </FormLabel>
+                    <FormItem className="space-y-0">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="space-y-1">
+                          <FormLabel className="text-sm font-semibold text-amber-900">
+                            样品单
+                          </FormLabel>
+                          <p className="text-xs text-amber-800/80">
+                            样品订单不占库存预留，结算方式可单独设置
+                          </p>
+                        </div>
+                        <FormControl>
+                          <div className="flex items-center gap-3 rounded-md bg-white px-3 py-2 shadow-sm">
+                            <span className="text-xs font-semibold text-slate-500">
+                              {field.value ? '已启用' : '未启用'}
+                            </span>
+                            <Switch
+                              checked={Boolean(field.value)}
+                              onCheckedChange={field.onChange}
+                            />
+                          </div>
+                        </FormControl>
                       </div>
-                      <FormControl>
-                        <RadioGroup
-                          value={field.value ?? DEFAULT_SAMPLE_SETTLEMENT_TYPE}
-                          onValueChange={field.onChange}
-                          className="grid gap-2 xl:grid-cols-2"
-                        >
-                          <div className="flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50/80 p-3 shadow-sm">
-                            <RadioGroupItem
-                              value="FREE"
-                              id="sample-free"
-                              className="mt-1"
-                            />
-                            <Label
-                              htmlFor="sample-free"
-                              className="cursor-pointer space-y-1"
-                            >
-                              <span className="block text-sm font-semibold text-emerald-900">
-                                {SAMPLE_SETTLEMENT_TYPE_LABELS.FREE}
-                              </span>
-                            </Label>
-                          </div>
-                          <div className="flex items-start gap-3 rounded-lg border border-sky-200 bg-sky-50/80 p-3 shadow-sm">
-                            <RadioGroupItem
-                              value="CHARGEABLE"
-                              id="sample-chargeable"
-                              className="mt-1"
-                            />
-                            <Label
-                              htmlFor="sample-chargeable"
-                              className="cursor-pointer space-y-1"
-                            >
-                              <span className="block text-sm font-semibold text-sky-900">
-                                {SAMPLE_SETTLEMENT_TYPE_LABELS.CHARGEABLE}
-                              </span>
-                            </Label>
-                          </div>
-                        </RadioGroup>
-                      </FormControl>
                       <FormMessage className="mt-2 text-xs" />
                     </FormItem>
                   )}
                 />
-              )}
 
-              {/* 第三行：客户地址 */}
+                {isSampleOrder && (
+                  <FormField
+                    control={form.control}
+                    name="sampleSettlementType"
+                    render={({ field }) => (
+                      <FormItem className="mt-3 border-t border-amber-200/70 pt-3 space-y-2">
+                        <FormLabel className="text-sm font-semibold text-slate-800">
+                          样品结算方式
+                        </FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            value={
+                              field.value ?? DEFAULT_SAMPLE_SETTLEMENT_TYPE
+                            }
+                            onValueChange={field.onChange}
+                            className="grid gap-2 xl:grid-cols-2"
+                          >
+                            <div className="flex items-start gap-3 rounded-md border border-amber-200/70 bg-white p-3 shadow-sm">
+                              <RadioGroupItem
+                                value="FREE"
+                                id="sample-free"
+                                className="mt-1"
+                              />
+                              <Label
+                                htmlFor="sample-free"
+                                className="cursor-pointer space-y-1"
+                              >
+                                <span className="block text-sm font-semibold text-slate-800">
+                                  {SAMPLE_SETTLEMENT_TYPE_LABELS.FREE}
+                                </span>
+                              </Label>
+                            </div>
+                            <div className="flex items-start gap-3 rounded-md border border-amber-200/70 bg-white p-3 shadow-sm">
+                              <RadioGroupItem
+                                value="CHARGEABLE"
+                                id="sample-chargeable"
+                                className="mt-1"
+                              />
+                              <Label
+                                htmlFor="sample-chargeable"
+                                className="cursor-pointer space-y-1"
+                              >
+                                <span className="block text-sm font-semibold text-slate-800">
+                                  {SAMPLE_SETTLEMENT_TYPE_LABELS.CHARGEABLE}
+                                </span>
+                              </Label>
+                            </div>
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage className="mt-2 text-xs" />
+                      </FormItem>
+                    )}
+                  />
+                )}
+              </div>
+
+              {/* 第三行：客户联系信息 */}
               {selectedCustomerId && (
                 <div className="mb-4">
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-gray-700">
-                      客户地址
+                      客户联系信息
                     </Label>
-                    <div className="flex min-h-[36px] items-center rounded-md border bg-gray-50 px-3 py-1.5 text-sm text-gray-700">
+                    <div className="flex min-h-[36px] flex-wrap items-center gap-x-3 gap-y-1 rounded-md border bg-gray-50 px-3 py-1.5 text-sm text-gray-700">
                       {resolvedCustomer ? (
-                        resolvedCustomer.address?.trim() ? (
-                          <span className="truncate">
-                            {resolvedCustomer.address.trim()}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">暂无地址</span>
-                        )
+                        <>
+                          {resolvedCustomer.phone?.trim() ? (
+                            <span
+                              className="tabular-nums"
+                              title={resolvedCustomer.phone}
+                            >
+                              电话尾号{' '}
+                              <span className="font-semibold text-slate-900">
+                                {resolvedCustomer.phone.slice(-4)}
+                              </span>
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">未填电话</span>
+                          )}
+                          <span className="text-gray-300">·</span>
+                          {resolvedCustomer.address?.trim() ? (
+                            <span className="min-w-0 flex-1 truncate">
+                              {resolvedCustomer.address.trim()}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">未填地址</span>
+                          )}
+                        </>
                       ) : (
                         <span className="text-gray-400">
-                          正在加载客户地址...
+                          正在加载客户信息...
                         </span>
                       )}
                     </div>
@@ -2108,6 +2132,7 @@ export function ERPSalesOrderForm({
           <OrderItemsSection
             fields={fields}
             remove={remove}
+            insert={insert}
             onAddItem={addOrderItem}
             isSubmitting={isSubmitting}
             highlightedRowIndexes={highlightedInventoryRowIndexes}
@@ -2161,7 +2186,7 @@ export function ERPSalesOrderForm({
               <h3 className="text-sm font-medium">汇总信息</h3>
             </div>
             <div className="p-3">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-6">
+              <div className="grid grid-cols-1 gap-4 tabular-nums md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-6">
                 <div className="flex items-center justify-between rounded border bg-[hsl(var(--color-primary-light))] px-3 py-2">
                   <span className="text-muted-foreground text-xs">
                     产品种类
@@ -2293,7 +2318,7 @@ export function ERPSalesOrderForm({
           {/* ERP标准布局：操作按钮 */}
           <div className="bg-card sticky bottom-0 z-20 rounded-md border p-2 shadow-md">
             <div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
-              <div className="grid grid-cols-3 gap-2 text-xs sm:grid-cols-4 xl:min-w-[420px] xl:flex-1">
+              <div className="grid grid-cols-3 gap-2 text-xs tabular-nums sm:grid-cols-4 xl:min-w-[420px] xl:flex-1">
                 <div className="rounded-md bg-slate-50 px-2 py-1.5">
                   <div className="text-slate-500">产品</div>
                   <div className="font-semibold text-slate-900">
@@ -2312,25 +2337,44 @@ export function ERPSalesOrderForm({
                     ￥{formatCurrency(orderTotalWithFees)}
                   </div>
                 </div>
-                <div className="hidden rounded-md bg-slate-50 px-2 py-1.5 sm:block">
+                <div className="hidden rounded-md px-2 py-1.5 sm:block bg-slate-50">
                   <div className="text-slate-500">状态</div>
-                  <div className="font-semibold text-slate-900">
-                    {form.watch('customerId') ? '可保存' : '待选客户'}
-                  </div>
+                  {(() => {
+                    if (!form.watch('customerId')) {
+                      return (
+                        <div className="font-semibold text-slate-500">
+                          待选客户
+                        </div>
+                      );
+                    }
+                    if (fields.length === 0) {
+                      return (
+                        <div className="font-semibold text-amber-700">
+                          待加产品
+                        </div>
+                      );
+                    }
+                    if (inventoryBlockingSummary.hasBlockingIssue) {
+                      const issueCount =
+                        inventoryBlockingSummary.missingBatchCount +
+                        inventoryBlockingSummary.totalShortageCount +
+                        inventoryBlockingSummary.batchShortageCount;
+                      return (
+                        <div className="font-semibold text-red-700">
+                          待修复 {issueCount} 处
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="font-semibold text-emerald-700">
+                        可保存
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 
-              <div className="grid w-full gap-2 sm:grid-cols-[minmax(88px,auto)_1fr_1fr] xl:w-auto xl:min-w-[430px]">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleCancel}
-                  disabled={isSubmitting}
-                  className="h-10 w-full text-xs"
-                >
-                  取消
-                </Button>
-
+              <div className="grid w-full gap-2 sm:grid-cols-2 xl:w-auto xl:min-w-[360px]">
                 <Button
                   type="button"
                   variant="outline"
@@ -2343,7 +2387,7 @@ export function ERPSalesOrderForm({
                   ) : (
                     <Save className="mr-1 h-3 w-3" />
                   )}
-                  {mode === 'edit' ? '保存修改' : '保存订单'}
+                  {mode === 'edit' ? '仅保存修改' : '保存为草稿'}
                 </Button>
 
                 <div className="flex w-full items-center gap-2">
@@ -2364,7 +2408,7 @@ export function ERPSalesOrderForm({
                     ) : (
                       <Save className="mr-1 h-3 w-3" />
                     )}
-                    {mode === 'edit' ? '保存并确认' : '保存并确认'}
+                    {mode === 'edit' ? '保存并确认订单' : '保存并确认订单'}
                   </Button>
                   {inventoryBlockingSummary.hasBlockingIssue && (
                     <TooltipProvider>

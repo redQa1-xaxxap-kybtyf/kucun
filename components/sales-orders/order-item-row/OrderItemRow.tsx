@@ -31,6 +31,7 @@ interface OrderItemRowProps {
   isHighlighted?: boolean;
   products: Product[];
   onRemove: (index: number) => void;
+  onDuplicate?: (index: number) => void;
   onProductChange?: (index: number, product: Product | null) => void;
   orderType: 'NORMAL' | 'TRANSFER';
   transferMode?: TransferFulfillmentMode;
@@ -41,6 +42,7 @@ interface OrderItemRowViewProps {
   isHighlighted: boolean;
   products: Product[];
   onRemove: (index: number) => void;
+  onDuplicate?: (index: number) => void;
   orderType: 'NORMAL' | 'TRANSFER';
   transferMode?: TransferFulfillmentMode;
   showInlineInventoryStatus: boolean;
@@ -53,6 +55,7 @@ const OrderItemRowComponent = ({
   isHighlighted = false,
   products,
   onRemove,
+  onDuplicate,
   onProductChange,
   orderType,
   transferMode,
@@ -72,6 +75,7 @@ const OrderItemRowComponent = ({
       isHighlighted={Boolean(isHighlighted)}
       products={products}
       onRemove={onRemove}
+      onDuplicate={onDuplicate}
       orderType={orderType}
       transferMode={transferMode}
       showInlineInventoryStatus={showInlineInventoryStatus}
@@ -88,6 +92,7 @@ function OrderItemRowView({
   isHighlighted,
   products,
   onRemove,
+  onDuplicate,
   orderType,
   transferMode,
   isManualProduct,
@@ -169,7 +174,10 @@ function OrderItemRowView({
       )}
       <AmountCell amount={itemAmount} />
       <RemarksCell form={form} index={index} />
-      <ActionsCell onRemove={() => onRemove(index)} />
+      <ActionsCell
+        onRemove={() => onRemove(index)}
+        onDuplicate={onDuplicate ? () => onDuplicate(index) : undefined}
+      />
     </TableRow>
   );
 }

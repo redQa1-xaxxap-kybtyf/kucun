@@ -358,11 +358,22 @@ export function CustomerSelector({
             {selectedCustomer ? (
               <div className="flex items-center gap-2 truncate">
                 <User className="text-muted-foreground h-4 w-4 shrink-0" />
-                <span className="truncate font-medium">
+                <span
+                  className="truncate font-medium"
+                  title={
+                    selectedCustomer.phone
+                      ? `${selectedCustomer.name} ${selectedCustomer.phone}`
+                      : selectedCustomer.name
+                  }
+                >
                   {selectedCustomer.name}
                   {selectedCustomer.phone && (
-                    <span className="text-muted-foreground ml-2 font-normal">
-                      {selectedCustomer.phone}
+                    <span className="text-muted-foreground ml-2 font-normal tabular-nums">
+                      (
+                      <span className="font-semibold text-slate-700">
+                        {selectedCustomer.phone.slice(-4)}
+                      </span>
+                      )
                     </span>
                   )}
                 </span>
@@ -407,27 +418,37 @@ export function CustomerSelector({
                           )}
                         />
 
-                        <div className="flex-1 space-y-1">
+                        <div className="flex-1 space-y-0.5">
                           {/* 客户名称 */}
-                          <div className="font-medium">{customer.name}</div>
+                          <div className="text-sm font-semibold text-slate-900">
+                            {customer.name}
+                          </div>
 
                           {/* 客户电话 */}
                           {customer.phone && (
-                            <div className="text-muted-foreground text-xs">
-                              {customer.phone}
+                            <div className="text-xs tabular-nums text-slate-600">
+                              <span className="text-slate-400">电话：</span>
+                              <span>
+                                {customer.phone.length > 4
+                                  ? customer.phone.slice(0, -4)
+                                  : ''}
+                              </span>
+                              <span className="font-semibold text-slate-900">
+                                {customer.phone.slice(-4)}
+                              </span>
                             </div>
                           )}
 
                           {/* 客户邮箱 */}
                           {customerEmail && (
-                            <div className="text-muted-foreground text-xs">
+                            <div className="text-xs text-slate-500">
                               {customerEmail}
                             </div>
                           )}
 
                           {/* 客户地址 */}
                           {customer.address && (
-                            <div className="text-muted-foreground text-xs">
+                            <div className="truncate text-xs text-slate-500">
                               {customer.address}
                             </div>
                           )}

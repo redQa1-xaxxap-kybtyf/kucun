@@ -70,7 +70,7 @@ function UnitSelectCell({
   const piecesPerUnitPath = `items.${index}.piecesPerUnit` as const;
   const displayUnitPath = `items.${index}.displayUnit` as const;
   return (
-    <TableCell className={`${baseCellClass} min-w-[120px]`}>
+    <TableCell className={`${baseCellClass} min-w-[64px]`}>
       <FormField
         control={form.control}
         name={displayUnitPath}
@@ -147,7 +147,7 @@ function QuantityInputCell({
     resolvedProduct.inventory?.availableQuantity !== undefined;
 
   return (
-    <TableCell className={`${baseCellClass} min-w-[100px]`}>
+    <TableCell className={`${baseCellClass} min-w-[80px]`}>
       <FormField
         control={form.control}
         name={displayQuantityPath}
@@ -183,17 +183,11 @@ function QuantityInputCell({
                 }}
                 onBlur={event => {
                   const inputValue = event.target.value;
-                  // 失焦时处理空值：如果为空或只有小数点，设置为默认值1
                   if (!inputValue || inputValue === '.') {
-                    field.onChange(1);
+                    field.onChange(undefined);
                   } else {
                     const parsed = parseFloat(inputValue);
-                    if (!Number.isNaN(parsed)) {
-                      field.onChange(parsed);
-                    } else {
-                      // 如果解析失败，恢复为默认值1
-                      field.onChange(1);
-                    }
+                    field.onChange(Number.isNaN(parsed) ? undefined : parsed);
                   }
                   field.onBlur();
                 }}
@@ -232,14 +226,23 @@ export function UnitPriceCell({
   const watchedUnitCost = form.watch(unitCostPath);
 
   return (
-    <TableCell className={`${baseCellClass} min-w-[100px]`}>
+    <TableCell className={`${baseCellClass} min-w-[88px]`}>
       <FormField
         control={form.control}
         name={unitPricePath}
         rules={{
-          required: '销售单价不能为空',
           validate: value => {
+            if (
+              value === undefined ||
+              value === null ||
+              (typeof value === 'string' && value === '')
+            ) {
+              return '销售单价不能为空';
+            }
             const numeric = Number(value);
+            if (!Number.isFinite(numeric)) {
+              return '销售单价格式有误';
+            }
             return numeric > 0 || '销售单价必须大于 0';
           },
         }}
@@ -271,17 +274,11 @@ export function UnitPriceCell({
                 }}
                 onBlur={event => {
                   const value = event.target.value;
-                  // 失焦时处理空值：如果为空或只有小数点，设置为0
                   if (!value || value === '.') {
-                    field.onChange(0);
+                    field.onChange(undefined);
                   } else {
                     const parsed = Number.parseFloat(value);
-                    if (!Number.isNaN(parsed)) {
-                      field.onChange(parsed);
-                    } else {
-                      // 如果解析失败，恢复为0
-                      field.onChange(0);
-                    }
+                    field.onChange(Number.isNaN(parsed) ? undefined : parsed);
                   }
                   field.onBlur();
                 }}
@@ -335,7 +332,7 @@ export function UnitCostCell({
 }) {
   const unitCostPath = `items.${index}.unitCost` as const;
   return (
-    <TableCell className={`${baseCellClass} min-w-[120px]`}>
+    <TableCell className={`${baseCellClass} min-w-[88px]`}>
       <FormField
         control={form.control}
         name={unitCostPath}

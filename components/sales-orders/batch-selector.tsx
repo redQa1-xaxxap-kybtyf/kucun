@@ -49,6 +49,18 @@ interface BatchSelectorProps {
   triggerProps?: BatchSelectorTriggerProps;
 }
 
+function BatchNumberText({ value }: { value: string }) {
+  if (value.length <= 4) {
+    return <span className="font-bold">{value}</span>;
+  }
+  return (
+    <>
+      <span>{value.slice(0, -4)}</span>
+      <span className="font-bold">{value.slice(-4)}</span>
+    </>
+  );
+}
+
 function formatBatchStock(batch: Batch): string {
   const piecesPerUnit =
     typeof batch.piecesPerUnit === 'number' && batch.piecesPerUnit > 0
@@ -191,8 +203,12 @@ const BatchSelectorTriggerButton = React.forwardRef<
       )}
       disabled={disabled}
     >
-      <span className="truncate">
-        {selectedBatch ? selectedBatch.batchNumber : placeholder}
+      <span className="truncate font-mono">
+        {selectedBatch ? (
+          <BatchNumberText value={selectedBatch.batchNumber} />
+        ) : (
+          placeholder
+        )}
       </span>
       <ChevronsUpDown className="ml-2 h-3 w-3 shrink-0 opacity-50" />
     </Button>
@@ -233,7 +249,7 @@ function BatchSelectorPanel({
                     )}
                   />
                   <span className="truncate font-mono text-sm font-medium text-[hsl(var(--color-primary))]">
-                    {batch.batchNumber}
+                    <BatchNumberText value={batch.batchNumber} />
                   </span>
                 </div>
                 <div className="shrink-0 text-sm font-semibold text-green-600">

@@ -38,7 +38,7 @@ export function ProductCodeCell({
   const productCodePath = `items.${index}.productCode` as const;
 
   return (
-    <TableCell className={`${baseCellClass} min-w-[200px]`}>
+    <TableCell className={`${baseCellClass} min-w-[140px]`}>
       {isManualProduct ? (
         <FormField
           control={form.control}
@@ -156,7 +156,7 @@ export function PiecesPerUnitCell({
 }) {
   const piecesPerUnitPath = `items.${index}.piecesPerUnit` as const;
   return (
-    <TableCell className={`${baseCellClass} min-w-[90px]`}>
+    <TableCell className={`${baseCellClass} min-w-[72px]`}>
       <FormField
         control={form.control}
         name={piecesPerUnitPath}
@@ -214,7 +214,7 @@ export function BatchSelectorCell({
 }) {
   const batchNumberPath = `items.${index}.batchNumber` as const;
   return (
-    <TableCell className={`${baseCellClass} min-w-[180px]`}>
+    <TableCell className={`${baseCellClass} min-w-[132px]`}>
       <FormField
         control={form.control}
         name={batchNumberPath}
@@ -292,7 +292,7 @@ export function ManualInfoCells({
     }) ?? '';
 
   return (
-    <TableCell className={`${baseCellClass} min-w-[150px]`}>
+    <TableCell className={`${baseCellClass} min-w-[112px]`}>
       {isManualProduct ? (
         <FormField
           control={form.control}

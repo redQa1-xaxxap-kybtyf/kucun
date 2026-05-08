@@ -33,7 +33,7 @@ export function TransferInfoCell({
   const localQuantityPath = `items.${index}.localQuantity` as const;
   if (transferMode === 'MIXED') {
     return (
-      <TableCell className={`${baseCellClass} min-w-[160px]`}>
+      <TableCell className={`${baseCellClass} min-w-[112px]`}>
         <div className="space-y-1">
           <FormField
             control={form.control}
