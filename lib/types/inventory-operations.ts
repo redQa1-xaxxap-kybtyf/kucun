@@ -3,6 +3,8 @@
  * 包含入库、出库、调整等操作的类型定义
  */
 
+import { STATUS_PALETTE } from '@/lib/config/status-palette';
+
 import type {
   ManualDamageCategory,
   ManualDamageHandling,
@@ -420,10 +422,10 @@ export const ADJUSTMENT_STATUS_VARIANTS: Record<
   | 'warning'
   | 'info'
 > = {
-  draft: 'outline',
-  pending: 'warning',
-  approved: 'success',
-  rejected: 'destructive',
+  draft: STATUS_PALETTE.draft,
+  pending: STATUS_PALETTE.pending,
+  approved: STATUS_PALETTE.done,
+  rejected: STATUS_PALETTE.failed,
 };
 
 // 调整记录排序选项

@@ -1,6 +1,8 @@
 // 退款管理类型定义
 // 定义退款记录、退款申请等相关数据结构
 
+import { STATUS_PALETTE } from '@/lib/config/status-palette';
+
 // 退款方式枚举
 export type RefundMethod =
   | 'cash'
@@ -360,11 +362,11 @@ export const REFUND_STATUS_VARIANTS: Record<
   | 'warning'
   | 'info'
 > = {
-  pending: 'warning',
-  processing: 'info',
-  completed: 'success',
-  rejected: 'destructive',
-  cancelled: 'outline',
+  pending: STATUS_PALETTE.pending,
+  processing: STATUS_PALETTE.inTransit,
+  completed: STATUS_PALETTE.done,
+  rejected: STATUS_PALETTE.failed,
+  cancelled: STATUS_PALETTE.archived,
 };
 
 // 默认退款状态配置

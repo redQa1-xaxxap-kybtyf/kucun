@@ -8,6 +8,7 @@
 
 // 从配置文件导入类型定义，确保类型一致性
 import type { ProductStatus, ProductUnit } from '@/lib/config/product';
+import { STATUS_PALETTE } from '@/lib/config/status-palette';
 
 // 重新导出类型以保持向后兼容性
 export type { ProductStatus, ProductUnit };
@@ -44,6 +45,12 @@ export interface ProductCategory {
   name: string;
   /** 分类编码 */
   code: string;
+  /** 父级分类ID */
+  parentId?: string | null;
+  /** 完整分类路径，例如：一级 / 二级 / 三级 */
+  fullPath?: string;
+  /** 父级分类摘要 */
+  parent?: ProductCategory | null;
 }
 
 /**
@@ -312,6 +319,6 @@ export const PRODUCT_STATUS_VARIANTS: Record<
   | 'warning'
   | 'info'
 > = {
-  active: 'success',
-  inactive: 'secondary',
+  active: STATUS_PALETTE.done,
+  inactive: STATUS_PALETTE.archived,
 };

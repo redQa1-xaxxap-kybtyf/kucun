@@ -1,6 +1,8 @@
 // 销售订单管理相关类型定义
 // 遵循命名约定：数据库 snake_case → API camelCase → 前端 camelCase
 
+import { STATUS_PALETTE } from '@/lib/config/status-palette';
+
 import type { Customer } from './customer';
 import type { Product } from './product';
 import type { SalesOrderFeeItem } from './sales-order-fee';
@@ -314,11 +316,12 @@ export const SALES_ORDER_STATUS_VARIANTS: Record<
   | 'warning'
   | 'info'
 > = {
-  draft: 'outline',
-  confirmed: 'default',
-  shipped: 'info',
-  completed: 'success',
-  cancelled: 'destructive',
+  draft: STATUS_PALETTE.draft,
+  confirmed: STATUS_PALETTE.active,
+  // 已发货：销售业务焦点是"待客户结款"，归类为 pending(橙) 而非 inTransit(蓝)
+  shipped: STATUS_PALETTE.pending,
+  completed: STATUS_PALETTE.done,
+  cancelled: STATUS_PALETTE.failed,
 };
 
 // 状态流转规则

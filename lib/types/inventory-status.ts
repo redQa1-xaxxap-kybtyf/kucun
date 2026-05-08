@@ -4,6 +4,7 @@
  */
 
 import { inventoryThresholds } from '@/lib/config/inventory-thresholds';
+import { STATUS_PALETTE } from '@/lib/config/status-palette';
 
 // 库存状态枚举
 export type InventoryStatus =
@@ -43,13 +44,13 @@ export const INVENTORY_STATUS_VARIANTS: Record<
   InventoryStatus,
   StatusBadgeVariant
 > = {
-  in_stock: 'success',
-  low_stock: 'warning',
-  out_of_stock: 'destructive',
-  overstock: 'info',
-  reserved: 'secondary',
-  damaged: 'destructive',
-  expired: 'destructive',
+  in_stock: STATUS_PALETTE.done,
+  low_stock: STATUS_PALETTE.pending,
+  out_of_stock: STATUS_PALETTE.failed,
+  overstock: STATUS_PALETTE.inTransit,
+  reserved: STATUS_PALETTE.archived,
+  damaged: STATUS_PALETTE.failed,
+  expired: STATUS_PALETTE.failed,
 };
 
 // 库存预警级别标签映射

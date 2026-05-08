@@ -23,6 +23,39 @@ export function formatCurrency(amount: unknown, precision: number = 2): string {
 }
 
 /**
+ * 格式化为"万/亿"单位的货币展示，适合中国用户阅读大额金额。
+ * - <10000：原样保留两位小数
+ * - 1万~99999999：折算为"X.XX万"
+ * - >=1亿：折算为"X.XX亿"
+ *
+ * @example formatCurrencyCompact(35200) // "￥3.52万"
+ * @example formatCurrencyCompact(123456789) // "￥1.23亿"
+ */
+export function formatCurrencyCompact(
+  amount: unknown,
+  precision: number = 2
+): string {
+  const numeric = typeof amount === 'number' ? amount : Number(amount);
+
+  if (!Number.isFinite(numeric)) {
+    return '￥0.00';
+  }
+
+  const abs = Math.abs(numeric);
+  const sign = numeric < 0 ? '-' : '';
+
+  if (abs >= 100_000_000) {
+    return `￥${sign}${(abs / 100_000_000).toFixed(precision)}亿`;
+  }
+
+  if (abs >= 10_000) {
+    return `￥${sign}${(abs / 10_000).toFixed(precision)}万`;
+  }
+
+  return formatCurrency(numeric, precision);
+}
+
+/**
  * 格式化数字
  * @param value 数值
  * @param precision 小数位数，默认为 0

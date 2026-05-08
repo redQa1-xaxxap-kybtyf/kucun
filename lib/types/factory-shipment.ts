@@ -1,6 +1,8 @@
 // 厂家发货相关类型定义
 // 遵循 TypeScript 严格模式，禁用 any 类型
 
+import { STATUS_PALETTE } from '@/lib/config/status-palette';
+
 // 厂家发货订单状态枚举
 // 状态流程: 草稿 → 已确认 → 待发货 → 已发货 → 运输中 → 已到港 → 已取消
 export const FACTORY_SHIPMENT_STATUS = {
@@ -58,13 +60,14 @@ export const FACTORY_SHIPMENT_STATUS_VARIANTS: Record<
   | 'warning'
   | 'info'
 > = {
-  [FACTORY_SHIPMENT_STATUS.DRAFT]: 'outline', // 草稿 - 灰色边框
-  [FACTORY_SHIPMENT_STATUS.CONFIRMED]: 'success', // 已确认 - 绿色
-  [FACTORY_SHIPMENT_STATUS.PENDING_SHIPMENT]: 'secondary', // 待发货 - 灰色
-  [FACTORY_SHIPMENT_STATUS.SHIPPED]: 'info', // 已发货 - 蓝色
-  [FACTORY_SHIPMENT_STATUS.IN_TRANSIT]: 'info', // 运输中 - 蓝色
-  [FACTORY_SHIPMENT_STATUS.ARRIVED]: 'success', // 已到港 - 绿色
-  [FACTORY_SHIPMENT_STATUS.CANCELLED]: 'destructive', // 已取消 - 红色
+  [FACTORY_SHIPMENT_STATUS.DRAFT]: STATUS_PALETTE.draft,
+  // 已确认：刚确认进入主流程，未发货——active(蓝)，不应是 success(绿)
+  [FACTORY_SHIPMENT_STATUS.CONFIRMED]: STATUS_PALETTE.active,
+  [FACTORY_SHIPMENT_STATUS.PENDING_SHIPMENT]: STATUS_PALETTE.pending,
+  [FACTORY_SHIPMENT_STATUS.SHIPPED]: STATUS_PALETTE.inTransit,
+  [FACTORY_SHIPMENT_STATUS.IN_TRANSIT]: STATUS_PALETTE.inTransit,
+  [FACTORY_SHIPMENT_STATUS.ARRIVED]: STATUS_PALETTE.done,
+  [FACTORY_SHIPMENT_STATUS.CANCELLED]: STATUS_PALETTE.failed,
 };
 
 // 厂家发货订单明细项

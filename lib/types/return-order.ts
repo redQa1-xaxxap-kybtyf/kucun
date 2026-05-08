@@ -3,6 +3,8 @@
 
 import { formatCurrency } from '@/lib/utils';
 
+import { STATUS_PALETTE } from '@/lib/config/status-palette';
+
 import type { Customer } from './customer';
 import type { Product } from './product';
 import type { SalesOrder } from './sales-order';
@@ -229,13 +231,13 @@ export const RETURN_ORDER_STATUS_VARIANTS: Record<
   | 'warning'
   | 'info'
 > = {
-  draft: 'outline',
-  submitted: 'warning',
-  approved: 'default',
-  rejected: 'destructive',
-  processing: 'info',
-  completed: 'success',
-  cancelled: 'destructive',
+  draft: STATUS_PALETTE.draft,
+  submitted: STATUS_PALETTE.pending,
+  approved: STATUS_PALETTE.active,
+  rejected: STATUS_PALETTE.failed,
+  processing: STATUS_PALETTE.inTransit,
+  completed: STATUS_PALETTE.done,
+  cancelled: STATUS_PALETTE.failed,
 };
 
 export const RETURN_ORDER_UI_STATUS_VARIANTS: Record<
@@ -248,10 +250,10 @@ export const RETURN_ORDER_UI_STATUS_VARIANTS: Record<
   | 'warning'
   | 'info'
 > = {
-  draft: 'outline',
-  pending: 'warning',
-  awaiting_refund: 'info',
-  completed: 'success',
+  draft: STATUS_PALETTE.draft,
+  pending: STATUS_PALETTE.pending,
+  awaiting_refund: STATUS_PALETTE.inTransit,
+  completed: STATUS_PALETTE.done,
 };
 
 // 退货排序选项

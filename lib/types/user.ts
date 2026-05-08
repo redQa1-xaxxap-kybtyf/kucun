@@ -3,6 +3,8 @@
  * 严格遵循全栈项目统一约定规范
  */
 
+import { STATUS_PALETTE } from '@/lib/config/status-palette';
+
 // 用户角色枚举
 export type UserRole = 'admin' | 'sales' | 'warehouse' | 'finance';
 
@@ -103,9 +105,9 @@ export const USER_STATUS_VARIANTS: Record<
   | 'warning'
   | 'info'
 > = {
-  active: 'success',
-  inactive: 'secondary',
-  pending: 'warning',
+  active: STATUS_PALETTE.done,
+  inactive: STATUS_PALETTE.archived,
+  pending: STATUS_PALETTE.pending,
 };
 
 // 用户权限检查函数

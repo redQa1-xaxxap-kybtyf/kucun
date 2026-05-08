@@ -1,6 +1,8 @@
 // 收款管理类型定义
 // 定义收款记录、应收账款等相关数据结构
 
+import { STATUS_PALETTE } from '@/lib/config/status-palette';
+
 import type {
   AccountsReceivableQueryInput,
   BatchPaymentOperationInput,
@@ -323,10 +325,10 @@ export const PAYMENT_STATUS_VARIANTS: Record<
   | 'warning'
   | 'info'
 > = {
-  pending: 'warning',
-  applied: 'info',
-  confirmed: 'success',
-  cancelled: 'destructive',
+  pending: STATUS_PALETTE.pending,
+  applied: STATUS_PALETTE.inTransit,
+  confirmed: STATUS_PALETTE.done,
+  cancelled: STATUS_PALETTE.failed,
 };
 
 // 默认收款状态配置

@@ -1,6 +1,8 @@
 // 采购订单相关类型定义
 // 遵循 TypeScript 严格模式，禁用 any 类型
 
+import { STATUS_PALETTE } from '@/lib/config/status-palette';
+
 // 采购订单状态枚举
 // 状态流程: 草稿 → 已下单 → 已发货 → 运输中 → 已到货 → 已完成 → 已取消
 export const PURCHASE_ORDER_STATUS = {
@@ -51,13 +53,15 @@ export const PURCHASE_ORDER_STATUS_VARIANTS: Record<
   | 'warning'
   | 'info'
 > = {
-  [PURCHASE_ORDER_STATUS.DRAFT]: 'outline', // 草稿 - 灰色边框
-  [PURCHASE_ORDER_STATUS.ORDERED]: 'secondary', // 已下单 - 灰色
-  [PURCHASE_ORDER_STATUS.SHIPPED]: 'info', // 已发货 - 蓝色
-  [PURCHASE_ORDER_STATUS.IN_TRANSIT]: 'info', // 运输中 - 蓝色
-  [PURCHASE_ORDER_STATUS.ARRIVED]: 'warning', // 已到货 - 黄色（待入库）
-  [PURCHASE_ORDER_STATUS.COMPLETED]: 'success', // 已完成 - 绿色
-  [PURCHASE_ORDER_STATUS.CANCELLED]: 'destructive', // 已取消 - 红色
+  [PURCHASE_ORDER_STATUS.DRAFT]: STATUS_PALETTE.draft,
+  // 已下单：进入主流程，可执行下一步——active(蓝)
+  [PURCHASE_ORDER_STATUS.ORDERED]: STATUS_PALETTE.active,
+  [PURCHASE_ORDER_STATUS.SHIPPED]: STATUS_PALETTE.inTransit,
+  [PURCHASE_ORDER_STATUS.IN_TRANSIT]: STATUS_PALETTE.inTransit,
+  // 已到货：待我方入库——pending(橙)
+  [PURCHASE_ORDER_STATUS.ARRIVED]: STATUS_PALETTE.pending,
+  [PURCHASE_ORDER_STATUS.COMPLETED]: STATUS_PALETTE.done,
+  [PURCHASE_ORDER_STATUS.CANCELLED]: STATUS_PALETTE.failed,
 };
 
 // 采购订单明细项

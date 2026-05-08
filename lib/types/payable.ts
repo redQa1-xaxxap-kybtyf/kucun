@@ -6,6 +6,8 @@
  * 本文件只定义 API 响应、详情和扩展类型
  */
 
+import { STATUS_PALETTE } from '@/lib/config/status-palette';
+
 // 从 Zod Schema 导入基础类型（单一真理源）
 import type {
   CreatePayableRecordData,
@@ -219,11 +221,11 @@ export const PAYABLE_STATUS_VARIANTS: Record<
   | 'warning'
   | 'info'
 > = {
-  pending: 'warning',
-  partial: 'info',
-  paid: 'success',
-  overdue: 'destructive',
-  cancelled: 'destructive',
+  pending: STATUS_PALETTE.pending,
+  partial: STATUS_PALETTE.inTransit,
+  paid: STATUS_PALETTE.done,
+  overdue: STATUS_PALETTE.failed,
+  cancelled: STATUS_PALETTE.failed,
 };
 
 // 付款状态变体映射（用于Badge组件）
@@ -237,9 +239,9 @@ export const PAYMENT_OUT_STATUS_VARIANTS: Record<
   | 'warning'
   | 'info'
 > = {
-  pending: 'warning',
-  confirmed: 'success',
-  cancelled: 'destructive',
+  pending: STATUS_PALETTE.pending,
+  confirmed: STATUS_PALETTE.done,
+  cancelled: STATUS_PALETTE.failed,
 };
 
 // 应付款排序选项
