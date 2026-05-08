@@ -1,5 +1,5 @@
 import {
-  createSalesOrder,
+  createSalesOrderWithOptions,
   getSalesOrders,
   salesOrderQuerySchema,
 } from '@/lib/api/handlers/sales-orders';
@@ -94,9 +94,13 @@ const createSalesOrderHandler = withErrorHandling(
         remarks: validatedData.remarks || undefined,
         items: validatedData.items as CreateInput['items'],
         feeItems: validatedData.feeItems,
+        idempotencyKey: validatedData.idempotencyKey,
       };
 
-      const order = await createSalesOrder(createInput, user.id);
+      // 使用 importKey 唯一索引承载幂等键，相同 idempotencyKey 重复提交将命中已有订单。
+      const order = await createSalesOrderWithOptions(createInput, user.id, {
+        importKey: validatedData.idempotencyKey,
+      });
 
       // ✅ P0修复：销售订单创建后，失效销售订单和应收款缓存
       const { invalidateSalesOrderAndReceivables } = await import(

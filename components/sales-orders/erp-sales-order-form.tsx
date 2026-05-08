@@ -703,9 +703,23 @@ export function ERPSalesOrderForm({
     priceType,
   });
 
+  // 同一表单的提交期幂等键：仅在 onSuccess 时清空，允许失败后用同一 key 重试。
+  // 这样即便第一次请求实际成功但响应丢失，下一次重发会命中后端 importKey 唯一索引返回原订单。
+  const submitIdempotencyKeyRef = React.useRef<string | null>(null);
+  const ensureSubmitIdempotencyKey = React.useCallback(() => {
+    if (!submitIdempotencyKeyRef.current) {
+      submitIdempotencyKeyRef.current =
+        typeof crypto !== 'undefined' && 'randomUUID' in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    }
+    return submitIdempotencyKeyRef.current;
+  }, []);
+
   // ✅ 使用新的 useCreateSalesOrder Hook，自动处理缓存刷新
   const createMutation = useCreateSalesOrder({
     onSuccess: (data: SalesOrder) => {
+      submitIdempotencyKeyRef.current = null;
       const isConfirmed = data.status === 'confirmed';
       toast({
         title: isConfirmed ? '订单已保存并确认' : '草稿已保存',
@@ -1590,7 +1604,8 @@ export function ERPSalesOrderForm({
     } else {
       const formDataForTransform = mapFormDataForTransform(data);
       const apiData = transformFormDataToCreateInput(formDataForTransform);
-      createMutation.mutate(apiData);
+      const idempotencyKey = ensureSubmitIdempotencyKey();
+      createMutation.mutate({ ...apiData, idempotencyKey });
     }
   };
 

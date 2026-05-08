@@ -121,6 +121,12 @@ const baseSalesOrderSchema = z
         .max(999999999.99, '预收款冲抵金额不能超过999,999,999.99')
         .multipleOf(0.01, '预收款冲抵金额最多保留2位小数')
     ),
+
+    // 幂等性键：同一 key 重复提交只创建一张订单
+    idempotencyKey: z
+      .string()
+      .uuid('幂等性键格式不正确')
+      .optional(),
   })
   .superRefine((data, ctx) => {
     const status = data.status ?? 'draft';

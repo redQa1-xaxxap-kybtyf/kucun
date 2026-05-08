@@ -196,6 +196,8 @@ export interface SalesOrderCreateInput {
   remarks?: string;
   items: SalesOrderItemCreateInput[];
   feeItems?: SalesOrderFeeItem[];
+  // 幂等性键：同一 key 重复请求只会创建一张订单，复用 SalesOrder.importKey 唯一索引
+  idempotencyKey?: string;
 }
 
 // 销售订单更新输入类型

@@ -12,7 +12,6 @@ import { ensureCompanyExpenses } from '@/lib/services/expense-service';
 import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 import { generateSalesOrderNumber } from '@/lib/services/simple-order-number-generator';
 import { parseLocalDateString } from '@/lib/utils/datetime';
-import { toNumber } from '@/lib/utils/number';
 import { generatePaymentNumber } from '@/lib/utils/payment-number-generator';
 import {
   DEFAULT_SAMPLE_SETTLEMENT_TYPE,
@@ -27,7 +26,7 @@ import {
   calculateFinancials,
   normalizeTransferMode,
 } from './financials';
-import { reserveInventory, shouldReserveInventory } from './inventory';
+import { reserveInventory, shouldReserveInventory, InventoryReservationConflictError } from './inventory';
 import {
   isSameNullableNumber,
   resolveSalesOrderItemSnapshot,
@@ -142,6 +141,51 @@ const mapCreatedOrder = (
     itemCount: _count.items,
   };
 };
+
+async function loadProductsMapForOrder(order: CreatedOrderResult) {
+  const productIds = order.items
+    .map(item => item.productId)
+    .filter(Boolean) as string[];
+
+  if (productIds.length === 0) {
+    return new Map<
+      string,
+      {
+        id: string;
+        name: string;
+        code: string;
+        unit: string;
+        specification: string | null;
+        piecesPerUnit: number | null;
+        weight: number | null;
+      }
+    >();
+  }
+
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds } },
+    select: {
+      id: true,
+      name: true,
+      code: true,
+      unit: true,
+      specification: true,
+      piecesPerUnit: true,
+      weight: true,
+    },
+    take: productIds.length,
+  });
+
+  return new Map(
+    products.map(p => [
+      p.id,
+      {
+        ...p,
+        weight: p.weight === null ? null : Number(p.weight),
+      },
+    ])
+  );
+}
 
 function isSalesOrderOrderNumberUniqueConstraintError(error: unknown) {
   if (error instanceof PrismaClient.PrismaClientKnownRequestError) {
@@ -493,6 +537,7 @@ async function persistSalesOrderInTransaction({
     roundingAdjustment: roundedRoundingAmount,
   });
 
+  let pendingReceivablePaymentId: string | undefined;
   if (
     salesOrder.status === 'confirmed' &&
     receivableEnabled &&
@@ -500,7 +545,7 @@ async function persistSalesOrderInTransaction({
   ) {
     const paymentNumber = await generatePaymentNumber(tx);
     const paymentAmount = roundedTotalAmount;
-    await tx.paymentRecord.create({
+    const createdReceivablePayment = await tx.paymentRecord.create({
       data: {
         paymentNumber,
         salesOrderId: salesOrder.id,
@@ -516,7 +561,9 @@ async function persistSalesOrderInTransaction({
         status: 'pending',
         remarks: `系统自动生成：销售订单 ${salesOrder.orderNumber} 确认应收`,
       },
+      select: { id: true },
     });
+    pendingReceivablePaymentId = createdReceivablePayment.id;
   }
 
   if (validatedData.usePrepayment && receivableEnabled && actualOrderDue > 0) {
@@ -539,7 +586,50 @@ async function persistSalesOrderInTransaction({
       salesOrder.paidAmount = new PrismaClient.Decimal(
         prepaymentResult.totalApplied
       );
+
+      // 同步自动应收记录：把预收款冲抵的金额计入应收 PaymentRecord 的 appliedAmount，
+      // 全额抵扣时把状态推到 completed，避免出现"应收未结清 + 已用预收 ≠ 订单总额"的对账漂移。
+      if (pendingReceivablePaymentId) {
+        const isFullyOffset =
+          prepaymentResult.totalApplied + 0.01 >= actualOrderDue;
+        await tx.paymentRecord.update({
+          where: { id: pendingReceivablePaymentId },
+          data: {
+            appliedAmount: prepaymentResult.totalApplied,
+            status: isFullyOffset ? 'completed' : 'pending',
+          },
+        });
+      }
     }
+  }
+
+  // 销售订单往来账记账：移入事务内执行，确保 ledger 写入失败可触发整笔订单回滚，
+  // 避免出现"订单已落库 / 客户对账单缺记录"这种永久无法补回的不一致。
+  const ledgerEligibleStatuses = new Set([
+    'confirmed',
+    'shipped',
+    'completed',
+  ]);
+  if (ledgerEligibleStatuses.has(salesOrder.status) && actualOrderDue > 0) {
+    await recordPartnerTransaction(
+      {
+        partnerId: salesOrder.customerId,
+        partnerRole: 'customer',
+        entityType: 'customer',
+        transactionType: 'sale',
+        amount: actualOrderDue,
+        referenceId: salesOrder.id,
+        referenceNumber: salesOrder.orderNumber,
+        description: `销售订单 ${salesOrder.orderNumber} 创建并已确认`,
+        userId,
+        occurredAt: salesOrder.orderDate,
+        metadata: {
+          status: salesOrder.status,
+          triggeredBy: 'order:create',
+        },
+      },
+      tx
+    );
   }
 
   return salesOrder;
@@ -561,6 +651,22 @@ export async function createSalesOrderWithOptions(
   const effectiveImportKey = options.importKey?.trim() || undefined;
   const shouldRecordPriceHistory =
     options.recordPriceHistory ?? effectiveDataTag === 'prod';
+
+  // 幂等性短路：相同 importKey/idempotencyKey 已经创建过订单时，直接返回原订单。
+  // 复用 SalesOrder.importKey 唯一索引（uk_sales_orders_import_key），覆盖前端重复提交、
+  // 网络重试、批量导入再次执行等场景。
+  if (effectiveImportKey) {
+    const lookupClient = options.tx ?? prisma;
+    const existingOrder = await lookupClient.salesOrder.findUnique({
+      where: { importKey: effectiveImportKey },
+      select: createSelect,
+    });
+
+    if (existingOrder) {
+      const productsMap = await loadProductsMapForOrder(existingOrder);
+      return mapCreatedOrder(existingOrder, productsMap);
+    }
+  }
 
   const maxCreateRetries = 10;
   let attempt = 0;
@@ -613,6 +719,8 @@ export async function createSalesOrderWithOptions(
         isSalesOrderOrderNumberUniqueConstraintError(error);
       const isRetryableTransactionConflict =
         isRetryableSalesOrderCreateConflict(error);
+      const isRetryableInventoryConflict =
+        error instanceof InventoryReservationConflictError;
 
       if (options.tx) {
         if (attempt < maxCreateRetries && isOrderNumberConflict) {
@@ -626,35 +734,39 @@ export async function createSalesOrderWithOptions(
 
       if (
         attempt >= maxCreateRetries ||
-        (!isOrderNumberConflict && !isRetryableTransactionConflict)
+        (!isOrderNumberConflict &&
+          !isRetryableTransactionConflict &&
+          !isRetryableInventoryConflict)
       ) {
         throw error;
       }
 
-      const delayMs = isRetryableTransactionConflict
-        ? Math.min(400, 50 * 2 ** (attempt - 1))
-        : Math.min(300, 50 * attempt);
-      logger.warn(
-        'sales-orders',
-        isRetryableTransactionConflict
+      const delayMs =
+        isRetryableTransactionConflict || isRetryableInventoryConflict
+          ? Math.min(400, 50 * 2 ** (attempt - 1))
+          : Math.min(300, 50 * attempt);
+      const retryReason = isRetryableInventoryConflict
+        ? 'inventory_reservation_conflict'
+        : isRetryableTransactionConflict
+          ? 'transaction_conflict'
+          : 'order_number_conflict';
+      const retryLabel = isRetryableInventoryConflict
+        ? '销售订单创建遇到库存预留冲突，准备重试'
+        : isRetryableTransactionConflict
           ? '销售订单创建遇到事务写冲突，准备重试'
-          : '销售订单号冲突，准备重试创建订单',
-        undefined,
-        {
-          attempt,
-          delayMs,
-          retryReason: isRetryableTransactionConflict
-            ? 'transaction_conflict'
-            : 'order_number_conflict',
-          error:
-            error instanceof Error
-              ? {
-                  name: error.name,
-                  message: error.message,
-                }
-              : error,
-        }
-      );
+          : '销售订单号冲突，准备重试创建订单';
+      logger.warn('sales-orders', retryLabel, undefined, {
+        attempt,
+        delayMs,
+        retryReason,
+        error:
+          error instanceof Error
+            ? {
+                name: error.name,
+                message: error.message,
+              }
+            : error,
+      });
       await new Promise(resolve => setTimeout(resolve, delayMs));
     }
   }
@@ -671,88 +783,10 @@ export async function createSalesOrderWithOptions(
     });
   }
 
-  const ledgerEligibleStatuses = new Set(['confirmed', 'shipped', 'completed']);
-  const totalAmount = Number(order.totalAmount ?? 0);
-  const roundingAdjustment = toNumber(
-    (order as { roundingAdjustment?: unknown }).roundingAdjustment,
-    0
-  );
-  const actualOrderDue = getSalesOrderReceivableTotal({
-    isSampleOrder: order.isSampleOrder,
-    sampleSettlementType:
-      order.sampleSettlementType ?? DEFAULT_SAMPLE_SETTLEMENT_TYPE,
-    totalAmount,
-    roundingAdjustment,
-  });
-
-  if (ledgerEligibleStatuses.has(order.status) && actualOrderDue > 0) {
-    try {
-      await recordPartnerTransaction(
-        {
-          partnerId: order.customerId,
-          partnerRole: 'customer',
-          entityType: 'customer',
-          transactionType: 'sale',
-          amount: actualOrderDue,
-          referenceId: order.id,
-          referenceNumber: order.orderNumber,
-          description: `销售订单 ${order.orderNumber} 创建并已确认`,
-          userId: order.userId,
-          occurredAt: order.orderDate,
-          metadata: {
-            status: order.status,
-            triggeredBy: 'order:create',
-          },
-        },
-        options.tx
-      );
-    } catch (error) {
-      logger.error('sales-orders', '记录往来账失败', error, {
-        orderId: order.id,
-        orderNumber: order.orderNumber,
-      });
-    }
-  }
+  // 销售订单 ledger 记账已在事务内执行（见 persistSalesOrderInTransaction）。
 
   // 手动获取产品信息
-  const productIds = order.items
-    .map(item => item.productId)
-    .filter(Boolean) as string[];
-
-  const products = await prisma.product.findMany({
-    where: { id: { in: productIds } },
-    select: {
-      id: true,
-      name: true,
-      code: true,
-      unit: true,
-      specification: true,
-      piecesPerUnit: true,
-      weight: true,
-    },
-    take: productIds.length,
-  });
-
-  const productsMap = new Map<
-    string,
-    {
-      id: string;
-      name: string;
-      code: string;
-      unit: string;
-      specification: string | null;
-      piecesPerUnit: number | null;
-      weight: number | null;
-    }
-  >(
-    products.map(p => [
-      p.id,
-      {
-        ...p,
-        weight: p.weight === null ? null : Number(p.weight),
-      },
-    ])
-  );
+  const productsMap = await loadProductsMapForOrder(order);
 
   return mapCreatedOrder(order, productsMap);
 }

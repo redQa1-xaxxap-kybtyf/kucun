@@ -5,6 +5,27 @@ import { mapProductionDateToBatchNumber } from '@/lib/utils/inventory-variant-ma
 
 import type { CreateInput, OrderItemInput, Tx } from './types';
 
+/**
+ * 库存预留乐观锁冲突错误：表示在写库前其他事务已修改了库存行（reservedQuantity / updatedAt 不一致）。
+ * 调用方应识别此错误并对整个订单创建事务进行重试，而不是把它当成真正的"库存不足"。
+ */
+export class InventoryReservationConflictError extends Error {
+  readonly code = 'INVENTORY_RESERVATION_CONFLICT';
+  readonly productId: string;
+  readonly batchLabel?: string;
+
+  constructor(productId: string, batchLabel?: string) {
+    super(
+      batchLabel
+        ? `产品ID ${productId} (批次: ${batchLabel}) 库存预留失败,可能已被其他订单占用,请重试`
+        : `产品ID ${productId} 库存预留失败,可能已被其他订单占用,请重试`
+    );
+    this.name = 'InventoryReservationConflictError';
+    this.productId = productId;
+    this.batchLabel = batchLabel;
+  }
+}
+
 const inventoryReservationSelect = {
   id: true,
   productId: true,
@@ -340,9 +361,9 @@ export const reserveInventory = async (
 
     if (updatedCount.count === 0) {
       const batchLabel = (inventory.batchNumber ?? '').trim();
-      const batchMessage = batchLabel ? ` (批次: ${batchLabel})` : '';
-      throw new Error(
-        `产品ID ${inventory.productId}${batchMessage} 库存预留失败,可能已被其他订单占用,请重试`
+      throw new InventoryReservationConflictError(
+        inventory.productId,
+        batchLabel || undefined
       );
     }
 

@@ -6,4 +6,7 @@ export type SalesOrderQueryParams = StandardSalesOrderQueryParams;
 
 export { getSalesOrders } from './sales-orders/list';
 export { getSalesOrderById } from './sales-orders/detail';
-export { createSalesOrder } from './sales-orders/create';
+export {
+  createSalesOrder,
+  createSalesOrderWithOptions,
+} from './sales-orders/create';

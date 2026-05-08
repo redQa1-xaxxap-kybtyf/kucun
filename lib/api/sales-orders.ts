@@ -166,16 +166,29 @@ export async function getSalesOrder(id: string): Promise<SalesOrder> {
 
 /**
  * 创建销售订单
+ *
+ * 自动确保请求带有 idempotencyKey：调用方未传时由前端生成 uuid，重复点击/网络重试不会
+ * 产生多张同内容订单（后端通过 SalesOrder.importKey 唯一索引承载幂等）。
  */
 export async function createSalesOrder(
   orderData: SalesOrderCreateInput
 ): Promise<SalesOrder> {
+  const payload: SalesOrderCreateInput = orderData.idempotencyKey
+    ? orderData
+    : {
+        ...orderData,
+        idempotencyKey:
+          typeof crypto !== 'undefined' && 'randomUUID' in crypto
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      };
+
   const response = await csrfFetch(API_BASE, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(orderData),
+    body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
