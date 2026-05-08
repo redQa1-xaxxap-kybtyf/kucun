@@ -1,160 +1,322 @@
 <view class="page">
   <view class="header">
     <view>
-      <view class="eyebrow">产品维护</view>
-      <view class="title">{{isEdit ? '编辑产品' : '新增产品'}}</view>
+      <view class="eyebrow">小程序管理</view>
+      <view class="title">设置客户分类</view>
     </view>
   </view>
 
   <view wx:if="{{loading}}" class="empty">正在加载...</view>
 
-  <view wx:else class="form-card">
-    <view class="field">
-      <view class="label">产品编码</view>
-      <input
-        class="input"
-        placeholder="如 YSB-RMZ-001"
-        value="{{form.code}}"
-        data-field="code"
-        bindinput="onInput"
-      />
+  <view wx:else class="form-stack">
+    <view class="section">
+      <view class="section-header">
+        <view>
+          <view class="section-title">产品信息</view>
+          <view class="section-caption">来自 ERP，仅查看</view>
+        </view>
+      </view>
+
+      <view class="field">
+        <view class="label">产品编码</view>
+        <view wx:if="{{isEdit}}" class="readonly-value">
+          {{form.code ? form.code : '-'}}
+        </view>
+        <input
+          wx:else
+          class="input"
+          placeholder="如 YSB-RMZ-001"
+          value="{{form.code}}"
+          data-field="code"
+          bindinput="onInput"
+        />
+      </view>
+
+      <view class="field">
+        <view class="label">产品名称</view>
+        <view wx:if="{{isEdit}}" class="readonly-value">
+          {{form.name ? form.name : '-'}}
+        </view>
+        <input
+          wx:else
+          class="input"
+          placeholder="如 雅士白罗马柱"
+          value="{{form.name}}"
+          data-field="name"
+          bindinput="onInput"
+        />
+      </view>
+
+      <view class="field last">
+        <view class="label">规格</view>
+        <view wx:if="{{isEdit}}" class="readonly-value">
+          {{form.specification ? form.specification : '-'}}
+        </view>
+        <input
+          wx:else
+          class="input"
+          placeholder="如 300x600"
+          value="{{form.specification}}"
+          data-field="specification"
+          bindinput="onInput"
+        />
+      </view>
     </view>
 
-    <view class="field">
-      <view class="label">产品名称</view>
-      <input
-        class="input"
-        placeholder="如 雅士白罗马柱"
-        value="{{form.name}}"
-        data-field="name"
-        bindinput="onInput"
-      />
-    </view>
+    <view class="section">
+      <view class="section-header">
+        <view>
+          <view class="section-title">ERP 分类</view>
+          <view class="section-caption">库存和订单使用，这里不修改</view>
+        </view>
+      </view>
 
-    <view class="field">
-      <view class="label">规格</view>
-      <input
-        class="input"
-        placeholder="如 300x600"
-        value="{{form.specification}}"
-        data-field="specification"
-        bindinput="onInput"
-      />
-    </view>
-
-    <view class="field">
-      <view class="label">分类</view>
-      <picker
-        mode="selector"
-        range="{{categories}}"
-        range-key="name"
-        value="{{categoryIndex}}"
-        bindchange="onCategoryChange"
-      >
-        <view class="picker-value {{categoryIndex >= 0 ? '' : 'placeholder'}}">
+      <view class="field last">
+        <view class="label">ERP 分类</view>
+        <view wx:if="{{isEdit}}" class="readonly-value category-readonly">
           {{selectedCategoryName}}
         </view>
-      </picker>
+        <picker
+          wx:else
+          mode="selector"
+          range="{{categories}}"
+          range-key="displayName"
+          value="{{categoryIndex}}"
+          bindchange="onCategoryChange"
+        >
+          <view class="picker-value category-picker {{categoryIndex >= 0 ? '' : 'placeholder'}}">
+            {{selectedCategoryName}}
+          </view>
+        </picker>
+      </view>
     </view>
 
-    <view class="field">
-      <view class="label">产品封面</view>
-      <view class="image-uploader">
-        <image wx:if="{{form.thumbnailUrl}}" class="cover-preview" src="{{form.thumbnailUrl}}" mode="aspectFill" />
-        <view wx:else class="cover-preview placeholder">封面</view>
-        <view class="upload-side">
+    <view class="section">
+      <view class="section-header">
+        <view>
+          <view class="section-title">客户看到的分类</view>
+          <view class="section-caption">用于小程序首页和产品列表</view>
+        </view>
+        <button
+          wx:if="{{miniDisplay.visible}}"
+          class="auto-btn"
+          bindtap="onAutoClassifyTap"
+        >
+          自动匹配
+        </button>
+      </view>
+
+      <view class="switch-row">
+        <view>
+          <view class="label">客户可见</view>
+          <view class="hint">{{miniDisplay.visible ? '客户可以看到' : '客户看不到'}}</view>
+        </view>
+        <switch checked="{{miniDisplay.visible}}" color="#176b5b" bindchange="onMiniVisibleChange" />
+      </view>
+
+      <view wx:if="{{miniDisplay.visible}}" class="catalog-preview">
+        <view class="preview-cell">
+          <view class="preview-label">花色</view>
+          <view class="preview-value">{{selectedSeriesName}}</view>
+        </view>
+        <view class="preview-cell">
+          <view class="preview-label">品种</view>
+          <view class="preview-value">{{selectedComponentName}}</view>
+        </view>
+        <view class="source-tag">{{miniDisplaySourceLabel}}</view>
+      </view>
+
+      <view class="field">
+        <view class="label">花色</view>
+        <view
+          class="select-value {{seriesIndex >= 0 ? '' : 'placeholder'}} {{miniDisplay.visible ? '' : 'disabled'}}"
+          data-type="series"
+          bindtap="onOpenCatalogSelector"
+        >
+          <view class="select-text">{{selectedSeriesName}}</view>
+          <view class="select-action">选择</view>
+        </view>
+      </view>
+
+      <view class="field last">
+        <view class="label">品种</view>
+        <view
+          class="select-value {{componentIndex >= 0 ? '' : 'placeholder'}} {{miniDisplay.visible ? '' : 'disabled'}}"
+          data-type="component"
+          bindtap="onOpenCatalogSelector"
+        >
+          <view class="select-text">{{selectedComponentName}}</view>
+          <view class="select-action">选择</view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{selectorVisible}}" class="selector-mask" catchtap="onCloseSelector">
+      <view class="selector-sheet" catchtap="noop">
+        <view class="sheet-handle"></view>
+        <view class="selector-head">
+          <view class="selector-title">{{selectorTitle}}</view>
+          <view class="selector-close" catchtap="onCloseSelector">关闭</view>
+        </view>
+        <input
+          class="selector-search"
+          placeholder="{{selectorType == 'series' ? '搜索花色名称' : '搜索品种名称'}}"
+          value="{{selectorSearch}}"
+          confirm-type="search"
+          bindinput="onSelectorSearchInput"
+        />
+        <scroll-view class="selector-list" scroll-y enhanced enable-flex>
+          <view
+            wx:for="{{selectorItems}}"
+            wx:key="id"
+            class="selector-row {{item.selected ? 'selected' : ''}}"
+            data-id="{{item.id}}"
+            bindtap="onSelectorItemTap"
+          >
+            <view class="selector-row-main">
+              <view class="selector-row-title">{{item.title}}</view>
+              <view wx:if="{{item.subtitle}}" class="selector-row-subtitle">{{item.subtitle}}</view>
+            </view>
+            <view wx:if="{{item.selected}}" class="selector-check">已选</view>
+          </view>
+          <view wx:if="{{selectorItems.length == 0}}" class="selector-empty">
+            {{selectorEmptyText}}
+          </view>
+        </scroll-view>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-header">
+        <view>
+          <view class="section-title">产品图片</view>
+          <view class="section-caption">
+            {{isEdit ? '来自 ERP，只查看' : '客户优先看到封面和主图'}}
+          </view>
+        </view>
+      </view>
+
+      <view class="field">
+        <view class="label">产品封面</view>
+        <view class="image-uploader">
+          <image wx:if="{{form.thumbnailUrl}}" class="cover-preview" src="{{form.thumbnailUrl}}" mode="aspectFill" />
+          <view wx:else class="cover-preview placeholder">封面</view>
+          <view wx:if="{{isEdit}}" class="upload-side readonly-side">
+            如需换图，请到 ERP 产品管理处理
+          </view>
+          <view wx:else class="upload-side">
+            <button
+              class="upload-btn"
+              loading="{{uploadingKind == 'thumbnail'}}"
+              disabled="{{isUploading}}"
+              bindtap="onUploadThumbnail"
+            >
+              上传封面
+            </button>
+            <input
+              class="url-input"
+              placeholder="也可粘贴图片地址"
+              value="{{form.thumbnailUrl}}"
+              data-field="thumbnailUrl"
+              bindinput="onInput"
+            />
+          </view>
+        </view>
+      </view>
+
+      <view class="field">
+        <view class="section-head">
+          <view class="label">产品主图</view>
           <button
-            class="upload-btn"
-            loading="{{uploadingKind == 'thumbnail'}}"
+            wx:if="{{!isEdit}}"
+            class="small-btn"
+            loading="{{uploadingKind == 'main'}}"
             disabled="{{isUploading}}"
-            bindtap="onUploadThumbnail"
+            bindtap="onUploadMainImage"
           >
-            上传封面
+            添加
           </button>
-          <input
-            class="url-input"
-            placeholder="也可粘贴图片地址"
-            value="{{form.thumbnailUrl}}"
-            data-field="thumbnailUrl"
-            bindinput="onInput"
-          />
+        </view>
+        <view wx:if="{{mainImages.length == 0}}" class="image-empty">
+          {{isEdit ? '暂无主图' : '未添加主图'}}
+        </view>
+        <view wx:else class="image-grid">
+          <view wx:for="{{mainImages}}" wx:key="url" class="image-item">
+            <image class="image-thumb" src="{{item.url}}" mode="aspectFill" />
+            <button
+              wx:if="{{!isEdit}}"
+              class="image-remove"
+              data-type="main"
+              data-index="{{index}}"
+              catchtap="onRemoveImage"
+            >
+              删除
+            </button>
+          </view>
         </view>
       </view>
-    </view>
 
-    <view class="field">
-      <view class="section-head">
-        <view class="label">产品主图</view>
-        <button
-          class="small-btn"
-          loading="{{uploadingKind == 'main'}}"
-          disabled="{{isUploading}}"
-          bindtap="onUploadMainImage"
-        >
-          添加
-        </button>
-      </view>
-      <view wx:if="{{mainImages.length == 0}}" class="image-empty">未添加主图</view>
-      <view wx:else class="image-grid">
-        <view wx:for="{{mainImages}}" wx:key="url" class="image-item">
-          <image class="image-thumb" src="{{item.url}}" mode="aspectFill" />
+      <view class="field last">
+        <view class="section-head">
+          <view class="label">效果案例</view>
           <button
-            class="image-remove"
-            data-type="main"
-            data-index="{{index}}"
-            catchtap="onRemoveImage"
+            wx:if="{{!isEdit}}"
+            class="small-btn"
+            loading="{{uploadingKind == 'effect'}}"
+            disabled="{{isUploading}}"
+            bindtap="onUploadEffectImage"
           >
-            删除
+            添加
           </button>
+        </view>
+        <view wx:if="{{effectImages.length == 0}}" class="image-empty">
+          {{isEdit ? '暂无效果案例' : '未添加效果案例'}}
+        </view>
+        <view wx:else class="image-grid">
+          <view wx:for="{{effectImages}}" wx:key="url" class="image-item">
+            <image class="image-thumb" src="{{item.url}}" mode="aspectFill" />
+            <button
+              wx:if="{{!isEdit}}"
+              class="image-remove"
+              data-type="effect"
+              data-index="{{index}}"
+              catchtap="onRemoveImage"
+            >
+              删除
+            </button>
+          </view>
         </view>
       </view>
     </view>
 
-    <view class="field">
-      <view class="section-head">
-        <view class="label">效果案例</view>
-        <button
-          class="small-btn"
-          loading="{{uploadingKind == 'effect'}}"
-          disabled="{{isUploading}}"
-          bindtap="onUploadEffectImage"
-        >
-          添加
-        </button>
-      </view>
-      <view wx:if="{{effectImages.length == 0}}" class="image-empty">未添加效果案例</view>
-      <view wx:else class="image-grid">
-        <view wx:for="{{effectImages}}" wx:key="url" class="image-item">
-          <image class="image-thumb" src="{{item.url}}" mode="aspectFill" />
-          <button
-            class="image-remove"
-            data-type="effect"
-            data-index="{{index}}"
-            catchtap="onRemoveImage"
-          >
-            删除
-          </button>
+    <view class="section">
+      <view class="field">
+        <view class="label">备注</view>
+        <view wx:if="{{isEdit}}" class="readonly-block">
+          {{form.description ? form.description : '暂无备注'}}
         </view>
+        <textarea
+          wx:else
+          class="textarea"
+          placeholder="可填写花色、用途或注意事项"
+          value="{{form.description}}"
+          data-field="description"
+          bindinput="onInput"
+        />
       </view>
-    </view>
 
-    <view class="field">
-      <view class="label">备注</view>
-      <textarea
-        class="textarea"
-        placeholder="可填写花色、用途或注意事项"
-        value="{{form.description}}"
-        data-field="description"
-        bindinput="onInput"
-      />
-    </view>
-
-    <view class="status-row">
-      <view>
-        <view class="label">前台展示</view>
-        <view class="hint">{{form.status == 'active' ? '正常展示' : '已下架'}}</view>
+      <view class="status-row">
+        <view>
+          <view class="label">ERP 状态</view>
+          <view class="hint">
+            {{isEdit ? '这里只查看，不修改' : (form.status == 'active' ? '正常使用' : '已停用')}}
+          </view>
+        </view>
+        <view wx:if="{{isEdit}}" class="status-readonly">
+          {{form.status == 'active' ? '正常使用' : '已停用'}}
+        </view>
+        <switch wx:else checked="{{form.status == 'active'}}" color="#176b5b" bindchange="onStatusChange" />
       </view>
-      <switch checked="{{form.status == 'active'}}" color="#27594f" bindchange="onStatusChange" />
     </view>
 
     <button

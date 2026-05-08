@@ -1,11 +1,12 @@
 <view class="page">
-  <view wx:if="{{loading}}" class="empty">正在生成产品海报...</view>
-  <view wx:elif="{{error}}" class="empty error">{{error}}</view>
+  <view wx:if="{{loading}}" class="empty overlay">正在生成产品海报...</view>
+  <view wx:if="{{error}}" class="empty error overlay">{{error}}</view>
 
-  <view wx:else class="poster-page">
+  <view class="poster-page {{loading || error ? 'muted' : ''}}">
     <view class="poster-frame">
       <canvas
         id="posterCanvas"
+        canvas-id="posterCanvas"
         type="2d"
         class="poster-canvas"
         style="width: {{canvasStyleWidth}}px; height: {{canvasStyleHeight}}px;"

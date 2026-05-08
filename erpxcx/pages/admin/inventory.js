@@ -1,9 +1,51 @@
-const { requireAdminSession } = require('../../utils/admin');
+const {
+  hideAdminShareMenu,
+  requireAdminSession,
+} = require('../../utils/admin');
 const { getInventories } = require('../../utils/inventory');
+
+const PAGE_SIZE = 30;
+const UNIT_LABELS = {
+  piece: '件',
+  sheet: '片',
+};
 
 function formatQuantity(value) {
   const numberValue = Number(value || 0);
   return Number.isFinite(numberValue) ? numberValue : 0;
+}
+
+function formatNumberText(value) {
+  const numberValue = Number(value || 0);
+  if (!Number.isFinite(numberValue) || numberValue <= 0) return '';
+  return Number.isInteger(numberValue)
+    ? String(numberValue)
+    : numberValue.toFixed(2).replace(/\.?0+$/, '');
+}
+
+function getUnitLabel(unit) {
+  return UNIT_LABELS[unit] || unit || '片';
+}
+
+function buildPackageText(item, product) {
+  const unitLabel = getUnitLabel(product.unit);
+  const piecesPerUnit = Number(
+    item.batchPiecesPerUnit || product.piecesPerUnit || 0
+  );
+  const weightText = formatNumberText(item.weight || product.weight);
+  const parts = [];
+
+  if (piecesPerUnit > 1) {
+    parts.push(`1件=${formatNumberText(piecesPerUnit)}片`);
+  }
+  if (weightText) {
+    parts.push(`${weightText}kg/${unitLabel}`);
+  }
+  if (parts.length === 0 && unitLabel) {
+    parts.push(`单位：${unitLabel}`);
+  }
+
+  return parts.join(' · ');
 }
 
 function normalizeInventory(item) {
@@ -25,6 +67,7 @@ function normalizeInventory(item) {
     code: product.code || item.productCode || '-',
     name: product.name || item.productName || '-',
     specification: product.specification || item.specification || '',
+    packageText: buildPackageText(item, product),
     batchNumber: item.batchNumber || '未填批次',
     location: item.location || '未填库位',
     quantity: totalQuantity,
@@ -38,19 +81,30 @@ Page({
   data: {
     loading: false,
     error: '',
+    hasMore: false,
     search: '',
     inventories: [],
+    page: 1,
     pagination: null,
   },
 
   onLoad() {
+    hideAdminShareMenu();
+
     const session = requireAdminSession();
     if (!session) return;
     this.loadInventories();
   },
 
   onPullDownRefresh() {
-    this.loadInventories().finally(() => wx.stopPullDownRefresh());
+    this.loadInventories({ reset: true }).finally(() =>
+      wx.stopPullDownRefresh()
+    );
+  },
+
+  onReachBottom() {
+    if (!this.data.hasMore || this.data.loading) return;
+    this.loadInventories({ append: true });
   },
 
   onSearchInput(event) {
@@ -58,29 +112,39 @@ Page({
   },
 
   onSearchConfirm() {
-    this.loadInventories();
+    this.loadInventories({ reset: true });
   },
 
   onClearSearch() {
     this.setData({ search: '' });
-    this.loadInventories();
+    this.loadInventories({ reset: true });
   },
 
-  async loadInventories() {
+  async loadInventories(options = {}) {
+    const append = Boolean(options.append);
+    const page = append ? this.data.page : 1;
     this.setData({ loading: true, error: '' });
 
     try {
       const data = await getInventories({
-        page: 1,
-        limit: 30,
+        page,
+        limit: PAGE_SIZE,
         search: this.data.search.trim(),
         sortBy: 'updatedAt',
         sortOrder: 'desc',
       });
+      const list = (data.inventories || []).map(normalizeInventory);
+      const pagination = data.pagination || null;
+      const inventories = append ? this.data.inventories.concat(list) : list;
+      const hasMore = Boolean(
+        pagination && pagination.page < pagination.totalPages
+      );
 
       this.setData({
-        inventories: (data.inventories || []).map(normalizeInventory),
-        pagination: data.pagination || null,
+        hasMore,
+        inventories,
+        page: page + 1,
+        pagination,
         loading: false,
       });
     } catch (error) {
@@ -98,19 +162,4 @@ Page({
     }
   },
 
-  onScanTap() {
-    wx.scanCode({
-      onlyFromCamera: false,
-      success: result => {
-        this.setData({ search: result.result });
-        this.loadInventories();
-      },
-      fail: () => {
-        wx.showToast({
-          title: '未识别到编码',
-          icon: 'none',
-        });
-      },
-    });
-  },
 });

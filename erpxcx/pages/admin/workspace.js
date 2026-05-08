@@ -1,17 +1,37 @@
-const { clearAdminSession, requireAdminSession } = require('../../utils/admin');
+const {
+  clearAdminSession,
+  hideAdminShareMenu,
+  requireAdminSession,
+  validateAdminSession,
+} = require('../../utils/admin');
 
 Page({
   data: {
     user: {},
   },
 
-  onShow() {
+  async onShow() {
+    hideAdminShareMenu();
+
     const session = requireAdminSession();
     if (!session) return;
 
     this.setData({
       user: session.user,
     });
+
+    try {
+      const validSession = await validateAdminSession();
+      if (validSession) {
+        this.setData({
+          user: validSession.user,
+        });
+      }
+    } catch (_error) {
+      this.setData({
+        user: {},
+      });
+    }
   },
 
   onInventoryTap() {
@@ -32,9 +52,21 @@ Page({
     });
   },
 
+  onCatalogTap() {
+    wx.navigateTo({
+      url: '/pages/admin/catalog',
+    });
+  },
+
   onPaymentTap() {
     wx.navigateTo({
       url: '/pages/admin/payment',
+    });
+  },
+
+  onHomeTap() {
+    wx.reLaunch({
+      url: '/pages/index/index',
     });
   },
 
@@ -47,8 +79,9 @@ Page({
 
   onLogout() {
     clearAdminSession();
-    wx.redirectTo({
+    wx.reLaunch({
       url: '/pages/admin/login',
     });
   },
+
 });

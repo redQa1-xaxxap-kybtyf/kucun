@@ -18,6 +18,7 @@ function getCustomers(params = {}) {
 
   return request({
     url: `/api/customers${query ? `?${query}` : ''}`,
+    requireAuth: true,
   });
 }
 
@@ -26,6 +27,7 @@ function createSalesOrder(data) {
     url: '/api/sales-orders',
     method: 'POST',
     data,
+    requireAuth: true,
   });
 }
 

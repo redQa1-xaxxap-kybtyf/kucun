@@ -3,9 +3,11 @@
     "pages/index/index",
     "pages/group/detail",
     "pages/product/detail",
+    "pages/plan/index",
     "pages/product/poster",
     "pages/admin/login",
     "pages/admin/workspace",
+    "pages/admin/catalog",
     "pages/admin/inventory",
     "pages/admin/products",
     "pages/admin/product-form",
@@ -14,9 +16,9 @@
   ],
   "window": {
     "navigationBarTitleText": "外墙罗马柱选型",
-    "navigationBarBackgroundColor": "#F8F6F1",
+    "navigationBarBackgroundColor": "#F4F6F5",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#F8F6F1"
+    "backgroundColor": "#F4F6F5"
   },
   "style": "v2",
   "sitemapLocation": "sitemap.json"

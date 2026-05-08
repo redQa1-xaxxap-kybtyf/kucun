@@ -18,6 +18,7 @@ function getReceivableOrders(params = {}) {
 
   return request({
     url: `/api/sales-orders${query ? `?${query}` : ''}`,
+    requireAuth: true,
   });
 }
 
@@ -26,6 +27,7 @@ function createPayment(data) {
     url: '/api/payments',
     method: 'POST',
     data,
+    requireAuth: true,
   });
 }
 

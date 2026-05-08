@@ -4,7 +4,6 @@
       <view class="eyebrow">管理员</view>
       <view class="title">查库存</view>
     </view>
-    <button class="scan-btn" bindtap="onScanTap">扫码</button>
   </view>
 
   <view class="search-card">
@@ -20,7 +19,7 @@
   </view>
 
   <view wx:if="{{error}}" class="notice">{{error}}</view>
-  <view wx:if="{{loading}}" class="empty">正在查询库存...</view>
+  <view wx:if="{{loading && inventories.length == 0}}" class="empty">正在查询库存...</view>
   <view wx:elif="{{inventories.length == 0}}" class="empty">暂无库存记录</view>
 
   <view wx:else class="inventory-list">
@@ -35,6 +34,9 @@
         </view>
       </view>
       <view class="spec line-clamp-1">{{item.specification || '未填写规格'}}</view>
+      <view wx:if="{{item.packageText}}" class="package-line line-clamp-1">
+        {{item.packageText}}
+      </view>
       <view class="meta-row">
         <view>
           <view class="meta-label">批次</view>
@@ -60,5 +62,8 @@
         </view>
       </view>
     </view>
+
+    <view wx:if="{{loading}}" class="list-more">正在加载...</view>
+    <view wx:elif="{{!hasMore}}" class="list-more">已到底</view>
   </view>
 </view>

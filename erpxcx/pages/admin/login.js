@@ -1,7 +1,9 @@
 const {
   getStoredAdmin,
+  hideAdminShareMenu,
   login,
   saveAdminSession,
+  validateAdminSession,
 } = require('../../utils/admin');
 
 Page({
@@ -11,12 +13,26 @@ Page({
     loading: false,
   },
 
-  onLoad() {
+  async onLoad() {
+    hideAdminShareMenu();
+
     const session = getStoredAdmin();
-    if (session.token) {
-      wx.redirectTo({
-        url: '/pages/admin/workspace',
+    if (!session.token) return;
+
+    this.setData({ loading: true });
+    try {
+      const validSession = await validateAdminSession({
+        authRedirect: false,
       });
+      if (validSession) {
+        wx.redirectTo({
+          url: '/pages/admin/workspace',
+        });
+      }
+    } catch (_error) {
+      // 登录页不弹失效提示，留在当前页让用户重新登录。
+    } finally {
+      this.setData({ loading: false });
     }
   },
 
@@ -57,4 +73,11 @@ Page({
       this.setData({ loading: false });
     }
   },
+
+  onHomeTap() {
+    wx.reLaunch({
+      url: '/pages/index/index',
+    });
+  },
+
 });

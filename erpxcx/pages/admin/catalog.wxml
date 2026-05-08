@@ -1,0 +1,196 @@
+<view class="page">
+  <view class="header">
+    <view class="header-copy">
+      <view class="eyebrow">小程序展示</view>
+      <view class="title">分类管理</view>
+      <view class="desc">先维护花色，再维护产品品种</view>
+    </view>
+    <button class="preview-btn" bindtap="onPreviewTap">预览</button>
+  </view>
+
+  <view class="actions">
+    <button class="primary" bindtap="onProductsTap">设置产品分类</button>
+  </view>
+
+  <view wx:if="{{error}}" class="notice">{{error}}</view>
+  <view wx:elif="{{loading}}" class="empty">正在加载...</view>
+
+  <block wx:else>
+    <view class="tabs">
+      <view
+        class="tab {{activeTab == 'series' ? 'active' : ''}}"
+        data-tab="series"
+        bindtap="onTabTap"
+      >
+        <view class="tab-title">花色</view>
+        <view class="tab-count">{{colorSeries.length}}项</view>
+      </view>
+      <view
+        class="tab {{activeTab == 'component' ? 'active' : ''}}"
+        data-tab="component"
+        bindtap="onTabTap"
+      >
+        <view class="tab-title">品种</view>
+        <view class="tab-count">{{componentTypes.length}}项</view>
+      </view>
+    </view>
+
+    <view wx:if="{{activeTab == 'series'}}" class="panel">
+      <view class="panel-head">
+        <view>
+          <view class="section-title">花色分类</view>
+          <view class="section-note">客户先按花色进入产品</view>
+        </view>
+        <button class="section-add" bindtap="onAddSeriesTap">新增花色</button>
+      </view>
+
+      <view wx:if="{{colorSeries.length == 0}}" class="blank-state">暂无花色</view>
+      <view wx:else class="category-list">
+        <view
+          wx:for="{{colorSeries}}"
+          wx:key="id"
+          wx:for-index="index"
+          class="category-card"
+          data-index="{{index}}"
+          bindtap="onEditSeriesTap"
+        >
+          <image wx:if="{{item.coverUrl}}" class="cover" src="{{item.coverUrl}}" mode="aspectFill" />
+          <view wx:else class="cover fallback">花色</view>
+          <view class="category-main">
+            <view class="category-top">
+              <view class="category-title">{{item.title}}</view>
+              <view wx:if="{{!item.builtIn}}" class="custom-chip">自建</view>
+            </view>
+            <view class="category-desc">
+              <text>{{item.count}}个产品</text>
+              <text class="dot">·</text>
+              <text>排序 {{item.sortOrder}}</text>
+            </view>
+          </view>
+          <view class="card-side">
+            <view class="status {{item.visible ? 'active' : ''}}">{{item.visible ? '显示' : '隐藏'}}</view>
+            <view class="edit-text">编辑</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:elif="{{activeTab == 'component'}}" class="panel">
+      <view class="panel-head">
+        <view>
+          <view class="section-title">产品品种</view>
+          <view class="section-note">客户进入花色后再按品种查看</view>
+        </view>
+        <button class="section-add" bindtap="onAddComponentTap">新增品种</button>
+      </view>
+
+      <view wx:if="{{componentTypes.length == 0}}" class="blank-state">暂无品种</view>
+      <view wx:else class="category-list">
+        <view
+          wx:for="{{componentTypes}}"
+          wx:key="id"
+          wx:for-index="index"
+          class="category-card"
+          data-index="{{index}}"
+          bindtap="onEditComponentTap"
+        >
+          <image wx:if="{{item.coverUrl}}" class="cover" src="{{item.coverUrl}}" mode="aspectFill" />
+          <view wx:else class="cover fallback">{{item.shortTitle}}</view>
+          <view class="category-main">
+            <view class="category-top">
+              <view class="category-title">{{item.title}}</view>
+              <view wx:if="{{!item.builtIn}}" class="custom-chip">自建</view>
+            </view>
+            <view class="category-desc">
+              <text>{{item.count}}个产品</text>
+              <text class="dot">·</text>
+              <text>排序 {{item.sortOrder}}</text>
+            </view>
+          </view>
+          <view class="card-side">
+            <view class="status {{item.visible ? 'active' : ''}}">{{item.visible ? '显示' : '隐藏'}}</view>
+            <view class="edit-text">编辑</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <view wx:if="{{editorVisible}}" class="sheet-mask" catchtap="onCloseEditor">
+    <view class="editor-sheet" catchtap="noop">
+      <view class="sheet-handle"></view>
+      <view class="sheet-title">{{editorTitle}}</view>
+
+      <view class="field">
+        <view class="label">{{editorType == 'series' ? '花色名称' : '品种名称'}}</view>
+        <input
+          class="input"
+          maxlength="30"
+          placeholder="{{editorType == 'series' ? '如雅士白' : '如罗马柱'}}"
+          value="{{editorItem.displayName}}"
+          data-field="displayName"
+          bindinput="onEditorInput"
+        />
+      </view>
+
+      <view class="field">
+        <view class="label">分类图片</view>
+        <view class="cover-editor">
+          <image wx:if="{{editorItem.coverUrl}}" class="cover-preview" src="{{editorItem.coverUrl}}" mode="aspectFill" />
+          <view wx:else class="cover-preview placeholder">图片</view>
+          <view class="cover-actions">
+            <button
+              class="upload-btn"
+              loading="{{uploading}}"
+              disabled="{{uploading || saving}}"
+              bindtap="onUploadCover"
+            >
+              上传图片
+            </button>
+            <button class="clear-btn" disabled="{{uploading || saving}}" bindtap="onClearCover">清空</button>
+          </view>
+        </view>
+        <input
+          class="input url-input"
+          placeholder="图片链接，选填"
+          value="{{editorItem.coverUrl}}"
+          data-field="coverUrl"
+          bindinput="onEditorInput"
+        />
+      </view>
+
+      <view class="field row-field">
+        <view>
+          <view class="label">客户可见</view>
+          <view class="hint">{{editorItem.visible ? '客户可以看到' : '客户看不到'}}</view>
+        </view>
+        <switch checked="{{editorItem.visible}}" color="#176B5B" bindchange="onEditorVisibleChange" />
+      </view>
+
+      <view class="field">
+        <view class="label">排序</view>
+        <input
+          class="input"
+          type="number"
+          value="{{editorItem.sortOrder}}"
+          data-field="sortOrder"
+          bindinput="onEditorInput"
+        />
+      </view>
+
+      <view class="sheet-actions">
+        <button class="cancel-btn" disabled="{{saving || uploading}}" bindtap="onCloseEditor">取消</button>
+        <button class="save-btn" loading="{{saving}}" disabled="{{saving || uploading}}" bindtap="onSaveEditor">保存</button>
+      </view>
+
+      <button
+        wx:if="{{editorItem.canDelete}}"
+        class="delete-btn"
+        disabled="{{saving || uploading}}"
+        bindtap="onDeleteEditor"
+      >
+        删除分类
+      </button>
+    </view>
+  </view>
+</view>

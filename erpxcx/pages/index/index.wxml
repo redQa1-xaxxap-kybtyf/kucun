@@ -1,120 +1,142 @@
 <view class="page">
   <view class="header">
-    <view>
-      <view class="eyebrow">外墙瓷砖 · 罗马柱图册</view>
-      <view class="title">按花色选款</view>
+    <view class="search-bar" bindlongpress="onAdminTap">
+      <input
+        class="search-input"
+        placeholder="请输入产品关键词搜索"
+        value="{{search}}"
+        confirm-type="search"
+        bindinput="onSearchInput"
+        bindconfirm="onSearchConfirm"
+      />
+      <button wx:if="{{search}}" class="search-clear" bindtap="onClearSearch">清空</button>
+      <view class="search-icon" bindtap="onSearchConfirm"></view>
     </view>
-    <button class="share-btn" open-type="share">分享</button>
-  </view>
-
-  <view class="search-card">
-    <input
-      class="search-input"
-      placeholder="知道型号时可搜索"
-      value="{{search}}"
-      confirm-type="search"
-      bindinput="onSearchInput"
-      bindconfirm="onSearchConfirm"
-    />
-    <button wx:if="{{search}}" class="search-clear" bindtap="onClearSearch">清空</button>
+    <button wx:if="{{hasAdminSession}}" class="admin-entry" bindtap="onAdminTap">工作台</button>
   </view>
 
   <view wx:if="{{error}}" class="notice">{{error}}</view>
 
-  <view class="shelf">
-    <scroll-view class="series-list" scroll-y enhanced>
-      <view
-        wx:for="{{series}}"
-        wx:key="id"
-        class="series-item {{selectedSeriesId == item.id ? 'active' : ''}}"
-        data-id="{{item.id}}"
-        bindtap="onSeriesTap"
-      >
-        <image wx:if="{{item.coverUrl}}" class="series-texture" src="{{item.coverUrl}}" mode="aspectFill" lazy-load />
-        <view wx:else class="series-texture placeholder"></view>
-        <view class="series-name">{{item.name}}</view>
-        <view class="series-count">{{item.productCount}}款</view>
-      </view>
-    </scroll-view>
+  <view wx:if="{{loading}}" class="page-loading home-loading">
+    <view class="loading-spinner"></view>
+    <view class="loading-text">加载中</view>
+  </view>
 
-    <view class="content">
-      <scroll-view class="component-tabs" scroll-x enhanced>
-        <view class="component-row">
-          <view
-            wx:for="{{components}}"
-            wx:key="id"
-            class="component-tab {{selectedComponentType == item.id ? 'active' : ''}}"
-            data-id="{{item.id}}"
-            bindtap="onComponentTap"
-          >
-            {{item.label}} {{item.productCount}}
-          </view>
+  <block wx:elif="{{isSearching}}">
+    <view class="section-head">
+      <view>
+        <view class="section-title">搜索结果</view>
+        <view class="section-subtitle">{{searchKeyword}} · {{productCount}}个产品</view>
+      </view>
+    </view>
+
+    <view wx:if="{{!hasProducts}}" class="state-card">
+      <view class="state-title">{{emptyTitle}}</view>
+      <view class="state-text">{{emptyText}}</view>
+    </view>
+
+    <view wx:else class="product-grid search-grid">
+      <view
+        wx:for="{{products}}"
+        wx:key="id"
+        class="product-card"
+        data-id="{{item.id}}"
+        bindtap="onProductTap"
+      >
+        <view class="product-media">
+          <image wx:if="{{item.thumbnailUrl}}" class="product-image" src="{{item.thumbnailUrl}}" mode="aspectFit" lazy-load />
+          <view wx:else class="product-image fallback">暂无图片</view>
+        </view>
+        <view class="product-info">
+          <view class="product-name line-clamp-2">{{item.name}}</view>
+          <view class="product-code line-clamp-1">{{item.code}}</view>
+          <view class="product-meta line-clamp-1">{{item.colorSeries.name}} · {{item.componentType.label}}</view>
+          <view class="product-spec line-clamp-1">{{item.specification || '查看详情'}}</view>
+          <view wx:if="{{item.packageText}}" class="product-pack line-clamp-1">包装 {{item.packageText}}</view>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <block wx:else>
+    <view wx:if="{{!hasSeries}}" class="state-card">
+      <view class="state-title">{{emptyTitle}}</view>
+      <view class="state-text">{{emptyText}}</view>
+    </view>
+
+    <view wx:else class="shelf">
+      <scroll-view class="color-rail" scroll-y enhanced enable-flex>
+        <view
+          wx:for="{{visibleSeries}}"
+          wx:key="id"
+          class="color-item {{selectedSeriesId == item.id ? 'active' : ''}}"
+          data-id="{{item.id}}"
+          bindtap="onSeriesTap"
+        >
+          <view class="color-name">{{item.name}}</view>
         </view>
       </scroll-view>
 
-      <view class="selection-summary">
-        <view class="summary-title">{{selectedSeriesName}} · {{selectedComponentLabel}}</view>
-        <view class="summary-count">{{resultSummary}}</view>
-      </view>
-
-      <scroll-view class="group-list" scroll-y enhanced>
-        <view wx:if="{{loading}}" class="empty">正在整理花色...</view>
-        <view wx:elif="{{groups.length === 0}}" class="empty">暂无匹配款式</view>
-
-        <view
-          wx:for="{{groups}}"
-          wx:key="id"
-          class="group-card"
-          data-id="{{item.id}}"
-          bindtap="onGroupTap"
-        >
-          <image wx:if="{{item.coverUrl}}" class="group-cover" src="{{item.coverUrl}}" mode="aspectFill" lazy-load />
-          <view wx:else class="group-cover fallback">暂无图</view>
-          <view class="group-body">
-            <view class="group-title">{{item.title}}</view>
-            <view class="group-meta">
-              {{item.productCount}}款 · {{item.specificationCount}}种规格
-            </view>
-            <view class="media-row" wx:if="{{item.imageCount > 0 || item.effectImageCount > 0 || item.externalProductCount > 0}}">
-              <view wx:if="{{item.imageCount > 0}}" class="media-chip">{{item.imageCount}}张图</view>
-              <view wx:if="{{item.effectImageCount > 0}}" class="media-chip strong">效果案例</view>
-              <view wx:if="{{item.externalProductCount > 0}}" class="media-chip external">{{item.externalProductCount}}款外采</view>
-            </view>
-            <view class="sample-row">
-              <view
-                wx:for="{{item.sampleProducts}}"
-                wx:key="id"
-                wx:for-item="product"
-                class="sample-tag"
-              >
-                {{product.specification || product.code}}
-              </view>
-            </view>
+      <scroll-view class="shelf-main" scroll-y enhanced enable-flex>
+        <view class="hero-card">
+          <image wx:if="{{bannerCoverUrl}}" class="hero-image" src="{{bannerCoverUrl}}" mode="aspectFill" />
+          <view wx:else class="hero-image hero-fallback">{{selectedSeriesName || '外墙瓷砖'}}</view>
+          <view class="hero-mask">
+            <view class="hero-title">{{selectedSeriesName}}</view>
+            <view class="hero-subtitle">{{selectedSeriesProductCount}} 款产品</view>
           </view>
-          <view class="group-action">查看</view>
+          <view wx:if="{{shelfLoading}}" class="loading-pill">
+            <view class="loading-spinner small"></view>
+            <text>加载中</text>
+          </view>
         </view>
 
-        <view class="quick-products" wx:if="{{searchKeyword && products.length > 0}}">
-          <view class="section-title">搜索结果</view>
-          <view
-            wx:for="{{products}}"
-            wx:key="id"
-            class="product-row"
-            data-id="{{item.id}}"
-            bindtap="onProductTap"
-          >
-            <image wx:if="{{item.thumbnailUrl}}" class="product-thumb" src="{{item.thumbnailUrl}}" mode="aspectFill" lazy-load />
-            <view wx:else class="product-thumb fallback">图</view>
-            <view class="product-info">
-              <view class="product-name line-clamp-1">{{item.name}}</view>
-              <view class="product-code">
-                <text wx:if="{{item.source == 'external'}}" class="source-badge">外采款</text>
-                型号 {{item.code}}
+        <view class="shelf-content {{shelfLoading ? 'muted' : ''}}">
+          <view wx:if="{{!hasGroups}}" class="state-card slim">
+            <view class="state-title">暂无产品</view>
+            <view class="state-text">{{selectedComponentLabel || selectedSeriesName}}</view>
+          </view>
+
+          <view wx:else class="group-list">
+            <view
+              wx:for="{{groups}}"
+              wx:key="id"
+              wx:for-item="group"
+              class="group-card"
+              data-id="{{group.id}}"
+              bindtap="onGroupTap"
+            >
+              <view class="group-head">
+                <view class="group-title line-clamp-1">{{group.title}}</view>
+                <view class="group-summary">{{group.productCount}}款 · {{group.specificationCount}}种规格</view>
+              </view>
+
+              <view wx:if="{{group.sampleProducts.length > 0}}" class="product-mini-grid">
+                <view
+                  wx:for="{{group.sampleProducts}}"
+                  wx:key="id"
+                  wx:for-item="product"
+                  class="mini-product"
+                >
+                  <view class="mini-media">
+                    <image wx:if="{{product.thumbnailUrl}}" class="mini-image" src="{{product.thumbnailUrl}}" mode="aspectFill" lazy-load />
+                    <view wx:else class="mini-image fallback">暂无图片</view>
+                    <view class="mini-badge">共有 {{group.productCount}} 款</view>
+                  </view>
+                  <view class="mini-title line-clamp-1">{{group.componentType.label}}</view>
+                </view>
+              </view>
+
+              <view
+                wx:else
+                class="group-empty"
+              >
+                查看 {{group.productCount}} 款产品
               </view>
             </view>
           </view>
         </view>
       </scroll-view>
     </view>
-  </view>
+  </block>
 </view>

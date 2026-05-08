@@ -2,7 +2,8 @@
   min-height: 100vh;
   padding: 24rpx;
   box-sizing: border-box;
-  background: #f8f6f1;
+  background: #f4f6f5;
+  color: #101828;
 }
 
 .header {
@@ -13,25 +14,15 @@
 }
 
 .eyebrow {
-  color: #8a8175;
+  color: #667085;
   font-size: 22rpx;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .title {
   margin-top: 6rpx;
-  color: #1f2328;
-  font-size: 42rpx;
-  font-weight: 900;
-}
-
-.scan-btn {
-  height: 66rpx;
-  padding: 0 26rpx;
-  border-radius: 999rpx;
-  background: #27594f;
-  color: #fff;
-  font-size: 26rpx;
+  color: #101828;
+  font-size: 40rpx;
   font-weight: 900;
 }
 
@@ -40,51 +31,57 @@
   align-items: center;
   gap: 16rpx;
   height: 78rpx;
-  padding: 0 22rpx;
-  border: 1rpx solid #e7e0d6;
-  border-radius: 20rpx;
+  padding: 0 20rpx;
+  border: 1rpx solid #d0d5dd;
+  border-radius: 8rpx;
   background: #fff;
 }
 
 .search-input {
   flex: 1;
   height: 78rpx;
-  color: #1f2328;
+  color: #101828;
   font-size: 27rpx;
 }
 
 .search-clear {
-  color: #b68a45;
-  font-size: 24rpx;
-  font-weight: 800;
+  height: 52rpx;
+  padding: 0 12rpx;
+  border-radius: 8rpx;
+  background: #eef2f0;
+  color: #475467;
+  font-size: 22rpx;
+  font-weight: 900;
+  line-height: 52rpx;
 }
 
 .notice {
   margin-top: 18rpx;
   padding: 18rpx;
-  border-radius: 16rpx;
-  background: #fff3ed;
-  color: #9a3412;
+  border: 1rpx solid #f3b8a6;
+  border-radius: 8rpx;
+  background: #fff4ef;
+  color: #b42318;
   font-size: 24rpx;
 }
 
 .empty {
   padding: 120rpx 20rpx;
-  color: #8a8175;
+  color: #667085;
   font-size: 27rpx;
   text-align: center;
 }
 
 .inventory-list {
-  margin-top: 20rpx;
+  margin-top: 18rpx;
   padding-bottom: 40rpx;
 }
 
 .inventory-card {
-  margin-bottom: 18rpx;
-  padding: 22rpx;
-  border: 1rpx solid #eee7dd;
-  border-radius: 24rpx;
+  margin-bottom: 14rpx;
+  padding: 18rpx;
+  border: 1rpx solid #d0d5dd;
+  border-radius: 8rpx;
   background: #fff;
 }
 
@@ -101,86 +98,105 @@
 }
 
 .product-name {
-  color: #1f2328;
-  font-size: 30rpx;
+  color: #101828;
+  font-size: 29rpx;
   font-weight: 900;
 }
 
 .product-code {
   margin-top: 8rpx;
-  color: #b68a45;
+  color: #176b5b;
   font-family: monospace;
-  font-size: 25rpx;
+  font-size: 24rpx;
   font-weight: 900;
 }
 
 .stock {
-  padding: 10rpx 16rpx;
-  border-radius: 999rpx;
-  font-size: 23rpx;
+  padding: 9rpx 14rpx;
+  border-radius: 8rpx;
+  font-size: 22rpx;
   font-weight: 900;
 }
 
 .stock.ok {
-  background: #e8f5ef;
-  color: #27594f;
+  background: #eaf5f1;
+  color: #176b5b;
 }
 
 .stock.empty-stock {
-  background: #f2eee8;
-  color: #8a8175;
+  background: #eef2f0;
+  color: #667085;
 }
 
 .spec {
   margin-top: 14rpx;
-  color: #73716d;
+  color: #667085;
   font-size: 24rpx;
+}
+
+.package-line {
+  margin-top: 10rpx;
+  color: #475467;
+  font-size: 23rpx;
+  font-weight: 700;
 }
 
 .meta-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14rpx;
-  margin-top: 20rpx;
+  gap: 12rpx;
+  margin-top: 18rpx;
 }
 
 .meta-label,
 .quantity-label {
-  color: #8a8175;
+  color: #667085;
   font-size: 22rpx;
 }
 
 .meta-value {
   margin-top: 6rpx;
-  color: #1f2328;
+  color: #101828;
   font-size: 25rpx;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .quantity-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12rpx;
-  margin-top: 22rpx;
+  gap: 10rpx;
+  margin-top: 18rpx;
 }
 
 .quantity-item {
-  padding: 18rpx 12rpx;
-  border-radius: 18rpx;
-  background: #f8f6f1;
+  padding: 16rpx 10rpx;
+  border-radius: 8rpx;
+  background: #f4f6f5;
   text-align: center;
 }
 
 .quantity-item.strong {
-  background: #edf7f3;
+  background: #eaf5f1;
 }
 
 .quantity-value {
-  color: #1f2328;
-  font-size: 34rpx;
+  color: #101828;
+  font-size: 32rpx;
   font-weight: 900;
 }
 
 .strong .quantity-value {
-  color: #27594f;
+  color: #176b5b;
+}
+
+.list-more {
+  padding: 20rpx 0 8rpx;
+  color: #98a2b3;
+  font-size: 23rpx;
+  font-weight: 700;
+  text-align: center;
+}
+
+.search-clear::after {
+  border: 0;
 }

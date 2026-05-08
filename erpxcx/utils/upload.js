@@ -40,6 +40,7 @@ async function uploadProductImage(filePath, kind) {
       kind,
       fileName,
     },
+    requireAuth: true,
   });
 
   const hosts = [params.uploadHost]

@@ -1,4 +1,5 @@
 const { getProduct } = require('../../utils/catalog');
+const { getPlanCount, upsertPlanItem } = require('../../utils/loading-plan');
 
 function previewImages(urls, current) {
   const imageUrls = (urls || []).filter(Boolean);
@@ -25,8 +26,8 @@ function getGalleryImageUrls(product) {
   return imageUrls.filter(Boolean);
 }
 
-function openShelf(seriesId, componentType) {
-  const url = `/pages/index/index?seriesId=${encodeURIComponent(seriesId)}&componentType=${encodeURIComponent(componentType || 'all')}`;
+function openShelf(seriesId) {
+  const url = `/pages/index/index?seriesId=${encodeURIComponent(seriesId)}`;
 
   wx.navigateTo({
     url,
@@ -64,6 +65,7 @@ Page({
     currentImage: 0,
     currentImageNumber: 1,
     imageTotal: 0,
+    planCount: 0,
   },
 
   onLoad(options) {
@@ -72,6 +74,10 @@ Page({
   },
 
   onShow() {
+    this.setData({
+      planCount: getPlanCount(),
+    });
+
     if (wx.showShareMenu) {
       wx.showShareMenu({
         menus: ['shareAppMessage', 'shareTimeline'],
@@ -100,6 +106,10 @@ Page({
   },
 
   async loadProduct() {
+    if (wx.showNavigationBarLoading) {
+      wx.showNavigationBarLoading();
+    }
+
     this.setData({ loading: true, error: '' });
 
     try {
@@ -119,6 +129,10 @@ Page({
         error: error.message || '加载失败',
         loading: false,
       });
+    } finally {
+      if (wx.hideNavigationBarLoading) {
+        wx.hideNavigationBarLoading();
+      }
     }
   },
 
@@ -158,12 +172,51 @@ Page({
     const product = this.data.product;
     if (!product) return;
 
-    openShelf(product.colorSeries.id, product.componentType.id);
+    openShelf(product.colorSeries.id);
+  },
+
+  onCopyProductModel() {
+    const product = this.data.product;
+    if (!product) return;
+
+    const content = [`型号：${product.code}`, `产品名称：${product.name}`]
+      .filter(Boolean)
+      .join('\n');
+
+    wx.setClipboardData({
+      data: content,
+      success() {
+        wx.showToast({
+          title: '已复制型号',
+          icon: 'success',
+        });
+      },
+    });
   },
 
   onPosterTap() {
     wx.navigateTo({
       url: `/pages/product/poster?id=${this.data.productId}`,
+    });
+  },
+
+  onAddPlanTap() {
+    const product = this.data.product;
+    if (!product) return;
+
+    const result = upsertPlanItem(product, 1);
+    this.setData({
+      planCount: getPlanCount(),
+    });
+    wx.showToast({
+      title: result.existed ? '已在计划中' : '已加入计划',
+      icon: result.existed ? 'none' : 'success',
+    });
+  },
+
+  onPlanTap() {
+    wx.navigateTo({
+      url: '/pages/plan/index',
     });
   },
 

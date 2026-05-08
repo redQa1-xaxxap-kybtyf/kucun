@@ -1,3 +1,6 @@
 {
-  "navigationBarTitleText": "产品组"
+  "navigationBarTitleText": "产品列表",
+  "navigationBarBackgroundColor": "#06451f",
+  "navigationBarTextStyle": "white",
+  "backgroundColor": "#f3f5f6"
 }

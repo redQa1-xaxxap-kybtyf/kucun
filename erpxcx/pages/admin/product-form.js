@@ -1,11 +1,26 @@
-const { requireAdminSession } = require('../../utils/admin');
 const {
-  createProduct,
+  hideAdminShareMenu,
+  requireAdminSession,
+} = require('../../utils/admin');
+const {
+  getCatalogSettings,
+  updateProductCatalogDisplay,
+} = require('../../utils/catalog-settings');
+const { getProduct: getMiniProgramProduct } = require('../../utils/catalog');
+const {
   getCategories,
   getProduct,
-  updateProduct,
 } = require('../../utils/products');
 const { uploadProductImage } = require('../../utils/upload');
+
+const CATALOG_DIRTY_KEY = 'mini_catalog_dirty_at';
+const EDIT_READONLY_ERP_FIELDS = [
+  'code',
+  'description',
+  'name',
+  'specification',
+  'thumbnailUrl',
+];
 
 function createEmptyForm() {
   return {
@@ -17,19 +32,6 @@ function createEmptyForm() {
     specification: '',
     status: 'active',
     thumbnailUrl: '',
-  };
-}
-
-function trimForm(form) {
-  return {
-    categoryId: form.categoryId,
-    code: form.code.trim(),
-    description: form.description.trim(),
-    images: form.images || [],
-    name: form.name.trim(),
-    specification: form.specification.trim(),
-    status: form.status,
-    thumbnailUrl: form.thumbnailUrl.trim(),
   };
 }
 
@@ -71,10 +73,265 @@ function chooseImageFiles(count) {
   });
 }
 
+function createEmptyMiniDisplay() {
+  return {
+    componentType: '',
+    seriesId: '',
+    visible: true,
+  };
+}
+
+function settle(promise) {
+  return promise.then(
+    value => ({ ok: true, value }),
+    error => ({ ok: false, error })
+  );
+}
+
+function normalizeList(value) {
+  if (Array.isArray(value)) return value;
+  if (value && Array.isArray(value.data)) return value.data;
+  return [];
+}
+
+function normalizeCatalogSettings(settings) {
+  const safeSettings = settings && typeof settings === 'object' ? settings : {};
+  const productOverrides =
+    safeSettings.productOverrides &&
+    typeof safeSettings.productOverrides === 'object' &&
+    !Array.isArray(safeSettings.productOverrides)
+      ? safeSettings.productOverrides
+      : {};
+
+  return {
+    colorSeries: normalizeList(safeSettings.colorSeries),
+    componentTypes: normalizeList(safeSettings.componentTypes),
+    productOverrides,
+  };
+}
+
+function findIndexById(items, id) {
+  return (items || []).findIndex(item => item.id === id);
+}
+
+function readId(value) {
+  if (typeof value === 'string') return value;
+  if (value && typeof value.id === 'string') return value.id;
+  return '';
+}
+
+function getProductCategoryId(product) {
+  return (
+    readId(product && product.categoryId) || readId(product && product.category)
+  );
+}
+
+function getCategoryDisplayName(category) {
+  if (!category) return '';
+
+  const fullPath = String(category.fullPath || '').trim();
+  if (fullPath) return fullPath;
+
+  const name = String(category.name || '').trim();
+  if (!name) return '';
+
+  const parentName = getCategoryDisplayName(category.parent);
+  return parentName ? `${parentName} / ${name}` : name;
+}
+
+function normalizeCategoryForView(category) {
+  const displayName = getCategoryDisplayName(category);
+
+  return {
+    ...category,
+    displayName: displayName || category.name,
+  };
+}
+
+function normalizeCategories(categories, product) {
+  const list = normalizeList(categories).filter(
+    category => category && category.id && category.name
+  ).map(normalizeCategoryForView);
+  const productCategory = product && product.category;
+
+  if (
+    productCategory &&
+    productCategory.id &&
+    productCategory.name &&
+    !list.some(category => category.id === productCategory.id)
+  ) {
+    return [normalizeCategoryForView(productCategory)].concat(list);
+  }
+
+  return list;
+}
+
+function buildProductSearchText(product) {
+  if (!product) return '';
+
+  const variants = Array.isArray(product.variants) ? product.variants : [];
+  const variantText = variants
+    .map(variant =>
+      [variant.colorName, variant.colorCode, variant.colorValue]
+        .filter(Boolean)
+        .join(' ')
+    )
+    .join(' ');
+
+  return [
+    product.code,
+    product.name,
+    product.specification,
+    product.description,
+    product.category && getCategoryDisplayName(product.category),
+    variantText,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+}
+
+function resolveCatalogItemId(items, searchText, fallbackId) {
+  const list = normalizeList(items);
+  const text = String(searchText || '').toLowerCase();
+  const matched = list.find(item => {
+    const keywords = normalizeList(item && item.keywords);
+    return (
+      item &&
+      item.id !== fallbackId &&
+      keywords.some(keyword => {
+        const keywordText = String(keyword || '').trim().toLowerCase();
+        return keywordText && text.includes(keywordText);
+      })
+    );
+  });
+
+  if (matched) return matched.id;
+
+  const fallback = list.find(item => item && item.id === fallbackId);
+  if (fallback) return fallback.id;
+
+  return list[0] && list[0].id ? list[0].id : '';
+}
+
+function hasManualCatalogDisplay(override) {
+  return Boolean(
+    override &&
+      (override.seriesId ||
+        override.componentType ||
+        typeof override.visible === 'boolean')
+  );
+}
+
+function createMiniDisplayFromProduct(
+  product,
+  miniProduct,
+  catalogSettings,
+  productId
+) {
+  const productOverrides = catalogSettings.productOverrides || {};
+  const override = productOverrides[productId] || {};
+  const searchText = buildProductSearchText(product);
+  const miniProductSeriesId = readId(miniProduct && miniProduct.colorSeries);
+  const miniProductComponentType = readId(
+    miniProduct && miniProduct.componentType
+  );
+  const productSeriesId =
+    readId(product && product.colorSeries) || readId(product && product.seriesId);
+  const productComponentType =
+    readId(product && product.componentType) ||
+    readId(product && product.componentTypeId);
+  const seriesId =
+    override.seriesId ||
+    miniProductSeriesId ||
+    productSeriesId ||
+    resolveCatalogItemId(catalogSettings.colorSeries, searchText, 'other');
+  const componentType =
+    override.componentType ||
+    miniProductComponentType ||
+    productComponentType ||
+    resolveCatalogItemId(catalogSettings.componentTypes, searchText, 'other');
+  const display = {
+    componentType,
+    seriesId,
+    visible: override.visible !== false,
+  };
+  const hasSpecificDisplay =
+    (seriesId && seriesId !== 'other') ||
+    (componentType && componentType !== 'other');
+  const sourceLabel = hasManualCatalogDisplay(override)
+    ? '已手动选择'
+    : miniProductSeriesId || miniProductComponentType
+      ? '已按目录匹配'
+      : hasSpecificDisplay
+        ? '已按产品信息匹配'
+        : '待选择';
+
+  return {
+    display,
+    sourceLabel,
+  };
+}
+
+function buildSelectableCatalogItems(items, selectedId) {
+  const list = normalizeList(items).filter(item => item && item.id);
+  const visibleItems = list.filter(item => item.visible !== false);
+  const selectedItem = list.find(item => item.id === selectedId);
+
+  if (
+    selectedItem &&
+    !visibleItems.some(item => item.id === selectedItem.id)
+  ) {
+    return visibleItems.concat(selectedItem);
+  }
+
+  return visibleItems;
+}
+
+function findCatalogName(items, id, nameField) {
+  const item = (items || []).find(item => item.id === id);
+  return item ? item[nameField] : '';
+}
+
+function normalizeSearchText(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function getCatalogItemTitle(item, type) {
+  if (!item) return '';
+  return type === 'series' ? item.name || '' : item.label || '';
+}
+
+function buildSelectorItems(items, type, keyword, selectedId) {
+  const searchText = normalizeSearchText(keyword);
+
+  return (items || [])
+    .filter(item => {
+      if (!item || !item.id) return false;
+      if (!searchText) return true;
+
+      const title = getCatalogItemTitle(item, type);
+      const keywords = normalizeList(item.keywords).join(' ');
+      const haystack = normalizeSearchText(
+        `${title} ${item.id || ''} ${keywords}`
+      );
+      return haystack.includes(searchText);
+    })
+    .map(item => ({
+      id: item.id,
+      selected: item.id === selectedId,
+      subtitle: item.visible === false ? '已停用，当前产品仍在使用' : '',
+      title: getCatalogItemTitle(item, type),
+    }));
+}
+
 Page({
   data: {
+    catalogSettings: normalizeCatalogSettings(null),
     categories: [],
     categoryIndex: -1,
+    componentIndex: -1,
+    componentTypes: [],
     form: createEmptyForm(),
     id: '',
     isEdit: false,
@@ -82,19 +339,44 @@ Page({
     effectImages: [],
     loading: true,
     mainImages: [],
+    miniDisplay: createEmptyMiniDisplay(),
+    miniDisplaySourceLabel: '',
     saving: false,
     selectedCategoryName: '请选择分类',
+    selectedComponentName: '请选择品种',
+    selectedSeriesName: '请选择花色',
+    selectorEmptyText: '',
+    selectorItems: [],
+    selectorSearch: '',
+    selectorTitle: '',
+    selectorType: '',
+    selectorVisible: false,
+    seriesIndex: -1,
+    seriesList: [],
     uploadingKind: '',
   },
 
   onLoad(options) {
+    hideAdminShareMenu();
+
     const session = requireAdminSession();
     if (!session) return;
 
     const id = options.id || '';
+    if (!id) {
+      wx.showToast({
+        title: '请在ERP新增产品',
+        icon: 'none',
+      });
+      wx.redirectTo({
+        url: '/pages/admin/products',
+      });
+      return;
+    }
+
     this.setData({
       id,
-      isEdit: Boolean(id),
+      isEdit: true,
     });
     this.initForm(id);
   },
@@ -103,13 +385,40 @@ Page({
     this.setData({ loading: true });
 
     try {
-      const categories = await getCategories();
-      let form = createEmptyForm();
+      const [
+        categoriesResult,
+        catalogSettingsResult,
+        productResult,
+        miniProductResult,
+      ] = await Promise.all([
+        settle(getCategories()),
+        settle(getCatalogSettings()),
+        id ? settle(getProduct(id)) : Promise.resolve({ ok: true, value: null }),
+        id
+          ? settle(getMiniProgramProduct(id))
+          : Promise.resolve({ ok: true, value: null }),
+      ]);
 
-      if (id) {
-        const product = await getProduct(id);
+      if (!productResult.ok) {
+        throw productResult.error;
+      }
+
+      const product = productResult.value;
+      const miniProduct = miniProductResult.ok ? miniProductResult.value : null;
+      const catalogSettings = normalizeCatalogSettings(
+        catalogSettingsResult.ok ? catalogSettingsResult.value : null
+      );
+      const categories = normalizeCategories(
+        categoriesResult.ok ? categoriesResult.value : [],
+        product
+      );
+      let form = createEmptyForm();
+      let miniDisplay = createEmptyMiniDisplay();
+      let miniDisplaySourceLabel = '待选择';
+
+      if (product) {
         form = {
-          categoryId: product.categoryId || '',
+          categoryId: getProductCategoryId(product),
           code: product.code || '',
           description: product.description || '',
           images: Array.isArray(product.images) ? product.images : [],
@@ -118,33 +427,76 @@ Page({
           status: product.status || 'active',
           thumbnailUrl: product.thumbnailUrl || '',
         };
-
-        if (
-          product.category &&
-          !categories.some(category => category.id === product.category.id)
-        ) {
-          categories.unshift(product.category);
-        }
+        const displayResult = createMiniDisplayFromProduct(
+          product,
+          miniProduct,
+          catalogSettings,
+          id
+        );
+        miniDisplay = displayResult.display;
+        miniDisplaySourceLabel = displayResult.sourceLabel;
       }
 
+      const seriesList = buildSelectableCatalogItems(
+        catalogSettings.colorSeries,
+        miniDisplay.seriesId
+      );
+      const componentTypes = buildSelectableCatalogItems(
+        catalogSettings.componentTypes,
+        miniDisplay.componentType
+      );
       const selectedCategory = categories.find(
         category => category.id === form.categoryId
+      );
+      const selectedSeries = seriesList.find(
+        series => series.id === miniDisplay.seriesId
+      );
+      const selectedComponent = componentTypes.find(
+        component => component.id === miniDisplay.componentType
       );
       const splitImages = splitProductImages(form.images);
 
       this.setData({
         categories,
+        catalogSettings,
         categoryIndex: categories.findIndex(
           category => category.id === form.categoryId
         ),
+        componentIndex: findIndexById(
+          componentTypes,
+          miniDisplay.componentType
+        ),
+        componentTypes,
         effectImages: splitImages.effectImages,
         form,
         loading: false,
         mainImages: splitImages.mainImages,
+        miniDisplay,
+        miniDisplaySourceLabel,
         selectedCategoryName: selectedCategory
-          ? selectedCategory.name
-          : '请选择分类',
+          ? selectedCategory.displayName
+          : product
+            ? '未读取到ERP分类'
+            : '请选择分类',
+        selectedComponentName: selectedComponent
+          ? selectedComponent.label
+          : '请选择品种',
+        selectedSeriesName: selectedSeries ? selectedSeries.name : '请选择花色',
+        seriesIndex: findIndexById(seriesList, miniDisplay.seriesId),
+        seriesList,
       });
+
+      if (!categoriesResult.ok) {
+        wx.showToast({
+          title: 'ERP 分类加载失败，请稍后重试',
+          icon: 'none',
+        });
+      } else if (!catalogSettingsResult.ok) {
+        wx.showToast({
+          title: '小程序分类加载失败，请稍后重试',
+          icon: 'none',
+        });
+      }
     } catch (error) {
       wx.showToast({
         title: error.message || '加载失败',
@@ -156,18 +508,50 @@ Page({
 
   onInput(event) {
     const field = event.currentTarget.dataset.field;
+
+    if (
+      this.data.isEdit &&
+      EDIT_READONLY_ERP_FIELDS.indexOf(field) !== -1
+    ) {
+      return;
+    }
+
     this.setData({
       [`form.${field}`]: event.detail.value,
     });
   },
 
   onCategoryChange(event) {
+    if (this.data.isEdit) return;
+
     const index = Number(event.detail.value);
     const category = this.data.categories[index];
     this.setData({
       categoryIndex: index,
       'form.categoryId': category ? category.id : '',
-      selectedCategoryName: category ? category.name : '请选择分类',
+      selectedCategoryName: category ? category.displayName : '请选择分类',
+    });
+  },
+
+  onSeriesChange(event) {
+    const index = Number(event.detail.value);
+    const series = this.data.seriesList[index];
+    this.setData({
+      'miniDisplay.seriesId': series ? series.id : '',
+      miniDisplaySourceLabel: '已手动选择',
+      selectedSeriesName: series ? series.name : '请选择花色',
+      seriesIndex: index,
+    });
+  },
+
+  onComponentChange(event) {
+    const index = Number(event.detail.value);
+    const component = this.data.componentTypes[index];
+    this.setData({
+      'miniDisplay.componentType': component ? component.id : '',
+      componentIndex: index,
+      miniDisplaySourceLabel: '已手动选择',
+      selectedComponentName: component ? component.label : '请选择品种',
     });
   },
 
@@ -177,11 +561,157 @@ Page({
     });
   },
 
-  validateForm(payload) {
-    if (!payload.code) return '请输入产品编码';
-    if (!payload.name) return '请输入产品名称';
-    if (!payload.specification) return '请输入规格';
-    if (!payload.categoryId) return '请选择分类';
+  onMiniVisibleChange(event) {
+    this.setData({
+      'miniDisplay.visible': event.detail.value,
+      miniDisplaySourceLabel: '已手动选择',
+    });
+  },
+
+  onOpenCatalogSelector(event) {
+    if (!this.data.miniDisplay.visible) {
+      wx.showToast({
+        title: '先打开客户可见',
+        icon: 'none',
+      });
+      return;
+    }
+
+    const type = event.currentTarget.dataset.type;
+    if (type !== 'series' && type !== 'component') return;
+
+    this.openCatalogSelector(type, '');
+  },
+
+  openCatalogSelector(type, keyword) {
+    const isSeries = type === 'series';
+    const selectedId = isSeries
+      ? this.data.miniDisplay.seriesId
+      : this.data.miniDisplay.componentType;
+    const items = isSeries ? this.data.seriesList : this.data.componentTypes;
+    const selectorItems = buildSelectorItems(items, type, keyword, selectedId);
+
+    this.setData({
+      selectorEmptyText: isSeries
+        ? '没有找到花色，先到分类管理添加'
+        : '没有找到品种，先到分类管理添加',
+      selectorItems,
+      selectorSearch: keyword,
+      selectorTitle: isSeries ? '选择花色' : '选择品种',
+      selectorType: type,
+      selectorVisible: true,
+    });
+  },
+
+  onSelectorSearchInput(event) {
+    this.openCatalogSelector(this.data.selectorType, event.detail.value);
+  },
+
+  onSelectorItemTap(event) {
+    const id = event.currentTarget.dataset.id;
+    const type = this.data.selectorType;
+
+    if (type === 'series') {
+      const index = findIndexById(this.data.seriesList, id);
+      const series = this.data.seriesList[index];
+      if (!series) return;
+
+      this.setData({
+        'miniDisplay.seriesId': series.id,
+        miniDisplaySourceLabel: '已手动选择',
+        selectedSeriesName: series.name,
+        selectorVisible: false,
+        seriesIndex: index,
+      });
+      return;
+    }
+
+    if (type === 'component') {
+      const index = findIndexById(this.data.componentTypes, id);
+      const component = this.data.componentTypes[index];
+      if (!component) return;
+
+      this.setData({
+        'miniDisplay.componentType': component.id,
+        componentIndex: index,
+        miniDisplaySourceLabel: '已手动选择',
+        selectedComponentName: component.label,
+        selectorVisible: false,
+      });
+    }
+  },
+
+  onCloseSelector() {
+    this.setData({
+      selectorItems: [],
+      selectorSearch: '',
+      selectorTitle: '',
+      selectorType: '',
+      selectorVisible: false,
+    });
+  },
+
+  noop() {},
+
+  onAutoClassifyTap() {
+    const category = this.data.categories[this.data.categoryIndex] || null;
+    const product = {
+      ...this.data.form,
+      category,
+    };
+    const displayResult = createMiniDisplayFromProduct(
+      product,
+      null,
+      {
+        colorSeries: this.data.seriesList,
+        componentTypes: this.data.componentTypes,
+        productOverrides: {},
+      },
+      this.data.id || ''
+    );
+    const nextDisplay = {
+      ...this.data.miniDisplay,
+      componentType: displayResult.display.componentType,
+      seriesId: displayResult.display.seriesId,
+    };
+    const selectedSeriesName =
+      findCatalogName(this.data.seriesList, nextDisplay.seriesId, 'name') ||
+      '请选择花色';
+    const selectedComponentName =
+      findCatalogName(
+        this.data.componentTypes,
+        nextDisplay.componentType,
+        'label'
+      ) || '请选择品种';
+
+    this.setData({
+      componentIndex: findIndexById(
+        this.data.componentTypes,
+        nextDisplay.componentType
+      ),
+      miniDisplay: nextDisplay,
+      miniDisplaySourceLabel: displayResult.sourceLabel,
+      selectedComponentName,
+      selectedSeriesName,
+      seriesIndex: findIndexById(this.data.seriesList, nextDisplay.seriesId),
+    });
+
+    if (!nextDisplay.seriesId || !nextDisplay.componentType) {
+      wx.showToast({
+        title: '没有匹配到分类',
+        icon: 'none',
+      });
+    }
+  },
+
+  validateForm() {
+    if (!this.data.id) return '产品ID缺失，请返回列表重新进入';
+    if (this.data.miniDisplay.visible) {
+      if (this.data.seriesList.length === 0) return '请先维护小程序花色';
+      if (!this.data.miniDisplay.seriesId) return '请选择小程序花色';
+      if (this.data.componentTypes.length === 0) return '请先维护小程序品种';
+      if (!this.data.miniDisplay.componentType) return '请选择小程序品种';
+    }
     return '';
   },
 
@@ -212,6 +742,13 @@ Page({
 
   async uploadImages(kind, maxCount) {
     if (this.data.uploadingKind) return;
+    if (this.data.isEdit) {
+      wx.showToast({
+        title: '请在ERP产品管理维护图片',
+        icon: 'none',
+      });
+      return;
+    }
 
     try {
       const paths = await chooseImageFiles(maxCount);
@@ -254,6 +791,8 @@ Page({
   },
 
   onRemoveImage(event) {
+    if (this.data.isEdit) return;
+
     const index = Number(event.currentTarget.dataset.index);
     const type = event.currentTarget.dataset.type;
     const typeImages = (this.data.form.images || []).filter(
@@ -269,8 +808,7 @@ Page({
   },
 
   async onSubmit() {
-    const payload = trimForm(this.data.form);
-    const message = this.validateForm(payload);
+    const message = this.validateForm();
 
     if (message) {
       wx.showToast({ title: message, icon: 'none' });
@@ -280,14 +818,14 @@ Page({
     this.setData({ saving: true });
 
     try {
-      if (this.data.isEdit) {
-        await updateProduct(this.data.id, payload);
-        wx.showToast({ title: '已保存' });
-      } else {
-        await createProduct(payload);
-        wx.showToast({ title: '已新增' });
-      }
+      await updateProductCatalogDisplay(this.data.id, {
+        visible: this.data.miniDisplay.visible,
+        seriesId: this.data.miniDisplay.seriesId || undefined,
+        componentType: this.data.miniDisplay.componentType || undefined,
+      });
 
+      wx.setStorageSync(CATALOG_DIRTY_KEY, Date.now());
+      wx.showToast({ title: '已保存' });
       wx.navigateBack();
     } catch (error) {
       wx.showToast({
@@ -298,4 +836,5 @@ Page({
       this.setData({ saving: false });
     }
   },
+
 });

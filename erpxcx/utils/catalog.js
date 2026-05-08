@@ -19,7 +19,7 @@ function getProductGroup(id) {
 
 function getProduct(id) {
   return request({
-    url: `/api/miniprogram/products/${id}`,
+    url: `/api/miniprogram/products/${encodeURIComponent(id)}`,
   });
 }
 

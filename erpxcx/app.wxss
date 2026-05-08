@@ -1,10 +1,11 @@
 page {
   min-height: 100%;
-  background: #f8f6f1;
-  color: #1f2328;
+  background: #f4f6f5;
+  color: #101828;
   font-family:
     -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', Arial,
     sans-serif;
+  letter-spacing: 0;
 }
 
 button {
@@ -12,10 +13,16 @@ button {
   margin: 0;
   line-height: 1;
   background: transparent;
+  border-radius: 0;
 }
 
 button::after {
   border: 0;
+}
+
+input,
+textarea {
+  color: #101828;
 }
 
 .safe-bottom {
@@ -23,7 +30,7 @@ button::after {
 }
 
 .text-muted {
-  color: #73716d;
+  color: #667085;
 }
 
 .line-clamp-1 {
@@ -37,4 +44,115 @@ button::after {
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+}
+
+.loading-spinner {
+  width: 34rpx;
+  height: 34rpx;
+  margin: 0 auto;
+  border: 4rpx solid #dbe4e0;
+  border-top-color: #1f5a50;
+  border-radius: 999rpx;
+  animation: spin 800ms linear infinite;
+  box-sizing: border-box;
+}
+
+.loading-spinner.small {
+  width: 24rpx;
+  height: 24rpx;
+  margin: 0;
+  border-width: 3rpx;
+}
+
+.page-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18rpx;
+  min-height: 100vh;
+  padding: 0 32rpx;
+  box-sizing: border-box;
+}
+
+.loading-text {
+  color: #667085;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.share-icon-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 68rpx;
+  height: 68rpx;
+  border: 1rpx solid #dbe4e0;
+  border-radius: 8rpx;
+  background: #fff;
+}
+
+.share-icon-hover {
+  opacity: 0.72;
+}
+
+.share-mark {
+  position: relative;
+  width: 34rpx;
+  height: 34rpx;
+}
+
+.share-dot,
+.share-line {
+  position: absolute;
+  background: #1f5a50;
+}
+
+.share-dot {
+  width: 10rpx;
+  height: 10rpx;
+  border-radius: 999rpx;
+}
+
+.share-dot.start {
+  left: 1rpx;
+  top: 12rpx;
+}
+
+.share-dot.top {
+  right: 1rpx;
+  top: 2rpx;
+}
+
+.share-dot.bottom {
+  right: 1rpx;
+  bottom: 2rpx;
+}
+
+.share-line {
+  left: 10rpx;
+  width: 19rpx;
+  height: 3rpx;
+  border-radius: 999rpx;
+  transform-origin: left center;
+}
+
+.share-line.top {
+  top: 13rpx;
+  transform: rotate(-28deg);
+}
+
+.share-line.bottom {
+  top: 19rpx;
+  transform: rotate(28deg);
 }

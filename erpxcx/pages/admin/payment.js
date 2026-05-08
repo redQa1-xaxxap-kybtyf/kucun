@@ -1,4 +1,7 @@
-const { requireAdminSession } = require('../../utils/admin');
+const {
+  hideAdminShareMenu,
+  requireAdminSession,
+} = require('../../utils/admin');
 const { createPayment, getReceivableOrders } = require('../../utils/finance');
 const { getCustomers } = require('../../utils/sales');
 
@@ -70,6 +73,8 @@ Page({
   },
 
   onLoad() {
+    hideAdminShareMenu();
+
     const session = requireAdminSession();
     if (!session) return;
     this.loadCustomers();
@@ -261,4 +266,5 @@ Page({
       this.setData({ isSaving: false });
     }
   },
+
 });

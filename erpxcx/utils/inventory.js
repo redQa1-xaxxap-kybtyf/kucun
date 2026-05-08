@@ -9,6 +9,7 @@ function getInventories(params = {}) {
   return request({
     url: `/api/inventory${query ? `?${query}` : ''}`,
     miniProgramHeader: false,
+    requireAuth: true,
   });
 }
 

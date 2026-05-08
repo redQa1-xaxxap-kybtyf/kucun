@@ -2,7 +2,8 @@
   min-height: 100vh;
   padding: 24rpx 24rpx 130rpx;
   box-sizing: border-box;
-  background: #f8f6f1;
+  background: #f4f6f5;
+  color: #101828;
 }
 
 .header {
@@ -10,51 +11,53 @@
 }
 
 .eyebrow {
-  color: #8a8175;
+  color: #667085;
   font-size: 22rpx;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .title {
   margin-top: 6rpx;
-  color: #1f2328;
-  font-size: 42rpx;
+  color: #101828;
+  font-size: 40rpx;
   font-weight: 900;
 }
 
 .type-tabs {
   display: flex;
-  gap: 14rpx;
-  margin-bottom: 20rpx;
+  gap: 12rpx;
+  margin-bottom: 16rpx;
 }
 
 .type-tab {
   flex: 1;
-  height: 68rpx;
-  border-radius: 999rpx;
+  height: 64rpx;
+  border: 1rpx solid #d0d5dd;
+  border-radius: 8rpx;
   background: #fff;
-  color: #73716d;
-  font-size: 26rpx;
+  color: #475467;
+  font-size: 25rpx;
   font-weight: 900;
-  line-height: 68rpx;
+  line-height: 64rpx;
   text-align: center;
 }
 
 .type-tab.active {
-  background: #27594f;
+  border-color: #176b5b;
+  background: #176b5b;
   color: #fff;
 }
 
 .section {
-  margin-bottom: 20rpx;
-  padding: 22rpx;
-  border: 1rpx solid #eee7dd;
-  border-radius: 24rpx;
+  margin-bottom: 16rpx;
+  padding: 20rpx;
+  border: 1rpx solid #d0d5dd;
+  border-radius: 8rpx;
   background: #fff;
 }
 
 .section-title {
-  color: #1f2328;
+  color: #101828;
   font-size: 29rpx;
   font-weight: 900;
 }
@@ -66,93 +69,95 @@
 }
 
 .small-btn {
-  width: 106rpx;
-  height: 54rpx;
-  border-radius: 999rpx;
-  background: #f3eee7;
-  color: #27594f;
+  width: 96rpx;
+  height: 52rpx;
+  border-radius: 8rpx;
+  background: #eef2f0;
+  color: #176b5b;
   font-size: 23rpx;
   font-weight: 900;
+  line-height: 52rpx;
 }
 
 .selected-box {
   margin-top: 16rpx;
-  padding: 18rpx;
-  border-radius: 18rpx;
-  background: #edf7f3;
+  padding: 16rpx;
+  border-radius: 8rpx;
+  background: #eaf5f1;
 }
 
 .selected-name {
-  color: #27594f;
+  color: #176b5b;
   font-size: 28rpx;
   font-weight: 900;
 }
 
 .selected-meta {
   margin-top: 6rpx;
-  color: #6b756f;
+  color: #667085;
   font-size: 23rpx;
 }
 
 .search-card {
   display: flex;
   align-items: center;
-  gap: 14rpx;
+  gap: 12rpx;
   height: 74rpx;
   margin-top: 16rpx;
-  padding: 0 18rpx;
-  border-radius: 18rpx;
-  background: #f8f6f1;
+  padding: 0 14rpx 0 18rpx;
+  border-radius: 8rpx;
+  background: #f4f6f5;
 }
 
 .search-input {
   flex: 1;
   height: 74rpx;
-  color: #1f2328;
+  color: #101828;
   font-size: 26rpx;
 }
 
 .search-btn {
-  width: 112rpx;
+  width: 104rpx;
   height: 56rpx;
-  border-radius: 14rpx;
-  background: #27594f;
+  border-radius: 8rpx;
+  background: #176b5b;
   color: #fff;
   font-size: 24rpx;
   font-weight: 900;
+  line-height: 56rpx;
 }
 
 .chip-list {
   display: flex;
+  flex-wrap: wrap;
   gap: 12rpx;
   margin-top: 14rpx;
-  overflow-x: auto;
 }
 
 .customer-chip {
-  min-width: 190rpx;
-  padding: 16rpx;
-  border: 1rpx solid #eee7dd;
-  border-radius: 18rpx;
+  flex: 1 1 220rpx;
+  min-width: 0;
+  padding: 14rpx;
+  border: 1rpx solid #d0d5dd;
+  border-radius: 8rpx;
   background: #fff;
 }
 
 .customer-chip.active {
-  border-color: #27594f;
-  background: #edf7f3;
+  border-color: #176b5b;
+  background: #eaf5f1;
 }
 
 .chip-name {
-  color: #1f2328;
+  color: #101828;
   font-size: 25rpx;
   font-weight: 900;
 }
 
 .chip-meta {
-  max-width: 220rpx;
   margin-top: 6rpx;
   overflow: hidden;
-  color: #8a8175;
+  color: #667085;
   font-size: 22rpx;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -160,10 +165,10 @@
 
 .empty {
   margin-top: 16rpx;
-  padding: 36rpx 20rpx;
-  border-radius: 18rpx;
-  background: #f8f6f1;
-  color: #8a8175;
+  padding: 34rpx 20rpx;
+  border-radius: 8rpx;
+  background: #f4f6f5;
+  color: #667085;
   font-size: 25rpx;
   text-align: center;
 }
@@ -177,32 +182,32 @@
   align-items: center;
   justify-content: space-between;
   gap: 16rpx;
-  margin-bottom: 14rpx;
-  padding: 18rpx;
-  border: 1rpx solid #eee7dd;
-  border-radius: 18rpx;
+  margin-bottom: 12rpx;
+  padding: 16rpx;
+  border: 1rpx solid #d0d5dd;
+  border-radius: 8rpx;
   background: #fff;
 }
 
 .order-card.active {
-  border-color: #27594f;
-  background: #edf7f3;
+  border-color: #176b5b;
+  background: #eaf5f1;
 }
 
 .order-number {
-  color: #1f2328;
+  color: #101828;
   font-size: 26rpx;
   font-weight: 900;
 }
 
 .order-meta {
   margin-top: 8rpx;
-  color: #8a8175;
+  color: #667085;
   font-size: 22rpx;
 }
 
 .remaining {
-  color: #b68a45;
+  color: #176b5b;
   font-size: 29rpx;
   font-weight: 900;
 }
@@ -213,7 +218,7 @@
 
 .label {
   margin-bottom: 10rpx;
-  color: #1f2328;
+  color: #101828;
   font-size: 25rpx;
   font-weight: 900;
 }
@@ -223,9 +228,9 @@
 .date-row {
   height: 74rpx;
   padding: 0 18rpx;
-  border-radius: 18rpx;
-  background: #f8f6f1;
-  color: #1f2328;
+  border-radius: 8rpx;
+  background: #f4f6f5;
+  color: #101828;
   font-size: 27rpx;
   line-height: 74rpx;
   box-sizing: border-box;
@@ -243,9 +248,9 @@
   height: 130rpx;
   margin-top: 18rpx;
   padding: 18rpx;
-  border-radius: 18rpx;
-  background: #f8f6f1;
-  color: #1f2328;
+  border-radius: 8rpx;
+  background: #f4f6f5;
+  color: #101828;
   font-size: 26rpx;
   box-sizing: border-box;
 }
@@ -256,15 +261,16 @@
   bottom: 0;
   left: 0;
   padding: 18rpx 24rpx calc(18rpx + env(safe-area-inset-bottom));
-  border-top: 1rpx solid #eee7dd;
-  background: rgba(248, 246, 241, 0.96);
+  border-top: 1rpx solid #d0d5dd;
+  background: rgba(255, 255, 255, 0.96);
 }
 
 .primary {
   height: 82rpx;
-  border-radius: 20rpx;
-  background: #27594f;
+  border-radius: 8rpx;
+  background: #176b5b;
   color: #fff;
   font-size: 29rpx;
   font-weight: 900;
+  line-height: 82rpx;
 }

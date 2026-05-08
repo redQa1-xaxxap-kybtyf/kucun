@@ -136,34 +136,36 @@ function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
 }
 
 function drawPill(ctx, text, x, y) {
-  setFont(ctx, 24, 700);
-  const width = Math.ceil(ctx.measureText(text).width + 34);
-  fillRoundRect(ctx, x, y, width, 46, 23, '#f6f1e8');
-  ctx.fillStyle = '#7a6b58';
-  ctx.fillText(text, x + 17, y + 11);
-  return x + width + 12;
+  if (!text) return x;
+
+  setFont(ctx, 22, 700);
+  const width = Math.ceil(ctx.measureText(text).width + 30);
+  fillRoundRect(ctx, x, y, width, 42, 21, '#edf4f1');
+  ctx.fillStyle = '#1f5a50';
+  ctx.fillText(text, x + 15, y + 10);
+  return x + width + 10;
 }
 
-function drawInfoRow(ctx, label, value, x, y, width) {
-  fillRoundRect(ctx, x, y, width, 78, 18, '#f8f6f1');
-  setFont(ctx, 22, 700);
-  ctx.fillStyle = '#8a8175';
-  ctx.fillText(label, x + 18, y + 15);
+function drawInfoCell(ctx, label, value, x, y, width) {
+  fillRoundRect(ctx, x, y, width, 102, 16, '#f6f7f6');
+
+  setFont(ctx, 21, 700);
+  ctx.fillStyle = '#75807b';
+  ctx.fillText(label, x + 20, y + 18);
 
   setFont(ctx, 28, 800);
-  ctx.fillStyle = '#1f2328';
+  ctx.fillStyle = '#1d2523';
   const text = value || '未填写';
-  const maxWidth = width - 116;
-  const lines = buildLines(ctx, text, maxWidth, 1);
-  ctx.fillText(lines[0] || text, x + 98, y + 20);
+  const lines = buildLines(ctx, text, width - 40, 1);
+  ctx.fillText(lines[0] || text, x + 20, y + 54);
 }
 
 function drawPosterPlaceholder(ctx, x, y, width, height) {
-  fillRoundRect(ctx, x, y, width, height, 28, '#efe8dc');
-  setFont(ctx, 32, 800);
-  ctx.fillStyle = '#9a9388';
+  fillRoundRect(ctx, x, y, width, height, 24, '#edf0ee');
+  setFont(ctx, 30, 800);
+  ctx.fillStyle = '#9aa29d';
   ctx.textAlign = 'center';
-  ctx.fillText('暂无产品图', x + width / 2, y + height / 2 - 16);
+  ctx.fillText('暂无产品图', x + width / 2, y + height / 2 - 14);
   ctx.textAlign = 'left';
 }
 
@@ -173,54 +175,70 @@ async function drawPoster(canvas, ctx, product) {
   const image = await loadCanvasImage(canvas, imageUrl);
 
   ctx.clearRect(0, 0, POSTER_WIDTH, POSTER_HEIGHT);
-  ctx.fillStyle = '#f8f6f1';
+  ctx.fillStyle = '#f4f6f5';
   ctx.fillRect(0, 0, POSTER_WIDTH, POSTER_HEIGHT);
-  fillRoundRect(ctx, 28, 28, 694, 1124, 34, '#ffffff');
+  fillRoundRect(ctx, 36, 36, 678, 1108, 30, '#ffffff');
 
-  setFont(ctx, 28, 800);
-  ctx.fillStyle = '#27594f';
-  ctx.fillText('外墙罗马柱图册', 58, 62);
-  setFont(ctx, 22, 700);
-  ctx.fillStyle = '#8a8175';
-  ctx.fillText('产品海报', 58, 99);
+  setFont(ctx, 29, 800);
+  ctx.fillStyle = '#263f3a';
+  ctx.fillText('外墙罗马柱产品', 64, 72);
+  setFont(ctx, 21, 700);
+  ctx.fillStyle = '#75807b';
+  ctx.fillText('产品海报', 64, 108);
+
+  fillRoundRect(ctx, 560, 62, 106, 44, 22, '#f1f5f3');
+  setFont(ctx, 20, 700);
+  ctx.fillStyle = '#667085';
+  ctx.fillText('客户选型', 578, 74);
 
   if (image) {
-    drawCoverImage(ctx, image, 58, 136, 634, 540, 28);
+    drawCoverImage(ctx, image, 64, 148, 622, 410, 24);
   } else {
-    drawPosterPlaceholder(ctx, 58, 136, 634, 540);
+    drawPosterPlaceholder(ctx, 64, 148, 622, 410);
   }
 
-  let tagX = 58;
-  if (product.source === 'external') {
-    tagX = drawPill(ctx, product.sourceLabel || '外采款', tagX, 710);
-  }
-  tagX = drawPill(ctx, product.colorSeries.name, tagX, 710);
-  drawPill(ctx, product.componentType.label, tagX, 710);
+  let tagX = 64;
+  tagX = drawPill(ctx, product.colorSeries.name, tagX, 592);
+  drawPill(ctx, product.componentType.label, tagX, 592);
 
-  setFont(ctx, 42, 900);
-  ctx.fillStyle = '#1f2328';
-  const titleEndY = drawWrappedText(ctx, product.name, 58, 776, 634, 54, 2);
+  setFont(ctx, 36, 800);
+  ctx.fillStyle = '#1d2523';
+  const titleEndY = drawWrappedText(ctx, product.name, 64, 656, 622, 46, 2);
 
-  const rowWidth = 634;
-  let rowY = titleEndY + 22;
-  drawInfoRow(ctx, '型号', product.code, 58, rowY, rowWidth);
-  rowY += 92;
-  drawInfoRow(
+  const gridY = Math.max(titleEndY + 26, 770);
+  const cellWidth = 303;
+  drawInfoCell(ctx, '型号', product.code, 64, gridY, cellWidth);
+  drawInfoCell(
     ctx,
     '规格',
     product.specification || '未填写',
-    58,
-    rowY,
-    rowWidth
+    383,
+    gridY,
+    cellWidth
   );
-  rowY += 92;
-  drawInfoRow(ctx, '包装', product.packageText || '未填写', 58, rowY, rowWidth);
-  rowY += 92;
-  drawInfoRow(ctx, '重量', product.weightText || '未填写', 58, rowY, rowWidth);
+  drawInfoCell(
+    ctx,
+    '包装',
+    product.packageText || '未填写',
+    64,
+    gridY + 118,
+    cellWidth
+  );
+  drawInfoCell(
+    ctx,
+    '重量',
+    product.weightText || '未填写',
+    383,
+    gridY + 118,
+    cellWidth
+  );
+
+  ctx.fillStyle = '#e5ebe8';
+  ctx.fillRect(64, 1048, 622, 1);
 
   setFont(ctx, 22, 700);
-  ctx.fillStyle = '#8a8175';
-  ctx.fillText('产品信息以实物与确认单为准', 58, 1106);
+  ctx.fillStyle = '#75807b';
+  ctx.fillText('产品信息以实物与确认单为准', 64, 1084);
 }
 
 Page({
@@ -252,12 +270,21 @@ Page({
   },
 
   onReady() {
+    this.initCanvas();
+  },
+
+  initCanvas(attempt = 0) {
     wx.createSelectorQuery()
       .select('#posterCanvas')
       .fields({ node: true, size: true })
       .exec(result => {
         const canvas = result && result[0] && result[0].node;
         if (!canvas) {
+          if (attempt < 8) {
+            setTimeout(() => this.initCanvas(attempt + 1), 80);
+            return;
+          }
+
           this.setData({ error: '海报画布初始化失败', loading: false });
           return;
         }
@@ -266,6 +293,9 @@ Page({
         this.ctx = canvas.getContext('2d');
         canvas.width = POSTER_WIDTH;
         canvas.height = POSTER_HEIGHT;
+        if (this.data.error === '海报画布初始化失败') {
+          this.setData({ error: '' });
+        }
         this.tryRenderPoster();
       });
   },

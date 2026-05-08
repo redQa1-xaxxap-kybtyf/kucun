@@ -1,16 +1,16 @@
 <view class="page">
   <view class="header">
     <view>
-      <view class="eyebrow">管理员</view>
-      <view class="title">产品维护</view>
+      <view class="eyebrow">小程序管理</view>
+      <view class="title">产品展示设置</view>
+      <view class="desc">产品资料在 ERP 维护，这里只设置客户怎么找</view>
     </view>
-    <button class="add-btn" bindtap="onAddTap">新增</button>
   </view>
 
   <view class="search-card">
     <input
       class="search-input"
-      placeholder="输入编码、名称、规格"
+      placeholder="搜编码、名称、规格"
       value="{{search}}"
       confirm-type="search"
       bindinput="onSearchInput"
@@ -33,56 +33,30 @@
 
   <view wx:if="{{error}}" class="notice">{{error}}</view>
   <view wx:if="{{loading && products.length == 0}}" class="empty">正在加载产品...</view>
-  <view wx:elif="{{products.length == 0}}" class="empty">暂无产品</view>
+  <view wx:elif="{{products.length == 0}}" class="empty">{{search ? '没有找到相关产品' : '暂无产品'}}</view>
 
   <view wx:else class="product-list">
     <view wx:for="{{products}}" wx:key="id" class="product-card">
       <view class="card-head">
         <image wx:if="{{item.coverUrl}}" class="cover" src="{{item.coverUrl}}" mode="aspectFill" />
-        <view wx:else class="cover fallback">图</view>
+        <view wx:else class="cover fallback">无图</view>
         <view class="main">
           <view class="name line-clamp-1">{{item.name}}</view>
           <view class="code">{{item.code}}</view>
           <view class="spec line-clamp-1">{{item.specification}}</view>
         </view>
-        <view class="badge {{item.status == 'active' ? 'ok' : 'off'}}">
+        <view wx:if="{{item.status != 'active'}}" class="badge off">
           {{item.statusLabel}}
         </view>
       </view>
 
-      <view class="info-row">
-        <view class="info-item">
-          <view class="info-value">{{item.categoryName}}</view>
-          <view class="info-label">分类</view>
+      <view class="card-foot">
+        <view class="meta-line">
+          <text>ERP：{{item.categoryName}}</text>
+          <text>{{item.stockText}}</text>
+          <text wx:if="{{item.availableText}}">{{item.availableText}}</text>
         </view>
-        <view class="info-item">
-          <view class="info-value">{{item.totalQuantity}}</view>
-          <view class="info-label">库存</view>
-        </view>
-        <view class="info-item strong">
-          <view class="info-value">{{item.availableQuantity}}</view>
-          <view class="info-label">可用</view>
-        </view>
-      </view>
-
-      <view class="actions">
-        <button class="action-btn" data-id="{{item.id}}" catchtap="onEditTap">编辑</button>
-        <button
-          class="action-btn"
-          loading="{{actionId == item.id}}"
-          data-id="{{item.id}}"
-          catchtap="onToggleStatus"
-        >
-          {{item.status == 'active' ? '下架' : '上架'}}
-        </button>
-        <button
-          class="action-btn danger {{item.canDelete ? '' : 'muted'}}"
-          loading="{{actionId == item.id}}"
-          data-id="{{item.id}}"
-          catchtap="onDeleteTap"
-        >
-          {{item.deleteText}}
-        </button>
+        <button class="action-btn" data-id="{{item.id}}" catchtap="onEditTap">设置客户分类</button>
       </view>
     </view>
 

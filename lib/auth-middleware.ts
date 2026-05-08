@@ -54,6 +54,7 @@ const protectedPaths = [
   '/api/price-history', // 价格历史 API
   '/api/profile', // 个人资料 API
   '/api/admin', // 管理端 API（仅管理员可用）
+  '/api/miniprogram', // 小程序公开 GET + 管理端写入
   '/api/system', // 系统模式等全局配置 API
   '/api/data-management', // 数据管理（预览/执行/任务）
 ];
@@ -95,32 +96,19 @@ function isPublicPath(pathname: string): boolean {
 }
 
 // 小程序游客允许访问的公开 API（仅 GET）
+// 注意：仅放行 /api/miniprogram/* 受控聚合接口，避免带 x-client-from
+// 头的未登录请求直接读取后台 /api/products、/api/inventory 等内部数据。
 function isMiniProgramPublicApiPath(pathname: string, method: string): boolean {
   if (method !== 'GET') {
     return false;
   }
 
-  // 仅用于产品 / 分类 / 库存的只读接口
   if (
-    pathname === '/api/products' ||
-    /^\/api\/products\/[^/]+$/.test(pathname)
+    pathname === '/api/miniprogram/catalog' ||
+    pathname === '/api/miniprogram/catalog-settings' ||
+    /^\/api\/miniprogram\/groups\/[^/]+$/.test(pathname) ||
+    /^\/api\/miniprogram\/products\/[^/]+$/.test(pathname)
   ) {
-    return true;
-  }
-
-  if (
-    pathname === '/api/categories' ||
-    /^\/api\/categories\/[^/]+$/.test(pathname)
-  ) {
-    return true;
-  }
-
-  // 库存只放行列表和单条明细，不包含 adjust / counts / alerts 等
-  if (pathname === '/api/inventory') {
-    return true;
-  }
-
-  if (/^\/api\/inventory\/[^/]+$/.test(pathname)) {
     return true;
   }
 
@@ -170,7 +158,7 @@ export async function authMiddleware(request: NextRequest) {
   if (isApiRoute) {
     const clientFrom = request.headers.get('x-client-from');
     if (
-      clientFrom === 'mini-program' &&
+      (clientFrom === 'mini-program' || pathname.startsWith('/api/miniprogram')) &&
       isMiniProgramPublicApiPath(pathname, method)
     ) {
       return NextResponse.next();
@@ -190,7 +178,11 @@ export async function authMiddleware(request: NextRequest) {
       : miniTokenHeader || null;
 
     if (bearerToken) {
-      // 0) 优先通过内部接口校验 Bearer Token，统一走会话有效性校验
+      // verify-token 是 Bearer Token 校验权威：会同时校验 sessionId、user.status 是否仍可用。
+      // 仅当服务侧异常（fetch 抛错或非 2xx）时才允许走本地解码兜底，避免账号被禁用 / 会话被吊销
+      // 后，因 verify-token 显式返回 success=false 而被本地解码"复活"。
+      let verifyTokenServiceFailed = false;
+
       try {
         const verifyResponse = await fetch(
           new URL('/api/internal/verify-token', request.url),
@@ -218,18 +210,24 @@ export async function authMiddleware(request: NextRequest) {
               sessionId: result.user.sessionId || '',
             };
           }
+          // 如果 verify-token 明确返回 success=false（账号禁用 / sessionId 失效 / token 过期），
+          // 不再降级到本地解码——直接走未登录处理
+        } else {
+          verifyTokenServiceFailed = true;
         }
       } catch (error) {
-        // Bearer Token验证失败，继续尝试本地解码兜底
+        verifyTokenServiceFailed = true;
         // eslint-disable-next-line no-console
         console.warn(
-          'Bearer token verification failed, trying local decode fallback',
+          'Bearer token verification service failed, falling back to local decode',
           error
         );
       }
 
-      // 1) 兜底：直接解码小程序 token，避免内部 fetch 失败时完全不可用
-      if (!token) {
+      // 兜底：仅在 verify-token 服务异常时启用，且本地解码后必须满足：
+      //   1) payload.status === 'active'（不允许默认为 active）
+      //   2) sessionId 存在（保证 token 来自真实签发流程，且后续可被吊销）
+      if (!token && verifyTokenServiceFailed) {
         try {
           const payload = await decode({
             token: bearerToken,
@@ -242,15 +240,17 @@ export async function authMiddleware(request: NextRequest) {
               (payload as any).sub || (payload as any).id || ''
             );
             const username = String((payload as any).username || '');
-            if (userId && username) {
+            const status = (payload as any).status;
+            const sessionId = String((payload as any).sessionId ?? '');
+            if (userId && username && status === 'active' && sessionId) {
               token = {
                 sub: userId,
                 email: (payload as any).email ?? '',
                 name: (payload as any).name ?? '',
                 username,
                 role: (payload as any).role ?? 'user',
-                status: (payload as any).status ?? 'active',
-                sessionId: (payload as any).sessionId ?? '',
+                status,
+                sessionId,
               };
             }
           }

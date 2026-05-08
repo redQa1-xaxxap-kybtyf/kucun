@@ -28,6 +28,13 @@ const PRODUCT_SELECT = {
           id: true,
           name: true,
           code: true,
+          parent: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+            },
+          },
         },
       },
     },
@@ -87,10 +94,15 @@ type PublicMiniProgramProduct = {
   code: string;
   name: string;
   specification: string | null;
+  unit: string;
+  unitLabel: string;
+  piecesPerUnit: number | null;
+  weightKgPerUnit: number | null;
   packageText: string;
   weightText: string;
   shareTitle: string;
   description: string | null;
+  stockLabel: string;
   thumbnailUrl: string | null;
   imageUrls: string[];
   mainImageUrls: string[];
@@ -100,6 +112,7 @@ type PublicMiniProgramProduct = {
     id: string;
     name: string;
     code: string;
+    fullPath: string;
   } | null;
   colorSeries: {
     id: string;
@@ -118,13 +131,7 @@ type CatalogItem = {
   hasStock: boolean;
 };
 
-export type MiniProgramComponentType =
-  | 'roman_column'
-  | 'corner_stone'
-  | 'line'
-  | 'facade_tile'
-  | 'matching'
-  | 'other';
+export type MiniProgramComponentType = string;
 
 type ColorSeriesConfig = {
   id: string;
@@ -132,6 +139,54 @@ type ColorSeriesConfig = {
   keywords: string[];
 };
 
+type ComponentTypeConfig = {
+  id: MiniProgramComponentType;
+  label: string;
+  keywords: string[];
+};
+
+export type MiniProgramColorSeriesSetting = ColorSeriesConfig & {
+  builtIn: boolean;
+  canDelete: boolean;
+  coverUrl: string | null;
+  sortOrder: number;
+  visible: boolean;
+};
+
+export type MiniProgramComponentTypeSetting = ComponentTypeConfig & {
+  builtIn: boolean;
+  canDelete: boolean;
+  coverUrl: string | null;
+  sortOrder: number;
+  visible: boolean;
+};
+
+export type MiniProgramProductDisplayOverride = {
+  visible?: boolean;
+  seriesId?: string;
+  componentType?: MiniProgramComponentType;
+  sortOrder?: number;
+};
+
+export type MiniProgramCatalogSettings = {
+  colorSeries: MiniProgramColorSeriesSetting[];
+  componentTypes: MiniProgramComponentTypeSetting[];
+  productOverrides: Record<string, MiniProgramProductDisplayOverride>;
+  note: string;
+};
+
+type StoredMiniProgramCatalogSettings = {
+  colorSeries?: Array<
+    Partial<Omit<MiniProgramColorSeriesSetting, 'id'>> & { id: string }
+  >;
+  componentTypes?: Array<
+    Partial<Omit<MiniProgramComponentTypeSetting, 'id'>> & { id: string }
+  >;
+  productOverrides?: Record<string, MiniProgramProductDisplayOverride>;
+};
+
+// 小程序展示分类独立于 ERP 产品分类。ERP 负责产品资料与库存，
+// 这里只负责客户打开小程序后看到的花色和品种入口。
 const COLOR_SERIES: ColorSeriesConfig[] = [
   { id: 'yashi-white', name: '雅士白', keywords: ['雅士白', '亚士白'] },
   { id: 'jazz-white', name: '爵士白', keywords: ['爵士白'] },
@@ -143,14 +198,10 @@ const COLOR_SERIES: ColorSeriesConfig[] = [
   { id: 'coffee', name: '咖啡', keywords: ['咖啡', '啡', '咖色'] },
   { id: 'red-brown', name: '红棕', keywords: ['红棕', '红色', '棕色'] },
   { id: 'blue-stone', name: '青石', keywords: ['青石', '青色', '青灰'] },
-  { id: 'other', name: '其他', keywords: [] },
+  { id: 'other', name: '其他花色', keywords: [] },
 ];
 
-const COMPONENT_TYPES: Array<{
-  id: MiniProgramComponentType;
-  label: string;
-  keywords: string[];
-}> = [
+const COMPONENT_TYPES: ComponentTypeConfig[] = [
   {
     id: 'corner_stone',
     label: '转角石',
@@ -172,13 +223,365 @@ const COMPONENT_TYPES: Array<{
     label: '配套',
     keywords: ['配套', '窗套', '门套', '收口', '配件'],
   },
-  { id: 'other', label: '其他', keywords: [] },
+  { id: 'other', label: '其他品种', keywords: [] },
 ];
 
 const HOT_SERIES = {
   id: 'hot',
   name: '全部',
 };
+
+const CATALOG_SETTINGS_KEY = 'miniProgramCatalogSettings';
+const CATALOG_SETTINGS_CATEGORY = 'miniprogram';
+const CATALOG_SETTINGS_NOTE =
+  '小程序展示分类只决定客户前台怎么找货，不改变 ERP 原始产品分类和库存数据。';
+
+function normalizeCatalogId(value: unknown, fallback: string) {
+  const raw = typeof value === 'string' ? value.trim() : '';
+  if (!raw) return fallback;
+  const normalized = raw
+    .replace(/[^A-Za-z0-9_-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .toLowerCase();
+  return normalized || fallback;
+}
+
+function normalizeKeywords(value: unknown, fallback: string[]) {
+  if (Array.isArray(value)) {
+    const keywords = value
+      .map(item => (typeof item === 'string' ? item.trim() : ''))
+      .filter(Boolean)
+      .slice(0, 12);
+    if (keywords.length > 0) return keywords;
+  }
+
+  return fallback;
+}
+
+function sortByCatalogOrder<T extends { sortOrder: number; id: string }>(
+  items: T[]
+) {
+  return [...items].sort((a, b) => {
+    if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+    return a.id.localeCompare(b.id);
+  });
+}
+
+function uniqueByCatalogId<T extends { id: string }>(items: T[]) {
+  const seen = new Set<string>();
+  return items.filter(item => {
+    if (seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
+}
+
+function getDefaultMiniProgramCatalogSettings(): MiniProgramCatalogSettings {
+  return {
+    colorSeries: COLOR_SERIES.map((item, index) => ({
+      ...item,
+      builtIn: true,
+      canDelete: false,
+      coverUrl: null,
+      sortOrder: index + 1,
+      visible: true,
+    })),
+    componentTypes: COMPONENT_TYPES.map((item, index) => ({
+      ...item,
+      builtIn: true,
+      canDelete: false,
+      coverUrl: null,
+      sortOrder: index + 1,
+      visible: true,
+    })),
+    productOverrides: {},
+    note: CATALOG_SETTINGS_NOTE,
+  };
+}
+
+function normalizeNullableUrl(value: unknown) {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function normalizeBoolean(value: unknown, fallback: boolean) {
+  return typeof value === 'boolean' ? value : fallback;
+}
+
+function normalizeSortOrder(value: unknown, fallback: number) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) return fallback;
+  return Math.max(1, Math.round(numericValue));
+}
+
+function normalizeColorSeriesSetting(
+  raw: Partial<MiniProgramColorSeriesSetting> & { id: string },
+  fallback: MiniProgramColorSeriesSetting | null,
+  index: number
+): MiniProgramColorSeriesSetting | null {
+  const builtIn = Boolean(fallback?.builtIn);
+  const id =
+    fallback && builtIn
+      ? fallback.id
+      : normalizeCatalogId(raw.id, `custom-series-${index + 1}`);
+  const fallbackName = fallback?.name || '自定义花色';
+  const name =
+    typeof raw.name === 'string' && raw.name.trim()
+      ? raw.name.trim()
+      : fallbackName;
+
+  if (!id || !name) return null;
+
+  return {
+    id,
+    name,
+    keywords: normalizeKeywords(raw.keywords, fallback?.keywords || [name]),
+    builtIn,
+    canDelete: !builtIn,
+    coverUrl: normalizeNullableUrl(raw.coverUrl),
+    sortOrder: normalizeSortOrder(
+      raw.sortOrder,
+      fallback?.sortOrder || index + 1
+    ),
+    visible: normalizeBoolean(raw.visible, fallback?.visible ?? true),
+  };
+}
+
+function normalizeComponentTypeSetting(
+  raw: Partial<MiniProgramComponentTypeSetting> & { id: string },
+  fallback: MiniProgramComponentTypeSetting | null,
+  index: number
+): MiniProgramComponentTypeSetting | null {
+  const builtIn = Boolean(fallback?.builtIn);
+  const id =
+    fallback && builtIn
+      ? fallback.id
+      : normalizeCatalogId(raw.id, `custom-component-${index + 1}`);
+  const fallbackLabel = fallback?.label || '自定义品种';
+  const label =
+    typeof raw.label === 'string' && raw.label.trim()
+      ? raw.label.trim()
+      : fallbackLabel;
+
+  if (!id || !label) return null;
+
+  return {
+    id,
+    label,
+    keywords: normalizeKeywords(raw.keywords, fallback?.keywords || [label]),
+    builtIn,
+    canDelete: !builtIn,
+    coverUrl: normalizeNullableUrl(raw.coverUrl),
+    sortOrder: normalizeSortOrder(
+      raw.sortOrder,
+      fallback?.sortOrder || index + 1
+    ),
+    visible: normalizeBoolean(raw.visible, fallback?.visible ?? true),
+  };
+}
+
+function mergeCatalogSettings(
+  saved: StoredMiniProgramCatalogSettings | null
+): MiniProgramCatalogSettings {
+  const defaults = getDefaultMiniProgramCatalogSettings();
+  const defaultSeriesMap = new Map(
+    defaults.colorSeries.map(item => [item.id, item])
+  );
+  const defaultComponentMap = new Map(
+    defaults.componentTypes.map(item => [item.id, item])
+  );
+  const savedSeries = new Map(
+    (Array.isArray(saved?.colorSeries) ? saved?.colorSeries : []).map(item => [
+      item.id,
+      item,
+    ])
+  );
+  const savedComponents = new Map(
+    (Array.isArray(saved?.componentTypes) ? saved?.componentTypes : []).map(
+      item => [item.id, item]
+    )
+  );
+
+  const colorSeries = sortByCatalogOrder(
+    uniqueByCatalogId(
+      [
+        ...defaults.colorSeries.map((item, index) =>
+          normalizeColorSeriesSetting(
+            savedSeries.get(item.id) || item,
+            item,
+            index
+          )
+        ),
+        ...(Array.isArray(saved?.colorSeries) ? saved.colorSeries : []).map(
+          (item, index) =>
+            defaultSeriesMap.has(item.id)
+              ? null
+              : normalizeColorSeriesSetting(
+                  item,
+                  null,
+                  defaults.colorSeries.length + index
+                )
+        ),
+      ].filter((item): item is MiniProgramColorSeriesSetting => Boolean(item))
+    )
+  );
+
+  const componentTypes = sortByCatalogOrder(
+    uniqueByCatalogId(
+      [
+        ...defaults.componentTypes.map((item, index) =>
+          normalizeComponentTypeSetting(
+            savedComponents.get(item.id) || item,
+            item,
+            index
+          )
+        ),
+        ...(Array.isArray(saved?.componentTypes)
+          ? saved.componentTypes
+          : []
+        ).map((item, index) =>
+          defaultComponentMap.has(item.id)
+            ? null
+            : normalizeComponentTypeSetting(
+                item,
+                null,
+                defaults.componentTypes.length + index
+              )
+        ),
+      ].filter((item): item is MiniProgramComponentTypeSetting => Boolean(item))
+    )
+  );
+
+  return {
+    colorSeries,
+    componentTypes,
+    productOverrides:
+      saved?.productOverrides && typeof saved.productOverrides === 'object'
+        ? normalizeProductOverrides(
+            saved.productOverrides,
+            new Set(colorSeries.map(item => item.id)),
+            new Set(componentTypes.map(item => item.id))
+          )
+        : {},
+    note: CATALOG_SETTINGS_NOTE,
+  };
+}
+
+function normalizeProductOverrides(
+  raw: Record<string, MiniProgramProductDisplayOverride>,
+  seriesIds: Set<string>,
+  componentIds: Set<string>
+) {
+  const normalized: Record<string, MiniProgramProductDisplayOverride> = {};
+
+  for (const [productId, value] of Object.entries(raw)) {
+    if (!productId || !value || typeof value !== 'object') continue;
+
+    const override: MiniProgramProductDisplayOverride = {};
+    if (typeof value.visible === 'boolean') {
+      override.visible = value.visible;
+    }
+    if (value.seriesId && seriesIds.has(value.seriesId)) {
+      override.seriesId = value.seriesId;
+    }
+    if (value.componentType && componentIds.has(value.componentType)) {
+      override.componentType = value.componentType;
+    }
+    if (value.sortOrder !== undefined) {
+      override.sortOrder = normalizeSortOrder(value.sortOrder, 1);
+    }
+
+    if (Object.keys(override).length > 0) {
+      normalized[productId] = override;
+    }
+  }
+
+  return normalized;
+}
+
+async function readStoredCatalogSettings() {
+  const setting = await prisma.systemSetting.findUnique({
+    where: { key: CATALOG_SETTINGS_KEY },
+    select: { value: true },
+  });
+
+  if (!setting?.value) return null;
+
+  try {
+    return JSON.parse(setting.value) as StoredMiniProgramCatalogSettings;
+  } catch {
+    return null;
+  }
+}
+
+async function saveCatalogSettings(settings: MiniProgramCatalogSettings) {
+  await prisma.systemSetting.upsert({
+    where: { key: CATALOG_SETTINGS_KEY },
+    update: {
+      value: JSON.stringify(settings),
+      dataType: 'json',
+      category: CATALOG_SETTINGS_CATEGORY,
+      description: '小程序花色、品种和产品展示设置',
+      isPublic: true,
+    },
+    create: {
+      key: CATALOG_SETTINGS_KEY,
+      value: JSON.stringify(settings),
+      category: CATALOG_SETTINGS_CATEGORY,
+      dataType: 'json',
+      description: '小程序花色、品种和产品展示设置',
+      isPublic: true,
+    },
+  });
+}
+
+export async function getMiniProgramCatalogSettings() {
+  const saved = await readStoredCatalogSettings();
+  return mergeCatalogSettings(saved);
+}
+
+export async function updateMiniProgramCatalogSettings(
+  input: StoredMiniProgramCatalogSettings
+) {
+  const current = await getMiniProgramCatalogSettings();
+  const next = mergeCatalogSettings({
+    ...current,
+    colorSeries: Array.isArray(input.colorSeries)
+      ? input.colorSeries
+      : current.colorSeries,
+    componentTypes: Array.isArray(input.componentTypes)
+      ? input.componentTypes
+      : current.componentTypes,
+    productOverrides: current.productOverrides,
+  });
+
+  await saveCatalogSettings(next);
+  return next;
+}
+
+export async function updateMiniProgramProductDisplayOverride(
+  productId: string,
+  override: MiniProgramProductDisplayOverride
+) {
+  const current = await getMiniProgramCatalogSettings();
+  const nextOverrides = normalizeProductOverrides(
+    {
+      ...current.productOverrides,
+      [productId]: override,
+    },
+    new Set(current.colorSeries.map(item => item.id)),
+    new Set(current.componentTypes.map(item => item.id))
+  );
+  const next = mergeCatalogSettings({
+    ...current,
+    productOverrides: nextOverrides,
+  });
+
+  await saveCatalogSettings(next);
+  return next.productOverrides[productId] ?? {};
+}
 
 function normalizeLookupText(value?: string | null) {
   return (value ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
@@ -195,15 +598,20 @@ function buildNameSpecificationKey(input: {
   return `${name}__${specification}`;
 }
 
-function buildOwnSearchText(product: CatalogProductRecord) {
-  const categoryText = [
-    product.category?.name,
-    product.category?.code,
-    product.category?.parent?.name,
-    product.category?.parent?.code,
+function getCategoryFullPath(category: CatalogProductRecord['category']) {
+  if (!category) return '';
+
+  return [
+    category.parent?.parent?.name,
+    category.parent?.name,
+    category.name,
   ]
     .filter(Boolean)
-    .join(' ');
+    .join(' / ');
+}
+
+function buildOwnSearchText(product: CatalogProductRecord) {
+  const categoryText = getCategoryFullPath(product.category);
   const variantText = product.variants
     .map(variant =>
       [variant.colorName, variant.colorCode, variant.colorValue]
@@ -239,26 +647,149 @@ function buildExternalSearchText(product: ExternalCatalogProductRecord) {
     .toLowerCase();
 }
 
-function resolveColorSeries(searchText: string) {
+function isInternalTestProduct(product: {
+  code?: string | null;
+  name?: string | null;
+}) {
+  const text = normalizeLookupText([product.code, product.name].join(' '));
+  if (!text) return false;
+
+  return [
+    /测试/,
+    /回归/,
+    /上传产品/,
+    /p1-upload/,
+    /return-refund/,
+    /\be2e[-\s]/,
+    /fine2emo/,
+    /\bdummy\b/,
+    /\bmock\b/,
+  ].some(pattern => pattern.test(text));
+}
+
+function getSeriesSetting(
+  settings: MiniProgramCatalogSettings,
+  id?: string | null
+) {
+  return settings.colorSeries.find(series => series.id === id) ?? null;
+}
+
+function getComponentSetting(
+  settings: MiniProgramCatalogSettings,
+  id?: string | null
+) {
+  return settings.componentTypes.find(component => component.id === id) ?? null;
+}
+
+function resolveColorSeries(
+  searchText: string,
+  settings: MiniProgramCatalogSettings,
+  productId?: string
+) {
+  const overrideSeries = productId
+    ? getSeriesSetting(settings, settings.productOverrides[productId]?.seriesId)
+    : null;
+  if (overrideSeries) {
+    return overrideSeries;
+  }
+
   const text = searchText.toLowerCase();
-  const matched = COLOR_SERIES.find(
+  const matched = settings.colorSeries.find(
     series =>
       series.id !== 'other' &&
       series.keywords.some(keyword => text.includes(keyword.toLowerCase()))
   );
 
-  return matched ?? COLOR_SERIES[COLOR_SERIES.length - 1];
+  return (
+    matched ??
+    getSeriesSetting(settings, 'other') ??
+    settings.colorSeries[0] ??
+    getDefaultMiniProgramCatalogSettings().colorSeries[0]
+  );
 }
 
-function resolveComponentType(searchText: string) {
+function resolveComponentType(
+  searchText: string,
+  settings: MiniProgramCatalogSettings,
+  productId?: string
+) {
+  const overrideComponent = productId
+    ? getComponentSetting(
+        settings,
+        settings.productOverrides[productId]?.componentType
+      )
+    : null;
+  if (overrideComponent) {
+    return overrideComponent;
+  }
+
   const text = searchText.toLowerCase();
-  const matched = COMPONENT_TYPES.find(
+  const matched = settings.componentTypes.find(
     component =>
       component.id !== 'other' &&
       component.keywords.some(keyword => text.includes(keyword.toLowerCase()))
   );
 
-  return matched ?? COMPONENT_TYPES[COMPONENT_TYPES.length - 1];
+  return (
+    matched ??
+    getComponentSetting(settings, 'other') ??
+    settings.componentTypes[0] ??
+    getDefaultMiniProgramCatalogSettings().componentTypes[0]
+  );
+}
+
+function hasMiniProgramDisplaySignal(
+  product: CatalogProductRecord,
+  settings: MiniProgramCatalogSettings
+) {
+  const override = settings.productOverrides[product.id];
+  if (override?.visible === false) return false;
+  if (
+    override?.visible === true &&
+    override.seriesId &&
+    override.componentType
+  ) {
+    return true;
+  }
+
+  const searchText = buildOwnSearchText(product);
+  const component = resolveComponentType(searchText, settings, product.id);
+  const hasImage = Boolean(product.thumbnailUrl || product.images);
+  const hasColor =
+    resolveColorSeries(searchText, settings, product.id)?.id !== 'other';
+  const hasSpecificComponent =
+    component.id !== 'other' && component.id !== 'facade_tile';
+
+  return hasImage || hasColor || hasSpecificComponent;
+}
+
+function isOwnProductDisplayableInMiniProgram(
+  product: CatalogProductRecord,
+  settings: MiniProgramCatalogSettings
+) {
+  const override = settings.productOverrides[product.id];
+  if (
+    override?.visible === true &&
+    override.seriesId &&
+    override.componentType
+  ) {
+    return true;
+  }
+
+  return (
+    !isInternalTestProduct(product) &&
+    hasMiniProgramDisplaySignal(product, settings)
+  );
+}
+
+function isProductTaxonomyVisible(
+  product: PublicMiniProgramProduct,
+  settings: MiniProgramCatalogSettings
+) {
+  const series = getSeriesSetting(settings, product.colorSeries.id);
+  const component = getComponentSetting(settings, product.componentType.id);
+
+  return Boolean(series?.visible && component?.visible);
 }
 
 function getProductImages(product: CatalogProductRecord) {
@@ -294,6 +825,12 @@ function getProductStockStatus(product: CatalogProductRecord) {
   });
 }
 
+function getProductStockLabel(product: CatalogProductRecord) {
+  return getProductStockStatus(product) === 'out_of_stock'
+    ? '暂缺'
+    : '仓库现货';
+}
+
 function formatNumberText(value: number) {
   return Number.isInteger(value)
     ? String(value)
@@ -302,6 +839,15 @@ function formatNumberText(value: number) {
 
 function getUnitLabel(unit: string) {
   return PRODUCT_UNIT_LABELS[unit as keyof typeof PRODUCT_UNIT_LABELS] ?? unit;
+}
+
+function getProductWeightKg(product: {
+  weight?: Prisma.Decimal | number | null;
+}) {
+  const weight = product.weight === null ? null : Number(product.weight);
+  if (!weight || !Number.isFinite(weight) || weight <= 0) return null;
+
+  return weight;
 }
 
 function getProductPackageText(product: { piecesPerUnit?: number | null }) {
@@ -316,8 +862,8 @@ function getProductWeightText(product: {
   weight?: Prisma.Decimal | number | null;
   unit: string;
 }) {
-  const weight = product.weight === null ? null : Number(product.weight);
-  if (!weight || !Number.isFinite(weight) || weight <= 0) return '';
+  const weight = getProductWeightKg(product);
+  if (!weight) return '';
 
   return `${formatNumberText(weight)}kg/${getUnitLabel(product.unit)}`;
 }
@@ -340,10 +886,13 @@ function buildProductShareTitle(input: {
     .join('｜');
 }
 
-function toPublicOwnProduct(product: CatalogProductRecord) {
+function toPublicOwnProduct(
+  product: CatalogProductRecord,
+  settings: MiniProgramCatalogSettings
+) {
   const searchText = buildOwnSearchText(product);
-  const series = resolveColorSeries(searchText);
-  const component = resolveComponentType(searchText);
+  const series = resolveColorSeries(searchText, settings, product.id);
+  const component = resolveComponentType(searchText, settings, product.id);
   const productImages = getProductImages(product);
   const imageUrls = getProductImageUrls(product);
   const mainImageUrls = productImages
@@ -354,6 +903,11 @@ function toPublicOwnProduct(product: CatalogProductRecord) {
     .map(image => image.url);
   const packageText = getProductPackageText(product);
   const weightText = getProductWeightText(product);
+  const unitLabel = getUnitLabel(product.unit);
+  const piecesPerUnit =
+    typeof product.piecesPerUnit === 'number' && product.piecesPerUnit > 0
+      ? product.piecesPerUnit
+      : null;
 
   return {
     id: product.id,
@@ -362,6 +916,10 @@ function toPublicOwnProduct(product: CatalogProductRecord) {
     code: product.code,
     name: product.name,
     specification: product.specification,
+    unit: product.unit,
+    unitLabel,
+    piecesPerUnit,
+    weightKgPerUnit: getProductWeightKg(product),
     packageText,
     weightText,
     shareTitle: buildProductShareTitle({
@@ -372,6 +930,7 @@ function toPublicOwnProduct(product: CatalogProductRecord) {
       weightText,
     }),
     description: product.description,
+    stockLabel: getProductStockLabel(product),
     thumbnailUrl: imageUrls[0] ?? null,
     imageUrls,
     mainImageUrls,
@@ -382,6 +941,7 @@ function toPublicOwnProduct(product: CatalogProductRecord) {
           id: product.category.id,
           name: product.category.name,
           code: product.category.code,
+          fullPath: getCategoryFullPath(product.category),
         }
       : null,
     colorSeries: {
@@ -396,10 +956,13 @@ function toPublicOwnProduct(product: CatalogProductRecord) {
   };
 }
 
-function toPublicExternalProduct(product: ExternalCatalogProductRecord) {
+function toPublicExternalProduct(
+  product: ExternalCatalogProductRecord,
+  settings: MiniProgramCatalogSettings
+) {
   const searchText = buildExternalSearchText(product);
-  const series = resolveColorSeries(searchText);
-  const component = resolveComponentType(searchText);
+  const series = resolveColorSeries(searchText, settings, product.id);
+  const component = resolveComponentType(searchText, settings, product.id);
   const packageText = getProductPackageText(product);
   const weightText = getProductWeightText(product);
   const productImages = parseProductImages(product.images, product.id).filter(
@@ -419,6 +982,11 @@ function toPublicExternalProduct(product: ExternalCatalogProductRecord) {
   const effectImageUrls = productImages
     .filter(image => image.type === 'effect')
     .map(image => image.url);
+  const unitLabel = getUnitLabel(product.unit);
+  const piecesPerUnit =
+    typeof product.piecesPerUnit === 'number' && product.piecesPerUnit > 0
+      ? product.piecesPerUnit
+      : null;
 
   return {
     id: product.id,
@@ -427,6 +995,10 @@ function toPublicExternalProduct(product: ExternalCatalogProductRecord) {
     code: product.code,
     name: product.name,
     specification: product.specification,
+    unit: product.unit,
+    unitLabel,
+    piecesPerUnit,
+    weightKgPerUnit: getProductWeightKg(product),
     packageText,
     weightText,
     shareTitle: buildProductShareTitle({
@@ -437,6 +1009,7 @@ function toPublicExternalProduct(product: ExternalCatalogProductRecord) {
       weightText,
     }),
     description: product.description,
+    stockLabel: product.showInMiniProgram ? '可调货' : '暂缺',
     thumbnailUrl: imageUrls[0] ?? null,
     imageUrls,
     mainImageUrls,
@@ -455,19 +1028,36 @@ function toPublicExternalProduct(product: ExternalCatalogProductRecord) {
   };
 }
 
+function buildGroupTitle(input: {
+  colorSeries: { id: string; name: string };
+  componentType: { id: MiniProgramComponentType; label: string };
+}) {
+  const isOtherSeries = input.colorSeries.id === 'other';
+  const isOtherComponent = input.componentType.id === 'other';
+
+  if (isOtherSeries && isOtherComponent) return '其他品种';
+  if (isOtherSeries) return input.componentType.label;
+  if (isOtherComponent) return `${input.colorSeries.name}系列`;
+  return `${input.colorSeries.name}${input.componentType.label}`;
+}
+
 function toPublicGroup<T extends { hasStock: boolean }>(group: T) {
   const publicGroup = { ...group };
   delete (publicGroup as Partial<T>).hasStock;
   return publicGroup as Omit<T, 'hasStock'>;
 }
 
-async function getActiveProducts() {
-  return prisma.product.findMany({
+async function getActiveProducts(settings: MiniProgramCatalogSettings) {
+  const products = await prisma.product.findMany({
     where: { status: 'active' },
     select: PRODUCT_SELECT,
     orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
     take: 600,
   });
+
+  return products.filter(product =>
+    isOwnProductDisplayableInMiniProgram(product, settings)
+  );
 }
 
 async function getPublicTemporaryProducts() {
@@ -535,27 +1125,31 @@ function dedupeExternalProducts(products: ExternalCatalogProductRecord[]) {
   return result;
 }
 
-function toOwnCatalogItem(product: CatalogProductRecord): CatalogItem {
+function toOwnCatalogItem(
+  product: CatalogProductRecord,
+  settings: MiniProgramCatalogSettings
+): CatalogItem {
   return {
-    publicProduct: toPublicOwnProduct(product),
+    publicProduct: toPublicOwnProduct(product, settings),
     searchText: buildOwnSearchText(product),
     hasStock: getProductStockStatus(product) !== 'out_of_stock',
   };
 }
 
 function toExternalCatalogItem(
-  product: ExternalCatalogProductRecord
+  product: ExternalCatalogProductRecord,
+  settings: MiniProgramCatalogSettings
 ): CatalogItem {
   return {
-    publicProduct: toPublicExternalProduct(product),
+    publicProduct: toPublicExternalProduct(product, settings),
     searchText: buildExternalSearchText(product),
     hasStock: false,
   };
 }
 
-async function getCatalogItems() {
+async function getCatalogItems(settings: MiniProgramCatalogSettings) {
   const [ownProducts, temporaryProducts] = await Promise.all([
-    getActiveProducts(),
+    getActiveProducts(settings),
     getPublicTemporaryProducts(),
   ]);
   const identityIndex = buildProductIdentityIndex(ownProducts);
@@ -566,12 +1160,17 @@ async function getCatalogItems() {
   );
 
   return [
-    ...ownProducts.map(toOwnCatalogItem),
-    ...externalProducts.map(toExternalCatalogItem),
-  ];
+    ...ownProducts.map(product => toOwnCatalogItem(product, settings)),
+    ...externalProducts.map(product =>
+      toExternalCatalogItem(product, settings)
+    ),
+  ].filter(item => isProductTaxonomyVisible(item.publicProduct, settings));
 }
 
-function buildProductGroups(products: CatalogItem[]) {
+function buildProductGroups(
+  products: CatalogItem[],
+  settings: MiniProgramCatalogSettings
+) {
   const groupMap = new Map<
     string,
     {
@@ -605,6 +1204,11 @@ function buildProductGroups(products: CatalogItem[]) {
   }
 
   return Array.from(groupMap.values()).map(group => {
+    const seriesSetting = getSeriesSetting(settings, group.colorSeries.id);
+    const componentSetting = getComponentSetting(
+      settings,
+      group.componentType.id
+    );
     const productCount = group.products.length;
     const specificationCount = new Set(
       group.products.map(product => product.specification).filter(Boolean)
@@ -623,25 +1227,31 @@ function buildProductGroups(products: CatalogItem[]) {
 
     return {
       id: group.id,
-      title: `${group.colorSeries.name}${group.componentType.label}`,
+      title: buildGroupTitle(group),
       colorSeries: group.colorSeries,
       componentType: group.componentType,
       coverUrl:
         group.products.find(product => product.thumbnailUrl)?.thumbnailUrl ??
+        componentSetting?.coverUrl ??
+        seriesSetting?.coverUrl ??
         null,
+      sortOrder: componentSetting?.sortOrder ?? 999,
       productCount,
       specificationCount,
       imageCount,
       effectImageCount,
       externalProductCount,
       hasStock: group.hasStock,
-      sampleProducts: group.products.slice(0, 4),
+      sampleProducts: group.products.slice(0, 6),
       updatedAt: group.products[0]?.updatedAt ?? null,
     };
   });
 }
 
-function buildSeriesSummary(products: CatalogItem[]) {
+function buildSeriesSummary(
+  products: CatalogItem[],
+  settings: MiniProgramCatalogSettings
+) {
   const publicProducts = products.map(product => product.publicProduct);
   const countBySeries = new Map<string, number>();
   const coverBySeries = new Map<string, string | null>();
@@ -654,14 +1264,14 @@ function buildSeriesSummary(products: CatalogItem[]) {
     }
   }
 
-  const series = COLOR_SERIES.filter(item => countBySeries.has(item.id)).map(
-    item => ({
+  const series = settings.colorSeries
+    .filter(item => item.visible)
+    .map(item => ({
       id: item.id,
       name: item.name,
       productCount: countBySeries.get(item.id) ?? 0,
-      coverUrl: coverBySeries.get(item.id) ?? null,
-    })
-  );
+      coverUrl: item.coverUrl || coverBySeries.get(item.id) || null,
+    }));
 
   return [
     {
@@ -698,7 +1308,10 @@ function filterProducts(
   });
 }
 
-function buildComponentSummary(products: CatalogItem[]) {
+function buildComponentSummary(
+  products: CatalogItem[],
+  settings: MiniProgramCatalogSettings
+) {
   const countByComponent = new Map<string, number>();
 
   for (const product of products) {
@@ -711,13 +1324,14 @@ function buildComponentSummary(products: CatalogItem[]) {
 
   return [
     { id: 'all', label: '全部', productCount: products.length },
-    ...COMPONENT_TYPES.filter(item => countByComponent.has(item.id)).map(
-      item => ({
+    ...settings.componentTypes
+      .filter(item => item.visible)
+      .map(item => ({
         id: item.id,
         label: item.label,
+        coverUrl: item.coverUrl,
         productCount: countByComponent.get(item.id) ?? 0,
-      })
-    ),
+      })),
   ];
 }
 
@@ -726,21 +1340,23 @@ export async function getMiniProgramCatalog(params: {
   componentType?: string;
   search?: string;
 }) {
-  const products = await getCatalogItems();
+  const settings = await getMiniProgramCatalogSettings();
+  const products = await getCatalogItems(settings);
   const currentSeriesProducts = filterProducts(products, {
     seriesId: params.seriesId,
   });
   const filteredProducts = filterProducts(products, params);
-  const groups = buildProductGroups(filteredProducts).sort((a, b) => {
+  const groups = buildProductGroups(filteredProducts, settings).sort((a, b) => {
     if (a.hasStock !== b.hasStock) return a.hasStock ? -1 : 1;
+    if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
     if (a.productCount !== b.productCount)
       return b.productCount - a.productCount;
     return a.title.localeCompare(b.title, 'zh-CN');
   });
 
   return {
-    series: buildSeriesSummary(products),
-    components: buildComponentSummary(currentSeriesProducts),
+    series: buildSeriesSummary(products, settings),
+    components: buildComponentSummary(currentSeriesProducts, settings),
     groups: groups.map(toPublicGroup),
     products: filteredProducts
       .slice(0, 30)
@@ -750,17 +1366,19 @@ export async function getMiniProgramCatalog(params: {
 
 export async function getMiniProgramProductGroup(groupId: string) {
   const [seriesId, componentType] = groupId.split('__');
-  const products = await getCatalogItems();
+  const settings = await getMiniProgramCatalogSettings();
+  const products = await getCatalogItems(settings);
   const filteredProducts = filterProducts(products, {
     seriesId,
     componentType,
   });
-  const group = buildProductGroups(filteredProducts)[0];
+  const group = buildProductGroups(filteredProducts, settings)[0];
 
   if (!group) return null;
 
   const sameSeriesGroups = buildProductGroups(
-    filterProducts(products, { seriesId })
+    filterProducts(products, { seriesId }),
+    settings
   )
     .filter(item => item.id !== group.id)
     .slice(0, 6);
@@ -794,13 +1412,15 @@ async function findCanonicalProductForExternal(
 }
 
 async function buildProductDetailResponse(
-  publicProduct: PublicMiniProgramProduct
+  publicProduct: PublicMiniProgramProduct,
+  settings: MiniProgramCatalogSettings
 ) {
-  const products = await getCatalogItems();
+  const products = await getCatalogItems(settings);
   const relatedGroups = buildProductGroups(
     filterProducts(products, {
       seriesId: publicProduct.colorSeries.id,
-    })
+    }),
+    settings
   )
     .filter(item => item.componentType.id !== publicProduct.componentType.id)
     .slice(0, 6);
@@ -812,13 +1432,17 @@ async function buildProductDetailResponse(
 }
 
 export async function getMiniProgramProduct(productId: string) {
+  const settings = await getMiniProgramCatalogSettings();
   const product = await prisma.product.findFirst({
     where: { id: productId, status: 'active' },
     select: PRODUCT_SELECT,
   });
 
   if (product) {
-    return buildProductDetailResponse(toPublicOwnProduct(product));
+    if (!isOwnProductDisplayableInMiniProgram(product, settings)) return null;
+    const publicProduct = toPublicOwnProduct(product, settings);
+    if (!isProductTaxonomyVisible(publicProduct, settings)) return null;
+    return buildProductDetailResponse(publicProduct, settings);
   }
 
   const temporaryProduct = await prisma.temporaryProduct.findFirst({
@@ -836,8 +1460,14 @@ export async function getMiniProgramProduct(productId: string) {
   const canonicalProduct =
     await findCanonicalProductForExternal(temporaryProduct);
   if (canonicalProduct) {
-    return buildProductDetailResponse(toPublicOwnProduct(canonicalProduct));
+    if (!isOwnProductDisplayableInMiniProgram(canonicalProduct, settings))
+      return null;
+    const publicProduct = toPublicOwnProduct(canonicalProduct, settings);
+    if (!isProductTaxonomyVisible(publicProduct, settings)) return null;
+    return buildProductDetailResponse(publicProduct, settings);
   }
 
-  return buildProductDetailResponse(toPublicExternalProduct(temporaryProduct));
+  const publicProduct = toPublicExternalProduct(temporaryProduct, settings);
+  if (!isProductTaxonomyVisible(publicProduct, settings)) return null;
+  return buildProductDetailResponse(publicProduct, settings);
 }

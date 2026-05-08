@@ -1,84 +1,62 @@
-const { requireAdminSession } = require('../../utils/admin');
 const {
-  deleteProduct,
-  getProducts,
-  updateProductStatus,
-} = require('../../utils/products');
+  hideAdminShareMenu,
+  requireAdminSession,
+} = require('../../utils/admin');
+const { getProducts } = require('../../utils/products');
 
 const STATUS_TABS = [
-  { label: '正常', value: 'active' },
+  { label: '正常产品', value: 'active' },
   { label: '全部', value: 'all' },
-  { label: '已下架', value: 'inactive' },
+  { label: '已停用', value: 'inactive' },
 ];
+
+let searchTimer = null;
+let pendingSearchReload = false;
 
 function formatQuantity(value) {
   const numberValue = Number(value || 0);
   return Number.isFinite(numberValue) ? numberValue : 0;
 }
 
-function buildDeleteBlockReason(counts) {
-  const reasons = [];
+function getCategoryDisplayName(category) {
+  if (!category) return '未分类';
 
-  if (counts.totalQuantity > 0) {
-    reasons.push(`当前库存 ${counts.totalQuantity}`);
-  }
-  if (counts.inventoryRecordsCount > 0) {
-    reasons.push(`库存流水 ${counts.inventoryRecordsCount} 条`);
-  }
-  if (counts.inboundRecordsCount > 0) {
-    reasons.push(`入库记录 ${counts.inboundRecordsCount} 条`);
-  }
-  if (counts.salesOrderItemsCount > 0) {
-    reasons.push(`销售记录 ${counts.salesOrderItemsCount} 条`);
-  }
+  const fullPath = String(category.fullPath || '').trim();
+  if (fullPath) return fullPath;
 
-  return `不能删除：${reasons.join('、')}。为保证账实一致，请下架，不要删除。`;
+  const name = String(category.name || '').trim();
+  if (!name) return '未分类';
+
+  const parentName = getCategoryDisplayName(category.parent);
+  return parentName && parentName !== '未分类'
+    ? `${parentName} / ${name}`
+    : name;
 }
 
 function normalizeProduct(item) {
   const inventory = item.inventory || {};
-  const statistics = item.statistics || {};
   const images = Array.isArray(item.images) ? item.images : [];
   const totalQuantity = formatQuantity(inventory.totalQuantity);
   const availableQuantity = formatQuantity(inventory.availableQuantity);
-  const inventoryRecordsCount = formatQuantity(
-    statistics.inventoryRecordsCount
-  );
-  const salesOrderItemsCount = formatQuantity(
-    statistics.salesOrderItemsCount
-  );
-  const inboundRecordsCount = formatQuantity(statistics.inboundRecordsCount);
-  const hasBusinessRecords =
-    totalQuantity > 0 ||
-    inventoryRecordsCount > 0 ||
-    salesOrderItemsCount > 0 ||
-    inboundRecordsCount > 0;
 
   return {
     id: item.id,
     code: item.code || '-',
     name: item.name || '-',
     specification: item.specification || '未填写规格',
-    categoryName: item.category ? item.category.name : '未分类',
+    categoryName: getCategoryDisplayName(item.category),
     coverUrl: item.thumbnailUrl || (images[0] && images[0].url) || '',
     status: item.status || 'active',
-    statusLabel: item.status === 'inactive' ? '已下架' : '正常',
+    statusLabel: item.status === 'inactive' ? '已停用' : '正常',
+    stockText: totalQuantity > 0 ? `库存 ${totalQuantity}` : '暂无库存',
+    availableText: availableQuantity > 0 ? `可用 ${availableQuantity}` : '',
     totalQuantity,
     availableQuantity,
-    canDelete: !hasBusinessRecords,
-    deleteText: hasBusinessRecords ? '不可删' : '删除',
-    blockReason: buildDeleteBlockReason({
-      totalQuantity,
-      inventoryRecordsCount,
-      inboundRecordsCount,
-      salesOrderItemsCount,
-    }),
   };
 }
 
 Page({
   data: {
-    actionId: '',
     error: '',
     hasMore: false,
     loading: false,
@@ -91,12 +69,16 @@ Page({
   },
 
   onLoad() {
+    hideAdminShareMenu();
+
     const session = requireAdminSession();
     if (!session) return;
     this.loadProducts({ reset: true });
   },
 
   onShow() {
+    hideAdminShareMenu();
+
     if (this.data.products.length > 0) {
       this.loadProducts({ reset: true });
     }
@@ -106,6 +88,14 @@ Page({
     this.loadProducts({ reset: true }).finally(() => wx.stopPullDownRefresh());
   },
 
+  onUnload() {
+    if (searchTimer) {
+      clearTimeout(searchTimer);
+      searchTimer = null;
+    }
+    pendingSearchReload = false;
+  },
+
   onReachBottom() {
     if (!this.data.hasMore || this.data.loading) return;
     this.loadProducts();
@@ -113,13 +103,30 @@ Page({
 
   onSearchInput(event) {
     this.setData({ search: event.detail.value });
+
+    if (searchTimer) {
+      clearTimeout(searchTimer);
+    }
+
+    searchTimer = setTimeout(() => {
+      searchTimer = null;
+      this.loadProducts({ reset: true });
+    }, 500);
   },
 
   onSearchConfirm() {
+    if (searchTimer) {
+      clearTimeout(searchTimer);
+      searchTimer = null;
+    }
     this.loadProducts({ reset: true });
   },
 
   onClearSearch() {
+    if (searchTimer) {
+      clearTimeout(searchTimer);
+      searchTimer = null;
+    }
     this.setData({ search: '' });
     this.loadProducts({ reset: true });
   },
@@ -133,20 +140,28 @@ Page({
     this.loadProducts({ reset: true });
   },
 
-  onAddTap() {
-    wx.navigateTo({
-      url: '/pages/admin/product-form',
-    });
-  },
-
   onEditTap(event) {
+    const id = event.currentTarget.dataset.id;
+    if (!id) {
+      wx.showToast({
+        title: '产品ID缺失，请刷新后重试',
+        icon: 'none',
+      });
+      return;
+    }
+
     wx.navigateTo({
-      url: `/pages/admin/product-form?id=${event.currentTarget.dataset.id}`,
+      url: `/pages/admin/product-form?id=${encodeURIComponent(id)}`,
     });
   },
 
   async loadProducts(options = {}) {
-    if (this.data.loading) return;
+    if (this.data.loading) {
+      if (options.reset) {
+        pendingSearchReload = true;
+      }
+      return;
+    }
 
     const reset = Boolean(options.reset);
     const page = reset ? 1 : this.data.page;
@@ -184,88 +199,11 @@ Page({
         wx.redirectTo({ url: '/pages/admin/login' });
       }
     }
-  },
 
-  onToggleStatus(event) {
-    const id = event.currentTarget.dataset.id;
-    const product = this.data.products.find(item => item.id === id);
-    if (!product) return;
-
-    const nextStatus = product.status === 'active' ? 'inactive' : 'active';
-    const actionText = nextStatus === 'active' ? '上架' : '下架';
-
-    wx.showModal({
-      title: `${actionText}产品`,
-      content: `${actionText}后会同步影响小程序前台展示。`,
-      confirmText: actionText,
-      success: async result => {
-        if (!result.confirm) return;
-        await this.updateStatus(id, nextStatus);
-      },
-    });
-  },
-
-  onDeleteTap(event) {
-    const id = event.currentTarget.dataset.id;
-    const product = this.data.products.find(item => item.id === id);
-    if (!product) return;
-
-    if (!product.canDelete) {
-      wx.showModal({
-        title: '不能直接删除',
-        content: product.blockReason,
-        cancelText: '知道了',
-        confirmText: '下架',
-        success: async result => {
-          if (result.confirm) {
-            await this.updateStatus(id, 'inactive');
-          }
-        },
-      });
-      return;
-    }
-
-    wx.showModal({
-      title: '删除产品',
-      content: `确定删除 ${product.name}？删除后不可恢复。`,
-      confirmText: '删除',
-      confirmColor: '#b42318',
-      success: async result => {
-        if (!result.confirm) return;
-        await this.deleteProduct(id);
-      },
-    });
-  },
-
-  async updateStatus(id, status) {
-    this.setData({ actionId: id });
-    try {
-      await updateProductStatus(id, status);
-      wx.showToast({ title: status === 'active' ? '已上架' : '已下架' });
-      await this.loadProducts({ reset: true });
-    } catch (error) {
-      wx.showToast({
-        title: error.message || '操作失败',
-        icon: 'none',
-      });
-    } finally {
-      this.setData({ actionId: '' });
+    if (pendingSearchReload) {
+      pendingSearchReload = false;
+      this.loadProducts({ reset: true });
     }
   },
 
-  async deleteProduct(id) {
-    this.setData({ actionId: id });
-    try {
-      await deleteProduct(id);
-      wx.showToast({ title: '已删除' });
-      await this.loadProducts({ reset: true });
-    } catch (error) {
-      wx.showToast({
-        title: error.message || '删除失败',
-        icon: 'none',
-      });
-    } finally {
-      this.setData({ actionId: '' });
-    }
-  },
 });

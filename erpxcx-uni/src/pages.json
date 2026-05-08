@@ -1,0 +1,77 @@
+{
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationBarTitleText": "外墙罗马柱选型"
+      }
+    },
+    {
+      "path": "pages/group/detail",
+      "style": {
+        "navigationBarTitleText": "产品组详情"
+      }
+    },
+    {
+      "path": "pages/product/detail",
+      "style": {
+        "navigationBarTitleText": "产品详情"
+      }
+    },
+    {
+      "path": "pages/admin/login/index",
+      "style": {
+        "navigationBarTitleText": "管理员登录"
+      }
+    },
+    {
+      "path": "pages/admin/workspace/index",
+      "style": {
+        "navigationBarTitleText": "管理工作台"
+      }
+    },
+    {
+      "path": "pages/admin/catalog/index",
+      "style": {
+        "navigationBarTitleText": "小程序分类管理",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/admin/inventory/index",
+      "style": {
+        "navigationBarTitleText": "库存查询",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/admin/products/index",
+      "style": {
+        "navigationBarTitleText": "产品维护",
+        "enablePullDownRefresh": true
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "外墙罗马柱选型",
+    "navigationBarBackgroundColor": "#F5F7F6",
+    "backgroundColor": "#F5F7F6"
+  },
+  "tabBar": {
+    "color": "#667085",
+    "selectedColor": "#176B5B",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/admin/workspace/index",
+        "text": "工作台"
+      }
+    ]
+  }
+}

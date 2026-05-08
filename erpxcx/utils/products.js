@@ -21,6 +21,7 @@ function getProducts(params = {}) {
   return request({
     url: `/api/products${query ? `?${query}` : ''}`,
     miniProgramHeader: false,
+    requireAuth: true,
   });
 }
 
@@ -28,6 +29,7 @@ function getProduct(id) {
   return request({
     url: `/api/products/${encodeURIComponent(id)}?includeInventory=true`,
     miniProgramHeader: false,
+    requireAuth: true,
   });
 }
 
@@ -36,7 +38,7 @@ function createProduct(data) {
     url: '/api/products',
     method: 'POST',
     data,
-    miniProgramHeader: false,
+    requireAuth: true,
   });
 }
 
@@ -45,7 +47,7 @@ function updateProduct(id, data) {
     url: `/api/products/${encodeURIComponent(id)}`,
     method: 'PUT',
     data,
-    miniProgramHeader: false,
+    requireAuth: true,
   });
 }
 
@@ -54,7 +56,7 @@ function updateProductStatus(id, status) {
     url: `/api/products/${encodeURIComponent(id)}/status`,
     method: 'PATCH',
     data: { status },
-    miniProgramHeader: false,
+    requireAuth: true,
   });
 }
 
@@ -62,15 +64,39 @@ function deleteProduct(id) {
   return request({
     url: `/api/products/${encodeURIComponent(id)}`,
     method: 'DELETE',
-    miniProgramHeader: false,
+    requireAuth: true,
   });
 }
 
-function getCategories() {
-  return request({
-    url: '/api/categories?page=1&limit=200&status=active&sortBy=name&sortOrder=asc',
-    miniProgramHeader: false,
-  });
+async function getCategories(params = {}) {
+  const limit = 100;
+  const categories = [];
+  let page = 1;
+
+  while (page <= 20) {
+    const query = buildQuery({
+      status: 'active',
+      sortBy: 'name',
+      sortOrder: 'asc',
+      ...params,
+      page,
+      limit,
+    });
+    const list = await request({
+      url: `/api/categories${query ? `?${query}` : ''}`,
+    });
+    const normalizedList = Array.isArray(list) ? list : [];
+
+    categories.push(...normalizedList);
+
+    if (normalizedList.length < limit) {
+      break;
+    }
+
+    page += 1;
+  }
+
+  return categories;
 }
 
 module.exports = {

@@ -1,19 +1,24 @@
 .page {
   min-height: 100vh;
-  padding: 24rpx 24rpx 136rpx;
+  padding: 18rpx 18rpx 136rpx;
   box-sizing: border-box;
-  background: #f8f6f1;
+  background: #f5f6f8;
 }
 
 .empty {
   padding: 180rpx 32rpx;
-  color: #8a8175;
+  color: #75807b;
   font-size: 28rpx;
   text-align: center;
 }
 
+.empty.overlay {
+  position: relative;
+  z-index: 2;
+}
+
 .error {
-  color: #9a3412;
+  color: #b42318;
 }
 
 .poster-page {
@@ -22,25 +27,33 @@
   align-items: center;
 }
 
+.poster-page.muted {
+  position: absolute;
+  left: -9999rpx;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .poster-frame {
-  padding: 18rpx;
-  border: 1rpx solid #eee7dd;
-  border-radius: 26rpx;
+  padding: 12rpx;
+  border: 1rpx solid #dfe4e1;
+  border-radius: 8rpx;
   background: #fff;
-  box-shadow: 0 18rpx 44rpx rgba(31, 35, 40, 0.08);
 }
 
 .poster-canvas {
   display: block;
   overflow: hidden;
-  border-radius: 18rpx;
+  border-radius: 8rpx;
   background: #fff;
 }
 
 .poster-tip {
-  margin-top: 18rpx;
-  color: #8a8175;
-  font-size: 24rpx;
+  margin-top: 16rpx;
+  color: #75807b;
+  font-size: 23rpx;
+  line-height: 1.45;
+  text-align: center;
 }
 
 .bottom-bar {
@@ -49,16 +62,17 @@
   bottom: 0;
   left: 0;
   padding: 18rpx 24rpx calc(18rpx + env(safe-area-inset-bottom));
-  border-top: 1rpx solid #eee7dd;
-  background: rgba(248, 246, 241, 0.96);
+  border-top: 1rpx solid #e1e5e2;
+  background: rgba(255, 255, 255, 0.96);
 }
 
 .primary {
   width: 100%;
   height: 82rpx;
-  border-radius: 999rpx;
-  background: #27594f;
+  border-radius: 8rpx;
+  background: #1f5a50;
   color: #fff;
   font-size: 28rpx;
   font-weight: 900;
+  line-height: 82rpx;
 }
