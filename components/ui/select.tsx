@@ -118,12 +118,13 @@ const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      'focus:bg-accent focus:text-accent-foreground relative flex w-full cursor-default items-center rounded-sm py-1.5 pr-2 pl-8 text-sm outline-hidden select-none data-disabled:pointer-events-none data-disabled:opacity-50',
+      // 中国常见分类/客户名较长（如"卫生间防滑地砖 600x600"），允许换行避免被裁
+      'focus:bg-accent focus:text-accent-foreground relative flex w-full cursor-default items-start rounded-sm py-1.5 pr-2 pl-8 text-sm leading-snug whitespace-normal break-words outline-hidden select-none data-disabled:pointer-events-none data-disabled:opacity-50',
       className
     )}
     {...props}
   >
-    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+    <span className="absolute left-2 top-1.5 flex h-3.5 w-3.5 items-center justify-center">
       <SelectPrimitive.ItemIndicator>
         <Check className="h-4 w-4" />
       </SelectPrimitive.ItemIndicator>

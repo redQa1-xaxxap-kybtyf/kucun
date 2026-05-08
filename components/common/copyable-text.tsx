@@ -8,6 +8,8 @@ import { cn } from '@/lib/utils';
 interface CopyableTextProps {
   text: string;
   displayText?: string;
+  /** 自定义渲染内容（优先级高于 displayText），用于需要在文本中加重某段（如批次号末 4 位）的场景 */
+  displayContent?: React.ReactNode;
   className?: string;
   iconSize?: 'sm' | 'md' | 'lg';
   showIcon?: 'always' | 'hover' | 'never';
@@ -28,6 +30,7 @@ interface CopyableTextProps {
 export function CopyableText({
   text,
   displayText,
+  displayContent,
   className,
   iconSize = 'sm',
   showIcon = 'hover',
@@ -44,7 +47,7 @@ export function CopyableText({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <span>{displayText || text}</span>
+      <span>{displayContent ?? displayText ?? text}</span>
       {showIcon !== 'never' && (
         <span
           className={cn(

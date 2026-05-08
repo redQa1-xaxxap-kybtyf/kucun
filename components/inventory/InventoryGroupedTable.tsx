@@ -28,7 +28,7 @@ import type { Inventory } from '@/lib/types/inventory';
 import { getInventoryStatus } from '@/lib/types/inventory-status';
 import { PRODUCT_UNIT_LABELS } from '@/lib/types/product';
 import { formatCostPrice } from '@/lib/utils/cost-price';
-import { formatCurrency } from '@/lib/utils/format';
+import { formatCurrency, formatCurrencyCompact } from '@/lib/utils/format';
 import { groupInventoriesByProductCode } from '@/lib/utils/inventory-product-grouping';
 import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 
@@ -347,8 +347,11 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                             <div className="text-[10px] font-bold text-slate-400">
                               成本单价: {formatCostPrice(item.unitCost)}
                             </div>
-                            <div className="text-sm font-semibold text-slate-900">
-                              {formatCurrency(item.quantity * item.unitCost)}
+                            <div
+                              className="text-sm font-semibold text-slate-900"
+                              title={formatCurrency(item.quantity * item.unitCost)}
+                            >
+                              {formatCurrencyCompact(item.quantity * item.unitCost)}
                             </div>
                           </div>
                         ) : (

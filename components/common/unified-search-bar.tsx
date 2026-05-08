@@ -189,7 +189,7 @@ const SearchInputBox: React.FC<SearchInputBoxProps> = ({
       />
     )}
     <Input
-      type="search"
+      type="text"
       inputMode="search"
       enterKeyHint="search"
       autoCapitalize="off"

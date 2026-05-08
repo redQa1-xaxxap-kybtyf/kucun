@@ -23,6 +23,7 @@ function Calendar({
   buttonVariant = 'ghost',
   formatters,
   components,
+  weekStartsOn = 1,
   ...props
 }: React.ComponentProps<typeof DayPicker> & {
   buttonVariant?: React.ComponentProps<typeof Button>['variant'];
@@ -32,6 +33,8 @@ function Calendar({
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
+      // 中国习惯：周首日为周一（react-day-picker 默认是周日）
+      weekStartsOn={weekStartsOn}
       className={cn(
         'group/calendar bg-background p-3 [--cell-size:2rem] in-data-[slot=card-content]:bg-transparent in-data-[slot=popover-content]:bg-transparent',
         String.raw`[.rdp-button\_next>svg]:**:rtl:rotate-180`,

@@ -26,7 +26,7 @@ import { getInventoryStatus } from '@/lib/types/inventory-status';
 import { PRODUCT_UNIT_LABELS } from '@/lib/types/product';
 import { formatCostPrice } from '@/lib/utils/cost-price';
 import { formatDateTime } from '@/lib/utils/datetime';
-import { formatCurrency } from '@/lib/utils/format';
+import { formatCurrency, formatCurrencyCompact } from '@/lib/utils/format';
 import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 
 interface InventoryTableRowProps {
@@ -251,7 +251,27 @@ function InventoryRowView({
         </div>
       </TableCell>
       <TableCell className="font-mono whitespace-nowrap">
-        {item.batchNumber ? <CopyableText text={item.batchNumber} /> : '-'}
+        {item.batchNumber ? (
+          <CopyableText
+            text={item.batchNumber}
+            displayContent={
+              item.batchNumber.length > 4 ? (
+                <>
+                  <span className="text-[hsl(var(--color-text-secondary))]">
+                    {item.batchNumber.slice(0, -4)}
+                  </span>
+                  <span className="font-bold text-[hsl(var(--color-text-primary))]">
+                    {item.batchNumber.slice(-4)}
+                  </span>
+                </>
+              ) : (
+                <span className="font-bold">{item.batchNumber}</span>
+              )
+            }
+          />
+        ) : (
+          '-'
+        )}
       </TableCell>
       <TableCell className="text-right font-semibold whitespace-nowrap text-[hsl(var(--color-success))] tabular-nums">
         {quantityDisplay}
@@ -270,8 +290,11 @@ function InventoryRowView({
               <div className="text-xs text-[hsl(var(--color-text-secondary))]">
                 {formatCostPrice(item.unitCost)}
               </div>
-              <div className="font-semibold text-[hsl(var(--color-primary))]">
-                {formatCurrency(item.quantity * item.unitCost)}
+              <div
+                className="font-semibold text-[hsl(var(--color-primary))]"
+                title={formatCurrency(item.quantity * item.unitCost)}
+              >
+                {formatCurrencyCompact(item.quantity * item.unitCost)}
               </div>
             </div>
           ) : (

@@ -211,7 +211,7 @@ export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
     return (
       <div className="space-y-3">
         <div
-          className="sm:hidden"
+          className="sticky top-0 z-20 -mx-3 bg-[hsl(var(--color-bg-secondary))] px-3 pb-2 pt-2 sm:hidden"
           data-testid="inventory-mobile-search-toolbar"
         >
           <SearchFilterCard
@@ -261,7 +261,7 @@ export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
                     )}
                     <Input
                       data-testid="inventory-desktop-search-input"
-                      type="search"
+                      type="text"
                       inputMode="search"
                       enterKeyHint="search"
                       autoCapitalize="off"
