@@ -1,7 +1,11 @@
 import { createHash } from 'node:crypto';
 
+import type { Prisma } from '@prisma/client';
+
 import { prisma } from '@/lib/db';
 import { getLongTransactionOptions } from '@/lib/db/transaction-options';
+import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
+import { recalculateSalesOrderPaidAmount } from '@/lib/services/sales-order-settlement';
 import type { SalesOrderCreateInput } from '@/lib/types/sales-order';
 import {
   DATE_FORMATS,
@@ -18,6 +22,7 @@ import {
   salesOrderImportSchema,
   type SalesOrderImportRow,
 } from '@/lib/validations/sales-order-import';
+import { getSalesOrderReceivableTotal } from '@/lib/utils/sample-order';
 
 import { updateSalesOrderStatus } from './sales-order-status';
 import { createSalesOrderWithOptions } from './sales-orders/create';
@@ -84,11 +89,19 @@ export interface SalesOrderImportExecutionResult
 }
 
 export type SalesOrderImportTargetStatus = 'confirmed' | 'shipped';
+export type SalesOrderImportSettlementMode = 'unpaid' | 'paid';
 
 export interface SalesOrderImportExecutionOptions {
   shippedDate?: string;
+  settlementMode?: SalesOrderImportSettlementMode;
   targetStatus?: SalesOrderImportTargetStatus;
 }
+
+type NormalizedSalesOrderImportOptions = {
+  shippedDate?: string;
+  settlementMode: SalesOrderImportSettlementMode;
+  targetStatus: SalesOrderImportTargetStatus;
+};
 
 const IMPORT_TARGET_STATUS = 'confirmed';
 const IMPORT_TARGET_DATA_TAG = 'prod';
@@ -117,6 +130,8 @@ type ImportContext = {
 type OrderBucket = {
   customerId?: string;
   customerName: string;
+  customerPhone?: string;
+  customerAddress?: string;
   customerLookupKey: string;
   importOrderNo: string;
   importOrderNoSource: 'provided' | 'generated';
@@ -132,16 +147,6 @@ type PreparedSalesOrderImport = {
   importableOrders: OrderBucket[];
   validation: SalesOrderImportValidationResult;
 };
-
-type ImportExecutionAbort =
-  | {
-      kind: 'duplicate';
-      duplicate: SalesOrderImportDuplicate;
-    }
-  | {
-      kind: 'error';
-      error: SalesOrderImportError;
-    };
 
 function pickRowValue(
   row: Record<string, unknown>,
@@ -167,10 +172,26 @@ function normalizeImportRowInput(row: unknown) {
 
   return {
     ...raw,
-    导入单号: pickRowValue(raw, ['导入单号', '销售单号', '单号']),
+    导入单号: pickRowValue(raw, [
+      '导入单号',
+      '原单号',
+      '原销售单号',
+      '销售单号',
+      '订单号',
+      '单号',
+    ]),
     客户名称: pickRowValue(raw, ['客户名称', '客户', '客户名']),
+    客户电话: pickRowValue(raw, ['客户电话', '电话', '手机号', '手机'], ''),
+    客户地址: pickRowValue(raw, ['客户地址', '地址', '送货地址'], ''),
     订单日期: pickRowValue(raw, ['订单日期', '销售日期', '日期'], ''),
-    产品编码: pickRowValue(raw, ['产品编码', '商品编码']),
+    产品编码: pickRowValue(raw, [
+      '产品编码',
+      '商品编码',
+      '产品型号',
+      '商品型号',
+      '型号',
+      '货号',
+    ]),
     产品名称: pickRowValue(raw, ['产品名称', '商品名称'], ''),
     装箱数: pickRowValue(raw, ['装箱数'], ''),
     规格: pickRowValue(raw, ['规格'], ''),
@@ -186,8 +207,28 @@ function normalizeImportRowInput(row: unknown) {
   };
 }
 
+// 全角字母/数字/常见符号 → 半角；中文括号 → 英文括号。
+function toHalfWidth(value: string) {
+  return value.replace(/[\uFF01-\uFF5E\u3000（）]/g, char => {
+    if (char === '\u3000') return ' ';
+    if (char === '（') return '(';
+    if (char === '）') return ')';
+    const code = char.charCodeAt(0);
+    return String.fromCharCode(code - 0xfee0);
+  });
+}
+
 function normalizeLookupKey(value: string | undefined) {
-  return (value ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
+  return toHalfWidth(value ?? '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
+}
+
+// 保留大小写的客户名归一化：仅 trim + 折叠多空格。用于在数据库中查询/写入时
+// 提供一致的"姓名形态"，避免 "ABC 公司" 与 "ABC  公司"（中间多空格）被认作不同客户。
+function normalizeCustomerName(value: string | undefined) {
+  return toHalfWidth(value ?? '').trim().replace(/\s+/g, ' ');
 }
 
 function getTodayDateString() {
@@ -200,10 +241,17 @@ function normalizeImportTargetStatus(
   return status === 'shipped' ? 'shipped' : 'confirmed';
 }
 
+function normalizeImportSettlementMode(
+  mode: SalesOrderImportExecutionOptions['settlementMode']
+): SalesOrderImportSettlementMode {
+  return mode === 'paid' ? 'paid' : 'unpaid';
+}
+
 function normalizeSalesOrderImportOptions(
   options: SalesOrderImportExecutionOptions = {}
-) {
+): NormalizedSalesOrderImportOptions {
   const targetStatus = normalizeImportTargetStatus(options.targetStatus);
+  const settlementMode = normalizeImportSettlementMode(options.settlementMode);
   const shippedDate = options.shippedDate?.trim() || undefined;
 
   if (
@@ -216,9 +264,9 @@ function normalizeSalesOrderImportOptions(
 
   return {
     targetStatus,
+    settlementMode,
     shippedDate,
-  } satisfies Required<Pick<SalesOrderImportExecutionOptions, 'targetStatus'>> &
-    Pick<SalesOrderImportExecutionOptions, 'shippedDate'>;
+  };
 }
 
 function buildImportToken(importOrderNo: string) {
@@ -266,34 +314,6 @@ function createImportError(
   };
 }
 
-function createImportExecutionAbort(
-  payload: ImportExecutionAbort
-): ImportExecutionAbort {
-  return payload;
-}
-
-function isDuplicateImportExecutionAbort(
-  error: unknown
-): error is Extract<ImportExecutionAbort, { kind: 'duplicate' }> {
-  return (
-    !!error &&
-    typeof error === 'object' &&
-    'kind' in error &&
-    (error as ImportExecutionAbort).kind === 'duplicate'
-  );
-}
-
-function isErrorImportExecutionAbort(
-  error: unknown
-): error is Extract<ImportExecutionAbort, { kind: 'error' }> {
-  return (
-    !!error &&
-    typeof error === 'object' &&
-    'kind' in error &&
-    (error as ImportExecutionAbort).kind === 'error'
-  );
-}
-
 function isImportKeyUniqueConstraintError(error: unknown) {
   if (!error || typeof error !== 'object') {
     return false;
@@ -338,7 +358,9 @@ function isImportKeyUniqueConstraintError(error: unknown) {
 }
 
 async function loadImportContext(rows: SalesOrderImportRow[]) {
-  const customerNames = Array.from(new Set(rows.map(row => row.客户名称)));
+  const customerNames = Array.from(
+    new Set(rows.map(row => normalizeCustomerName(row.客户名称)))
+  );
   const productCodes = Array.from(new Set(rows.map(row => row.产品编码)));
 
   const [customers, products] = await Promise.all([
@@ -383,64 +405,84 @@ async function loadExistingImportedOrderNumbers(
     return new Map<string, string>();
   }
 
-  const existingImportedOrders = await db.salesOrder.findMany({
+  const existingImportedOrderNumbers = new Map<string, string>();
+
+  // 1) 优先走 importKey 唯一索引（新数据）
+  const byImportKey = await db.salesOrder.findMany({
     where: {
-      OR: [
-        ...importOrderNos.map(importOrderNo => ({
-          remarks: {
-            contains: buildImportToken(importOrderNo),
-          },
-        })),
-        {
-          importKey: {
-            in: importOrderNos,
-          },
-        },
-      ],
+      importKey: { in: importOrderNos },
     },
     select: {
       importKey: true,
       orderNumber: true,
-      remarks: true,
     },
   });
 
-  const existingImportedOrderNumbers = new Map<string, string>();
-  existingImportedOrders.forEach(order => {
+  byImportKey.forEach(order => {
     const importKey = order.importKey?.trim();
     if (importKey && importOrderNos.includes(importKey)) {
       existingImportedOrderNumbers.set(importKey, order.orderNumber);
     }
   });
 
-  importOrderNos.forEach(importOrderNo => {
-    const existingOrder = existingImportedOrders.find(
-      order =>
-        extractLegacyImportKeyFromRemarks(order.remarks) === importOrderNo
-    );
-    if (existingOrder) {
-      existingImportedOrderNumbers.set(
-        importOrderNo,
-        existingOrder.orderNumber
+  // 2) 兼容历史数据：仅 importKey 为空的旧订单可能把单号写在 remarks 中。
+  //    用 OR LIKE 时务必加上 `importKey: null` 限制，避免在大表上做 N 次全表扫描。
+  const remainingImportOrderNos = importOrderNos.filter(
+    importOrderNo => !existingImportedOrderNumbers.has(importOrderNo)
+  );
+
+  if (remainingImportOrderNos.length > 0) {
+    const legacy = await db.salesOrder.findMany({
+      where: {
+        importKey: null,
+        OR: remainingImportOrderNos.map(importOrderNo => ({
+          remarks: {
+            contains: buildImportToken(importOrderNo),
+          },
+        })),
+      },
+      select: {
+        orderNumber: true,
+        remarks: true,
+      },
+    });
+
+    remainingImportOrderNos.forEach(importOrderNo => {
+      const existingOrder = legacy.find(
+        order =>
+          extractLegacyImportKeyFromRemarks(order.remarks) === importOrderNo
       );
-    }
-  });
+      if (existingOrder) {
+        existingImportedOrderNumbers.set(
+          importOrderNo,
+          existingOrder.orderNumber
+        );
+      }
+    });
+  }
 
   return existingImportedOrderNumbers;
 }
 
 async function findOrCreateCustomerByName(
   db: Pick<ImportLookupClient, 'customer'>,
-  customerName: string
+  customerName: string,
+  options: {
+    address?: string;
+    phone?: string;
+  } = {}
 ): Promise<CustomerLookup> {
+  const normalizedName = normalizeCustomerName(customerName);
   return db.customer.upsert({
     where: {
-      name: customerName,
+      name: normalizedName,
     },
     update: {},
     create: {
-      name: customerName,
+      name: normalizedName,
       role: 'customer',
+      ...(options.phone ? { phone: options.phone } : {}),
+      ...(options.address ? { address: options.address } : {}),
     },
     select: {
       id: true,
@@ -551,7 +593,7 @@ function buildProvisionalImportOrderNo(
   const fingerprint = createHash('sha1')
     .update(`${autoGroupKey}::${occurrence}`)
     .digest('hex')
-    .slice(0, 10)
+    .slice(0, 16)
     .toUpperCase();
 
   return `AUTO-SO-${fingerprint}`;
@@ -775,12 +817,15 @@ async function prepareSalesOrderImport(
     for (const entry of parsedRows) {
       const { rowNumber, value, resolvedImportOrderNo } = entry;
       const importOrderNo = resolvedImportOrderNo;
-      const customerLookupKey = normalizeLookupKey(value.客户名称);
+      const normalizedCustomerName = normalizeCustomerName(value.客户名称);
+      const customerLookupKey = normalizeLookupKey(normalizedCustomerName);
       const customer = context.customerByName.get(customerLookupKey);
       const product = context.productByCode.get(
         normalizeLookupKey(value.产品编码)
       );
-      const customerName = customer?.name ?? value.客户名称;
+      const customerName = customer?.name ?? normalizedCustomerName;
+      const customerPhone = value.客户电话 || undefined;
+      const customerAddress = value.客户地址 || undefined;
       const customerId = customer?.id;
 
       if (!customerId) {
@@ -873,6 +918,8 @@ async function prepareSalesOrderImport(
         const nextBucket: OrderBucket = {
           customerId,
           customerName,
+          customerPhone,
+          customerAddress,
           customerLookupKey,
           importOrderNo,
           importOrderNoSource: value.导入单号.trim() ? 'provided' : 'generated',
@@ -913,11 +960,7 @@ async function prepareSalesOrderImport(
         continue;
       }
 
-      if (
-        bucket.orderDate &&
-        value.订单日期 &&
-        bucket.orderDate !== value.订单日期
-      ) {
+      if (bucket.orderDate !== (value.订单日期 || undefined)) {
         invalidImportOrderNos.add(importOrderNo);
         errors.push(
           createImportError(
@@ -932,11 +975,7 @@ async function prepareSalesOrderImport(
         continue;
       }
 
-      if (
-        bucket.orderRemarks &&
-        value.订单备注 &&
-        bucket.orderRemarks !== value.订单备注
-      ) {
+      if (bucket.orderRemarks !== (value.订单备注 || undefined)) {
         invalidImportOrderNos.add(importOrderNo);
         errors.push(
           createImportError(
@@ -952,11 +991,11 @@ async function prepareSalesOrderImport(
       }
 
       bucket.items.push(transformedItem);
+      bucket.customerPhone = bucket.customerPhone || customerPhone;
+      bucket.customerAddress = bucket.customerAddress || customerAddress;
       bucket.orderAmount = Number(
         (bucket.orderAmount + Number(transformedItem.subtotal ?? 0)).toFixed(2)
       );
-      bucket.orderDate = bucket.orderDate || value.订单日期 || undefined;
-      bucket.orderRemarks = bucket.orderRemarks || value.订单备注 || undefined;
       bucket.previewRows.push(
         buildImportPreviewRow({
           customerName,
@@ -1076,7 +1115,7 @@ function resolveImportedOrderDate(order: OrderBucket) {
 
 function resolveImportedShippedAt(
   order: OrderBucket,
-  options: ReturnType<typeof normalizeSalesOrderImportOptions>
+  options: NormalizedSalesOrderImportOptions
 ) {
   if (options.targetStatus !== 'shipped') {
     return undefined;
@@ -1089,6 +1128,124 @@ function resolveImportedShippedAt(
     throw new Error('统一发货日期格式不正确，请使用 YYYY-MM-DD');
   }
   return parsed;
+}
+
+async function settleImportedOrderAsPaid(params: {
+  tx: Prisma.TransactionClient;
+  order: OrderBucket;
+  createdOrder: {
+    id: string;
+    orderNumber: string;
+    customerId: string;
+    totalAmount?: number | null;
+    roundingAdjustment?: number | null;
+    isSampleOrder?: boolean | null;
+    sampleSettlementType?: string | null;
+  };
+  userId: string;
+}) {
+  const { tx, order, createdOrder, userId } = params;
+  const receivableTotal = getSalesOrderReceivableTotal({
+    isSampleOrder: createdOrder.isSampleOrder,
+    sampleSettlementType: createdOrder.sampleSettlementType,
+    totalAmount: createdOrder.totalAmount,
+    roundingAdjustment: createdOrder.roundingAdjustment,
+  });
+
+  if (receivableTotal <= 0) {
+    return;
+  }
+
+  const pendingPayment = await tx.paymentRecord.findFirst({
+    where: {
+      salesOrderId: createdOrder.id,
+      paymentType: 'order_payment',
+      status: 'pending',
+      actualPaymentAmount: 0,
+      AND: [
+        {
+          remarks: {
+            startsWith: '系统自动生成：销售订单',
+          },
+        },
+        {
+          remarks: {
+            contains: '确认应收',
+          },
+        },
+      ],
+    },
+    select: {
+      id: true,
+      paymentNumber: true,
+      paymentMethod: true,
+      paymentType: true,
+      salesOrderId: true,
+      customerId: true,
+    },
+  });
+
+  if (!pendingPayment) {
+    throw new Error(
+      `销售订单 ${createdOrder.orderNumber} 未找到系统应收记录，无法标记为已结清`
+    );
+  }
+
+  const settledAmount = Number(receivableTotal.toFixed(2));
+  const paymentDate = resolveImportedOrderDate(order);
+  const updatedPayment = await tx.paymentRecord.update({
+    where: { id: pendingPayment.id },
+    data: {
+      paymentAmount: settledAmount,
+      actualPaymentAmount: settledAmount,
+      roundingAmount: 0,
+      paymentDate,
+      status: 'confirmed',
+      remarks: `期初导入已结清：销售订单 ${createdOrder.orderNumber}`,
+    },
+    select: {
+      id: true,
+      paymentNumber: true,
+      paymentMethod: true,
+      paymentType: true,
+      paymentAmount: true,
+      actualPaymentAmount: true,
+      roundingAmount: true,
+      paymentDate: true,
+      salesOrderId: true,
+      customerId: true,
+    },
+  });
+
+  await recalculateSalesOrderPaidAmount(tx, createdOrder.id, {
+    autoCompleteShipped: true,
+  });
+
+  await recordPartnerTransaction(
+    {
+      partnerId: createdOrder.customerId,
+      partnerRole: 'customer',
+      entityType: 'customer',
+      transactionType: 'payment_in',
+      amount: settledAmount,
+      referenceId: updatedPayment.id,
+      referenceNumber: updatedPayment.paymentNumber,
+      description: `期初导入收款 ${createdOrder.orderNumber}`,
+      userId,
+      occurredAt: paymentDate,
+      metadata: {
+        importKey: order.importOrderNo,
+        paymentMethod: updatedPayment.paymentMethod,
+        paymentType: updatedPayment.paymentType,
+        salesOrderId: createdOrder.id,
+        paymentAmount: Number(updatedPayment.paymentAmount),
+        actualPaymentAmount: Number(updatedPayment.actualPaymentAmount),
+        roundingAmount: Number(updatedPayment.roundingAmount),
+        triggeredBy: 'sales-order-import:settled',
+      },
+    },
+    tx
+  );
 }
 
 export async function importSalesOrdersFromRows(
@@ -1124,179 +1281,140 @@ export async function importSalesOrdersFromRows(
     new Set(importableOrders.map(order => order.importOrderNo))
   );
 
-  try {
-    const transactionResult = await prisma.$transaction(async tx => {
-      const existingImportedOrderNumbers =
-        await loadExistingImportedOrderNumbers(tx, importOrderNos);
+  // 事务前先批量识别已经导入过的单号；剩余订单按订单粒度独立事务。
+  // 这样：1) 单笔失败/重复不影响其他订单；2) 长事务不会持锁覆盖整个 sales_orders。
+  const preExistingImportedOrderNumbers = await loadExistingImportedOrderNumbers(
+    prisma,
+    importOrderNos
+  );
 
-      const runtimeDuplicates = importableOrders
-        .filter(order => existingImportedOrderNumbers.has(order.importOrderNo))
-        .map(order => ({
-          row: order.rowNumbers[0] ?? 0,
-          importOrderNo: order.importOrderNo,
-          source: 'system' as const,
-          existingOrderNumber: existingImportedOrderNumbers.get(
-            order.importOrderNo
-          ),
-          message: `导入单号 ${order.importOrderNo} 已导入过，系统订单号为 ${existingImportedOrderNumbers.get(order.importOrderNo)}`,
-        }));
+  const runtimeDuplicates: SalesOrderImportDuplicate[] = [];
+  const executionErrors: SalesOrderImportError[] = [];
+  const importedOrders: SalesOrderImportExecutionResult['importedOrders'] = [];
 
-      if (runtimeDuplicates.length > 0) {
-        return {
-          importedOrders:
-            [] as SalesOrderImportExecutionResult['importedOrders'],
-          runtimeDuplicates,
-        };
-      }
+  for (const order of importableOrders) {
+    const existingOrderNumber = preExistingImportedOrderNumbers.get(
+      order.importOrderNo
+    );
+    if (existingOrderNumber) {
+      runtimeDuplicates.push({
+        row: order.rowNumbers[0] ?? 0,
+        importOrderNo: order.importOrderNo,
+        source: 'system',
+        existingOrderNumber,
+        message: `导入单号 ${order.importOrderNo} 已导入过，系统订单号为 ${existingOrderNumber}`,
+      });
+      continue;
+    }
 
-      const importedOrders: SalesOrderImportExecutionResult['importedOrders'] =
-        [];
+    try {
+      const created = await prisma.$transaction(async tx => {
+        const customer =
+          order.customerId && order.customerId.trim()
+            ? {
+                id: order.customerId,
+                name: order.customerName,
+              }
+            : await findOrCreateCustomerByName(tx, order.customerName, {
+                address: order.customerAddress,
+                phone: order.customerPhone,
+              });
+        const createdOrder = await createSalesOrderWithOptions(
+          {
+            customerId: customer.id,
+            status: IMPORT_TARGET_STATUS,
+            orderType: 'NORMAL',
+            orderDate: order.orderDate || undefined,
+            remarks: normalizeImportedOrderRemarks(order.orderRemarks),
+            items: order.items,
+          },
+          userId,
+          {
+            dataTag: IMPORT_TARGET_DATA_TAG,
+            importKey: order.importOrderNo,
+            pendingPaymentDate: resolveImportedOrderDate(order),
+            tx,
+          }
+        );
 
-      for (const order of importableOrders) {
-        try {
-          const customer =
-            order.customerId && order.customerId.trim()
-              ? {
-                  id: order.customerId,
-                  name: order.customerName,
-                }
-              : await findOrCreateCustomerByName(tx, order.customerName);
-          const createdOrder = await createSalesOrderWithOptions(
-            {
-              customerId: customer.id,
-              status: IMPORT_TARGET_STATUS,
-              orderType: 'NORMAL',
-              orderDate: order.orderDate || undefined,
-              remarks: normalizeImportedOrderRemarks(order.orderRemarks),
-              items: order.items,
-            },
+        if (normalizedOptions.targetStatus === 'shipped') {
+          await updateSalesOrderStatus(
+            createdOrder.id,
+            'shipped',
+            'confirmed',
+            undefined,
             userId,
             {
-              dataTag: IMPORT_TARGET_DATA_TAG,
-              importKey: order.importOrderNo,
-              pendingPaymentDate: resolveImportedOrderDate(order),
+              shippedAt: resolveImportedShippedAt(order, normalizedOptions),
               tx,
             }
           );
+        }
 
-          if (normalizedOptions.targetStatus === 'shipped') {
-            await updateSalesOrderStatus(
-              createdOrder.id,
-              'shipped',
-              'confirmed',
-              undefined,
-              userId,
-              {
-                shippedAt: resolveImportedShippedAt(order, normalizedOptions),
-                tx,
-              }
-            );
-          }
-
-          importedOrders.push({
-            id: createdOrder.id,
-            orderNumber: createdOrder.orderNumber,
-            importOrderNo: order.importOrderNo,
-            customerName: customer.name,
-            totalAmount: Number(createdOrder.totalAmount ?? order.orderAmount),
-          });
-        } catch (error) {
-          if (isImportKeyUniqueConstraintError(error)) {
-            throw createImportExecutionAbort({
-              kind: 'duplicate',
-              duplicate: {
-                row: order.rowNumbers[0] ?? 0,
-                importOrderNo: order.importOrderNo,
-                source: 'system',
-                message: `导入单号 ${order.importOrderNo} 已导入过，请刷新后重试`,
-              },
-            });
-          }
-
-          throw createImportExecutionAbort({
-            kind: 'error',
-            error: createImportError(
-              order.rowNumbers[0] ?? 0,
-              error instanceof Error ? error.message : '销售记录导入失败',
-              {
-                importOrderNo: order.importOrderNo,
-              }
-            ),
+        if (normalizedOptions.settlementMode === 'paid') {
+          await settleImportedOrderAsPaid({
+            tx,
+            order,
+            createdOrder,
+            userId,
           });
         }
+
+        return {
+          id: createdOrder.id,
+          orderNumber: createdOrder.orderNumber,
+          totalAmount: Number(createdOrder.totalAmount ?? order.orderAmount),
+          customerName: customer.name,
+        };
+      }, getLongTransactionOptions());
+
+      importedOrders.push({
+        id: created.id,
+        orderNumber: created.orderNumber,
+        importOrderNo: order.importOrderNo,
+        customerName: created.customerName,
+        totalAmount: created.totalAmount,
+      });
+    } catch (error) {
+      if (isImportKeyUniqueConstraintError(error)) {
+        runtimeDuplicates.push({
+          row: order.rowNumbers[0] ?? 0,
+          importOrderNo: order.importOrderNo,
+          source: 'system',
+          message: `导入单号 ${order.importOrderNo} 已导入过，请刷新后重试`,
+        });
+        continue;
       }
 
-      return {
-        importedOrders,
-        runtimeDuplicates: [] as SalesOrderImportDuplicate[],
-      };
-    }, getLongTransactionOptions());
-
-    if (transactionResult.runtimeDuplicates.length > 0) {
-      const duplicates = [
-        ...prepared.validation.duplicates,
-        ...transactionResult.runtimeDuplicates,
-      ];
-
-      return {
-        ...prepared.validation,
-        valid: false,
-        duplicateOrderCount: duplicates.length,
-        duplicates,
-        importedCount: 0,
-        importedOrders: [],
-      };
-    }
-
-    return {
-      ...prepared.validation,
-      valid: transactionResult.importedOrders.length > 0,
-      importedCount: transactionResult.importedOrders.length,
-      importedOrders: transactionResult.importedOrders,
-    };
-  } catch (error) {
-    const executionErrors = [...prepared.validation.errors];
-    const duplicates = [...prepared.validation.duplicates];
-
-    if (isDuplicateImportExecutionAbort(error)) {
-      duplicates.push(error.duplicate);
-
-      return {
-        ...prepared.validation,
-        valid: false,
-        duplicateOrderCount: duplicates.length,
-        duplicates,
-        importedCount: 0,
-        importedOrders: [],
-      };
-    }
-
-    if (isErrorImportExecutionAbort(error)) {
-      executionErrors.push(error.error);
-    } else if (
-      error &&
-      typeof error === 'object' &&
-      'row' in error &&
-      'message' in error &&
-      typeof (error as SalesOrderImportError).row === 'number'
-    ) {
-      executionErrors.push(error as SalesOrderImportError);
-    } else {
       executionErrors.push(
         createImportError(
-          0,
-          error instanceof Error ? error.message : '销售记录导入失败'
+          order.rowNumbers[0] ?? 0,
+          error instanceof Error ? error.message : '销售记录导入失败',
+          {
+            importOrderNo: order.importOrderNo,
+          }
         )
       );
     }
-
-    return {
-      ...prepared.validation,
-      valid: false,
-      errorCount: executionErrors.length,
-      errors: executionErrors,
-      importedCount: 0,
-      importedOrders: [],
-    };
   }
+
+  const aggregatedDuplicates = [
+    ...prepared.validation.duplicates,
+    ...runtimeDuplicates,
+  ];
+  const aggregatedErrors = [
+    ...prepared.validation.errors,
+    ...executionErrors,
+  ];
+
+  return {
+    ...prepared.validation,
+    valid: importedOrders.length > 0 && aggregatedErrors.length === 0,
+    duplicateOrderCount: aggregatedDuplicates.length,
+    duplicates: aggregatedDuplicates,
+    errorCount: aggregatedErrors.length,
+    errors: aggregatedErrors,
+    importedCount: importedOrders.length,
+    importedOrders,
+  };
 }

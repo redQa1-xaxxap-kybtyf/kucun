@@ -60,6 +60,7 @@ import {
 import {
   SAMPLE_SETTLEMENT_TYPE_LABELS,
   SALES_ORDER_STATUS_LABELS,
+  SALES_ORDER_STATUS_VARIANTS,
   TRANSFER_MODE_LABELS,
   type SalesOrder,
   type SalesOrderQueryParams,
@@ -638,25 +639,10 @@ export function ERPSalesOrderList({
 
   // 状态标签渲染 - 自定义颜色，更符合ERP风格
   const getStatusBadge = (status: string) => {
-    const statusStyles: Record<SalesOrderStatus, string> = {
-      draft:
-        'border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-tertiary))] text-[hsl(var(--color-text-secondary))]',
-      confirmed:
-        'border-[hsl(var(--color-primary))] bg-[hsl(var(--color-primary-light))] text-[hsl(var(--color-primary))]',
-      shipped:
-        'border-[hsl(var(--color-info))] bg-[hsl(var(--color-info-light))] text-[hsl(var(--color-info))]',
-      completed:
-        'border-[hsl(var(--color-success))] bg-[hsl(var(--color-success-light))] text-[hsl(var(--color-success))]',
-      cancelled:
-        'border-[hsl(var(--color-error))] bg-[hsl(var(--color-error-light))] text-[hsl(var(--color-error))]',
-    };
-
-    const className =
-      statusStyles[status as SalesOrderStatus] ||
-      'border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-tertiary))] text-[hsl(var(--color-text-secondary))]';
-
+    const variant =
+      SALES_ORDER_STATUS_VARIANTS[status as SalesOrderStatus] ?? 'outline';
     return (
-      <Badge variant="outline" className={`text-xs font-medium ${className}`}>
+      <Badge variant={variant} className="text-xs font-medium">
         {SALES_ORDER_STATUS_LABELS[status as SalesOrderStatus] || status}
       </Badge>
     );
@@ -671,6 +657,39 @@ export function ERPSalesOrderList({
     const numAmount = Number(amount);
     if (isNaN(numAmount)) {
       return '￥0.00';
+    }
+    return `￥${numAmount.toFixed(2)}`;
+  };
+
+  // 列表展示用：客户名 + 电话尾 4 位（中国销售扫读习惯）
+  const formatCustomerWithPhoneTail = (
+    name?: string | null,
+    phone?: string | null
+  ) => {
+    const trimmedName = name?.trim() || '-';
+    const digits = (phone || '').replace(/\D/g, '');
+    if (digits.length >= 4) {
+      return `${trimmedName} (${digits.slice(-4)})`;
+    }
+    return trimmedName;
+  };
+
+  // 列表展示用：≥1 万折算为"X.XX万"，≥1 亿为"X.XX亿"，便于扫读
+  const formatAmountCompact = (amount?: number | unknown) => {
+    if (amount === null || amount === undefined) {
+      return '￥0.00';
+    }
+    const numAmount = Number(amount);
+    if (isNaN(numAmount)) {
+      return '￥0.00';
+    }
+    const abs = Math.abs(numAmount);
+    const sign = numAmount < 0 ? '-' : '';
+    if (abs >= 100_000_000) {
+      return `￥${sign}${(abs / 100_000_000).toFixed(2)}亿`;
+    }
+    if (abs >= 10_000) {
+      return `￥${sign}${(abs / 10_000).toFixed(2)}万`;
     }
     return `￥${numAmount.toFixed(2)}`;
   };
@@ -819,16 +838,16 @@ export function ERPSalesOrderList({
           )}
         >
           <div className="overflow-x-auto">
-            <Table className="min-w-[1060px]">
+            <Table className="lg:min-w-[920px] xl:min-w-[1060px]">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[180px] min-w-[180px] whitespace-nowrap">
                     订单号
                   </TableHead>
-                  <TableHead className="w-[260px] min-w-[260px] whitespace-nowrap">
+                  <TableHead className="w-[220px] min-w-[220px] whitespace-nowrap xl:w-[260px] xl:min-w-[260px]">
                     客户
                   </TableHead>
-                  <TableHead className="w-[170px] min-w-[170px] whitespace-nowrap">
+                  <TableHead className="w-[150px] min-w-[150px] whitespace-nowrap xl:w-[170px] xl:min-w-[170px]">
                     订单状态
                   </TableHead>
                   <TableHead className="w-[120px] min-w-[120px] text-right whitespace-nowrap">
@@ -837,7 +856,7 @@ export function ERPSalesOrderList({
                   <TableHead className="w-[120px] min-w-[120px] whitespace-nowrap">
                     收款状态
                   </TableHead>
-                  <TableHead className="w-[180px] min-w-[180px] whitespace-nowrap">
+                  <TableHead className="hidden w-[180px] min-w-[180px] whitespace-nowrap xl:table-cell">
                     日期
                   </TableHead>
                   <TableHead className="w-[140px] min-w-[140px] whitespace-nowrap">
@@ -910,15 +929,25 @@ export function ERPSalesOrderList({
                               已发生退货
                             </Badge>
                           )}
+                          {/* 1024-1280 区间隐藏独立日期列时，补一行紧凑日期 */}
+                          <span className="text-[10px] text-[hsl(var(--color-text-tertiary))] xl:hidden">
+                            {formatDate(order.orderDate || order.createdAt)}
+                            {order.shippedAt
+                              ? ` · 发 ${formatDate(order.shippedAt)}`
+                              : ''}
+                          </span>
                         </div>
                       </TableCell>
                       <TableCell className="h-8 min-w-[260px] text-xs">
                         <div className="flex flex-col gap-1">
-                          <span className="font-medium text-[hsl(var(--color-text-primary))]">
-                            {order.customer?.name || '-'}
-                          </span>
-                          <span className="text-[hsl(var(--color-text-tertiary))]">
-                            {order.customer?.phone || '-'}
+                          <span
+                            className="font-medium text-[hsl(var(--color-text-primary))]"
+                            title={order.customer?.phone || undefined}
+                          >
+                            {formatCustomerWithPhoneTail(
+                              order.customer?.name,
+                              order.customer?.phone
+                            )}
                           </span>
                           {order.customer?.address && (
                             <span
@@ -952,13 +981,16 @@ export function ERPSalesOrderList({
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="h-8 text-right text-xs font-semibold whitespace-nowrap text-[hsl(var(--color-success))]">
-                        {formatAmount(order.totalAmount)}
+                      <TableCell
+                        className="h-8 text-right text-xs font-semibold whitespace-nowrap text-[hsl(var(--color-success))]"
+                        title={formatAmount(order.totalAmount)}
+                      >
+                        {formatAmountCompact(order.totalAmount)}
                       </TableCell>
                       <TableCell className="h-8 text-xs whitespace-nowrap">
                         {getPaymentStatusBadge(order)}
                       </TableCell>
-                      <TableCell className="h-8 text-xs whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
+                      <TableCell className="hidden h-8 text-xs whitespace-nowrap text-[hsl(var(--color-text-secondary))] xl:table-cell">
                         <div className="flex flex-col gap-1">
                           <span>
                             销售：
@@ -1067,11 +1099,14 @@ export function ERPSalesOrderList({
                     <div className="font-mono text-xs font-semibold text-[hsl(var(--color-primary))]">
                       {order.orderNumber}
                     </div>
-                    <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
-                      {order.customer?.name || '-'}
-                      {order.customer?.phone
-                        ? ` · ${order.customer.phone}`
-                        : ''}
+                    <div
+                      className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]"
+                      title={order.customer?.phone || undefined}
+                    >
+                      {formatCustomerWithPhoneTail(
+                        order.customer?.name,
+                        order.customer?.phone
+                      )}
                     </div>
                     {order.customer?.address && (
                       <div className="mt-0.5 truncate text-xs text-[hsl(var(--color-text-tertiary))]">
@@ -1107,8 +1142,11 @@ export function ERPSalesOrderList({
                     </div>
                   </div>
                   <div className="min-w-0 rounded-lg bg-[hsl(var(--color-bg-secondary))] px-3 py-2 text-xs text-[hsl(var(--color-text-secondary))] sm:shrink-0 sm:bg-transparent sm:px-0 sm:py-0 sm:text-right">
-                    <div className="font-semibold text-[hsl(var(--color-success))]">
-                      金额：{formatAmount(order.totalAmount)}
+                    <div
+                      className="font-semibold text-[hsl(var(--color-success))]"
+                      title={formatAmount(order.totalAmount)}
+                    >
+                      金额：{formatAmountCompact(order.totalAmount)}
                     </div>
                     <div className="mt-1 flex sm:justify-end">
                       {getPaymentStatusBadge(order)}
@@ -1132,41 +1170,29 @@ export function ERPSalesOrderList({
                       <Button
                         variant="default"
                         size="sm"
-                        className="h-7 px-2 text-xs font-bold"
+                        className="h-9 px-3 text-xs font-bold"
                         onClick={e => {
                           e.stopPropagation();
                           handleConfirmShipment(order);
                         }}
                         disabled={updatingOrderId === order.id}
                       >
-                        <Truck className="mr-1 h-3 w-3" />
+                        <Truck className="mr-1 h-3.5 w-3.5" />
                         {updatingOrderId === order.id
                           ? '处理中...'
                           : '确认发货'}
                       </Button>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-1 text-xs font-bold text-slate-500"
-                      onClick={e => {
-                        e.stopPropagation();
-                        handleOpenOrder(order);
-                      }}
-                    >
-                      <Eye className="mr-1 h-3 w-3" />
-                      查看
-                    </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-7 w-7 px-0 text-slate-500"
+                          className="h-9 w-9 px-0 text-slate-500"
                           onClick={event => event.stopPropagation()}
                           aria-label="更多操作"
                         >
-                          <MoreHorizontal className="h-3.5 w-3.5" />
+                          <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-40">

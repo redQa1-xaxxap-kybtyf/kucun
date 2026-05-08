@@ -257,10 +257,53 @@ export const SalesOrderSearchToolbar = React.memo<SalesOrderSearchToolbarProps>(
       </div>
     );
 
+    // 顶部状态 Tab 快捷筛选（中国 ERP 习惯：一眼切到"待发货""已发货"等常用视图）
+    const statusTabs = React.useMemo(
+      () => [
+        { label: '全部', value: 'all' },
+        { label: '待确认', value: 'draft' },
+        { label: '待发货', value: 'confirmed' },
+        { label: '已发货', value: 'shipped' },
+        { label: '已完成', value: 'completed' },
+      ],
+      []
+    );
+
+    const activeStatusTab = queryParams.status || 'all';
+
     return (
       <div className="space-y-3">
+        {/* 状态 Tab：移动端横滑、桌面端横排 */}
+        <div className="-mx-3 overflow-x-auto px-3 sm:mx-0 sm:px-0">
+          <div className="flex w-max gap-1 sm:w-full sm:flex-wrap">
+            {statusTabs.map(tab => {
+              const active = activeStatusTab === tab.value;
+              return (
+                <Button
+                  key={tab.value}
+                  type="button"
+                  variant={active ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() =>
+                    onFilter(
+                      'status',
+                      tab.value === 'all' ? undefined : tab.value
+                    )
+                  }
+                  className={cn(
+                    'h-8 rounded-full px-3 text-xs font-medium whitespace-nowrap',
+                    !active &&
+                      'border-[hsl(var(--color-border-primary))] bg-white text-[hsl(var(--color-text-secondary))] hover:bg-[hsl(var(--color-primary-light))]'
+                  )}
+                >
+                  {tab.label}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
         <div
-          className="sm:hidden"
+          className="sticky top-0 z-20 -mx-3 bg-[hsl(var(--color-bg-secondary))] px-3 pb-2 pt-2 sm:hidden"
           data-testid="sales-order-mobile-search-toolbar"
         >
           <SearchFilterCard
@@ -326,7 +369,7 @@ export const SalesOrderSearchToolbar = React.memo<SalesOrderSearchToolbarProps>(
                     )}
                     <Input
                       data-testid="sales-order-desktop-search-input"
-                      type="search"
+                      type="text"
                       inputMode="search"
                       enterKeyHint="search"
                       autoCapitalize="off"

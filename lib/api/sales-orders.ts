@@ -97,9 +97,11 @@ export interface SalesOrderImportResult {
 }
 
 export type SalesOrderImportTargetStatus = 'confirmed' | 'shipped';
+export type SalesOrderImportSettlementMode = 'unpaid' | 'paid';
 
 export interface SalesOrderImportRequestOptions {
   shippedDate?: string;
+  settlementMode?: SalesOrderImportSettlementMode;
   targetStatus?: SalesOrderImportTargetStatus;
 }
 
@@ -238,6 +240,10 @@ async function sendSalesOrderImportRequest(
   formData.append(
     'targetStatus',
     options.targetStatus === 'shipped' ? 'shipped' : 'confirmed'
+  );
+  formData.append(
+    'settlementMode',
+    options.settlementMode === 'paid' ? 'paid' : 'unpaid'
   );
 
   if (options.shippedDate?.trim()) {

@@ -21,6 +21,7 @@ import {
   salesOrderQueryKeys,
   type SalesOrderImportRequestOptions,
   type SalesOrderImportResult,
+  type SalesOrderImportSettlementMode,
   type SalesOrderImportTargetStatus,
 } from '@/lib/api/sales-orders';
 import { showError, showSuccess, showWarning } from '@/lib/utils/toast-helper';
@@ -305,6 +306,8 @@ export function SalesOrderImportDialog({
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const [targetStatus, setTargetStatus] =
     React.useState<SalesOrderImportTargetStatus>('confirmed');
+  const [settlementMode, setSettlementMode] =
+    React.useState<SalesOrderImportSettlementMode>('unpaid');
   const [shippedDate, setShippedDate] = React.useState('');
 
   const previewMutation = useMutation({
@@ -321,6 +324,8 @@ export function SalesOrderImportDialog({
         variables.options.targetStatus === 'shipped'
           ? '已发货销售订单'
           : '已确认未发货销售订单';
+      const settlementHint =
+        variables.options.settlementMode === 'paid' ? '，已结清' : '';
       const customerHint =
         previewResult.autoCreateCustomerNames.length > 0
           ? `，并新建 ${previewResult.autoCreateCustomerNames.length} 个客户资料`
@@ -335,13 +340,13 @@ export function SalesOrderImportDialog({
 
       if (previewResult.duplicateOrderCount > 0) {
         showWarning('检查完成', {
-          description: `可导入 ${previewResult.validOrderCount} 张${targetLabel}${customerHint}，重复的 ${previewResult.duplicateOrderCount} 张会自动跳过`,
+          description: `可导入 ${previewResult.validOrderCount} 张${targetLabel}${settlementHint}${customerHint}，重复的 ${previewResult.duplicateOrderCount} 张会自动跳过`,
         });
         return;
       }
 
       showSuccess('检查通过', {
-        description: `共 ${previewResult.validOrderCount} 张${targetLabel}可以导入${customerHint}`,
+        description: `共 ${previewResult.validOrderCount} 张${targetLabel}${settlementHint}可以导入${customerHint}`,
       });
     },
     onError: error => {
@@ -368,6 +373,8 @@ export function SalesOrderImportDialog({
         variables.options.targetStatus === 'shipped'
           ? '已发货销售订单'
           : '已确认未发货销售订单';
+      const settlementHint =
+        variables.options.settlementMode === 'paid' ? '，已结清' : '';
       const customerHint =
         importResult.autoCreateCustomerNames.length > 0
           ? `，新建 ${importResult.autoCreateCustomerNames.length} 个客户资料`
@@ -375,7 +382,7 @@ export function SalesOrderImportDialog({
 
       if ((importResult.importedCount ?? 0) > 0) {
         showSuccess('导入完成', {
-          description: `成功导入 ${importResult.importedCount} 张${targetLabel}${customerHint}`,
+          description: `成功导入 ${importResult.importedCount} 张${targetLabel}${settlementHint}${customerHint}`,
         });
         return;
       }
@@ -452,10 +459,11 @@ export function SalesOrderImportDialog({
       file,
       options: {
         targetStatus,
+        settlementMode,
         ...(shippedDate.trim() ? { shippedDate: shippedDate.trim() } : {}),
       },
     });
-  }, [file, previewMutation, shippedDate, targetStatus]);
+  }, [file, previewMutation, settlementMode, shippedDate, targetStatus]);
 
   const handleImport = React.useCallback(() => {
     if (!file) {
@@ -477,14 +485,26 @@ export function SalesOrderImportDialog({
       file,
       options: {
         targetStatus,
+        settlementMode,
         ...(shippedDate.trim() ? { shippedDate: shippedDate.trim() } : {}),
       },
     });
-  }, [file, importMutation, shippedDate, targetStatus]);
+  }, [file, importMutation, settlementMode, shippedDate, targetStatus]);
 
   const handleTargetStatusChange = React.useCallback(
     (value: SalesOrderImportTargetStatus) => {
       setTargetStatus(value);
+      setResult(null);
+      setConfirmOpen(false);
+      previewMutation.reset();
+      importMutation.reset();
+    },
+    [importMutation, previewMutation]
+  );
+
+  const handleSettlementModeChange = React.useCallback(
+    (value: SalesOrderImportSettlementMode) => {
+      setSettlementMode(value);
       setResult(null);
       setConfirmOpen(false);
       previewMutation.reset();
@@ -513,6 +533,7 @@ export function SalesOrderImportDialog({
     !hasImportedOrders &&
     (file !== null ||
       targetStatus !== 'confirmed' ||
+      settlementMode !== 'unpaid' ||
       shippedDate.trim() !== '');
   const { confirmLeavePage } = useUnsavedChangesGuard({
     enabled: hasUnsavedChanges,
@@ -531,6 +552,7 @@ export function SalesOrderImportDialog({
         setResult(null);
         setConfirmOpen(false);
         setTargetStatus('confirmed');
+        setSettlementMode('unpaid');
         setShippedDate('');
         previewMutation.reset();
         importMutation.reset();
@@ -550,8 +572,10 @@ export function SalesOrderImportDialog({
       : '';
   const targetStatusLabel =
     targetStatus === 'shipped' ? '已发货销售订单' : '已确认未发货销售订单';
+  const settlementLabel =
+    settlementMode === 'paid' ? '已结清，不产生客户欠款' : '形成应收，后续收款';
   const confirmDescription = result
-    ? `将整批导入 ${result.validOrderCount} 张${targetStatusLabel}，进入正常销售列表和销售报表；${
+    ? `将整批导入 ${result.validOrderCount} 张${targetStatusLabel}，收款处理为“${settlementLabel}”，进入正常销售列表和销售报表；${
         targetStatus === 'shipped'
           ? `导入成功后会直接生成出库记录并扣减库存${shippedDate.trim() ? `，统一发货日期为 ${shippedDate.trim()}` : '，未填写统一发货日期时默认跟随每张订单的订单日期'}。`
           : '导入成功后会先按已确认状态预留库存，后续再手工发货。'
@@ -582,7 +606,7 @@ export function SalesOrderImportDialog({
               </AlertDescription>
             </Alert>
 
-            <div className="grid gap-4 rounded-lg border p-4 md:grid-cols-[minmax(0,220px)_minmax(0,220px)_1fr] md:items-end">
+            <div className="grid gap-4 rounded-lg border p-4 md:grid-cols-[minmax(0,210px)_minmax(0,210px)_minmax(0,210px)_1fr] md:items-end">
               <div className="space-y-2">
                 <Label htmlFor="sales-import-target-status">导入状态</Label>
                 <Select
@@ -600,6 +624,27 @@ export function SalesOrderImportDialog({
                   <SelectContent>
                     <SelectItem value="confirmed">已确认未发货</SelectItem>
                     <SelectItem value="shipped">已发货</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="sales-import-settlement-mode">收款处理</Label>
+                <Select
+                  value={settlementMode}
+                  onValueChange={value =>
+                    handleSettlementModeChange(
+                      value as SalesOrderImportSettlementMode
+                    )
+                  }
+                  disabled={isBusy}
+                >
+                  <SelectTrigger id="sales-import-settlement-mode">
+                    <SelectValue placeholder="选择收款处理" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unpaid">形成应收</SelectItem>
+                    <SelectItem value="paid">已结清</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -628,6 +673,9 @@ export function SalesOrderImportDialog({
                 {targetStatus === 'shipped'
                   ? `导入后直接标记为已发货并扣减库存。${shippedDate.trim() ? `本次统一发货日期将使用 ${shippedDate.trim()}。` : '若不填写统一发货日期，将默认跟随每张订单的订单日期。'}`
                   : '导入后先生成已确认未发货订单，只预留库存，后续再手工发货。'}
+                {settlementMode === 'paid'
+                  ? ' 已结清会同步收款和客户往来账。'
+                  : ' 形成应收会保留客户欠款。'}
               </div>
             </div>
 
@@ -675,7 +723,8 @@ export function SalesOrderImportDialog({
                 <AlertDescription>
                   这次导入会新建 {result.autoCreateCustomerNames.length}{' '}
                   个客户资料：{autoCreateCustomerPreview}
-                  {autoCreateCustomerOverflow}。客户电话和联系人可后续补录。
+                  {autoCreateCustomerOverflow}
+                  。模板中的客户电话和地址会写入新客户资料。
                 </AlertDescription>
               </Alert>
             ) : null}
@@ -704,6 +753,7 @@ export function SalesOrderImportDialog({
               {targetStatus === 'shipped'
                 ? '导入为已发货'
                 : '导入为已确认未发货'}
+              {settlementMode === 'paid' ? '（已结清）' : ''}
             </Button>
           </DialogFooter>
         </DialogContent>

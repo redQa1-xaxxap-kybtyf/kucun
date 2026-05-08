@@ -27,6 +27,9 @@ function readImportOptions(
   const targetStatus = String(formData.get('targetStatus') ?? 'confirmed')
     .trim()
     .toLowerCase();
+  const settlementMode = String(formData.get('settlementMode') ?? 'unpaid')
+    .trim()
+    .toLowerCase();
   const shippedDate = String(formData.get('shippedDate') ?? '').trim();
 
   if (shippedDate && !parseLocalDateString(shippedDate)) {
@@ -35,6 +38,7 @@ function readImportOptions(
 
   return {
     targetStatus: targetStatus === 'shipped' ? 'shipped' : 'confirmed',
+    settlementMode: settlementMode === 'paid' ? 'paid' : 'unpaid',
     shippedDate: shippedDate || undefined,
   };
 }
@@ -82,6 +86,8 @@ function buildResponseMessage(
     importOptions.targetStatus === 'shipped'
       ? '已发货销售订单'
       : '已确认未发货销售订单';
+  const settlementLabel =
+    importOptions.settlementMode === 'paid' ? '，并标记为已结清' : '';
   const autoCreateCustomerText =
     result.autoCreateCustomerNames.length > 0
       ? `，并自动创建 ${result.autoCreateCustomerNames.length} 个客户资料`
@@ -95,10 +101,10 @@ function buildResponseMessage(
     }
 
     if (result.duplicateOrderCount > 0) {
-      return `导入检查完成，可导入 ${result.validOrderCount} 张${targetLabel}${autoCreateCustomerText}，跳过 ${result.duplicateOrderCount} 张重复导入订单`;
+      return `导入检查完成，可导入 ${result.validOrderCount} 张${targetLabel}${settlementLabel}${autoCreateCustomerText}，跳过 ${result.duplicateOrderCount} 张重复导入订单`;
     }
 
-    return `导入检查通过，共 ${result.validOrderCount} 张${targetLabel}可导入${autoCreateCustomerText}`;
+    return `导入检查通过，共 ${result.validOrderCount} 张${targetLabel}${settlementLabel}可导入${autoCreateCustomerText}`;
   }
 
   if (!isExecutionResult(result)) {
@@ -118,10 +124,10 @@ function buildResponseMessage(
   }
 
   if (result.duplicateOrderCount > 0) {
-    return `成功导入 ${result.importedCount} 张${targetLabel}${autoCreateCustomerText}，跳过 ${result.duplicateOrderCount} 张重复订单`;
+    return `成功导入 ${result.importedCount} 张${targetLabel}${settlementLabel}${autoCreateCustomerText}，跳过 ${result.duplicateOrderCount} 张重复订单`;
   }
 
-  return `成功导入 ${result.importedCount} 张${targetLabel}${autoCreateCustomerText}`;
+  return `成功导入 ${result.importedCount} 张${targetLabel}${settlementLabel}${autoCreateCustomerText}`;
 }
 
 export const POST = withAuth(
