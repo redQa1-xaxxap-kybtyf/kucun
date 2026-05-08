@@ -6,6 +6,22 @@
 
 ---
 
+## 📚 项目内 AI 指令文件优先级
+
+项目存在多份 `CLAUDE.md`，**优先级从高到低**：
+
+1. `.claude/CLAUDE.md` — 工作流硬性约束（中文回复 / 强制检查清单 / UI 规范引用）。**冲突时以此为准**。
+2. `CLAUDE.md`（本文件）— 项目概览、模块索引、规范文档导航。
+3. `lib/services/CLAUDE.md` — 业务服务层局部说明。
+4. `deployment-output/release-src*/CLAUDE.md` — 构建副本，**仅供线上排查参考，不维护**。
+
+UI/前端改动须额外遵循：
+
+- `docs/development/v3-pro-ui-standard.md` 第 8.6 / 8.7 节：本土化文案与术语词典。
+- `docs/development/zh-cn-ux-checklist.md`：日常作业页（销售/库存/财务录单等）的 ERP 高频场景规范。
+
+---
+
 ## 📋 项目概述
 
 **库存管理系统 (Kucun)** 是一个专为瓷砖行业设计的全功能库存管理工具，提供从采购、入库、销售、退货到财务管理的完整业务流程支持。

@@ -10,13 +10,16 @@
 - 必须存储重要知识
 - 必须执行检查清单
 - 必须遵循质量标准
+- 涉及前端 UI 改动前，必读：
+  1. `docs/development/v3-pro-ui-standard.md` 第 8.6 节"本土化文案"与第 8.7 节"全局业务术语规范"——任何用户可见文案必须遵守术语词典，禁止 Dashboard/Stock/Statement 等英文词出现在 UI。
+  2. `docs/development/zh-cn-ux-checklist.md`——日常作业页（销售/库存/财务流水等高频录单）须按 checklist 逐条复核：inputMode 键盘、粘贴清洗、金额万单位、状态徽章色谱（`lib/config/status-palette.ts`）、1024 屏适配、移动端筛选条 sticky 等。
 
 ## MANDATORY WORKFLOWS
 
 ═════════════════════
 
 执行前检查清单：
-[ ] 中文 [ ] 上下文 [ ] 工具 [ ] 安全 [ ] 质量
+[ ] 中文 [ ] 上下文 [ ] 工具 [ ] 安全 [ ] 质量 [ ] UI改动→术语词典+UX checklist
 
 标准工作流：
 
