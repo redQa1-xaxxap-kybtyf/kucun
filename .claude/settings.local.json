@@ -213,7 +213,8 @@
       "Bash(env:*)",
       "Bash(npx next *)",
       "Bash(npx jest *)",
-      "Bash(git stash *)"
+      "Bash(git stash *)",
+      "Bash(git rev-list *)"
     ],
     "deny": [],
     "ask": []
