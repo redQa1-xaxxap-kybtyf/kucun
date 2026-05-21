@@ -659,9 +659,9 @@ export default function ProfilePage() {
             {/* 登录记录 */}
             <section className="space-y-4">
               <h3 className="px-1 text-[11px] font-semibold text-slate-400">
-                最近登录记录
+                最近 10 条登录记录
               </h3>
-              <div className="overflow-hidden rounded-md border border-slate-100 bg-white p-2">
+              <div className="max-h-80 overflow-y-auto rounded-md border border-slate-100 bg-white p-2">
                 <div className="space-y-1">
                   {isLoadingLogs ? (
                     <div className="py-6 text-center text-slate-300">
@@ -672,7 +672,7 @@ export default function ProfilePage() {
                       暂无登录记录
                     </div>
                   ) : (
-                    loginLogs.slice(0, 3).map((log, index) => (
+                    loginLogs.map((log, index) => (
                       <div
                         key={index}
                         className="group flex items-center justify-between rounded-md p-3 hover:bg-white"
