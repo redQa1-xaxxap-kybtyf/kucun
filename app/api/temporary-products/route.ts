@@ -24,6 +24,7 @@ import {
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { invalidateMiniProgramCatalogCache } from '@/lib/services/miniprogram-catalog-service';
 
 const temporaryProductWriteSchema = z.object({
   supplierId: z.string().min(1, '请选择供应商'),
@@ -466,6 +467,7 @@ export const POST = withAuth(
           },
         },
       });
+      invalidateMiniProgramCatalogCache();
 
       await createPriceHistoryIfNeeded({
         temporaryProductId: product.id,

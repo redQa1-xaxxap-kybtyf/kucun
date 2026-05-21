@@ -6,6 +6,7 @@ import {
   getMiniProgramCatalogSettings,
   updateMiniProgramCatalogSettings,
   updateMiniProgramProductDisplayOverride,
+  updateMiniProgramProductDisplayOverrides,
 } from '@/lib/services/miniprogram-catalog-service';
 
 export const dynamic = 'force-dynamic';
@@ -40,24 +41,41 @@ const catalogSettingsSchema = z.object({
   componentTypes: z.array(componentTypeSchema).optional(),
 });
 
-const productDisplaySchema = z.object({
-  productId: z.string().min(1),
-  display: z.object({
-    visible: z.boolean().optional(),
-    seriesId: z.string().min(1).max(64).optional(),
-    componentType: z.string().min(1).max(64).optional(),
-    sortOrder: z.coerce.number().int().min(1).max(999).optional(),
-  }),
+const miniDisplaySchema = z.object({
+  visible: z.boolean().optional(),
+  seriesId: z.string().min(1).max(64).optional(),
+  componentType: z.string().min(1).max(64).optional(),
+  sortOrder: z.coerce.number().int().min(1).max(999).optional(),
+  displayGroupName: z.string().trim().max(40).optional(),
+  displayGroupOrder: z.coerce.number().int().min(1).max(99).optional(),
 });
 
-export async function GET() {
-  const data = await getMiniProgramCatalogSettings();
+const productDisplaySchema = z.object({
+  productId: z.string().min(1),
+  display: miniDisplaySchema,
+});
 
-  return NextResponse.json({
-    success: true,
-    data,
-  });
-}
+const productDisplayBatchSchema = z.object({
+  productIds: z.array(z.string().min(1)).min(1).max(200),
+  display: miniDisplaySchema,
+});
+
+const productDisplayPatchSchema = z.union([
+  productDisplaySchema,
+  productDisplayBatchSchema,
+]);
+
+export const GET = withAuth(
+  async () => {
+    const data = await getMiniProgramCatalogSettings();
+
+    return NextResponse.json({
+      success: true,
+      data,
+    });
+  },
+  { requireAdmin: true }
+);
 
 export const PUT = withAuth(
   async (request: NextRequest) => {
@@ -88,7 +106,7 @@ export const PUT = withAuth(
 export const PATCH = withAuth(
   async (request: NextRequest) => {
     const body = await request.json();
-    const parsed = productDisplaySchema.safeParse(body);
+    const parsed = productDisplayPatchSchema.safeParse(body);
 
     if (!parsed.success) {
       return NextResponse.json(
@@ -99,6 +117,19 @@ export const PATCH = withAuth(
         },
         { status: 400 }
       );
+    }
+
+    if ('productIds' in parsed.data) {
+      const data = await updateMiniProgramProductDisplayOverrides(
+        parsed.data.productIds,
+        parsed.data.display
+      );
+
+      return NextResponse.json({
+        success: true,
+        data,
+        message: `已批量保存 ${data.updatedCount} 个产品`,
+      });
     }
 
     const data = await updateMiniProgramProductDisplayOverride(

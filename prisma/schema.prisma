@@ -161,6 +161,7 @@ model TemporaryProduct {
   salesOrderItems           SalesOrderItem[]
   factoryShipmentOrderItems FactoryShipmentOrderItem[]
   priceHistories            TemporaryProductPriceHistory[]
+  miniProgramGoodsItems     MiniProgramGoodsRequestItem[]
 
   @@unique([supplierId, code], map: "uk_temporary_products_supplier_code")
   @@index([supplierId], map: "idx_temporary_products_supplier")
@@ -259,6 +260,7 @@ model Product {
   fifoConsumptionLedgers    FifoConsumptionLedger[]
   purchaseDamageLedgers     PurchaseInboundDamageLedger[]
   manualDamageLedgers       ManualDamageLedger[]
+  miniProgramGoodsItems     MiniProgramGoodsRequestItem[]
 
   @@index([code])
   @@index([name])
@@ -269,6 +271,51 @@ model Product {
   @@index([status, createdAt], map: "idx_products_status_created")
   @@index([status, name], map: "idx_products_status_name")
   @@map("products")
+}
+
+model MiniProgramGoodsRequest {
+  id             String   @id @default(uuid()) @db.Char(36)
+  requestNumber  String   @unique @map("request_number") @db.VarChar(64)
+  lookupToken    String   @unique @map("lookup_token") @db.VarChar(96)
+  customerName   String?  @map("customer_name") @db.VarChar(100)
+  customerPhone  String   @map("customer_phone") @db.VarChar(50)
+  contactAddress String?  @map("contact_address") @db.VarChar(255)
+  remarks        String?  @db.Text
+  status         String   @default("pending") @db.VarChar(32)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  items MiniProgramGoodsRequestItem[]
+
+  @@index([customerPhone, createdAt], map: "idx_mini_goods_customer_created")
+  @@index([status, createdAt], map: "idx_mini_goods_status_created")
+  @@index([createdAt], map: "idx_mini_goods_created")
+  @@map("mini_program_goods_requests")
+}
+
+model MiniProgramGoodsRequestItem {
+  id                 String   @id @default(uuid()) @db.Char(36)
+  requestId          String   @map("request_id") @db.Char(36)
+  productId          String?  @map("product_id") @db.Char(36)
+  temporaryProductId String?  @map("temporary_product_id") @db.Char(36)
+  productSource      String   @default("own") @map("product_source") @db.VarChar(32)
+  productCode        String   @map("product_code") @db.VarChar(120)
+  productName        String   @map("product_name") @db.VarChar(150)
+  specification      String?  @db.Text
+  unit               String   @default("片") @db.VarChar(32)
+  thumbnailUrl       String?  @map("thumbnail_url") @db.VarChar(2048)
+  quantity           Int      @default(1)
+  remarks            String?  @db.VarChar(255)
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  request          MiniProgramGoodsRequest @relation(fields: [requestId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  product          Product?                @relation(fields: [productId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  temporaryProduct TemporaryProduct?       @relation(fields: [temporaryProductId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([requestId], map: "idx_mini_goods_items_request")
+  @@index([productId], map: "idx_mini_goods_items_product")
+  @@index([temporaryProductId], map: "idx_mini_goods_items_temp_product")
+  @@map("mini_program_goods_request_items")
 }
 
 model ProductVariant {
