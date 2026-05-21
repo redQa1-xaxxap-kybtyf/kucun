@@ -58,6 +58,13 @@ function normalizeInventory(item) {
       : totalQuantity - reservedQuantity
   );
 
+  const thumbnailUrl =
+    product.thumbnailUrl ||
+    product.coverImageUrl ||
+    product.imageUrl ||
+    (Array.isArray(product.images) && product.images[0]) ||
+    '';
+
   return {
     id:
       item.id ||
@@ -67,6 +74,7 @@ function normalizeInventory(item) {
     code: product.code || item.productCode || '-',
     name: product.name || item.productName || '-',
     specification: product.specification || item.specification || '',
+    thumbnailUrl,
     packageText: buildPackageText(item, product),
     batchNumber: item.batchNumber || '未填批次',
     location: item.location || '未填库位',
@@ -117,6 +125,10 @@ Page({
 
   onClearSearch() {
     this.setData({ search: '' });
+    this.loadInventories({ reset: true });
+  },
+
+  onRetryTap() {
     this.loadInventories({ reset: true });
   },
 

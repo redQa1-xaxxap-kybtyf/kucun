@@ -4,22 +4,31 @@
     "pages/group/detail",
     "pages/product/detail",
     "pages/plan/index",
-    "pages/product/poster",
-    "pages/admin/login",
-    "pages/admin/workspace",
-    "pages/admin/catalog",
-    "pages/admin/inventory",
-    "pages/admin/products",
-    "pages/admin/product-form",
-    "pages/admin/sales-order",
-    "pages/admin/payment"
+    "pages/product/poster"
+  ],
+  "subpackages": [
+    {
+      "root": "pages/admin",
+      "pages": [
+        "login",
+        "workspace",
+        "catalog",
+        "inventory",
+        "products",
+        "product-form",
+        "sales-order",
+        "payment"
+      ]
+    }
   ],
   "window": {
     "navigationBarTitleText": "外墙罗马柱选型",
-    "navigationBarBackgroundColor": "#F4F6F5",
+    "navigationBarBackgroundColor": "#F8F6F1",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#F4F6F5"
+    "backgroundColor": "#F8F6F1",
+    "enablePullDownRefresh": false
   },
   "style": "v2",
+  "lazyCodeLoading": "requiredComponents",
   "sitemapLocation": "sitemap.json"
 }

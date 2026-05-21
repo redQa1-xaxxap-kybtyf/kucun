@@ -2,8 +2,8 @@
   min-height: 100vh;
   padding: 22rpx 20rpx 72rpx;
   box-sizing: border-box;
-  background: #f5f6f5;
-  color: #101828;
+  background: #f8f6f1;
+  color: #1f2328;
 }
 
 button::after {
@@ -23,14 +23,14 @@ button::after {
 }
 
 .eyebrow {
-  color: #667085;
+  color: #73716d;
   font-size: 22rpx;
   font-weight: 600;
 }
 
 .title {
   margin-top: 8rpx;
-  color: #101828;
+  color: #1f2328;
   font-size: 34rpx;
   font-weight: 700;
   line-height: 1.18;
@@ -38,24 +38,24 @@ button::after {
 
 .desc {
   margin-top: 8rpx;
-  color: #667085;
+  color: #73716d;
   font-size: 24rpx;
   font-weight: 400;
   line-height: 1.4;
 }
 
 .preview-btn {
-  width: 116rpx;
-  height: 60rpx;
+  width: 124rpx;
+  height: 72rpx;
   flex: none;
   margin: 0;
-  border: 1rpx solid #d8dedb;
-  border-radius: 8rpx;
+  border: 1rpx solid #e7e0d6;
+  border-radius: 12rpx;
   background: #fff;
-  color: #176b5b;
-  font-size: 24rpx;
-  font-weight: 700;
-  line-height: 60rpx;
+  color: #27594f;
+  font-size: 26rpx;
+  font-weight: 600;
+  line-height: 72rpx;
 }
 
 .actions {
@@ -67,28 +67,28 @@ button::after {
   width: 100%;
   height: 72rpx;
   margin: 0;
-  border-radius: 8rpx;
+  border-radius: 12rpx;
   font-size: 26rpx;
   font-weight: 700;
   line-height: 72rpx;
 }
 
 .primary {
-  background: #176b5b;
+  background: #27594f;
   color: #fff;
 }
 
 .secondary {
-  border: 1rpx solid #d9dfdd;
+  border: 1rpx solid #e7e0d6;
   background: #fff;
-  color: #176b5b;
+  color: #27594f;
 }
 
 .notice {
   margin-top: 18rpx;
   padding: 18rpx;
   border: 1rpx solid #f3b8a6;
-  border-radius: 8rpx;
+  border-radius: 12rpx;
   background: #fff4ef;
   color: #b42318;
   font-size: 24rpx;
@@ -100,7 +100,7 @@ button::after {
   justify-content: center;
   min-height: 420rpx;
   padding: 40rpx 20rpx;
-  color: #667085;
+  color: #73716d;
   font-size: 27rpx;
   text-align: center;
 }
@@ -111,27 +111,27 @@ button::after {
   gap: 6rpx;
   margin-top: 16rpx;
   padding: 6rpx;
-  border-radius: 8rpx;
-  background: #e9eeeb;
+  border-radius: 12rpx;
+  background: #efece4;
 }
 
 .tab {
   min-width: 0;
   padding: 14rpx 10rpx 12rpx;
   border: 1rpx solid transparent;
-  border-radius: 8rpx;
+  border-radius: 12rpx;
   background: transparent;
   text-align: center;
   box-sizing: border-box;
 }
 
 .tab.active {
-  border-color: #176b5b;
+  border-color: #27594f;
   background: #fff;
 }
 
 .tab-title {
-  color: #101828;
+  color: #1f2328;
   font-size: 25rpx;
   font-weight: 700;
   line-height: 1.25;
@@ -139,8 +139,8 @@ button::after {
 
 .tab-count {
   margin-top: 4rpx;
-  color: #667085;
-  font-size: 20rpx;
+  color: #73716d;
+  font-size: 22rpx;
   line-height: 1.2;
 }
 
@@ -157,29 +157,29 @@ button::after {
 }
 
 .section-title {
-  color: #101828;
+  color: #1f2328;
   font-size: 30rpx;
   font-weight: 700;
 }
 
 .section-note {
   margin-top: 6rpx;
-  color: #667085;
+  color: #73716d;
   font-size: 22rpx;
   font-weight: 400;
   line-height: 1.35;
 }
 
 .section-add {
-  width: 150rpx;
-  height: 60rpx;
+  width: 160rpx;
+  height: 72rpx;
   margin: 0;
-  border-radius: 8rpx;
-  background: #176b5b;
+  border-radius: 12rpx;
+  background: #27594f;
   color: #fff;
-  font-size: 24rpx;
-  font-weight: 700;
-  line-height: 60rpx;
+  font-size: 26rpx;
+  font-weight: 600;
+  line-height: 72rpx;
 }
 
 .category-list {
@@ -190,10 +190,10 @@ button::after {
 
 .blank-state {
   padding: 42rpx 20rpx;
-  border: 1rpx solid #e1e6e4;
-  border-radius: 8rpx;
+  border: 1rpx solid #e7e0d6;
+  border-radius: 12rpx;
   background: #fff;
-  color: #667085;
+  color: #73716d;
   font-size: 25rpx;
   text-align: center;
 }
@@ -204,22 +204,39 @@ button::after {
   gap: 16rpx;
   min-height: 112rpx;
   padding: 16rpx;
-  border: 1rpx solid #e1e6e4;
-  border-radius: 8rpx;
+  border: 1rpx solid #e7e0d6;
+  border-radius: 12rpx;
   background: #fff;
   box-sizing: border-box;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+
+.category-card.dragging {
+  border-color: #27594f;
+  background: #eef8f4;
+  opacity: 0.78;
+  transform: scale(0.99);
+}
+
+.category-card.drag-over {
+  border-color: #27594f;
+  box-shadow: inset 0 0 0 2rpx rgba(30, 142, 115, 0.18);
 }
 
 .cover {
   width: 76rpx;
   height: 76rpx;
   flex: none;
-  border-radius: 8rpx;
-  background: #eef2f0;
+  border-radius: 12rpx;
+  background: #efece4;
 }
 
 .fallback {
-  color: #98a2b3;
+  color: #a8a195;
   font-size: 22rpx;
   font-weight: 600;
   line-height: 76rpx;
@@ -240,7 +257,7 @@ button::after {
 
 .category-title {
   overflow: hidden;
-  color: #101828;
+  color: #1f2328;
   font-size: 28rpx;
   font-weight: 700;
   text-overflow: ellipsis;
@@ -251,10 +268,10 @@ button::after {
   flex: none;
   height: 34rpx;
   padding: 0 10rpx;
-  border-radius: 8rpx;
-  background: #f2f4f7;
-  color: #667085;
-  font-size: 20rpx;
+  border-radius: 12rpx;
+  background: #efece4;
+  color: #73716d;
+  font-size: 22rpx;
   font-weight: 600;
   line-height: 34rpx;
 }
@@ -264,12 +281,12 @@ button::after {
   align-items: center;
   gap: 8rpx;
   margin-top: 8rpx;
-  color: #667085;
+  color: #73716d;
   font-size: 22rpx;
 }
 
 .dot {
-  color: #c2c8c5;
+  color: #a8a195;
 }
 
 .card-side {
@@ -284,21 +301,21 @@ button::after {
   flex: none;
   min-width: 64rpx;
   padding: 6rpx 10rpx;
-  border-radius: 8rpx;
-  background: #f2f4f7;
-  color: #667085;
+  border-radius: 12rpx;
+  background: #efece4;
+  color: #73716d;
   font-size: 22rpx;
   font-weight: 600;
   text-align: center;
 }
 
 .status.active {
-  background: #eef7f4;
-  color: #176b5b;
+  background: #e6e9dd;
+  color: #27594f;
 }
 
 .edit-text {
-  color: #667085;
+  color: #73716d;
   font-size: 22rpx;
   line-height: 1.2;
 }
@@ -317,7 +334,7 @@ button::after {
   max-height: 86vh;
   overflow-y: auto;
   padding: 18rpx 24rpx 34rpx;
-  border-radius: 8rpx 8rpx 0 0;
+  border-radius: 24rpx 24rpx 0 0;
   background: #fff;
   box-sizing: border-box;
 }
@@ -327,11 +344,11 @@ button::after {
   height: 8rpx;
   margin: 0 auto 20rpx;
   border-radius: 999rpx;
-  background: #d0d5dd;
+  background: #e7e0d6;
 }
 
 .sheet-title {
-  color: #101828;
+  color: #1f2328;
   font-size: 32rpx;
   font-weight: 700;
 }
@@ -342,7 +359,7 @@ button::after {
 
 .label {
   margin-bottom: 12rpx;
-  color: #101828;
+  color: #1f2328;
   font-size: 25rpx;
   font-weight: 700;
 }
@@ -351,9 +368,9 @@ button::after {
   width: 100%;
   height: 76rpx;
   padding: 0 18rpx;
-  border-radius: 8rpx;
-  background: #f4f6f5;
-  color: #101828;
+  border-radius: 12rpx;
+  background: #f8f6f1;
+  color: #1f2328;
   font-size: 27rpx;
   box-sizing: border-box;
 }
@@ -372,12 +389,12 @@ button::after {
   width: 156rpx;
   height: 156rpx;
   flex: none;
-  border-radius: 8rpx;
-  background: #eef2f0;
+  border-radius: 12rpx;
+  background: #efece4;
 }
 
 .cover-preview.placeholder {
-  color: #98a2b3;
+  color: #a8a195;
   font-size: 25rpx;
   font-weight: 700;
   line-height: 156rpx;
@@ -396,21 +413,21 @@ button::after {
 .clear-btn {
   height: 68rpx;
   margin: 0;
-  border-radius: 8rpx;
+  border-radius: 12rpx;
   font-size: 25rpx;
   font-weight: 700;
   line-height: 68rpx;
 }
 
 .upload-btn {
-  background: #176b5b;
+  background: #27594f;
   color: #fff;
 }
 
 .clear-btn {
-  border: 1rpx solid #d9dfdd;
+  border: 1rpx solid #e7e0d6;
   background: #fff;
-  color: #667085;
+  color: #73716d;
 }
 
 .row-field {
@@ -421,7 +438,7 @@ button::after {
 }
 
 .hint {
-  color: #667085;
+  color: #73716d;
   font-size: 23rpx;
   line-height: 1.4;
 }
@@ -437,20 +454,20 @@ button::after {
 .save-btn {
   height: 78rpx;
   margin: 0;
-  border-radius: 8rpx;
+  border-radius: 12rpx;
   font-size: 28rpx;
   font-weight: 700;
   line-height: 78rpx;
 }
 
 .cancel-btn {
-  border: 1rpx solid #d9dfdd;
+  border: 1rpx solid #e7e0d6;
   background: #fff;
-  color: #667085;
+  color: #73716d;
 }
 
 .save-btn {
-  background: #176b5b;
+  background: #27594f;
   color: #fff;
 }
 
@@ -458,7 +475,7 @@ button::after {
   width: 100%;
   height: 74rpx;
   margin: 22rpx 0 0;
-  border-radius: 8rpx;
+  border-radius: 12rpx;
   background: #fff1f0;
   color: #b42318;
   font-size: 26rpx;

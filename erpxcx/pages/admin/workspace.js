@@ -58,6 +58,12 @@ Page({
     });
   },
 
+  onProductListingTap() {
+    wx.navigateTo({
+      url: '/pages/admin/products',
+    });
+  },
+
   onPaymentTap() {
     wx.navigateTo({
       url: '/pages/admin/payment',

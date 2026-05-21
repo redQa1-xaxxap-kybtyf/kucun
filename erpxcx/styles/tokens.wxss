@@ -1,0 +1,126 @@
+/**
+ * 设计 tokens —— 瓷砖建材小程序统一视觉系统
+ *
+ * 设计基调：
+ *   暖石米底 + 深森林绿 + 暖金点缀。
+ *   定位"装修选材的雅致与厚重感"，区别于 SaaS 后台冷调。
+ *
+ * 色彩与字号的取值依据：
+ *   1. 小程序开发需求.md 第 9 节配色规范
+ *   2. v3-pro-ui-standard.md 第 8.6/8.7 节本土化与术语规范
+ *
+ * 用法：
+ *   .card { background: var(--bg-card); color: var(--text-primary); }
+ *   .cta  { background: var(--brand-500); color: var(--text-on-brand); }
+ */
+
+page {
+  /* ============ 主品牌色 - 深森林绿（沉稳、雅致） ============ */
+  --brand-50: #eef3f0;
+  --brand-100: #d6e1da;
+  --brand-200: #aac3b8;
+  --brand-300: #7ea394;
+  --brand-500: #27594f;
+  --brand-600: #1f483f;
+  --brand-700: #1a4035;
+  --brand-900: #0e2a22;
+
+  /* ============ 暖金辅色（强 CTA / 徽标 / 高价值点缀） ============ */
+  --gold-50: #fdf6e8;
+  --gold-100: #f4e3c2;
+  --gold-300: #d6b066;
+  --gold-500: #b68a45;
+  --gold-600: #9c742e;
+  --gold-700: #82601f;
+
+  /* ============ 语义色 ============ */
+  --info-500: #3a6ec4;
+  --info-50: #eaf0fa;
+  --success-500: #2c8a5c;
+  --success-50: #e3f0e8;
+  --warning-500: #c9750f;
+  --warning-50: #fbeed7;
+  --danger-500: #c2392a;
+  --danger-50: #fae3df;
+
+  /* ============ 暖中性灰阶（基底偏米） ============ */
+  --stone-50: #faf7f0;
+  --stone-100: #f2eee3;
+  --stone-200: #e7e0d6;
+  --stone-300: #d6cdbf;
+  --stone-400: #b0a89b;
+  --stone-500: #8a8275;
+  --stone-600: #73716d;
+  --stone-700: #4b4945;
+  --stone-800: #2c2b28;
+  --stone-900: #1f2328;
+
+  /* ============ 背景与文本（语义引用） ============ */
+  --bg-page: #f8f6f1;     /* 暖米底 */
+  --bg-card: #ffffff;
+  --bg-subtle: var(--stone-100);
+  --bg-mute: var(--stone-50);
+
+  --text-primary: var(--stone-900);
+  --text-secondary: var(--stone-700);
+  --text-tertiary: var(--stone-600);
+  --text-disabled: var(--stone-400);
+  --text-on-brand: #ffffff;
+  --text-brand: var(--brand-500);
+  --text-gold: var(--gold-600);
+
+  --border-subtle: var(--stone-200);
+  --border-strong: var(--stone-300);
+
+  /* ============ 字号（偶数 rpx，最小可读 22rpx 仅用于辅助 badge） ============ */
+  --font-xs: 22rpx;     /* badge / 极辅助 */
+  --font-sm: 24rpx;     /* 辅助说明 */
+  --font-base: 26rpx;   /* 正文 */
+  --font-md: 28rpx;     /* 主文本 */
+  --font-lg: 32rpx;     /* 副标题 */
+  --font-xl: 36rpx;     /* 段落标题 */
+  --font-2xl: 44rpx;    /* 页标题 */
+
+  /* ============ 字重（中文小屏避免大面积 700 发糊） ============ */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* ============ 行高 ============ */
+  --leading-tight: 1.25;
+  --leading-snug: 1.4;
+  --leading-normal: 1.55;
+  --leading-loose: 1.75;
+
+  /* ============ 圆角（偏现代柔和） ============ */
+  --radius-xs: 8rpx;
+  --radius-sm: 12rpx;
+  --radius-md: 16rpx;
+  --radius-lg: 20rpx;
+  --radius-xl: 28rpx;
+  --radius-pill: 999rpx;
+
+  /* ============ 间距（8rpx 步进） ============ */
+  --space-1: 8rpx;
+  --space-2: 16rpx;
+  --space-3: 24rpx;
+  --space-4: 32rpx;
+  --space-5: 40rpx;
+  --space-6: 48rpx;
+  --space-8: 64rpx;
+
+  /* ============ 阴影（偏柔，避免硬黑投影） ============ */
+  --shadow-xs: 0 2rpx 6rpx rgba(60, 50, 30, 0.04);
+  --shadow-sm: 0 4rpx 16rpx rgba(60, 50, 30, 0.06);
+  --shadow-md: 0 8rpx 28rpx rgba(60, 50, 30, 0.08);
+  --shadow-lg: 0 16rpx 48rpx rgba(60, 50, 30, 0.12);
+  --shadow-brand: 0 8rpx 24rpx rgba(39, 89, 79, 0.22);
+  --shadow-gold: 0 8rpx 24rpx rgba(182, 138, 69, 0.22);
+
+  /* ============ 触摸尺寸（≥44px / 88rpx） ============ */
+  --touch-min: 88rpx;
+
+  /* ============ 过渡 ============ */
+  --transition-base: all 0.2s ease;
+}

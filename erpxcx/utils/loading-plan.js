@@ -9,6 +9,20 @@ function toNumber(value, fallback) {
     : fallback;
 }
 
+function toQuantityNumber(value, fallback) {
+  const numberValue = Number(value);
+  if (!Number.isFinite(numberValue) || numberValue <= 0) return fallback;
+
+  return Math.round(numberValue * 100) / 100;
+}
+
+function toNonNegativeQuantityNumber(value, fallback) {
+  const numberValue = Number(value);
+  if (!Number.isFinite(numberValue) || numberValue < 0) return fallback;
+
+  return Math.round(numberValue * 100) / 100;
+}
+
 function toPositiveNumber(value, fallback) {
   const numberValue = Number(value);
   return Number.isFinite(numberValue) && numberValue > 0
@@ -26,6 +40,10 @@ function formatNumberText(value, decimalPlaces) {
     : rounded.toFixed(places).replace(/\.?0+$/, '');
 }
 
+function formatQuantityText(value) {
+  return formatNumberText(value, Number.isInteger(Number(value)) ? 0 : 2);
+}
+
 function normalizeProductUnitLabel(value) {
   const raw = String(value || '').trim();
   const lower = raw.toLowerCase();
@@ -38,6 +56,32 @@ function normalizeProductUnitLabel(value) {
   }
 
   return raw || '片';
+}
+
+function normalizeOptionalProductUnitLabel(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+
+  return normalizeProductUnitLabel(raw);
+}
+
+function resolveSheetQuantity(product, quantityUnit, piecesPerUnit) {
+  const explicitSheetQuantity = toNonNegativeQuantityNumber(
+    product.sheetQuantity,
+    null
+  );
+  if (explicitSheetQuantity !== null) return explicitSheetQuantity;
+
+  if (quantityUnit === UNIT_PACKAGE && piecesPerUnit && piecesPerUnit > 0) {
+    const packageQuantity = toNonNegativeQuantityNumber(product.quantity, 0);
+    const remainderSheets = toNonNegativeQuantityNumber(
+      product.remainderSheets,
+      0
+    );
+    return packageQuantity * piecesPerUnit + remainderSheets;
+  }
+
+  return toQuantityNumber(product.quantity, 1);
 }
 
 function parsePiecesPerUnit(packageText) {
@@ -66,6 +110,18 @@ function parseWeightInfo(weightText) {
   };
 }
 
+function resolveWeightUnitLabel(product, weightInfo, piecesPerUnit) {
+  const explicitWeightUnit = normalizeOptionalProductUnitLabel(
+    product.weightUnitLabel || product.weightUnit
+  );
+  if (explicitWeightUnit) return explicitWeightUnit;
+
+  if (weightInfo.unitLabel) return weightInfo.unitLabel;
+  if (piecesPerUnit && piecesPerUnit > 1) return '件';
+
+  return normalizeProductUnitLabel(product.unitLabel || product.unit);
+}
+
 function normalizeQuantityUnit(value, fallback) {
   const raw = String(value || '').trim().toLowerCase();
   if (['package', 'packages', 'box', 'boxes', 'unit', 'units', '件'].includes(raw)) {
@@ -76,6 +132,14 @@ function normalizeQuantityUnit(value, fallback) {
   }
 
   return fallback || UNIT_SHEET;
+}
+
+function normalizeProductSource(value, temporaryProductId) {
+  const raw = String(value || '').trim().toLowerCase();
+  if (raw === 'external' || raw === 'temporary') return 'external';
+  if (temporaryProductId) return 'external';
+
+  return 'own';
 }
 
 function resolveDefaultQuantityUnit(product) {
@@ -93,6 +157,16 @@ function normalizePlanItem(raw) {
   const product = raw || {};
   const id = String(product.id || '').trim();
   if (!id) return null;
+  const productSource = normalizeProductSource(
+    product.productSource || product.source,
+    product.temporaryProductId
+  );
+  const temporaryProductId =
+    productSource === 'external'
+      ? String(product.temporaryProductId || id).trim()
+      : '';
+  const productId =
+    productSource === 'own' ? String(product.productId || id).trim() : '';
 
   const weightInfo = parseWeightInfo(product.weightText);
   const unitLabel = normalizeProductUnitLabel(
@@ -107,8 +181,40 @@ function normalizePlanItem(raw) {
     piecesPerUnit,
   });
 
+  const quantityUnit = normalizeQuantityUnit(
+    product.quantityUnit,
+    defaultQuantityUnit
+  );
+  const sheetQuantity = resolveSheetQuantity(
+    product,
+    quantityUnit,
+    piecesPerUnit
+  );
+  const breakdown =
+    quantityUnit === UNIT_PACKAGE && piecesPerUnit && piecesPerUnit > 0
+      ? normalizePackageBreakdown({
+          piecesPerUnit,
+          packages: Math.floor(sheetQuantity / piecesPerUnit),
+          remainderSheets:
+            Math.round((sheetQuantity % piecesPerUnit) * 100) / 100,
+        })
+      : null;
+  const quantity =
+    quantityUnit === UNIT_PACKAGE
+      ? breakdown && breakdown.packages > 0
+        ? breakdown.packages
+        : sheetQuantity > 0
+          ? Math.floor(sheetQuantity / (piecesPerUnit || 1))
+          : 1
+      : sheetQuantity;
+  const remainderSheets =
+    quantityUnit === UNIT_PACKAGE && breakdown ? breakdown.remainderSheets : 0;
+
   return {
     id,
+    productId,
+    temporaryProductId,
+    productSource,
     code: String(product.code || '').trim(),
     name: String(product.name || '').trim(),
     specification: String(product.specification || '').trim(),
@@ -119,6 +225,7 @@ function normalizePlanItem(raw) {
       toPositiveNumber(product.weightKgPerUnit, null) ||
       toPositiveNumber(product.weight, null) ||
       weightInfo.weightKgPerUnit,
+    weightUnitLabel: resolveWeightUnitLabel(product, weightInfo, piecesPerUnit),
     packageText: String(product.packageText || '').trim(),
     weightText: String(product.weightText || '').trim(),
     thumbnailUrl: String(product.thumbnailUrl || '').trim(),
@@ -130,8 +237,9 @@ function normalizePlanItem(raw) {
       String(product.componentName || '').trim() ||
       String(product.componentTypeLabel || '').trim() ||
       String((product.componentType && product.componentType.label) || '').trim(),
-    quantity: toNumber(product.quantity, 1),
-    quantityUnit: normalizeQuantityUnit(product.quantityUnit, defaultQuantityUnit),
+    quantity,
+    quantityUnit,
+    remainderSheets,
     remark: String(product.remark || '').trim(),
     updatedAt: product.updatedAt || Date.now(),
   };
@@ -164,10 +272,18 @@ function isSamePlanItem(currentItem, nextItem) {
   return Boolean(currentCode && nextCode && currentCode === nextCode);
 }
 
+function hasPlanItem(product, planItems) {
+  const nextItem = normalizePlanItem(product);
+  if (!nextItem) return false;
+
+  const items = Array.isArray(planItems) ? planItems : getPlanItems();
+  return items.some(item => isSamePlanItem(item, nextItem));
+}
+
 function upsertPlanItem(product, quantity) {
   const nextItem = normalizePlanItem({
     ...product,
-    quantity: toNumber(quantity, 1),
+    quantity: toQuantityNumber(quantity, 1),
     updatedAt: Date.now(),
   });
   if (!nextItem) return { items: getPlanItems(), item: null, existed: false };
@@ -179,6 +295,9 @@ function upsertPlanItem(product, quantity) {
     items[index] = {
       ...items[index],
       id: nextItem.id,
+      productId: nextItem.productId,
+      temporaryProductId: nextItem.temporaryProductId,
+      productSource: nextItem.productSource,
       code: nextItem.code,
       name: nextItem.name,
       specification: nextItem.specification,
@@ -186,6 +305,7 @@ function upsertPlanItem(product, quantity) {
       unitLabel: nextItem.unitLabel,
       piecesPerUnit: nextItem.piecesPerUnit,
       weightKgPerUnit: nextItem.weightKgPerUnit,
+      weightUnitLabel: nextItem.weightUnitLabel,
       packageText: nextItem.packageText,
       weightText: nextItem.weightText,
       thumbnailUrl: nextItem.thumbnailUrl,
@@ -193,6 +313,7 @@ function upsertPlanItem(product, quantity) {
       componentName: nextItem.componentName,
       quantity: items[index].quantity,
       quantityUnit: items[index].quantityUnit,
+      remainderSheets: items[index].remainderSheets,
       remark: items[index].remark,
       updatedAt: Date.now(),
     };
@@ -211,15 +332,52 @@ function updatePlanItem(id, patch) {
   const index = items.findIndex(item => item.id === id);
   if (index < 0) return items;
 
+  const currentItem = items[index];
+  const currentPiecesPerUnit = toNumber(currentItem.piecesPerUnit, null);
+  const nextQuantityUnit =
+    patch && patch.quantityUnit !== undefined
+      ? normalizeQuantityUnit(patch.quantityUnit, currentItem.quantityUnit)
+      : currentItem.quantityUnit;
+  const hasQuantityPatch = patch && patch.quantity !== undefined;
+  const hasRemainderPatch = patch && patch.remainderSheets !== undefined;
+  const currentSheetQuantity = getSheetQuantity(currentItem);
+  let nextQuantity = hasQuantityPatch
+    ? toNonNegativeQuantityNumber(patch.quantity, 1)
+    : currentItem.quantity;
+  let nextRemainderSheets = hasRemainderPatch
+    ? toNonNegativeQuantityNumber(patch.remainderSheets, 0)
+    : toNonNegativeQuantityNumber(currentItem.remainderSheets, 0);
+
+  if (
+    !hasQuantityPatch &&
+    currentPiecesPerUnit &&
+    currentPiecesPerUnit > 0 &&
+    nextQuantityUnit === UNIT_PACKAGE
+  ) {
+    const sheetQuantity =
+      currentSheetQuantity !== null ? currentSheetQuantity : 0;
+    nextQuantity = Math.floor(sheetQuantity / currentPiecesPerUnit);
+    nextRemainderSheets =
+      Math.round((sheetQuantity - nextQuantity * currentPiecesPerUnit) * 100) /
+      100;
+  } else if (
+    !hasQuantityPatch &&
+    currentPiecesPerUnit &&
+    currentPiecesPerUnit > 0 &&
+    nextQuantityUnit === UNIT_SHEET
+  ) {
+    const sheetQuantity =
+      currentSheetQuantity !== null ? currentSheetQuantity : 0;
+    nextQuantity = sheetQuantity;
+    nextRemainderSheets = 0;
+  }
+
   items[index] = normalizePlanItem({
-    ...items[index],
+    ...currentItem,
     ...patch,
-    quantity: patch && patch.quantity !== undefined
-      ? toNumber(patch.quantity, 1)
-      : items[index].quantity,
-    quantityUnit: patch && patch.quantityUnit !== undefined
-      ? normalizeQuantityUnit(patch.quantityUnit, items[index].quantityUnit)
-      : items[index].quantityUnit,
+    quantity: nextQuantity,
+    quantityUnit: nextQuantityUnit,
+    remainderSheets: nextRemainderSheets,
     updatedAt: Date.now(),
   });
 
@@ -229,6 +387,15 @@ function updatePlanItem(id, patch) {
 
 function removePlanItem(id) {
   const items = getPlanItems().filter(item => item.id !== id);
+  savePlanItems(items);
+  return items;
+}
+
+function removePlanProduct(product) {
+  const targetItem = normalizePlanItem(product);
+  if (!targetItem) return getPlanItems();
+
+  const items = getPlanItems().filter(item => !isSamePlanItem(item, targetItem));
   savePlanItems(items);
   return items;
 }
@@ -244,27 +411,158 @@ function getQuantityUnitLabel(item) {
 function getSheetQuantity(item) {
   if (item.quantityUnit === UNIT_SHEET) return item.quantity;
   if (item.piecesPerUnit && item.piecesPerUnit > 0) {
-    return item.quantity * item.piecesPerUnit;
+    const remainderSheets = toNonNegativeQuantityNumber(
+      item.remainderSheets,
+      0
+    );
+    return item.quantity * item.piecesPerUnit + remainderSheets;
   }
 
   return null;
+}
+
+function getPackageQuantity(item) {
+  if (item.quantityUnit === UNIT_PACKAGE) {
+    if (item.piecesPerUnit && item.piecesPerUnit > 0) {
+      const remainderSheets = toNonNegativeQuantityNumber(
+        item.remainderSheets,
+        0
+      );
+      return item.quantity + remainderSheets / item.piecesPerUnit;
+    }
+
+    return item.quantity;
+  }
+  if (item.piecesPerUnit && item.piecesPerUnit > 0) {
+    return item.quantity / item.piecesPerUnit;
+  }
+
+  return null;
+}
+
+function getPackageBreakdown(item) {
+  if (!item.piecesPerUnit || item.piecesPerUnit <= 0) return null;
+
+  if (item.quantityUnit === UNIT_PACKAGE) {
+    return {
+      packages: item.quantity,
+      remainderSheets: toNonNegativeQuantityNumber(item.remainderSheets, 0),
+    };
+  }
+
+  const sheetQuantity = getSheetQuantity(item);
+  if (sheetQuantity === null) return null;
+
+  const packages = Math.floor(sheetQuantity / item.piecesPerUnit);
+  const remainderSheets =
+    Math.round((sheetQuantity - packages * item.piecesPerUnit) * 100) / 100;
+
+  return {
+    packages,
+    remainderSheets,
+  };
+}
+
+function formatPackageBreakdownText(breakdown) {
+  if (!breakdown) return '';
+
+  const parts = [];
+  if (breakdown.packages > 0) {
+    parts.push(`${formatQuantityText(breakdown.packages)}件`);
+  }
+  if (breakdown.remainderSheets > 0) {
+    parts.push(`${formatQuantityText(breakdown.remainderSheets)}片`);
+  }
+
+  return parts.join('+');
+}
+
+function addPackageBreakdownByUnit(groups, item) {
+  const packageBreakdown = getPackageBreakdown(item);
+  if (!packageBreakdown || !item.piecesPerUnit || item.piecesPerUnit <= 0) {
+    return groups;
+  }
+
+  const key = String(item.piecesPerUnit);
+  const current = groups[key] || {
+    piecesPerUnit: item.piecesPerUnit,
+    packages: 0,
+    remainderSheets: 0,
+  };
+  groups[key] = {
+    ...current,
+    packages: current.packages + packageBreakdown.packages,
+    remainderSheets: current.remainderSheets + packageBreakdown.remainderSheets,
+  };
+
+  return groups;
+}
+
+function normalizePackageBreakdown(breakdown) {
+  if (!breakdown || !breakdown.piecesPerUnit || breakdown.piecesPerUnit <= 0) {
+    return breakdown;
+  }
+
+  const extraPackages = Math.floor(
+    breakdown.remainderSheets / breakdown.piecesPerUnit
+  );
+  const remainderSheets =
+    Math.round(
+      (breakdown.remainderSheets - extraPackages * breakdown.piecesPerUnit) *
+        100
+    ) / 100;
+
+  return {
+    packages: breakdown.packages + extraPackages,
+    remainderSheets,
+  };
+}
+
+function formatPackageBreakdownGroups(groups) {
+  const parts = Object.keys(groups || {})
+    .map(key => formatPackageBreakdownText(normalizePackageBreakdown(groups[key])))
+    .filter(Boolean);
+
+  return parts.join('+');
+}
+
+function convertQuantityForUnit(item, nextQuantityUnit) {
+  const currentUnit = normalizeQuantityUnit(item.quantityUnit, UNIT_SHEET);
+  const targetUnit = normalizeQuantityUnit(nextQuantityUnit, currentUnit);
+  const quantity = toQuantityNumber(item.quantity, 1);
+  const piecesPerUnit = toNumber(item.piecesPerUnit, null);
+
+  if (currentUnit === targetUnit || !piecesPerUnit || piecesPerUnit <= 0) {
+    return quantity;
+  }
+
+  if (currentUnit === UNIT_PACKAGE && targetUnit === UNIT_SHEET) {
+    return Math.round(quantity * piecesPerUnit);
+  }
+
+  if (currentUnit === UNIT_SHEET && targetUnit === UNIT_PACKAGE) {
+    return toQuantityNumber(quantity / piecesPerUnit, quantity);
+  }
+
+  return quantity;
 }
 
 function getItemWeightKg(item) {
   const weight = toPositiveNumber(item.weightKgPerUnit, null);
   if (!weight) return null;
 
-  const unitLabel = normalizeProductUnitLabel(item.unitLabel || item.unit);
-  if (item.quantityUnit === UNIT_PACKAGE) {
-    if (unitLabel === '件') return item.quantity * weight;
+  const weightUnitLabel = normalizeProductUnitLabel(
+    item.weightUnitLabel || item.unitLabel || item.unit
+  );
 
-    const sheetQuantity = getSheetQuantity(item);
-    return sheetQuantity === null ? null : sheetQuantity * weight;
+  if (weightUnitLabel === '件') {
+    const packageQuantity = getPackageQuantity(item);
+    return packageQuantity === null ? null : packageQuantity * weight;
   }
 
-  if (unitLabel === '片') return item.quantity * weight;
-  if (item.piecesPerUnit && item.piecesPerUnit > 0) {
-    return item.quantity * (weight / item.piecesPerUnit);
+  if (weightUnitLabel === '片') {
+    const sheetQuantity = getSheetQuantity(item);
+    return sheetQuantity === null ? null : sheetQuantity * weight;
   }
 
   return null;
@@ -275,6 +573,9 @@ function buildPlanItemView(item) {
   if (!normalized) return null;
 
   const sheetQuantity = getSheetQuantity(normalized);
+  const packageQuantity = getPackageQuantity(normalized);
+  const packageBreakdown = getPackageBreakdown(normalized);
+  const packageBreakdownText = formatPackageBreakdownText(packageBreakdown);
   const weightKg = getItemWeightKg(normalized);
   const canSwitchUnit = Boolean(
     normalized.piecesPerUnit && normalized.piecesPerUnit > 1
@@ -284,13 +585,20 @@ function buildPlanItemView(item) {
     ...normalized,
     canSwitchUnit,
     quantityUnitLabel: getQuantityUnitLabel(normalized),
-    quantityText: `${normalized.quantity}${getQuantityUnitLabel(normalized)}`,
+    quantityText:
+      normalized.quantityUnit === UNIT_PACKAGE && packageBreakdownText
+        ? packageBreakdownText
+        : `${normalized.quantity}${getQuantityUnitLabel(normalized)}`,
     packageInfoText: canSwitchUnit
       ? `1件=${normalized.piecesPerUnit}片`
       : normalized.packageText,
     convertedPiecesText:
       normalized.quantityUnit === UNIT_PACKAGE && sheetQuantity !== null
-        ? `折合${formatNumberText(sheetQuantity, 0)}片`
+        ? `折合${formatQuantityText(sheetQuantity)}片`
+        : '',
+    convertedPackagesText:
+      normalized.quantityUnit === UNIT_SHEET && packageBreakdownText
+        ? `折合${packageBreakdownText}`
         : '',
     itemWeightText: weightKg
       ? `约${formatNumberText(weightKg, 2)}kg`
@@ -303,21 +611,42 @@ function buildPlanSummary(items) {
   let packageQuantity = 0;
   let sheetInputQuantity = 0;
   let convertedSheetQuantity = 0;
+  let convertedPackageQuantity = 0;
+  let packageInputBreakdownGroups = {};
+  let convertedPackageBreakdownGroups = {};
   let hasPackageInput = false;
+  let hasSheetInput = false;
   let totalWeightKg = 0;
   let missingWeightCount = 0;
 
   list.forEach(item => {
     if (item.quantityUnit === UNIT_PACKAGE) {
-      packageQuantity += item.quantity;
+      const packageQuantityValue = getPackageQuantity(item);
+      packageQuantity +=
+        packageQuantityValue === null ? item.quantity : packageQuantityValue;
+      packageInputBreakdownGroups = addPackageBreakdownByUnit(
+        packageInputBreakdownGroups,
+        item
+      );
       hasPackageInput = true;
     } else {
       sheetInputQuantity += item.quantity;
+      hasSheetInput = true;
     }
 
     const sheetQuantity = getSheetQuantity(item);
     if (sheetQuantity !== null) {
       convertedSheetQuantity += sheetQuantity;
+    }
+    const packageQuantityValue = getPackageQuantity(item);
+    if (packageQuantityValue !== null) {
+      convertedPackageQuantity += packageQuantityValue;
+    }
+    if (item.quantityUnit === UNIT_SHEET) {
+      convertedPackageBreakdownGroups = addPackageBreakdownByUnit(
+        convertedPackageBreakdownGroups,
+        item
+      );
     }
 
     const weightKg = getItemWeightKg(item);
@@ -329,10 +658,23 @@ function buildPlanSummary(items) {
   });
 
   const parts = [`${list.length}款`];
-  if (packageQuantity > 0) parts.push(`${formatNumberText(packageQuantity, 0)}件`);
-  if (sheetInputQuantity > 0) parts.push(`${formatNumberText(sheetInputQuantity, 0)}片`);
+  const packageInputText = formatPackageBreakdownGroups(
+    packageInputBreakdownGroups
+  );
+  if (packageInputText) {
+    parts.push(packageInputText);
+  } else if (packageQuantity > 0) {
+    parts.push(`${formatQuantityText(packageQuantity)}件`);
+  }
+  if (sheetInputQuantity > 0) parts.push(`${formatQuantityText(sheetInputQuantity)}片`);
   if (hasPackageInput && convertedSheetQuantity > 0) {
-    parts.push(`折合${formatNumberText(convertedSheetQuantity, 0)}片`);
+    parts.push(`折合${formatQuantityText(convertedSheetQuantity)}片`);
+  }
+  const convertedPackageText = formatPackageBreakdownGroups(
+    convertedPackageBreakdownGroups
+  );
+  if (hasSheetInput && convertedPackageText) {
+    parts.push(`折合${convertedPackageText}`);
   }
   if (totalWeightKg > 0) {
     parts.push(`约${formatNumberText(totalWeightKg, 2)}kg`);
@@ -341,8 +683,11 @@ function buildPlanSummary(items) {
   return {
     itemCount: list.length,
     packageQuantity,
+    packageInputText,
     sheetInputQuantity,
     convertedSheetQuantity,
+    convertedPackageQuantity,
+    convertedPackageText,
     totalWeightKg,
     missingWeightCount,
     summaryText: parts.join('｜'),
@@ -369,11 +714,20 @@ function buildPlanText(items) {
     lines.push(
       `${index + 1}. ${item.code} ${item.name}`,
       `   规格：${item.specification || '未填写'}`,
-      `   数量：${item.quantity}${getQuantityUnitLabel(item)}`
+      `   数量：${viewItem ? viewItem.quantityText : `${item.quantity}${getQuantityUnitLabel(item)}`}`
     );
-    if (viewItem && (viewItem.packageInfoText || viewItem.convertedPiecesText)) {
+    if (
+      viewItem &&
+      (viewItem.packageInfoText ||
+        viewItem.convertedPiecesText ||
+        viewItem.convertedPackagesText)
+    ) {
       lines.push(
-        `   换算：${[viewItem.packageInfoText, viewItem.convertedPiecesText]
+        `   换算：${[
+          viewItem.packageInfoText,
+          viewItem.convertedPiecesText,
+          viewItem.convertedPackagesText,
+        ]
           .filter(Boolean)
           .join('；')}`
       );
@@ -391,14 +745,94 @@ function buildPlanText(items) {
   return lines.join('\n');
 }
 
+function buildSimplePlanSummaryText(summary) {
+  const parts = [];
+  if (summary.totalWeightKg > 0) {
+    parts.push(`总重量：约${formatNumberText(summary.totalWeightKg, 2)}kg`);
+  }
+
+  return parts.join('，');
+}
+
+function buildSimplePlanText(items) {
+  const list = (items || []).map(buildPlanItemView).filter(Boolean);
+  if (list.length === 0) return '';
+
+  const summary = buildPlanSummary(list);
+  const lines = list.map((item, index) =>
+    `${index + 1}. ${[
+      item.specification || '未填写规格',
+      item.code,
+      item.name,
+      item.quantityText,
+    ]
+      .filter(Boolean)
+      .join(' ')}`
+  );
+
+  const summaryText = buildSimplePlanSummaryText(summary);
+  if (summaryText) {
+    lines.push(summaryText);
+  }
+
+  return lines.join('\n');
+}
+
+function buildGoodsRequestItems(items) {
+  return (items || [])
+    .map(buildPlanItemView)
+    .filter(Boolean)
+    .map(item => {
+      const sheetQuantity = getSheetQuantity(item);
+      const canSubmitAsSheets =
+        item.quantityUnit === UNIT_SHEET || sheetQuantity !== null;
+      const quantity = canSubmitAsSheets ? sheetQuantity || item.quantity : item.quantity;
+      const unit = canSubmitAsSheets ? '片' : item.quantityUnitLabel;
+      const quantityText = item.quantityText || `${item.quantity}${item.quantityUnitLabel}`;
+      const conversionTexts = [
+        item.packageInfoText,
+        item.convertedPiecesText,
+        item.convertedPackagesText,
+      ].filter(Boolean);
+      const remarks = [
+        `客户填报：${quantityText}`,
+        conversionTexts.length ? `换算：${conversionTexts.join('；')}` : '',
+        item.itemWeightText ? `预估重量：${item.itemWeightText}` : '',
+        item.remark ? `备注：${item.remark}` : '',
+      ]
+        .filter(Boolean)
+        .join('；');
+
+      return {
+        productId: item.productSource === 'own' ? item.productId || item.id : undefined,
+        temporaryProductId:
+          item.productSource === 'external'
+            ? item.temporaryProductId || item.id
+            : undefined,
+        productSource: item.productSource,
+        productCode: item.code,
+        productName: item.name,
+        specification: item.specification || null,
+        unit,
+        thumbnailUrl: item.thumbnailUrl || null,
+        quantity: Math.max(1, Math.round(quantity || 1)),
+        remarks,
+      };
+    });
+}
+
 module.exports = {
+  buildGoodsRequestItems,
   buildPlanItemView,
   buildPlanSummary,
+  buildSimplePlanText,
   buildPlanText,
   clearPlanItems,
   getPlanCount,
   getPlanItems,
+  hasPlanItem,
   removePlanItem,
+  removePlanProduct,
   savePlanItems,
   updatePlanItem,
   upsertPlanItem,

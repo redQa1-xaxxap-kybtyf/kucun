@@ -3,57 +3,75 @@
     <view class="loading-spinner"></view>
     <view class="loading-text">加载中</view>
   </view>
-  <view wx:elif="{{error}}" class="empty error">{{error}}</view>
+  <view wx:elif="{{error}}" class="state-block">
+    <view class="state-block__title">
+      {{errorType === 'missing' ? '这个组合暂时看不到' : '加载失败'}}
+    </view>
+    <view class="state-block__text">
+      <block wx:if="{{errorType === 'missing'}}">
+        可能是产品还没有设置花色/品种，或者已经下架。请联系管理员在「商城管理 · 产品展示设置」里把产品归到对应分类。
+      </block>
+      <block wx:else>{{error}}</block>
+    </view>
+    <view class="state-block__actions">
+      <button class="state-block__primary" bindtap="onBackHomeTap">返回首页</button>
+      <button wx:if="{{errorType !== 'missing'}}" class="state-block__ghost" bindtap="onRetryLoadTap">重试</button>
+    </view>
+  </view>
 
   <view wx:elif="{{group}}">
     <view class="search-panel">
       <view class="search-bar">
+        <view class="search-icon"></view>
         <input
           class="search-input"
-          placeholder="搜索产品编号、名称、规格..."
+          placeholder="搜全部产品 型号 / 名称 / 规格"
           value="{{productSearch}}"
           confirm-type="search"
           bindinput="onProductSearchInput"
+          bindconfirm="onProductSearchConfirm"
         />
-        <button wx:if="{{productSearch}}" class="search-clear" bindtap="onClearProductSearch">清空</button>
-        <view class="search-icon"></view>
+        <view wx:if="{{productSearch}}" class="search-clear" bindtap="onClearProductSearch">清空</view>
       </view>
     </view>
 
-    <view class="list-head">
-      <view class="list-title line-clamp-1">{{group.title || group.componentType.label}}</view>
-      <view class="list-count">{{visibleProducts.length}}款</view>
-    </view>
+    <view class="group-head">
+      <view class="list-head">
+        <view class="list-title line-clamp-1">{{group.title || group.componentType.label}}</view>
+        <view class="list-count">{{listCountText}}</view>
+      </view>
 
-    <view class="related-strip" wx:if="{{group.relatedGroups.length > 0}}">
-      <view class="related-strip-title">同色其他品种</view>
-      <scroll-view class="related-scroll" scroll-x enhanced>
-        <view class="related-row">
-          <view
-            wx:for="{{group.relatedGroups}}"
-            wx:key="id"
-            class="related-chip"
-            data-id="{{item.id}}"
-            bindtap="onRelatedGroupTap"
-          >
-            <text class="related-name">{{item.componentType.label}}</text>
-            <text class="related-count">{{item.productCount}}款</text>
+      <view class="related-strip" wx:if="{{group.relatedGroups.length > 0}}">
+        <view class="related-strip-title">同色可选</view>
+        <scroll-view class="related-scroll" scroll-x enhanced>
+          <view class="related-row">
+            <view
+              wx:for="{{group.relatedGroups}}"
+              wx:key="id"
+              class="related-chip"
+              data-id="{{item.id}}"
+              bindtap="onRelatedGroupTap"
+            >
+              <text class="related-name">{{item.componentType.label}}</text>
+              <text class="related-count">{{item.productCount}}款</text>
+            </view>
           </view>
-        </view>
-      </scroll-view>
+        </scroll-view>
+      </view>
     </view>
 
     <view class="section">
-      <view wx:if="{{visibleProducts.length == 0}}" class="empty small">
-        {{productSearchKeyword ? '没有找到相关产品' : '暂无产品'}}
+      <view wx:if="{{visibleProducts.length == 0}}" class="empty-card">
+        <view class="empty-title">暂无产品</view>
       </view>
-      <view class="product-grid">
+      <view wx:else class="product-grid">
         <view
           wx:for="{{visibleProducts}}"
           wx:key="id"
           class="product-card"
           data-id="{{item.id}}"
           bindtap="onProductTap"
+          bindlongpress="onProductLongpress"
         >
           <view class="product-media">
             <image
@@ -64,47 +82,81 @@
               lazy-load
             />
             <view wx:else class="product-image fallback">暂无图片</view>
-            <button
-              class="share-tip"
-              open-type="share"
-              data-id="{{item.id}}"
-              data-title="{{item.shareTitle || item.name || item.code}}"
-              data-image="{{item.thumbnailUrl}}"
-            >
-              ● 转发
-            </button>
-            <button
-              class="plan-add"
+            <view
+              class="plan-action {{item.inPlan ? 'joined' : ''}}"
               data-id="{{item.id}}"
               catchtap="onAddPlanTap"
             >
-              加入计划
-            </button>
+              <text class="plan-action-icon">{{item.inPlan ? '✓' : '+'}}</text>
+              <text>{{item.inPlan ? '已加入' : '加计划'}}</text>
+            </view>
           </view>
           <view class="product-info">
-            <view class="model-row">
-              <view class="model-label">型号</view>
-              <view class="product-code line-clamp-1">{{item.code}}</view>
+            <view class="head-row">
+              <view class="code-value">
+                <block wx:if="{{item.codeParts && item.codeParts.length > 0}}">
+                  <text
+                    wx:for="{{item.codeParts}}"
+                    wx:for-item="part"
+                    wx:key="index"
+                    class="{{part.hit ? 'kw-hit' : ''}}"
+                  >{{part.text}}</text>
+                </block>
+                <block wx:else>{{item.code}}</block>
+              </view>
+              <view wx:if="{{item.specText || item.specification}}" class="spec-stack">
+                <view class="spec-inline">
+                  <block wx:if="{{item.specParts && item.specParts.length > 0}}">
+                    <text
+                      wx:for="{{item.specParts}}"
+                      wx:for-item="part"
+                      wx:key="index"
+                      class="{{part.hit ? 'kw-hit' : ''}}"
+                    >{{part.text}}</text>
+                  </block>
+                  <block wx:else>{{item.specText || item.specification}}</block>
+                </view>
+              </view>
             </view>
-            <view class="product-name">{{item.name}}</view>
-            <view class="title-row">
-              <view class="product-spec line-clamp-1">{{item.specText || '查看详情'}}</view>
+            <view wx:if="{{item.name}}" class="name-line line-clamp-1">
+              <block wx:if="{{item.nameParts && item.nameParts.length > 0}}">
+                <text
+                  wx:for="{{item.nameParts}}"
+                  wx:for-item="part"
+                  wx:key="index"
+                  class="{{part.hit ? 'kw-hit' : ''}}"
+                >{{part.text}}</text>
+              </block>
+              <block wx:else>{{item.name}}</block>
             </view>
-            <view class="tag-row">
-              <view class="stock-tag">{{item.stockText}}</view>
+            <view wx:if="{{item.stockText && item.stockBadgeClass == 'out'}}" class="stock-note out">
+              {{item.stockText}}
             </view>
-            <view class="fact-row">
-              <text wx:if="{{item.packageText}}">包装 {{item.packageText}}</text>
-              <text wx:if="{{item.weightText}}">重量 {{item.weightText}}</text>
+            <view wx:if="{{item.factTags.length > 0}}" class="product-meta">
+              <view wx:if="{{item.factTags.length > 0}}" class="fact-row {{item.factTags.length == 1 ? 'single' : ''}}">
+                <view
+                  wx:for="{{item.factTags}}"
+                  wx:key="label"
+                  wx:for-item="fact"
+                  class="fact-item"
+                >
+                  <text class="fact-label">{{fact.label}}</text>
+                  <text class="fact-value">{{fact.value}}</text>
+                </view>
+              </view>
             </view>
           </view>
         </view>
       </view>
+      <view wx:if="{{visibleProducts.length > 0 && (loadMoreText || loadingMoreProducts)}}" class="load-more">
+        {{loadingMoreProducts ? '正在加载...' : loadMoreText}}
+      </view>
     </view>
 
-    <button class="plan-fab" bindtap="onPlanTap">
-      报货计划
-      <text wx:if="{{planCount > 0}}"> {{planCount}}</text>
-    </button>
+    <view class="plan-entry" bindtap="onPlanTap">
+      <view class="plan-entry-icon"></view>
+      <text class="plan-entry-text">报货</text>
+      <text wx:if="{{planCount > 0}}" class="plan-count">{{planCount}}</text>
+    </view>
   </view>
 </view>

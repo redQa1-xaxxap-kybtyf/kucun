@@ -2,12 +2,12 @@
   min-height: 100vh;
   padding: 18rpx 18rpx 136rpx;
   box-sizing: border-box;
-  background: #f5f6f8;
+  background: #f8f6f1;
 }
 
 .empty {
   padding: 180rpx 32rpx;
-  color: #75807b;
+  color: #73716d;
   font-size: 28rpx;
   text-align: center;
 }
@@ -18,6 +18,56 @@
 }
 
 .error {
+  color: #b42318;
+}
+
+.error-panel {
+  margin: 96rpx 16rpx 0;
+  padding: 36rpx 28rpx;
+  border: 1rpx solid #f3b8a6;
+  border-radius: 12rpx;
+  background: #fff4ef;
+  text-align: center;
+}
+
+.error-title {
+  color: #b42318;
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+.error-text {
+  margin-top: 14rpx;
+  color: #7a2e1f;
+  font-size: 24rpx;
+  line-height: 1.45;
+}
+
+.error-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14rpx;
+  margin-top: 28rpx;
+}
+
+.retry-btn,
+.back-btn {
+  height: 74rpx;
+  margin: 0;
+  border-radius: 12rpx;
+  font-size: 26rpx;
+  font-weight: 700;
+  line-height: 74rpx;
+}
+
+.retry-btn {
+  background: #b42318;
+  color: #fff;
+}
+
+.back-btn {
+  border: 1rpx solid #f3b8a6;
+  background: #fff;
   color: #b42318;
 }
 
@@ -36,21 +86,21 @@
 
 .poster-frame {
   padding: 12rpx;
-  border: 1rpx solid #dfe4e1;
-  border-radius: 8rpx;
+  border: 1rpx solid #e7e0d6;
+  border-radius: 12rpx;
   background: #fff;
 }
 
 .poster-canvas {
   display: block;
   overflow: hidden;
-  border-radius: 8rpx;
+  border-radius: 12rpx;
   background: #fff;
 }
 
 .poster-tip {
   margin-top: 16rpx;
-  color: #75807b;
+  color: #73716d;
   font-size: 23rpx;
   line-height: 1.45;
   text-align: center;
@@ -62,17 +112,23 @@
   bottom: 0;
   left: 0;
   padding: 18rpx 24rpx calc(18rpx + env(safe-area-inset-bottom));
-  border-top: 1rpx solid #e1e5e2;
+  border-top: 1rpx solid #e7e0d6;
   background: rgba(255, 255, 255, 0.96);
 }
 
 .primary {
   width: 100%;
   height: 82rpx;
-  border-radius: 8rpx;
-  background: #1f5a50;
+  border-radius: 12rpx;
+  background: #27594f;
   color: #fff;
   font-size: 28rpx;
-  font-weight: 900;
+  font-weight: 700;
   line-height: 82rpx;
+}
+
+.primary::after,
+.retry-btn::after,
+.back-btn::after {
+  border: 0;
 }

@@ -1,9 +1,9 @@
 .page {
   min-height: 100vh;
-  padding: 24rpx 24rpx 140rpx;
+  padding: 24rpx 24rpx calc(230rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
-  background: #f3f5f6;
-  color: #1f2d3d;
+  background: #efece4;
+  color: #1f2328;
 }
 
 button::after {
@@ -18,7 +18,7 @@ button::after {
 }
 
 .title {
-  color: #1f2d3d;
+  color: #1f2328;
   font-size: 34rpx;
   font-weight: 700;
   line-height: 1.25;
@@ -26,7 +26,7 @@ button::after {
 
 .subtitle {
   margin-top: 6rpx;
-  color: #6b7785;
+  color: #73716d;
   font-size: 24rpx;
   line-height: 1.35;
 }
@@ -39,14 +39,15 @@ button::after {
 }
 
 .clear-btn {
-  width: 92rpx;
-  height: 54rpx;
+  width: 104rpx;
+  height: 64rpx;
   flex: none;
-  border-radius: 8rpx;
-  background: #fff1f0;
-  color: #b42318;
-  font-size: 23rpx;
-  line-height: 54rpx;
+  border-radius: var(--radius-sm);
+  background: var(--danger-50);
+  color: var(--danger-500);
+  font-size: var(--font-sm);
+  font-weight: var(--weight-semibold);
+  line-height: 64rpx;
 }
 
 .empty {
@@ -54,27 +55,124 @@ button::after {
   text-align: center;
 }
 
+.empty-art {
+  width: 220rpx;
+  height: 220rpx;
+  margin: 0 auto 28rpx;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120' fill='none' stroke='%2327594f' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M30 38L24 50v52a6 6 0 0 0 6 6h60a6 6 0 0 0 6-6V50l-6-12z' fill='%23f8f6f1'/><path d='M24 50h72'/><path d='M44 38h32' stroke='%23b68a45'/><path d='M76 62a16 16 0 0 1-32 0'/><circle cx='84' cy='34' r='10' fill='%23b68a45' stroke='none'/><path d='M80 34l3 3 5-6' stroke='white' stroke-width='2.4'/></svg>");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
 .empty-title {
-  color: #1f2d3d;
+  color: #1f2328;
   font-size: 30rpx;
   font-weight: 700;
 }
 
 .empty-text {
   margin-top: 12rpx;
-  color: #6b7785;
-  font-size: 25rpx;
+  color: #73716d;
+  font-size: 26rpx;
+  line-height: 1.5;
 }
 
 .home-btn {
-  width: 240rpx;
-  height: 72rpx;
+  width: 280rpx;
+  height: 88rpx;
   margin: 32rpx auto 0;
-  border-radius: 8rpx;
-  background: #1f5a50;
+  border-radius: 999rpx;
+  background: #27594f;
   color: #fff;
-  font-size: 26rpx;
-  line-height: 72rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  line-height: 88rpx;
+  box-shadow: 0 8rpx 24rpx rgba(39, 89, 79, 0.22);
+}
+
+.contact-card {
+  margin-top: 22rpx;
+  padding: 20rpx;
+  border-radius: 10rpx;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.contact-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 16rpx;
+}
+
+.contact-title {
+  color: #1f2328;
+  font-size: 28rpx;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.contact-desc {
+  margin-top: 6rpx;
+  color: #73716d;
+  font-size: 22rpx;
+  line-height: 1.35;
+}
+
+.request-number {
+  flex: none;
+  max-width: 260rpx;
+  padding: 8rpx 12rpx;
+  border-radius: 8rpx;
+  background: #f0f7f4;
+  color: #27594f;
+  font-size: 20rpx;
+  font-weight: 700;
+  line-height: 1.25;
+  word-break: break-all;
+  box-sizing: border-box;
+}
+
+.contact-input,
+.contact-textarea {
+  width: 100%;
+  margin-top: 12rpx;
+  padding: 0 16rpx;
+  border-radius: 12rpx;
+  background: #f8f6f1;
+  color: #1f2328;
+  font-size: 24rpx;
+  box-sizing: border-box;
+}
+
+.contact-input {
+  height: 70rpx;
+  line-height: 70rpx;
+}
+
+.contact-textarea {
+  height: 126rpx;
+  padding-top: 16rpx;
+  line-height: 1.45;
+}
+
+.submit-btn {
+  width: 100%;
+  height: 82rpx;
+  margin-top: 16rpx;
+  border-radius: 12rpx;
+  background: #27594f;
+  color: #fff;
+  font-size: 27rpx;
+  font-weight: 700;
+  line-height: 82rpx;
+}
+
+.submit-btn[disabled] {
+  background: #8aa79f;
+  color: rgba(255, 255, 255, 0.86);
 }
 
 .plan-list {
@@ -82,6 +180,7 @@ button::after {
   flex-direction: column;
   gap: 16rpx;
   margin-top: 22rpx;
+  padding-bottom: 20rpx;
 }
 
 .plan-card {
@@ -100,15 +199,15 @@ button::after {
   width: 148rpx;
   height: 148rpx;
   flex: none;
-  border-radius: 8rpx;
-  background: #eef2f0;
+  border-radius: 12rpx;
+  background: #efece4;
 }
 
 .fallback {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #8b97a1;
+  color: #a8a195;
   font-size: 23rpx;
   text-align: center;
 }
@@ -119,7 +218,7 @@ button::after {
 }
 
 .code {
-  color: #1f2d3d;
+  color: #1f2328;
   font-size: 29rpx;
   font-weight: 700;
   line-height: 1.25;
@@ -136,7 +235,7 @@ button::after {
 
 .meta {
   margin-top: 8rpx;
-  color: #6b7785;
+  color: #73716d;
   font-size: 22rpx;
   line-height: 1.3;
 }
@@ -145,7 +244,7 @@ button::after {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 16rpx;
+  gap: 12rpx;
   margin-top: 18rpx;
 }
 
@@ -155,8 +254,8 @@ button::after {
   height: 70rpx;
   flex: none;
   padding: 4rpx;
-  border-radius: 8rpx;
-  background: #eef2f0;
+  border-radius: 12rpx;
+  background: #efece4;
   box-sizing: border-box;
 }
 
@@ -173,15 +272,15 @@ button::after {
 
 .unit-option.active {
   background: #fff;
-  color: #1f5a50;
+  color: #27594f;
 }
 
 .unit-pill {
   width: 72rpx;
   height: 70rpx;
   flex: none;
-  border-radius: 8rpx;
-  background: #eef2f0;
+  border-radius: 12rpx;
+  background: #efece4;
   color: #526273;
   font-size: 24rpx;
   font-weight: 700;
@@ -192,21 +291,21 @@ button::after {
 .quantity-control {
   display: flex;
   align-items: center;
-  width: 328rpx;
+  flex: 1;
+  min-width: 0;
   height: 70rpx;
-  flex: none;
-  border: 1rpx solid #d7e1dd;
-  border-radius: 8rpx;
+  border: 1rpx solid #e7e0d6;
+  border-radius: 12rpx;
   overflow: hidden;
   box-sizing: border-box;
 }
 
 .step-btn {
-  width: 72rpx;
+  width: 66rpx;
   height: 70rpx;
   flex: none;
-  background: #f3f7f5;
-  color: #1f5a50;
+  background: #efece4;
+  color: #27594f;
   font-size: 32rpx;
   line-height: 70rpx;
   text-align: center;
@@ -214,12 +313,12 @@ button::after {
 }
 
 .quantity-input {
-  width: 184rpx;
-  min-width: 184rpx;
+  width: 0;
+  min-width: 0;
   height: 70rpx;
-  flex: none;
+  flex: 1;
   padding: 0 12rpx;
-  color: #1f2d3d;
+  color: #1f2328;
   font-size: 30rpx;
   font-weight: 700;
   line-height: 70rpx;
@@ -228,14 +327,22 @@ button::after {
 }
 
 .remove-btn {
-  width: 112rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 96rpx;
+  min-width: 96rpx;
   height: 70rpx;
   flex: none;
-  border-radius: 8rpx;
-  background: #f2f4f7;
-  color: #6b7785;
-  font-size: 24rpx;
-  line-height: 70rpx;
+  margin: 0;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  background: var(--danger-50);
+  color: var(--danger-500);
+  font-size: var(--font-sm);
+  font-weight: var(--weight-semibold);
+  line-height: 1;
+  box-sizing: border-box;
 }
 
 .plan-stats {
@@ -243,7 +350,7 @@ button::after {
   flex-wrap: wrap;
   gap: 8rpx 14rpx;
   margin-top: 12rpx;
-  color: #6b7785;
+  color: #73716d;
   font-size: 22rpx;
   line-height: 1.35;
 }
@@ -253,9 +360,9 @@ button::after {
   height: 66rpx;
   margin-top: 16rpx;
   padding: 0 16rpx;
-  border-radius: 8rpx;
-  background: #f5f7f7;
-  color: #1f2d3d;
+  border-radius: 12rpx;
+  background: #f8f6f1;
+  color: #1f2328;
   font-size: 24rpx;
   box-sizing: border-box;
 }
@@ -265,31 +372,39 @@ button::after {
   left: 0;
   right: 0;
   bottom: 0;
+  z-index: 20;
   display: grid;
-  grid-template-columns: 220rpx 1fr;
-  gap: 14rpx;
-  padding: 18rpx 24rpx 22rpx;
-  border-top: 1rpx solid #dce5e1;
-  background: rgba(255, 255, 255, 0.96);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10rpx;
+  padding: 16rpx 18rpx calc(22rpx + env(safe-area-inset-bottom));
+  border-top: 1rpx solid #e7e0d6;
+  background: #fff;
+  box-shadow: 0 -10rpx 28rpx rgba(15, 30, 40, 0.08);
   box-sizing: border-box;
 }
 
-.primary,
-.secondary {
-  height: 78rpx;
-  border-radius: 8rpx;
-  font-size: 27rpx;
+.bottom-actions .primary,
+.bottom-actions .secondary {
+  width: 100%;
+  min-width: 0;
+  height: 84rpx;
+  margin: 0;
+  padding: 0 8rpx;
+  border-radius: 12rpx;
+  font-size: 25rpx;
   font-weight: 700;
-  line-height: 78rpx;
+  line-height: 84rpx;
+  box-sizing: border-box;
+  white-space: nowrap;
 }
 
-.primary {
-  background: #1f5a50;
+.bottom-actions .primary {
+  background: #27594f;
   color: #fff;
 }
 
-.secondary {
-  border: 1rpx solid #d7e1dd;
+.bottom-actions .secondary {
+  border: 1rpx solid #e7e0d6;
   background: #fff;
-  color: #1f5a50;
+  color: #27594f;
 }

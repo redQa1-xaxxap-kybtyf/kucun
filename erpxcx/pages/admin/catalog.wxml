@@ -3,13 +3,13 @@
     <view class="header-copy">
       <view class="eyebrow">小程序展示</view>
       <view class="title">分类管理</view>
-      <view class="desc">先维护花色，再维护产品品种</view>
+      <view class="desc">维护花色、品种和展示顺序</view>
     </view>
     <button class="preview-btn" bindtap="onPreviewTap">预览</button>
   </view>
 
   <view class="actions">
-    <button class="primary" bindtap="onProductsTap">设置产品分类</button>
+    <button class="primary" bindtap="onProductsTap">去上架商品</button>
   </view>
 
   <view wx:if="{{error}}" class="notice">{{error}}</view>
@@ -39,7 +39,7 @@
       <view class="panel-head">
         <view>
           <view class="section-title">花色分类</view>
-          <view class="section-note">客户先按花色进入产品</view>
+          <view class="section-note">客户先按花色找货</view>
         </view>
         <button class="section-add" bindtap="onAddSeriesTap">新增花色</button>
       </view>
@@ -50,8 +50,14 @@
           wx:for="{{colorSeries}}"
           wx:key="id"
           wx:for-index="index"
-          class="category-card"
+          class="category-card {{draggingType == 'series' && draggingIndex == index ? 'dragging' : ''}} {{draggingType == 'series' && dragOverIndex == index && draggingIndex != index ? 'drag-over' : ''}}"
           data-index="{{index}}"
+          data-type="series"
+          bindtouchstart="onSortTouchStart"
+          bindlongpress="onSortLongPress"
+          bindtouchmove="onSortTouchMove"
+          bindtouchend="onSortTouchEnd"
+          bindtouchcancel="onSortTouchEnd"
           bindtap="onEditSeriesTap"
         >
           <image wx:if="{{item.coverUrl}}" class="cover" src="{{item.coverUrl}}" mode="aspectFill" />
@@ -62,7 +68,7 @@
               <view wx:if="{{!item.builtIn}}" class="custom-chip">自建</view>
             </view>
             <view class="category-desc">
-              <text>{{item.count}}个产品</text>
+              <text>{{item.count}}个商品</text>
               <text class="dot">·</text>
               <text>排序 {{item.sortOrder}}</text>
             </view>
@@ -78,8 +84,8 @@
     <view wx:elif="{{activeTab == 'component'}}" class="panel">
       <view class="panel-head">
         <view>
-          <view class="section-title">产品品种</view>
-          <view class="section-note">客户进入花色后再按品种查看</view>
+          <view class="section-title">品种分类</view>
+          <view class="section-note">客户进入花色后再按品种找货</view>
         </view>
         <button class="section-add" bindtap="onAddComponentTap">新增品种</button>
       </view>
@@ -90,8 +96,14 @@
           wx:for="{{componentTypes}}"
           wx:key="id"
           wx:for-index="index"
-          class="category-card"
+          class="category-card {{draggingType == 'component' && draggingIndex == index ? 'dragging' : ''}} {{draggingType == 'component' && dragOverIndex == index && draggingIndex != index ? 'drag-over' : ''}}"
           data-index="{{index}}"
+          data-type="component"
+          bindtouchstart="onSortTouchStart"
+          bindlongpress="onSortLongPress"
+          bindtouchmove="onSortTouchMove"
+          bindtouchend="onSortTouchEnd"
+          bindtouchcancel="onSortTouchEnd"
           bindtap="onEditComponentTap"
         >
           <image wx:if="{{item.coverUrl}}" class="cover" src="{{item.coverUrl}}" mode="aspectFill" />
@@ -102,7 +114,7 @@
               <view wx:if="{{!item.builtIn}}" class="custom-chip">自建</view>
             </view>
             <view class="category-desc">
-              <text>{{item.count}}个产品</text>
+              <text>{{item.count}}个商品</text>
               <text class="dot">·</text>
               <text>排序 {{item.sortOrder}}</text>
             </view>
@@ -164,7 +176,7 @@
           <view class="label">客户可见</view>
           <view class="hint">{{editorItem.visible ? '客户可以看到' : '客户看不到'}}</view>
         </view>
-        <switch checked="{{editorItem.visible}}" color="#176B5B" bindchange="onEditorVisibleChange" />
+        <switch checked="{{editorItem.visible}}" color="#27594f" bindchange="onEditorVisibleChange" />
       </view>
 
       <view class="field">

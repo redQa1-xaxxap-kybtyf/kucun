@@ -3,7 +3,14 @@
     <view class="loading-spinner"></view>
     <view class="loading-text">加载中</view>
   </view>
-  <view wx:elif="{{error}}" class="empty error">{{error}}</view>
+  <view wx:elif="{{error}}" class="state-block">
+    <view class="state-block__title">产品暂时看不到</view>
+    <view class="state-block__text">{{error}}</view>
+    <view class="state-block__actions">
+      <button class="state-block__primary" bindtap="onRetryLoadTap">重试</button>
+      <button class="state-block__ghost" bindtap="onBackHomeTap">返回首页</button>
+    </view>
+  </view>
 
   <view wx:elif="{{product}}">
     <view class="gallery-wrap">
@@ -12,14 +19,15 @@
         current="{{currentImage}}"
         bindchange="onImageChange"
         indicator-dots="{{galleryImageUrls.length > 1}}"
-        indicator-color="#cbd5d1"
-        indicator-active-color="#1f5a50"
+        indicator-color="#d6cdbf"
+        indicator-active-color="#27594f"
       >
         <swiper-item wx:for="{{galleryImageUrls}}" wx:key="*this">
           <image
             class="gallery-image"
             src="{{item}}"
             mode="aspectFit"
+            lazy-load
             data-current="{{item}}"
             bindtap="onPreviewGallery"
           />
@@ -39,7 +47,8 @@
           wx:for-index="index"
           class="thumb-image {{currentImage == index ? 'active' : ''}}"
           src="{{item}}"
-          mode="aspectFill"
+          mode="aspectFit"
+          lazy-load
           data-index="{{index}}"
           bindtap="onThumbTap"
         />
@@ -47,36 +56,27 @@
     </view>
 
     <view class="info-card">
-      <view class="tag-row">
-        <view class="tag">颜色：{{product.colorSeries.name}}</view>
-        <view class="tag">品种：{{product.componentType.label}}</view>
-        <view wx:if="{{product.packageText}}" class="tag package-tag">包装：{{product.packageText}}</view>
-      </view>
       <view class="product-code-main" bindtap="onCopyProductModel">
         <text class="code-label">型号</text>
         <text class="code-value">{{product.code}}</text>
+        <text wx:if="{{product.name}}" class="name-divider">·</text>
+        <text wx:if="{{product.name}}" class="product-name-inline line-clamp-1">{{product.name}}</text>
         <text class="copy-hint">复制</text>
       </view>
-      <view class="product-name-line">
-        <text class="name-label">产品名称</text>
-        <text class="name-value">{{product.name}}</text>
+      <view class="tag-row">
+        <view class="tag">{{product.colorSeries.name}}</view>
+        <view class="tag">{{product.componentType.label}}</view>
+        <view wx:if="{{product.stockText}}" class="tag stock-tag {{product.stockBadgeClass}}">
+          <text>{{product.stockText}}</text>
+        </view>
       </view>
-      <view class="info-section-title">产品资料</view>
       <view class="product-info-grid">
-        <view class="info-item">
-          <view class="info-label">颜色</view>
-          <view class="info-value">{{product.colorSeries.name}}</view>
-        </view>
-        <view class="info-item">
-          <view class="info-label">品种</view>
-          <view class="info-value">{{product.componentType.label}}</view>
-        </view>
         <view class="info-item wide">
           <view class="info-label">规格</view>
           <view class="info-value">{{product.specification || '未填写'}}</view>
         </view>
         <view class="info-item" wx:if="{{product.packageText}}">
-          <view class="info-label">包装</view>
+          <view class="info-label">包装片数</view>
           <view class="info-value">{{product.packageText}}</view>
         </view>
         <view class="info-item" wx:if="{{product.weightText}}">
@@ -85,7 +85,7 @@
         </view>
       </view>
       <view class="shelf-link" bindtap="onSeriesShelfTap">
-        <view class="shelf-link-text">查看{{product.colorSeries.name}}颜色下的其他品种</view>
+        <view class="shelf-link-text">查看 {{product.colorSeries.name}} 同色系其他品种</view>
         <view class="shelf-link-arrow">›</view>
       </view>
     </view>
@@ -98,7 +98,7 @@
           wx:key="*this"
           class="case-image"
           src="{{item}}"
-          mode="aspectFill"
+          mode="aspectFit"
           lazy-load
           data-current="{{item}}"
           bindtap="onPreviewEffectImage"
@@ -122,7 +122,7 @@
           bindtap="onRelatedGroupTap"
         >
           <view class="match-media">
-            <image wx:if="{{item.coverUrl}}" class="match-cover" src="{{item.coverUrl}}" mode="aspectFit" />
+            <image wx:if="{{item.coverUrl}}" class="match-cover" src="{{item.coverUrl}}" mode="aspectFit" lazy-load />
             <view wx:else class="match-cover fallback">暂无图片</view>
           </view>
           <view class="match-name line-clamp-2">{{item.componentType.label}}</view>
@@ -132,11 +132,18 @@
     </view>
 
     <view class="bottom-actions safe-bottom">
-      <button class="secondary" bindtap="onPlanTap">
-        报货计划<text wx:if="{{planCount > 0}}"> {{planCount}}</text>
+      <view class="action-icon" bindtap="onPosterTap">
+        <view class="action-icon-symbol poster"></view>
+        <view class="action-icon-label">海报</view>
+      </view>
+      <view class="action-icon" bindtap="onPlanTap">
+        <view class="action-icon-symbol plan"></view>
+        <view wx:if="{{planCount > 0}}" class="action-icon-badge">{{planCount}}</view>
+        <view class="action-icon-label">报货计划</view>
+      </view>
+      <button class="primary {{isInPlan ? 'joined' : ''}}" bindtap="onAddPlanTap">
+        {{isInPlan ? '✓ 已加入计划' : '加入报货计划'}}
       </button>
-      <button class="secondary" bindtap="onPosterTap">海报</button>
-      <button class="primary" bindtap="onAddPlanTap">加入计划</button>
     </view>
   </view>
 </view>

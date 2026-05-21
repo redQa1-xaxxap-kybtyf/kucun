@@ -32,12 +32,34 @@ function toNumber(value) {
   return Number.isFinite(numberValue) ? numberValue : 0;
 }
 
+function formatMoney(value) {
+  return toNumber(value).toFixed(2);
+}
+
+function getPhoneTail(phone) {
+  const digits = String(phone || '').replace(/\D/g, '');
+  return digits.length >= 4 ? digits.slice(-4) : '';
+}
+
+function buildCustomerDisplay(customer) {
+  const name = customer.name || '-';
+  const phoneTail = getPhoneTail(customer.phone);
+  return phoneTail ? `${name} (${phoneTail})` : name;
+}
+
 function normalizeCustomer(customer) {
+  const phone = customer.phone || '';
+  const address = customer.address || '';
   return {
     id: customer.id,
     name: customer.name || '-',
-    phone: customer.phone || '',
-    address: customer.address || '',
+    phone,
+    address,
+    displayName: buildCustomerDisplay({
+      name: customer.name || '-',
+      phone,
+    }),
+    displayMeta: phone || address || '客户',
   };
 }
 
@@ -46,9 +68,10 @@ function normalizeOrder(order) {
     id: order.id,
     orderNumber: order.orderNumber || '-',
     status: order.status || '',
-    totalAmount: toNumber(order.totalAmount),
-    paidAmount: toNumber(order.paidAmount),
+    totalAmount: formatMoney(order.totalAmount),
+    paidAmount: formatMoney(order.paidAmount),
     remainingAmount: toNumber(order.remainingAmount),
+    remainingAmountText: formatMoney(order.remainingAmount),
   };
 }
 
@@ -166,6 +189,7 @@ Page({
   },
 
   onRefreshOrders() {
+    if (this.data.loadingOrders) return;
     this.loadOrders();
   },
 
@@ -238,11 +262,36 @@ Page({
   },
 
   async onSubmit() {
+    if (this.data.isSaving) return;
+
     const message = this.validatePayment();
     if (message) {
       wx.showToast({ title: message, icon: 'none' });
       return;
     }
+
+    const amount = formatMoney(this.data.amount);
+    const customerName =
+      this.data.selectedCustomer.displayName || this.data.selectedCustomer.name;
+    const orderLine =
+      this.data.paymentType === 'order_payment' && this.data.selectedOrder
+        ? `\n销售单：${this.data.selectedOrder.orderNumber}`
+        : '';
+
+    wx.showModal({
+      title: '确认登记收款',
+      content: `${customerName}${orderLine}\n金额：¥${amount}\n方式：${this.data.selectedMethodLabel}\n日期：${this.data.paymentDate}`,
+      confirmText: '确认登记',
+      success: result => {
+        if (result.confirm) {
+          this.submitPayment();
+        }
+      },
+    });
+  },
+
+  async submitPayment() {
+    if (this.data.isSaving) return;
 
     this.setData({ isSaving: true });
     try {

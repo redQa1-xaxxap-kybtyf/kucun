@@ -2,18 +2,18 @@ const {
   hideAdminShareMenu,
   requireAdminSession,
 } = require('../../utils/admin');
+const { getProduct: getCatalogProduct } = require('../../utils/catalog');
+const { markCatalogDirty } = require('../../utils/catalog-cache');
 const {
   getCatalogSettings,
   updateProductCatalogDisplay,
 } = require('../../utils/catalog-settings');
-const { getProduct: getMiniProgramProduct } = require('../../utils/catalog');
 const {
   getCategories,
   getProduct,
 } = require('../../utils/products');
 const { uploadProductImage } = require('../../utils/upload');
 
-const CATALOG_DIRTY_KEY = 'mini_catalog_dirty_at';
 const EDIT_READONLY_ERP_FIELDS = [
   'code',
   'description',
@@ -76,6 +76,8 @@ function chooseImageFiles(count) {
 function createEmptyMiniDisplay() {
   return {
     componentType: '',
+    displayGroupName: '',
+    displayGroupOrder: '',
     seriesId: '',
     visible: true,
   };
@@ -118,6 +120,12 @@ function readId(value) {
   if (typeof value === 'string') return value;
   if (value && typeof value.id === 'string') return value.id;
   return '';
+}
+
+function normalizeGroupOrderInput(value) {
+  const numberValue = Number(value);
+  if (!Number.isFinite(numberValue) || numberValue <= 0) return undefined;
+  return Math.max(1, Math.min(99, Math.round(numberValue)));
 }
 
 function getProductCategoryId(product) {
@@ -219,6 +227,8 @@ function hasManualCatalogDisplay(override) {
     override &&
       (override.seriesId ||
         override.componentType ||
+        override.displayGroupName ||
+        override.displayGroupOrder ||
         typeof override.visible === 'boolean')
   );
 }
@@ -253,6 +263,12 @@ function createMiniDisplayFromProduct(
     resolveCatalogItemId(catalogSettings.componentTypes, searchText, 'other');
   const display = {
     componentType,
+    displayGroupName: String(override.displayGroupName || '').trim(),
+    displayGroupOrder:
+      override.displayGroupOrder !== undefined &&
+      override.displayGroupOrder !== null
+        ? String(override.displayGroupOrder)
+        : '',
     seriesId,
     visible: override.visible !== false,
   };
@@ -264,7 +280,7 @@ function createMiniDisplayFromProduct(
     : miniProductSeriesId || miniProductComponentType
       ? '已按目录匹配'
       : hasSpecificDisplay
-        ? '已按产品信息匹配'
+        ? '已按商品信息匹配'
         : '待选择';
 
   return {
@@ -320,7 +336,7 @@ function buildSelectorItems(items, type, keyword, selectedId) {
     .map(item => ({
       id: item.id,
       selected: item.id === selectedId,
-      subtitle: item.visible === false ? '已停用，当前产品仍在使用' : '',
+      subtitle: item.visible === false ? '已停用，当前商品仍在使用' : '',
       title: getCatalogItemTitle(item, type),
     }));
 }
@@ -337,6 +353,7 @@ Page({
     isEdit: false,
     isUploading: false,
     effectImages: [],
+    loadError: '',
     loading: true,
     mainImages: [],
     miniDisplay: createEmptyMiniDisplay(),
@@ -365,7 +382,7 @@ Page({
     const id = options.id || '';
     if (!id) {
       wx.showToast({
-        title: '请在ERP新增产品',
+        title: '请在内部商品管理新增',
         icon: 'none',
       });
       wx.redirectTo({
@@ -382,7 +399,7 @@ Page({
   },
 
   async initForm(id) {
-    this.setData({ loading: true });
+    this.setData({ loadError: '', loading: true });
 
     try {
       const [
@@ -395,7 +412,7 @@ Page({
         settle(getCatalogSettings()),
         id ? settle(getProduct(id)) : Promise.resolve({ ok: true, value: null }),
         id
-          ? settle(getMiniProgramProduct(id))
+          ? settle(getCatalogProduct(id))
           : Promise.resolve({ ok: true, value: null }),
       ]);
 
@@ -476,7 +493,7 @@ Page({
         selectedCategoryName: selectedCategory
           ? selectedCategory.displayName
           : product
-            ? '未读取到ERP分类'
+            ? '未读取到内部分类'
             : '请选择分类',
         selectedComponentName: selectedComponent
           ? selectedComponent.label
@@ -488,22 +505,34 @@ Page({
 
       if (!categoriesResult.ok) {
         wx.showToast({
-          title: 'ERP 分类加载失败，请稍后重试',
+          title: '内部分类加载失败，请稍后重试',
           icon: 'none',
         });
       } else if (!catalogSettingsResult.ok) {
         wx.showToast({
-          title: '小程序分类加载失败，请稍后重试',
+          title: '展示分类加载失败，请稍后重试',
           icon: 'none',
         });
       }
     } catch (error) {
+      const message = error.message || '加载失败';
       wx.showToast({
-        title: error.message || '加载失败',
+        title: message,
         icon: 'none',
       });
-      this.setData({ loading: false });
+      this.setData({ loadError: message, loading: false });
     }
+  },
+
+  onRetryLoadTap() {
+    if (!this.data.id) return;
+    this.initForm(this.data.id);
+  },
+
+  onBackProductsTap() {
+    wx.redirectTo({
+      url: '/pages/admin/products',
+    });
   },
 
   onInput(event) {
@@ -564,6 +593,16 @@ Page({
   onMiniVisibleChange(event) {
     this.setData({
       'miniDisplay.visible': event.detail.value,
+      miniDisplaySourceLabel: '已手动选择',
+    });
+  },
+
+  onMiniDisplayInput(event) {
+    const field = event.currentTarget.dataset.field;
+    if (!field) return;
+
+    this.setData({
+      [`miniDisplay.${field}`]: event.detail.value,
       miniDisplaySourceLabel: '已手动选择',
     });
   },
@@ -705,12 +744,18 @@ Page({
   },
 
   validateForm() {
-    if (!this.data.id) return '产品ID缺失，请返回列表重新进入';
+    if (!this.data.id) return '商品ID缺失，请返回列表重新进入';
     if (this.data.miniDisplay.visible) {
       if (this.data.seriesList.length === 0) return '请先维护小程序花色';
       if (!this.data.miniDisplay.seriesId) return '请选择小程序花色';
       if (this.data.componentTypes.length === 0) return '请先维护小程序品种';
       if (!this.data.miniDisplay.componentType) return '请选择小程序品种';
+    }
+    const groupOrder = String(
+      this.data.miniDisplay.displayGroupOrder || ''
+    ).trim();
+    if (groupOrder && normalizeGroupOrderInput(groupOrder) === undefined) {
+      return '组内排序请填写 1-99 的数字';
     }
     return '';
   },
@@ -744,7 +789,7 @@ Page({
     if (this.data.uploadingKind) return;
     if (this.data.isEdit) {
       wx.showToast({
-        title: '请在ERP产品管理维护图片',
+        title: '请在内部商品管理维护图片',
         icon: 'none',
       });
       return;
@@ -770,7 +815,7 @@ Page({
         uploadedImages.push({
           url,
           type: kind,
-          alt: kind === 'main' ? '产品主图' : '效果案例',
+          alt: kind === 'main' ? '商品主图' : '效果案例',
           order: currentImages.length + uploadedImages.length,
         });
       }
@@ -808,6 +853,8 @@ Page({
   },
 
   async onSubmit() {
+    if (this.data.saving) return;
+
     const message = this.validateForm();
 
     if (message) {
@@ -822,9 +869,15 @@ Page({
         visible: this.data.miniDisplay.visible,
         seriesId: this.data.miniDisplay.seriesId || undefined,
         componentType: this.data.miniDisplay.componentType || undefined,
+        displayGroupName:
+          String(this.data.miniDisplay.displayGroupName || '').trim() ||
+          undefined,
+        displayGroupOrder: normalizeGroupOrderInput(
+          this.data.miniDisplay.displayGroupOrder
+        ),
       });
 
-      wx.setStorageSync(CATALOG_DIRTY_KEY, Date.now());
+      markCatalogDirty();
       wx.showToast({ title: '已保存' });
       wx.navigateBack();
     } catch (error) {

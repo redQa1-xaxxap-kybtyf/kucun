@@ -5,6 +5,12 @@ const {
 const { getProducts } = require('../../utils/products');
 const { createSalesOrder, getCustomers } = require('../../utils/sales');
 
+const UNIT_LABELS = {
+  piece: '件',
+  sheet: '片',
+  package: '件',
+};
+
 function todayText() {
   const now = new Date();
   const year = now.getFullYear();
@@ -22,24 +28,139 @@ function money(value) {
   return Math.round(value * 100) / 100;
 }
 
+function roundQuantity(value) {
+  return Math.round(value * 100) / 100;
+}
+
+function formatPieceCount(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '0';
+  if (Number.isInteger(n)) return String(n);
+  return n.toFixed(2).replace(/\.?0+$/, '');
+}
+
+function normalizeUnitLabel(unit) {
+  return UNIT_LABELS[unit] || unit || '片';
+}
+
+function getSheetQuantity(item) {
+  const displayQuantity = toNumber(item.quantity);
+  const piecesPerUnit = toNumber(item.piecesPerUnit) || 1;
+
+  if (item.unit === '件' && piecesPerUnit > 1) {
+    return roundQuantity(displayQuantity * piecesPerUnit);
+  }
+
+  return roundQuantity(displayQuantity);
+}
+
+function buildStockText(availableQuantity, unit, piecesPerUnit) {
+  const availableText = formatPieceCount(availableQuantity);
+
+  if (unit === '件' && piecesPerUnit > 1) {
+    const packageQuantity = availableQuantity / piecesPerUnit;
+    return `可用 ${formatPieceCount(packageQuantity)} 件（${availableText} 片）`;
+  }
+
+  if (piecesPerUnit > 1) {
+    const packageQuantity = availableQuantity / piecesPerUnit;
+    return `可用 ${availableText} 片（约 ${formatPieceCount(packageQuantity)} 件）`;
+  }
+
+  return `可用 ${availableText} ${unit || '片'}`;
+}
+
+function getPhoneTail(phone) {
+  const digits = String(phone || '').replace(/\D/g, '');
+  return digits.length >= 4 ? digits.slice(-4) : '';
+}
+
+function buildCustomerDisplay(customer) {
+  const name = customer.name || '-';
+  const phoneTail = getPhoneTail(customer.phone);
+  return phoneTail ? `${name} (${phoneTail})` : name;
+}
+
+function buildItemSummary(item) {
+  const quantity = toNumber(item.quantity);
+  const unitPrice = toNumber(item.unitPrice);
+  const piecesPerUnit = toNumber(item.piecesPerUnit) || 1;
+  const unit = item.unit || '片';
+  const availableQuantity = toNumber(item.availableQuantity);
+  const sheetQuantity = getSheetQuantity({ ...item, unit, piecesPerUnit });
+  const subtotal = money(quantity * unitPrice);
+
+  let subtotalText = '';
+  if (quantity > 0 && unitPrice > 0) {
+    subtotalText = `¥${subtotal.toFixed(2)}`;
+  }
+
+  let quantityHelperText = '';
+  if (quantity > 0 && unit === '件' && piecesPerUnit > 1) {
+    quantityHelperText = `折合 ${formatPieceCount(sheetQuantity)} 片`;
+  } else if (quantity > 0 && piecesPerUnit > 1) {
+    const wholePackages = Math.floor(quantity / piecesPerUnit);
+    const remainder = quantity - wholePackages * piecesPerUnit;
+    if (remainder === 0 && wholePackages > 0) {
+      quantityHelperText = `约 ${wholePackages} 件`;
+    } else if (wholePackages > 0) {
+      quantityHelperText = `约 ${wholePackages} 件 + ${formatPieceCount(remainder)} ${unit}`;
+    } else {
+      quantityHelperText = `不足 1 件`;
+    }
+  }
+
+  return {
+    ...item,
+    availableText: buildStockText(availableQuantity, unit, piecesPerUnit),
+    sheetQuantity,
+    subtotal,
+    subtotalText,
+    quantityHelperText,
+    quantityLabel: `数量（${unit}）`,
+    priceLabel: `单价（元/${unit}）`,
+    packageInfoText:
+      piecesPerUnit > 1 ? `1 件 = ${formatPieceCount(piecesPerUnit)} 片` : '',
+  };
+}
+
 function normalizeProduct(product) {
   const inventory = product.inventory || {};
+  const piecesPerUnit = toNumber(product.piecesPerUnit) || 1;
+  const unit = normalizeUnitLabel(product.unit || product.unitLabel);
+  const availableQuantity = toNumber(inventory.availableQuantity);
+  const thumbnailUrl =
+    product.thumbnailUrl ||
+    product.coverImageUrl ||
+    product.imageUrl ||
+    (Array.isArray(product.images) && product.images[0]) ||
+    '';
   return {
     id: product.id,
     code: product.code || '-',
     name: product.name || '-',
     specification: product.specification || '',
-    piecesPerUnit: product.piecesPerUnit || 1,
-    availableQuantity: toNumber(inventory.availableQuantity),
+    thumbnailUrl,
+    piecesPerUnit,
+    unit,
+    availableQuantity,
+    availableText: buildStockText(availableQuantity, unit, piecesPerUnit),
   };
 }
 
 function normalizeCustomer(customer) {
+  const phone = customer.phone || '';
+  const address = customer.address || '';
   return {
     id: customer.id,
     name: customer.name || '-',
-    phone: customer.phone || '',
-    address: customer.address || '',
+    phone,
+    address,
+    displayName: buildCustomerDisplay({
+      name: customer.name || '-',
+      phone,
+    }),
+    displayMeta: phone || address || '客户',
   };
 }
 
@@ -112,6 +233,10 @@ Page({
   },
 
   onProductSearchConfirm() {
+    if (!this.data.productSearch.trim()) {
+      wx.showToast({ title: '请输入产品关键词', icon: 'none' });
+      return;
+    }
     this.loadProducts();
   },
 
@@ -143,7 +268,7 @@ Page({
     if (!product) return;
 
     if (this.data.items.some(item => item.productId === product.id)) {
-      wx.showToast({ title: '已添加该产品', icon: 'none' });
+      wx.showToast({ title: '该产品已添加', icon: 'none' });
       return;
     }
 
@@ -153,7 +278,9 @@ Page({
       productName: product.name,
       specification: product.specification,
       piecesPerUnit: product.piecesPerUnit,
+      unit: normalizeUnitLabel(product.unit),
       availableQuantity: product.availableQuantity,
+      availableText: product.availableText,
       quantity: '',
       unitPrice: '',
     });
@@ -179,13 +306,14 @@ Page({
   },
 
   updateItems(items) {
-    const total = items.reduce(
-      (sum, item) => sum + toNumber(item.quantity) * toNumber(item.unitPrice),
+    const enriched = items.map(item => buildItemSummary(item));
+    const total = enriched.reduce(
+      (sum, item) => sum + toNumber(item.subtotal),
       0
     );
     this.setData({
       itemTotal: money(total).toFixed(2),
-      items,
+      items: enriched,
     });
   },
 
@@ -197,6 +325,12 @@ Page({
       const item = this.data.items[i];
       if (toNumber(item.quantity) <= 0) {
         return `第 ${i + 1} 行数量必须大于 0`;
+      }
+      if (
+        status === 'confirmed' &&
+        getSheetQuantity(item) > toNumber(item.availableQuantity)
+      ) {
+        return `第 ${i + 1} 行数量超过可用库存（${item.availableText || '库存不足'}）`;
       }
       if (toNumber(item.unitPrice) < 0) {
         return `第 ${i + 1} 行单价不能为负`;
@@ -218,18 +352,24 @@ Page({
       orderDate: this.data.orderDate,
       remarks: this.data.remarks.trim(),
       items: this.data.items.map(item => {
-        const quantity = toNumber(item.quantity);
-        const unitPrice = toNumber(item.unitPrice);
+        const displayQuantity = toNumber(item.quantity);
+        const rawUnitPrice = toNumber(item.unitPrice);
+        const quantity = getSheetQuantity(item);
+        const subtotal = money(displayQuantity * rawUnitPrice);
+        const pieceUnitPrice =
+          item.unit === '件' && quantity > 0
+            ? money(subtotal / quantity)
+            : rawUnitPrice;
         return {
           productId: item.productId,
           productCode: item.productCode,
           specification: item.specification,
           quantity,
-          unitPrice,
-          displayUnit: '片',
-          displayQuantity: quantity,
+          unitPrice: pieceUnitPrice,
+          displayUnit: item.unit || '片',
+          displayQuantity,
           piecesPerUnit: item.piecesPerUnit || 1,
-          subtotal: money(quantity * unitPrice),
+          subtotal,
         };
       }),
       feeItems: [],
@@ -241,9 +381,17 @@ Page({
   },
 
   onConfirmOrder() {
+    if (this.data.isSaving) return;
+
+    const message = this.validateOrder('confirmed');
+    if (message) {
+      wx.showToast({ title: message, icon: 'none' });
+      return;
+    }
+
     wx.showModal({
       title: '确认开单',
-      content: '确认后会进入正式销售流程。若库存批次复杂，建议先保存草稿后在 PC 端完善。',
+      content: `${this.data.selectedCustomer.displayName || this.data.selectedCustomer.name}\n${this.data.items.length} 个产品，合计 ¥${this.data.itemTotal}\n确认后会进入正式销售流程。`,
       confirmText: '确认',
       success: result => {
         if (result.confirm) {
@@ -254,6 +402,8 @@ Page({
   },
 
   async submitOrder(status) {
+    if (this.data.isSaving) return;
+
     const message = this.validateOrder(status);
     if (message) {
       wx.showToast({ title: message, icon: 'none' });

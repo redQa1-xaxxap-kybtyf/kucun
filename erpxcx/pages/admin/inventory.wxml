@@ -1,15 +1,10 @@
 <view class="page">
-  <view class="header">
-    <view>
-      <view class="eyebrow">管理员</view>
-      <view class="title">查库存</view>
-    </view>
-  </view>
+  <page-header eyebrow="管理员" title="查库存"></page-header>
 
   <view class="search-card">
     <input
       class="search-input"
-      placeholder="输入产品编码、名称、批次"
+      placeholder="搜产品名 / 编码 / 批次"
       value="{{search}}"
       confirm-type="search"
       bindinput="onSearchInput"
@@ -18,22 +13,33 @@
     <button wx:if="{{search}}" class="search-clear" bindtap="onClearSearch">清空</button>
   </view>
 
-  <view wx:if="{{error}}" class="notice">{{error}}</view>
-  <view wx:if="{{loading && inventories.length == 0}}" class="empty">正在查询库存...</view>
+  <view wx:if="{{error}}" class="notice">
+    <view class="notice-text">{{error}}</view>
+    <button class="notice-action" bindtap="onRetryTap">重试</button>
+  </view>
+  <view wx:elif="{{loading && inventories.length == 0}}" class="empty">正在查询库存...</view>
   <view wx:elif="{{inventories.length == 0}}" class="empty">暂无库存记录</view>
 
   <view wx:else class="inventory-list">
     <view wx:for="{{inventories}}" wx:key="id" class="inventory-card">
       <view class="card-head">
+        <image
+          wx:if="{{item.thumbnailUrl}}"
+          class="card-thumb"
+          src="{{item.thumbnailUrl}}"
+          mode="aspectFill"
+          lazy-load
+        />
+        <view wx:else class="card-thumb fallback">暂无图</view>
         <view class="product-main">
           <view class="product-name line-clamp-1">{{item.name}}</view>
           <view class="product-code">{{item.code}}</view>
+          <view wx:if="{{item.specification}}" class="product-spec line-clamp-1">{{item.specification}}</view>
         </view>
         <view class="stock {{item.availableQuantity > 0 ? 'ok' : 'empty-stock'}}">
           {{item.stockStatus}}
         </view>
       </view>
-      <view class="spec line-clamp-1">{{item.specification || '未填写规格'}}</view>
       <view wx:if="{{item.packageText}}" class="package-line line-clamp-1">
         {{item.packageText}}
       </view>
@@ -54,7 +60,7 @@
         </view>
         <view class="quantity-item">
           <view class="quantity-value">{{item.reservedQuantity}}</view>
-          <view class="quantity-label">锁定</view>
+          <view class="quantity-label">已预定</view>
         </view>
         <view class="quantity-item strong">
           <view class="quantity-value">{{item.availableQuantity}}</view>
@@ -64,6 +70,6 @@
     </view>
 
     <view wx:if="{{loading}}" class="list-more">正在加载...</view>
-    <view wx:elif="{{!hasMore}}" class="list-more">已到底</view>
+    <view wx:elif="{{!hasMore}}" class="list-more">没有更多了</view>
   </view>
 </view>

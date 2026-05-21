@@ -3,6 +3,7 @@ const {
   requireAdminSession,
 } = require('../../utils/admin');
 const { getCatalog } = require('../../utils/catalog');
+const { markCatalogDirty } = require('../../utils/catalog-cache');
 const {
   getCatalogSettings,
   updateCatalogSettings,
@@ -22,6 +23,24 @@ function getNextSortOrder(items) {
       return Math.max(max, sortOrder);
     }, 0) + 1
   );
+}
+
+function clampIndex(index, length) {
+  return Math.max(0, Math.min(length - 1, index));
+}
+
+function moveItem(items, fromIndex, toIndex) {
+  const next = [...items];
+  const [item] = next.splice(fromIndex, 1);
+  next.splice(toIndex, 0, item);
+  return next;
+}
+
+function normalizeSortOrders(items) {
+  return (items || []).map((item, index) => ({
+    ...item,
+    sortOrder: index + 1,
+  }));
 }
 
 function mergeCount(items, counts, keyName) {
@@ -56,6 +75,9 @@ Page({
     loading: true,
     note: '',
     saving: false,
+    draggingType: '',
+    draggingIndex: -1,
+    dragOverIndex: -1,
     uploading: false,
   },
 
@@ -160,6 +182,7 @@ Page({
   },
 
   onEditSeriesTap(event) {
+    if (this.consumeSuppressedTap()) return;
     const index = Number(event.currentTarget.dataset.index);
     const item = this.data.colorSeries[index];
     if (!item) return;
@@ -167,6 +190,7 @@ Page({
   },
 
   onEditComponentTap(event) {
+    if (this.consumeSuppressedTap()) return;
     const index = Number(event.currentTarget.dataset.index);
     const item = this.data.componentTypes[index];
     if (!item) return;
@@ -271,6 +295,108 @@ Page({
 
   noop() {},
 
+  consumeSuppressedTap() {
+    if (!this.suppressNextEditTap) return false;
+    this.suppressNextEditTap = false;
+    return true;
+  },
+
+  getDragItems(type) {
+    return type === 'series' ? this.data.colorSeries : this.data.componentTypes;
+  },
+
+  getDragItemHeight() {
+    try {
+      const { windowWidth } = wx.getSystemInfoSync();
+      return Math.max(48, (windowWidth / 750) * 126);
+    } catch (_error) {
+      return 64;
+    }
+  },
+
+  onSortTouchStart(event) {
+    this.pendingDragStartY =
+      event.touches && event.touches[0] ? event.touches[0].clientY : 0;
+  },
+
+  onSortLongPress(event) {
+    if (this.data.saving || this.data.loading || this.data.editorVisible) {
+      return;
+    }
+
+    const type = event.currentTarget.dataset.type;
+    const index = Number(event.currentTarget.dataset.index);
+    const items = this.getDragItems(type);
+    if (!type || !items[index]) return;
+
+    this.dragStartY =
+      event.touches && event.touches[0]
+        ? event.touches[0].clientY
+        : this.pendingDragStartY || 0;
+    this.dragItemHeight = this.getDragItemHeight();
+
+    this.setData({
+      draggingType: type,
+      draggingIndex: index,
+      dragOverIndex: index,
+    });
+
+    if (wx.vibrateShort) {
+      wx.vibrateShort({ type: 'light' });
+    }
+  },
+
+  onSortTouchMove(event) {
+    const { draggingType, draggingIndex } = this.data;
+    if (!draggingType || draggingIndex < 0) return;
+
+    const touch = event.touches && event.touches[0];
+    if (!touch) return;
+
+    const items = this.getDragItems(draggingType);
+    const offset = Math.round(
+      (touch.clientY - this.dragStartY) / this.dragItemHeight
+    );
+    const targetIndex = clampIndex(draggingIndex + offset, items.length);
+
+    if (targetIndex !== this.data.dragOverIndex) {
+      this.setData({ dragOverIndex: targetIndex });
+    }
+  },
+
+  onSortTouchEnd() {
+    const { draggingType, draggingIndex, dragOverIndex } = this.data;
+    if (!draggingType) return;
+
+    this.suppressNextEditTap = true;
+    setTimeout(() => {
+      this.suppressNextEditTap = false;
+    }, 350);
+
+    this.setData({
+      draggingType: '',
+      draggingIndex: -1,
+      dragOverIndex: -1,
+    });
+
+    if (draggingIndex === dragOverIndex || dragOverIndex < 0) return;
+
+    const colorSeries =
+      draggingType === 'series'
+        ? normalizeSortOrders(
+            moveItem(this.data.colorSeries, draggingIndex, dragOverIndex)
+          )
+        : this.data.colorSeries;
+    const componentTypes =
+      draggingType === 'component'
+        ? normalizeSortOrders(
+            moveItem(this.data.componentTypes, draggingIndex, dragOverIndex)
+          )
+        : this.data.componentTypes;
+
+    this.saveCatalogLists(colorSeries, componentTypes, '排序已保存');
+  },
+
   normalizeColorSeriesForSave(list) {
     return (list || []).map(item => ({
       id: item.id,
@@ -305,6 +431,7 @@ Page({
         componentTypes,
         saving: false,
       });
+      markCatalogDirty();
       this.onCloseEditor();
       wx.showToast({ title: toastTitle || '已保存' });
       this.loadData();
@@ -365,7 +492,7 @@ Page({
     }
 
     if (Number(item.count) > 0) {
-      wx.showToast({ title: '已有产品使用，先调整产品', icon: 'none' });
+      wx.showToast({ title: '已有商品使用，先调整商品', icon: 'none' });
       return;
     }
 

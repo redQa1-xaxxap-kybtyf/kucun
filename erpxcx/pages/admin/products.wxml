@@ -2,15 +2,15 @@
   <view class="header">
     <view>
       <view class="eyebrow">小程序管理</view>
-      <view class="title">产品展示设置</view>
-      <view class="desc">产品资料在 ERP 维护，这里只设置客户怎么找</view>
+      <view class="title">商品上架</view>
+      <view class="desc">商品资料在内部维护，这里只管客户能不能搜到</view>
     </view>
   </view>
 
   <view class="search-card">
     <input
       class="search-input"
-      placeholder="搜编码、名称、规格"
+      placeholder="搜商品名 / 编码 / 规格"
       value="{{search}}"
       confirm-type="search"
       bindinput="onSearchInput"
@@ -31,19 +31,59 @@
     </view>
   </view>
 
-  <view wx:if="{{error}}" class="notice">{{error}}</view>
-  <view wx:if="{{loading && products.length == 0}}" class="empty">正在加载产品...</view>
-  <view wx:elif="{{products.length == 0}}" class="empty">{{search ? '没有找到相关产品' : '暂无产品'}}</view>
+  <view class="batch-toolbar">
+    <button wx:if="{{!batchMode}}" class="batch-entry" bindtap="onBatchModeTap">
+      批量上架
+    </button>
+    <block wx:else>
+      <view class="batch-count">已选 {{selectedCount}} 个</view>
+      <button class="batch-light" bindtap="onSelectPageTap">本页全选</button>
+      <button
+        class="batch-light primary"
+        loading="{{loadingAll}}"
+        disabled="{{loadingAll}}"
+        bindtap="onSelectAllFilteredTap"
+      >
+        全部商品
+      </button>
+      <button class="batch-light" bindtap="onCancelBatchTap">取消</button>
+    </block>
+  </view>
 
-  <view wx:else class="product-list">
-    <view wx:for="{{products}}" wx:key="id" class="product-card">
+  <view wx:if="{{selectAllProgress}}" class="batch-progress">{{selectAllProgress}}</view>
+
+  <view wx:if="{{error}}" class="notice">
+    <view class="notice-text">{{error}}</view>
+    <button class="notice-action" bindtap="onRetryTap">重试</button>
+  </view>
+  <view wx:elif="{{loading && products.length == 0}}" class="empty">正在加载商品...</view>
+  <view wx:elif="{{products.length == 0}}" class="empty">{{search ? '没有找到相关商品' : '暂无商品'}}</view>
+
+  <view wx:else class="product-list {{batchMode ? 'batching' : ''}}">
+    <view wx:for="{{products}}" wx:key="id" class="product-card {{item.selected ? 'selected' : ''}}">
       <view class="card-head">
+        <view
+          wx:if="{{batchMode}}"
+          class="select-dot {{item.selected ? 'active' : ''}}"
+          data-id="{{item.id}}"
+          catchtap="onToggleProductSelect"
+        >
+          {{item.selected ? '✓' : ''}}
+        </view>
         <image wx:if="{{item.coverUrl}}" class="cover" src="{{item.coverUrl}}" mode="aspectFill" />
         <view wx:else class="cover fallback">无图</view>
         <view class="main">
           <view class="name line-clamp-1">{{item.name}}</view>
           <view class="code">{{item.code}}</view>
           <view class="spec line-clamp-1">{{item.specification}}</view>
+          <view class="display-row">
+            <view class="mini-status {{item.displayState}}">
+              {{item.miniStatusLabel}}
+            </view>
+            <view class="display-badge {{item.displayBadgeClass}}">
+              {{item.displayBadge}}
+            </view>
+          </view>
         </view>
         <view wx:if="{{item.status != 'active'}}" class="badge off">
           {{item.statusLabel}}
@@ -52,15 +92,63 @@
 
       <view class="card-foot">
         <view class="meta-line">
-          <text>ERP：{{item.categoryName}}</text>
+          <text>内部：{{item.categoryName}}</text>
           <text>{{item.stockText}}</text>
           <text wx:if="{{item.availableText}}">{{item.availableText}}</text>
         </view>
-        <button class="action-btn" data-id="{{item.id}}" catchtap="onEditTap">设置客户分类</button>
+        <button
+          wx:if="{{!batchMode}}"
+          class="action-btn"
+          data-id="{{item.id}}"
+          catchtap="onEditTap"
+        >
+          去上架
+        </button>
+        <button
+          wx:else
+          class="action-btn"
+          data-id="{{item.id}}"
+          catchtap="onToggleProductSelect"
+        >
+          {{item.selected ? '已选择' : '选择'}}
+        </button>
       </view>
     </view>
 
     <view wx:if="{{loading}}" class="list-more">正在加载...</view>
-    <view wx:elif="{{!hasMore}}" class="list-more">已到底</view>
+    <view wx:elif="{{!hasMore}}" class="list-more">没有更多了</view>
+  </view>
+
+  <view wx:if="{{batchMode}}" class="batch-panel">
+    <view class="batch-panel-head">
+      <view class="batch-panel-title">批量上架</view>
+      <view class="batch-panel-subtitle">一次给选中的商品设好客户可见分类</view>
+    </view>
+    <view class="batch-fields">
+      <picker mode="selector" range="{{colorSeries}}" range-key="name" value="{{batchSeriesIndex}}" bindchange="onBatchSeriesChange">
+        <view class="batch-picker">
+          <text>花色</text>
+          <text>{{batchSeriesName}}</text>
+        </view>
+      </picker>
+      <picker mode="selector" range="{{componentTypes}}" range-key="label" value="{{batchComponentIndex}}" bindchange="onBatchComponentChange">
+        <view class="batch-picker">
+          <text>品种</text>
+          <text>{{batchComponentName}}</text>
+        </view>
+      </picker>
+      <view class="batch-visible">
+        <text>客户可见</text>
+        <switch checked="{{batchVisible}}" color="#27594f" bindchange="onBatchVisibleChange" />
+      </view>
+    </view>
+    <button
+      class="batch-save"
+      loading="{{batchSaving}}"
+      disabled="{{batchSaving || selectedCount == 0}}"
+      bindtap="onApplyBatchTap"
+    >
+      批量上架（{{selectedCount}} 个）
+    </button>
   </view>
 </view>

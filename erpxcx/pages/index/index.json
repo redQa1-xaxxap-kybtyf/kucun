@@ -1,6 +1,8 @@
 {
   "navigationBarTitleText": "外墙罗马柱选型",
-  "navigationBarBackgroundColor": "#004519",
+  "navigationBarBackgroundColor": "#1a4035",
   "navigationBarTextStyle": "white",
-  "enablePullDownRefresh": true
+  "backgroundColor": "#f8f6f1",
+  "enablePullDownRefresh": true,
+  "onReachBottomDistance": 120
 }

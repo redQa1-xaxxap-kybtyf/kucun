@@ -84,6 +84,8 @@ async function getCategories(params = {}) {
     });
     const list = await request({
       url: `/api/categories${query ? `?${query}` : ''}`,
+      miniProgramHeader: false,
+      requireAuth: true,
     });
     const normalizedList = Array.isArray(list) ? list : [];
 

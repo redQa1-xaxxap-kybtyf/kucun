@@ -21,13 +21,13 @@
   <view class="section">
     <view class="section-title">客户</view>
     <view wx:if="{{selectedCustomer}}" class="selected-box">
-      <view class="selected-name">{{selectedCustomer.name}}</view>
-      <view class="selected-meta">{{selectedCustomer.phone || selectedCustomer.address || '已选择客户'}}</view>
+      <view class="selected-name">{{selectedCustomer.displayName}}</view>
+      <view class="selected-meta">{{selectedCustomer.displayMeta || '已选择客户'}}</view>
     </view>
     <view class="search-card">
       <input
         class="search-input"
-        placeholder="输入客户名、电话"
+        placeholder="搜客户名 / 电话"
         value="{{customerSearch}}"
         confirm-type="search"
         bindinput="onCustomerSearchInput"
@@ -43,10 +43,12 @@
         data-id="{{item.id}}"
         bindtap="onCustomerTap"
       >
-        <view class="chip-name">{{item.name}}</view>
-        <view class="chip-meta">{{item.phone || item.address || '客户'}}</view>
+        <view class="chip-name">{{item.displayName}}</view>
+        <view class="chip-meta">{{item.displayMeta}}</view>
       </view>
     </view>
+    <view wx:if="{{loadingCustomers && customers.length == 0}}" class="empty compact">正在查找客户...</view>
+    <view wx:elif="{{!loadingCustomers && customers.length == 0}}" class="empty compact">没有找到客户</view>
   </view>
 
   <view wx:if="{{paymentType == 'order_payment'}}" class="section">
@@ -54,8 +56,9 @@
       <view class="section-title">应收订单</view>
       <button wx:if="{{selectedCustomer}}" class="small-btn" loading="{{loadingOrders}}" bindtap="onRefreshOrders">刷新</button>
     </view>
-    <view wx:if="{{!selectedCustomer}}" class="empty">请先选择客户</view>
-    <view wx:elif="{{orders.length == 0}}" class="empty">暂无可收款订单</view>
+    <view wx:if="{{!selectedCustomer}}" class="empty">先选择客户</view>
+    <view wx:elif="{{loadingOrders && orders.length == 0}}" class="empty">正在加载应收订单...</view>
+    <view wx:elif="{{orders.length == 0}}" class="empty">暂无未收款订单</view>
     <view wx:else class="order-list">
       <view
         wx:for="{{orders}}"
@@ -68,7 +71,7 @@
           <view class="order-number">{{item.orderNumber}}</view>
           <view class="order-meta">总额 ¥{{item.totalAmount}} · 已收 ¥{{item.paidAmount}}</view>
         </view>
-        <view class="remaining">¥{{item.remainingAmount}}</view>
+        <view class="remaining">¥{{item.remainingAmountText}}</view>
       </view>
     </view>
   </view>
@@ -76,14 +79,17 @@
   <view class="section">
     <view class="section-title">收款信息</view>
     <view class="field">
-      <view class="label">收款金额</view>
-      <input
-        class="input"
-        type="digit"
-        placeholder="0.00"
-        value="{{amount}}"
-        bindinput="onAmountInput"
-      />
+      <view class="label">收款金额（元）</view>
+      <view class="amount-field">
+        <text class="amount-currency">¥</text>
+        <input
+          class="amount-input"
+          type="digit"
+          placeholder="0.00"
+          value="{{amount}}"
+          bindinput="onAmountInput"
+        />
+      </view>
     </view>
     <view class="field">
       <view class="label">收款方式</view>

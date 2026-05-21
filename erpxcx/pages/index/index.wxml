@@ -1,16 +1,16 @@
 <view class="page">
   <view class="header">
-    <view class="search-bar" bindlongpress="onAdminTap">
+    <view class="search-bar">
       <input
         class="search-input"
-        placeholder="请输入产品关键词搜索"
+        placeholder="搜瓷砖型号 / 名称 / 规格"
         value="{{search}}"
         confirm-type="search"
         bindinput="onSearchInput"
         bindconfirm="onSearchConfirm"
       />
-      <button wx:if="{{search}}" class="search-clear" bindtap="onClearSearch">清空</button>
-      <view class="search-icon" bindtap="onSearchConfirm"></view>
+      <view wx:if="{{search}}" class="search-clear" bindtap="onClearSearch">清空</view>
+      <view class="search-icon" bindtap="onSearchIconTap"></view>
     </view>
     <button wx:if="{{hasAdminSession}}" class="admin-entry" bindtap="onAdminTap">工作台</button>
   </view>
@@ -26,8 +26,9 @@
     <view class="section-head">
       <view>
         <view class="section-title">搜索结果</view>
-        <view class="section-subtitle">{{searchKeyword}} · {{productCount}}个产品</view>
+        <view class="section-subtitle">{{searchKeyword}}</view>
       </view>
+      <view class="search-back" bindtap="onClearSearch">返回</view>
     </view>
 
     <view wx:if="{{!hasProducts}}" class="state-card">
@@ -35,26 +36,97 @@
       <view class="state-text">{{emptyText}}</view>
     </view>
 
-    <view wx:else class="product-grid search-grid">
+    <view wx:else class="product-grid result-grid">
       <view
         wx:for="{{products}}"
         wx:key="id"
-        class="product-card"
+        class="result-card"
         data-id="{{item.id}}"
         bindtap="onProductTap"
+        bindlongpress="onProductLongpress"
       >
-        <view class="product-media">
-          <image wx:if="{{item.thumbnailUrl}}" class="product-image" src="{{item.thumbnailUrl}}" mode="aspectFit" lazy-load />
-          <view wx:else class="product-image fallback">暂无图片</view>
+        <view class="result-media">
+          <image
+            wx:if="{{item.thumbnailUrl}}"
+            class="result-image"
+            src="{{item.thumbnailUrl}}"
+            mode="aspectFit"
+            lazy-load
+          />
+          <view wx:else class="result-image result-image-fallback">暂无图片</view>
+          <view
+            class="plan-action {{item.inPlan ? 'joined' : ''}}"
+            data-id="{{item.id}}"
+            catchtap="onAddPlanTap"
+          >
+            <text class="plan-action-icon">{{item.inPlan ? '✓' : '+'}}</text>
+            <text>{{item.inPlan ? '已加入' : '报货'}}</text>
+          </view>
         </view>
-        <view class="product-info">
-          <view class="product-name line-clamp-2">{{item.name}}</view>
-          <view class="product-code line-clamp-1">{{item.code}}</view>
-          <view class="product-meta line-clamp-1">{{item.colorSeries.name}} · {{item.componentType.label}}</view>
-          <view class="product-spec line-clamp-1">{{item.specification || '查看详情'}}</view>
-          <view wx:if="{{item.packageText}}" class="product-pack line-clamp-1">包装 {{item.packageText}}</view>
+        <view class="result-info">
+          <view class="result-head-row">
+            <view class="result-code line-clamp-1">
+              <block wx:if="{{item.codeParts && item.codeParts.length > 0}}">
+                <text
+                  wx:for="{{item.codeParts}}"
+                  wx:for-item="part"
+                  wx:key="index"
+                  class="{{part.hit ? 'kw-hit' : ''}}"
+                >{{part.text}}</text>
+              </block>
+              <block wx:else>{{item.code}}</block>
+            </view>
+            <view wx:if="{{item.specification}}" class="result-spec-stack">
+              <view class="result-spec">
+                <block wx:if="{{item.specParts && item.specParts.length > 0}}">
+                  <text
+                    wx:for="{{item.specParts}}"
+                    wx:for-item="part"
+                    wx:key="index"
+                    class="{{part.hit ? 'kw-hit' : ''}}"
+                  >{{part.text}}</text>
+                </block>
+                <block wx:else>{{item.specification}}</block>
+              </view>
+            </view>
+          </view>
+          <view wx:if="{{item.name}}" class="result-name line-clamp-1">
+            <block wx:if="{{item.nameParts && item.nameParts.length > 0}}">
+              <text
+                wx:for="{{item.nameParts}}"
+                wx:for-item="part"
+                wx:key="index"
+                class="{{part.hit ? 'kw-hit' : ''}}"
+              >{{part.text}}</text>
+            </block>
+            <block wx:else>{{item.name}}</block>
+          </view>
+          <view wx:if="{{item.stockText && item.stockBadgeClass == 'out'}}" class="stock-note out">
+            {{item.stockText}}
+          </view>
+          <view wx:if="{{item.factTags.length > 0}}" class="result-meta">
+            <view wx:if="{{item.factTags.length > 0}}" class="result-fact {{item.factTags.length == 1 ? 'single' : ''}}">
+              <view
+                wx:for="{{item.factTags}}"
+                wx:key="label"
+                wx:for-item="fact"
+                class="fact-item"
+              >
+                <text class="fact-label">{{fact.label}}</text>
+                <text class="fact-value">{{fact.value}}</text>
+              </view>
+            </view>
+          </view>
         </view>
       </view>
+    </view>
+    <view wx:if="{{hasProducts && (loadMoreText || loadingMoreProducts)}}" class="load-more">
+      {{loadingMoreProducts ? '正在加载...' : loadMoreText}}
+    </view>
+    <view wx:if="{{hasProducts || planCount > 0}}" class="plan-entry" bindtap="onPlanTap">
+      <view class="plan-entry-icon"></view>
+      <text class="plan-entry-text">报货</text>
+      <text wx:if="{{planCount > 0}}" class="plan-count">{{planCount}}</text>
     </view>
   </block>
 
@@ -64,7 +136,7 @@
       <view class="state-text">{{emptyText}}</view>
     </view>
 
-    <view wx:else class="shelf">
+    <view wx:else class="shelf" catchtouchmove="noop">
       <scroll-view class="color-rail" scroll-y enhanced enable-flex>
         <view
           wx:for="{{visibleSeries}}"
@@ -80,7 +152,7 @@
       <scroll-view class="shelf-main" scroll-y enhanced enable-flex>
         <view class="hero-card">
           <image wx:if="{{bannerCoverUrl}}" class="hero-image" src="{{bannerCoverUrl}}" mode="aspectFill" />
-          <view wx:else class="hero-image hero-fallback">{{selectedSeriesName || '外墙瓷砖'}}</view>
+          <view wx:else class="hero-image hero-fallback"></view>
           <view class="hero-mask">
             <view class="hero-title">{{selectedSeriesName}}</view>
             <view class="hero-subtitle">{{selectedSeriesProductCount}} 款产品</view>
@@ -90,6 +162,21 @@
             <text>加载中</text>
           </view>
         </view>
+
+        <scroll-view wx:if="{{hasComponents}}" class="component-scroll" scroll-x enhanced>
+          <view class="component-row">
+            <view
+              wx:for="{{visibleComponents}}"
+              wx:key="id"
+              class="component-chip {{selectedComponentType == item.id ? 'active' : ''}}"
+              data-id="{{item.id}}"
+              bindtap="onComponentTap"
+            >
+              <text>{{item.label}}</text>
+              <text wx:if="{{item.productCount > 0}}" class="component-count">{{item.productCount}}</text>
+            </view>
+          </view>
+        </scroll-view>
 
         <view class="shelf-content {{shelfLoading ? 'muted' : ''}}">
           <view wx:if="{{!hasGroups}}" class="state-card slim">
@@ -102,36 +189,38 @@
               wx:for="{{groups}}"
               wx:key="id"
               wx:for-item="group"
-              class="group-card"
+              class="group-card {{group.componentTags.length == 0 ? 'compact' : ''}}"
               data-id="{{group.id}}"
+              data-kind="{{group.kind}}"
+              data-series-id="{{group.colorSeries.id}}"
+              data-component-count="{{group.componentCount}}"
+              data-first-component-id="{{group.firstComponentId}}"
               bindtap="onGroupTap"
             >
-              <view class="group-head">
-                <view class="group-title line-clamp-1">{{group.title}}</view>
-                <view class="group-summary">{{group.productCount}}款 · {{group.specificationCount}}种规格</view>
-              </view>
-
-              <view wx:if="{{group.sampleProducts.length > 0}}" class="product-mini-grid">
-                <view
-                  wx:for="{{group.sampleProducts}}"
-                  wx:key="id"
-                  wx:for-item="product"
-                  class="mini-product"
-                >
-                  <view class="mini-media">
-                    <image wx:if="{{product.thumbnailUrl}}" class="mini-image" src="{{product.thumbnailUrl}}" mode="aspectFill" lazy-load />
-                    <view wx:else class="mini-image fallback">暂无图片</view>
-                    <view class="mini-badge">共有 {{group.productCount}} 款</view>
-                  </view>
-                  <view class="mini-title line-clamp-1">{{group.componentType.label}}</view>
+              <view class="group-content">
+                <view class="group-head">
+                  <view class="group-title line-clamp-1">{{group.displayTitle}}</view>
+                  <view class="group-summary">{{group.displaySummary}}</view>
                 </view>
-              </view>
 
-              <view
-                wx:else
-                class="group-empty"
-              >
-                查看 {{group.productCount}} 款产品
+                <view wx:if="{{group.componentTags.length > 0}}" class="product-mini-grid">
+                  <view
+                    wx:for="{{group.componentTags}}"
+                    wx:key="id"
+                    wx:for-item="component"
+                    class="mini-product"
+                    data-id="{{group.colorSeries.id}}__{{component.id}}"
+                    catchtap="onComponentGroupTap"
+                  >
+                    <view class="mini-media">
+                      <image wx:if="{{component.coverUrl}}" class="mini-image" src="{{component.coverUrl}}" mode="aspectFit" lazy-load />
+                      <view wx:else class="mini-image fallback">暂无图片</view>
+                      <view class="mini-badge">共有 {{component.productCount || 0}} 款</view>
+                    </view>
+                    <view class="mini-title {{component.titleClass}}">{{component.label}}</view>
+                  </view>
+                </view>
+
               </view>
             </view>
           </view>

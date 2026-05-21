@@ -1,0 +1,8 @@
+<view class="page-header">
+  <view class="page-header__copy">
+    <view wx:if="{{eyebrow}}" class="page-header__eyebrow">{{eyebrow}}</view>
+    <view class="page-header__title">{{title}}</view>
+    <view wx:if="{{desc}}" class="page-header__desc">{{desc}}</view>
+  </view>
+  <slot name="actions" />
+</view>

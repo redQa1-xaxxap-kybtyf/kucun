@@ -1,6 +1,13 @@
 <view class="page">
   <view wx:if="{{loading}}" class="empty overlay">正在生成产品海报...</view>
-  <view wx:if="{{error}}" class="empty error overlay">{{error}}</view>
+  <view wx:if="{{error}}" class="error-panel overlay">
+    <view class="error-title">海报生成失败</view>
+    <view class="error-text">{{error}}</view>
+    <view class="error-actions">
+      <button class="retry-btn" bindtap="onRetryTap">重试</button>
+      <button class="back-btn" bindtap="onBackDetailTap">返回详情</button>
+    </view>
+  </view>
 
   <view class="poster-page {{loading || error ? 'muted' : ''}}">
     <view class="poster-frame">

@@ -2,72 +2,79 @@
   min-height: 100vh;
   padding: 24rpx;
   box-sizing: border-box;
-  background: #f4f6f5;
-  color: #101828;
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8rpx 2rpx 22rpx;
-}
-
-.eyebrow {
-  color: #667085;
-  font-size: 22rpx;
-  font-weight: 800;
-}
-
-.title {
-  margin-top: 6rpx;
-  color: #101828;
-  font-size: 40rpx;
-  font-weight: 900;
+  background: #f8f6f1;
+  color: #1f2328;
 }
 
 .search-card {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
   align-items: center;
   gap: 16rpx;
   height: 78rpx;
   padding: 0 20rpx;
-  border: 1rpx solid #d0d5dd;
-  border-radius: 8rpx;
+  border: 1rpx solid #e7e0d6;
+  border-radius: 12rpx;
   background: #fff;
+  box-shadow: 0 6rpx 18rpx rgba(15, 30, 40, 0.05);
 }
 
 .search-input {
   flex: 1;
   height: 78rpx;
-  color: #101828;
+  color: #1f2328;
   font-size: 27rpx;
 }
 
 .search-clear {
-  height: 52rpx;
-  padding: 0 12rpx;
-  border-radius: 8rpx;
-  background: #eef2f0;
-  color: #475467;
-  font-size: 22rpx;
-  font-weight: 900;
-  line-height: 52rpx;
+  height: 64rpx;
+  padding: 0 16rpx;
+  border-radius: 12rpx;
+  background: #efece4;
+  color: #4b4945;
+  font-size: 24rpx;
+  font-weight: 600;
+  line-height: 64rpx;
 }
 
 .notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
   margin-top: 18rpx;
   padding: 18rpx;
   border: 1rpx solid #f3b8a6;
-  border-radius: 8rpx;
+  border-radius: 12rpx;
   background: #fff4ef;
   color: #b42318;
   font-size: 24rpx;
 }
 
+.notice-text {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.4;
+}
+
+.notice-action {
+  width: 112rpx;
+  height: 60rpx;
+  flex: none;
+  margin: 0;
+  border-radius: 12rpx;
+  background: #b42318;
+  color: #fff;
+  font-size: 24rpx;
+  font-weight: 700;
+  line-height: 60rpx;
+}
+
 .empty {
   padding: 120rpx 20rpx;
-  color: #667085;
+  color: #73716d;
   font-size: 27rpx;
   text-align: center;
 }
@@ -80,16 +87,33 @@
 .inventory-card {
   margin-bottom: 14rpx;
   padding: 18rpx;
-  border: 1rpx solid #d0d5dd;
-  border-radius: 8rpx;
+  border: 1rpx solid #e7e0d6;
+  border-radius: 12rpx;
   background: #fff;
 }
 
 .card-head {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
   gap: 18rpx;
+}
+
+.card-thumb {
+  flex: none;
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 12rpx;
+  background: #efece4;
+  overflow: hidden;
+}
+
+.card-thumb.fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a8a195;
+  font-size: 22rpx;
+  font-weight: 500;
 }
 
 .product-main {
@@ -98,45 +122,54 @@
 }
 
 .product-name {
-  color: #101828;
-  font-size: 29rpx;
-  font-weight: 900;
+  color: #1f2328;
+  font-size: 30rpx;
+  font-weight: 700;
+  line-height: 1.3;
 }
 
 .product-code {
   margin-top: 8rpx;
-  color: #176b5b;
+  color: #27594f;
   font-family: monospace;
   font-size: 24rpx;
-  font-weight: 900;
+  font-weight: 700;
+}
+
+.product-spec {
+  margin-top: 8rpx;
+  color: #73716d;
+  font-size: 24rpx;
+  line-height: 1.35;
 }
 
 .stock {
+  flex: none;
   padding: 9rpx 14rpx;
-  border-radius: 8rpx;
+  border-radius: 12rpx;
   font-size: 22rpx;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .stock.ok {
-  background: #eaf5f1;
-  color: #176b5b;
+  background: #e6e9dd;
+  color: #27594f;
 }
 
 .stock.empty-stock {
-  background: #eef2f0;
-  color: #667085;
+  background: #efece4;
+  color: #73716d;
 }
 
 .spec {
   margin-top: 14rpx;
-  color: #667085;
+  color: #73716d;
   font-size: 24rpx;
 }
 
 .package-line {
   margin-top: 10rpx;
-  color: #475467;
+  color: #4b4945;
   font-size: 23rpx;
   font-weight: 700;
 }
@@ -150,15 +183,15 @@
 
 .meta-label,
 .quantity-label {
-  color: #667085;
+  color: #73716d;
   font-size: 22rpx;
 }
 
 .meta-value {
   margin-top: 6rpx;
-  color: #101828;
+  color: #1f2328;
   font-size: 25rpx;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .quantity-row {
@@ -170,33 +203,34 @@
 
 .quantity-item {
   padding: 16rpx 10rpx;
-  border-radius: 8rpx;
-  background: #f4f6f5;
+  border-radius: 12rpx;
+  background: #f8f6f1;
   text-align: center;
 }
 
 .quantity-item.strong {
-  background: #eaf5f1;
+  background: #e6e9dd;
 }
 
 .quantity-value {
-  color: #101828;
+  color: #1f2328;
   font-size: 32rpx;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .strong .quantity-value {
-  color: #176b5b;
+  color: #27594f;
 }
 
 .list-more {
   padding: 20rpx 0 8rpx;
-  color: #98a2b3;
+  color: #a8a195;
   font-size: 23rpx;
   font-weight: 700;
   text-align: center;
 }
 
-.search-clear::after {
+.search-clear::after,
+.notice-action::after {
   border: 0;
 }

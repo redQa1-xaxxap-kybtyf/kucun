@@ -10,14 +10,14 @@
     <view class="section-title">客户</view>
     <view wx:if="{{selectedCustomer}}" class="selected-box">
       <view>
-        <view class="selected-name">{{selectedCustomer.name}}</view>
-        <view class="selected-meta">{{selectedCustomer.phone || selectedCustomer.address || '已选择客户'}}</view>
+        <view class="selected-name">{{selectedCustomer.displayName}}</view>
+        <view class="selected-meta">{{selectedCustomer.displayMeta || '已选择客户'}}</view>
       </view>
     </view>
     <view class="search-card">
       <input
         class="search-input"
-        placeholder="输入客户名、电话"
+        placeholder="搜客户名 / 电话"
         value="{{customerSearch}}"
         confirm-type="search"
         bindinput="onCustomerSearchInput"
@@ -33,10 +33,12 @@
         data-id="{{item.id}}"
         bindtap="onCustomerTap"
       >
-        <view class="chip-name">{{item.name}}</view>
-        <view class="chip-meta">{{item.phone || item.address || '客户'}}</view>
+        <view class="chip-name">{{item.displayName}}</view>
+        <view class="chip-meta">{{item.displayMeta}}</view>
       </view>
     </view>
+    <view wx:if="{{loadingCustomers && customers.length == 0}}" class="empty compact">正在查找客户...</view>
+    <view wx:elif="{{!loadingCustomers && customers.length == 0}}" class="empty compact">没有找到客户</view>
   </view>
 
   <view class="section">
@@ -44,7 +46,7 @@
     <view class="search-card">
       <input
         class="search-input"
-        placeholder="输入产品编码、名称、规格"
+        placeholder="搜产品名 / 编码 / 规格"
         value="{{productSearch}}"
         confirm-type="search"
         bindinput="onProductSearchInput"
@@ -60,35 +62,53 @@
         data-id="{{item.id}}"
         bindtap="onProductTap"
       >
+        <image
+          wx:if="{{item.thumbnailUrl}}"
+          class="row-thumb"
+          src="{{item.thumbnailUrl}}"
+          mode="aspectFill"
+          lazy-load
+        />
+        <view wx:else class="row-thumb fallback">暂无图</view>
         <view class="product-main">
           <view class="product-name line-clamp-1">{{item.name}}</view>
           <view class="product-code">{{item.code}}</view>
+          <view wx:if="{{item.specification}}" class="product-spec line-clamp-1">{{item.specification}}</view>
         </view>
-        <view class="product-stock">可用 {{item.availableQuantity}}</view>
+        <view class="product-stock">{{item.availableText}}</view>
       </view>
     </view>
+    <view wx:elif="{{loadingProducts}}" class="empty compact">正在查找产品...</view>
+    <view wx:elif="{{productSearch}}" class="empty compact">没有找到相关产品</view>
+    <view wx:else class="empty compact">输入产品名、编码或规格后查找</view>
   </view>
 
   <view class="section">
     <view class="section-head">
       <view class="section-title">明细</view>
-      <view class="total">合计 ¥{{itemTotal}}</view>
+      <view class="total">
+        <text class="total-label">合计</text>
+        <text class="total-money">¥{{itemTotal}}</text>
+      </view>
     </view>
 
-    <view wx:if="{{items.length == 0}}" class="empty">请先搜索并添加产品</view>
+    <view wx:if="{{items.length == 0}}" class="empty">先搜索并添加产品</view>
     <view wx:else>
       <view wx:for="{{items}}" wx:key="productId" class="item-card">
         <view class="item-head">
-          <view>
+          <view class="item-main">
             <view class="item-name line-clamp-1">{{item.productName}}</view>
             <view class="item-code">{{item.productCode}}</view>
           </view>
           <button class="remove-btn" data-index="{{index}}" catchtap="onRemoveItem">删除</button>
         </view>
-        <view class="item-spec line-clamp-1">{{item.specification || '未填写规格'}} · 可用 {{item.availableQuantity}}</view>
+        <view class="item-spec line-clamp-1">
+          {{item.specification || '未填写规格'}} · {{item.availableText}}
+        </view>
+        <view wx:if="{{item.packageInfoText}}" class="item-pack-line">{{item.packageInfoText}}</view>
         <view class="input-row">
           <view class="mini-field">
-            <view class="mini-label">数量</view>
+            <view class="mini-label">{{item.quantityLabel || '数量（片）'}}</view>
             <input
               class="mini-input"
               type="digit"
@@ -97,9 +117,10 @@
               data-field="quantity"
               bindinput="onItemInput"
             />
+            <view wx:if="{{item.quantityHelperText}}" class="mini-hint">{{item.quantityHelperText}}</view>
           </view>
           <view class="mini-field">
-            <view class="mini-label">单价</view>
+            <view class="mini-label">{{item.priceLabel || '单价（元/片）'}}</view>
             <input
               class="mini-input"
               type="digit"
@@ -108,6 +129,9 @@
               data-field="unitPrice"
               bindinput="onItemInput"
             />
+            <view wx:if="{{item.subtotalText}}" class="mini-hint subtotal-hint">
+              小计 <text class="subtotal-money">{{item.subtotalText}}</text>
+            </view>
           </view>
         </view>
       </view>

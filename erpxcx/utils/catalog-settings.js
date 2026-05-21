@@ -3,6 +3,7 @@ const { request } = require('./request');
 function getCatalogSettings() {
   return request({
     url: '/api/miniprogram/catalog-settings',
+    requireAuth: true,
   });
 }
 
@@ -27,8 +28,21 @@ function updateProductCatalogDisplay(productId, display) {
   });
 }
 
+function updateProductCatalogDisplays(productIds, display) {
+  return request({
+    url: '/api/miniprogram/catalog-settings',
+    method: 'PATCH',
+    data: {
+      productIds,
+      display,
+    },
+    requireAuth: true,
+  });
+}
+
 module.exports = {
   getCatalogSettings,
   updateCatalogSettings,
   updateProductCatalogDisplay,
+  updateProductCatalogDisplays,
 };

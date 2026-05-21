@@ -1,4 +1,7 @@
 {
   "navigationBarTitleText": "查库存",
-  "enablePullDownRefresh": true
+  "enablePullDownRefresh": true,
+  "usingComponents": {
+    "page-header": "/components/page-header/index"
+  }
 }

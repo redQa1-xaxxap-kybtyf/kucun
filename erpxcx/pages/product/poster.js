@@ -1,4 +1,8 @@
 const { getProduct } = require('../../utils/catalog');
+const {
+  shouldRefreshCatalog,
+  withCatalogCacheBuster,
+} = require('../../utils/catalog-cache');
 
 const POSTER_WIDTH = 750;
 const POSTER_HEIGHT = 1180;
@@ -19,6 +23,15 @@ function getProductShareTitle(product) {
       .join('｜') ||
     '外墙罗马柱产品'
   );
+}
+
+function safeDecodeURIComponent(value) {
+  const text = String(value || '');
+  try {
+    return decodeURIComponent(text);
+  } catch (_error) {
+    return text;
+  }
 }
 
 function setFont(ctx, size, weight = 400) {
@@ -141,7 +154,7 @@ function drawPill(ctx, text, x, y) {
   setFont(ctx, 22, 700);
   const width = Math.ceil(ctx.measureText(text).width + 30);
   fillRoundRect(ctx, x, y, width, 42, 21, '#edf4f1');
-  ctx.fillStyle = '#1f5a50';
+  ctx.fillStyle = '#27594f';
   ctx.fillText(text, x + 15, y + 10);
   return x + width + 10;
 }
@@ -175,7 +188,7 @@ async function drawPoster(canvas, ctx, product) {
   const image = await loadCanvasImage(canvas, imageUrl);
 
   ctx.clearRect(0, 0, POSTER_WIDTH, POSTER_HEIGHT);
-  ctx.fillStyle = '#f4f6f5';
+  ctx.fillStyle = '#f8f6f1';
   ctx.fillRect(0, 0, POSTER_WIDTH, POSTER_HEIGHT);
   fillRoundRect(ctx, 36, 36, 678, 1108, 30, '#ffffff');
 
@@ -218,7 +231,7 @@ async function drawPoster(canvas, ctx, product) {
   );
   drawInfoCell(
     ctx,
-    '包装',
+    '包装片数',
     product.packageText || '未填写',
     64,
     gridY + 118,
@@ -256,6 +269,7 @@ Page({
 
   onLoad(options) {
     const system = wx.getSystemInfoSync();
+    const skipCache = shouldRefreshCatalog(this);
     const canvasStyleWidth = Math.min(system.windowWidth - 48, 360);
     const canvasStyleHeight = Math.round(
       (canvasStyleWidth * POSTER_HEIGHT) / POSTER_WIDTH
@@ -264,9 +278,9 @@ Page({
     this.setData({
       canvasStyleHeight,
       canvasStyleWidth,
-      productId: options.id || '',
+      productId: safeDecodeURIComponent(options.productId || options.id),
     });
-    this.loadProduct();
+    this.loadProduct({ skipCache });
   },
 
   onReady() {
@@ -302,9 +316,10 @@ Page({
 
   onShareAppMessage() {
     const product = this.data.product;
+    const productId = encodeURIComponent(this.data.productId);
     return {
       title: getProductShareTitle(product),
-      path: `/pages/product/detail?id=${this.data.productId}`,
+      path: `/pages/product/detail?productId=${productId}&id=${productId}`,
       imageUrl:
         product && product.thumbnailUrl ? product.thumbnailUrl : undefined,
     };
@@ -312,19 +327,23 @@ Page({
 
   onShareTimeline() {
     const product = this.data.product;
+    const productId = encodeURIComponent(this.data.productId);
     return {
       title: getProductShareTitle(product),
-      query: `id=${this.data.productId}`,
+      query: `productId=${productId}&id=${productId}`,
       imageUrl:
         product && product.thumbnailUrl ? product.thumbnailUrl : undefined,
     };
   },
 
-  async loadProduct() {
+  async loadProduct(options = {}) {
     this.setData({ error: '', loading: true });
 
     try {
-      const product = await getProduct(this.data.productId);
+      const product = await getProduct(
+        this.data.productId,
+        withCatalogCacheBuster({}, options.skipCache)
+      );
       this.setData({ product, productId: product.id || this.data.productId });
       this.tryRenderPoster();
     } catch (error) {
@@ -376,6 +395,8 @@ Page({
   },
 
   async onSavePoster() {
+    if (this.data.saving) return;
+
     if (!this.data.posterPath) {
       await this.tryRenderPoster();
     }
@@ -409,6 +430,35 @@ Page({
       complete: () => {
         this.setData({ saving: false });
       },
+    });
+  },
+
+  onRetryTap() {
+    this.setData({ error: '', posterPath: '' });
+
+    if (!this.data.product) {
+      this.loadProduct({ skipCache: true });
+      return;
+    }
+
+    if (!this.canvas || !this.ctx) {
+      this.setData({ loading: true });
+      this.initCanvas();
+      return;
+    }
+
+    this.tryRenderPoster();
+  },
+
+  onBackDetailTap() {
+    const productId = encodeURIComponent(this.data.productId || '');
+    if (getCurrentPages().length > 1) {
+      wx.navigateBack();
+      return;
+    }
+
+    wx.redirectTo({
+      url: `/pages/product/detail?productId=${productId}&id=${productId}`,
     });
   },
 });

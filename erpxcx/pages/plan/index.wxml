@@ -9,80 +9,102 @@
   </view>
 
   <view wx:if="{{!hasItems}}" class="empty">
-    <view class="empty-title">暂无产品</view>
-    <view class="empty-text">从产品列表或详情页加入报货计划。</view>
-    <button class="home-btn" bindtap="onBackHomeTap">去选产品</button>
+    <view class="empty-art"></view>
+    <view class="empty-title">报货计划是空的</view>
+    <view class="empty-text">从瓷砖列表或详情页加入产品到这里，开单更快。</view>
+    <button class="home-btn" bindtap="onBackHomeTap">去挑瓷砖</button>
   </view>
 
-  <view wx:else class="plan-list">
-    <view
-      wx:for="{{planItems}}"
-      wx:key="id"
-      class="plan-card"
-    >
-      <view class="card-main">
-        <image wx:if="{{item.thumbnailUrl}}" class="cover" src="{{item.thumbnailUrl}}" mode="aspectFit" bindtap="onProductTap" data-id="{{item.id}}" />
-        <view wx:else class="cover fallback" bindtap="onProductTap" data-id="{{item.id}}">暂无图片</view>
-        <view class="info">
-          <view class="code line-clamp-1" bindtap="onProductTap" data-id="{{item.id}}">{{item.code}}</view>
-          <view class="name">{{item.name}}</view>
-          <view class="meta line-clamp-1">{{item.specification || '未填写规格'}}</view>
-          <view wx:if="{{item.packageText}}" class="meta line-clamp-1">包装 {{item.packageText}}</view>
-          <view wx:if="{{item.weightText}}" class="meta line-clamp-1">重量 {{item.weightText}}</view>
+  <block wx:else>
+    <view class="contact-card">
+      <view class="contact-head">
+        <view>
+          <view class="contact-title">提交报货单</view>
+          <view class="contact-desc">后台收到后会按联系电话回访确认。</view>
         </view>
+        <view wx:if="{{lastRequestNumber}}" class="request-number">{{lastRequestNumber}}</view>
       </view>
-
-      <view class="edit-row">
-        <view wx:if="{{item.canSwitchUnit}}" class="unit-switch">
-          <view
-            class="unit-option {{item.quantityUnit == 'package' ? 'active' : ''}}"
-            data-id="{{item.id}}"
-            data-unit="package"
-            bindtap="onQuantityUnitTap"
-          >件</view>
-          <view
-            class="unit-option {{item.quantityUnit == 'sheet' ? 'active' : ''}}"
-            data-id="{{item.id}}"
-            data-unit="sheet"
-            bindtap="onQuantityUnitTap"
-          >片</view>
-        </view>
-        <view wx:else class="unit-pill">{{item.quantityUnitLabel}}</view>
-        <view class="quantity-control">
-          <view class="step-btn" data-id="{{item.id}}" bindtap="onQuantityMinus">-</view>
-          <input
-            class="quantity-input"
-            type="number"
-            value="{{item.quantity}}"
-            data-id="{{item.id}}"
-            bindblur="onQuantityInput"
-          />
-          <view class="step-btn" data-id="{{item.id}}" bindtap="onQuantityPlus">+</view>
-        </view>
-        <button class="remove-btn" data-id="{{item.id}}" bindtap="onRemoveTap">删除</button>
-      </view>
-
-      <view
-        wx:if="{{item.packageInfoText || item.convertedPiecesText || item.itemWeightText}}"
-        class="plan-stats"
-      >
-        <text wx:if="{{item.packageInfoText}}">{{item.packageInfoText}}</text>
-        <text wx:if="{{item.convertedPiecesText}}">{{item.convertedPiecesText}}</text>
-        <text wx:if="{{item.itemWeightText}}">重量{{item.itemWeightText}}</text>
-      </view>
-
-      <input
-        class="remark-input"
-        placeholder="备注：如装车顺序、客户要求"
-        value="{{item.remark}}"
-        data-id="{{item.id}}"
-        bindblur="onRemarkInput"
-      />
+      <input class="contact-input" placeholder="客户名称（选填）" value="{{customerName}}" data-field="customerName" bindinput="onContactInput" />
+      <input class="contact-input" type="tel" placeholder="联系电话（必填）" value="{{customerPhone}}" data-field="customerPhone" bindinput="onContactInput" />
+      <input class="contact-input" placeholder="送货地址（选填）" value="{{contactAddress}}" data-field="contactAddress" bindinput="onContactInput" />
+      <textarea class="contact-textarea" placeholder="整单备注（选填）" value="{{submitRemarks}}" data-field="submitRemarks" bindinput="onContactInput" maxlength="1000"></textarea>
+      <button class="submit-btn" loading="{{submitting}}" disabled="{{submitting}}" bindtap="onSubmitGoodsRequestTap">{{submitting ? '提交中' : '提交报货单'}}</button>
     </view>
-  </view>
+
+    <view class="plan-list">
+      <view
+        wx:for="{{planItems}}"
+        wx:key="id"
+        class="plan-card"
+      >
+        <view class="card-main">
+          <image wx:if="{{item.thumbnailUrl}}" class="cover" src="{{item.thumbnailUrl}}" mode="aspectFit" lazy-load bindtap="onProductTap" data-id="{{item.id}}" />
+          <view wx:else class="cover fallback" bindtap="onProductTap" data-id="{{item.id}}">暂无图片</view>
+          <view class="info">
+            <view class="code line-clamp-1" bindtap="onProductTap" data-id="{{item.id}}">{{item.code}}</view>
+            <view class="name">{{item.name}}</view>
+            <view class="meta line-clamp-1">{{item.specification || '未填写规格'}}</view>
+            <view wx:if="{{item.packageText}}" class="meta line-clamp-1">包装片数 {{item.packageText}}</view>
+            <view wx:if="{{item.weightText}}" class="meta line-clamp-1">重量 {{item.weightText}}</view>
+          </view>
+        </view>
+
+        <view class="edit-row">
+          <view wx:if="{{item.canSwitchUnit}}" class="unit-switch">
+            <view
+              class="unit-option {{item.quantityUnit == 'package' ? 'active' : ''}}"
+              data-id="{{item.id}}"
+              data-unit="package"
+              bindtap="onQuantityUnitTap"
+            >件</view>
+            <view
+              class="unit-option {{item.quantityUnit == 'sheet' ? 'active' : ''}}"
+              data-id="{{item.id}}"
+              data-unit="sheet"
+              bindtap="onQuantityUnitTap"
+            >片</view>
+          </view>
+          <view wx:else class="unit-pill">{{item.quantityUnitLabel}}</view>
+          <view class="quantity-control">
+            <view class="step-btn" data-id="{{item.id}}" bindtap="onQuantityMinus">-</view>
+            <input
+              class="quantity-input"
+              type="digit"
+              value="{{item.quantity}}"
+              data-id="{{item.id}}"
+              data-unit="{{item.quantityUnit}}"
+              bindinput="onQuantityTyping"
+              bindblur="onQuantityInput"
+            />
+            <view class="step-btn" data-id="{{item.id}}" bindtap="onQuantityPlus">+</view>
+          </view>
+          <view class="remove-btn" data-id="{{item.id}}" bindtap="onRemoveTap">删除</view>
+        </view>
+
+        <view
+          wx:if="{{item.packageInfoText || item.convertedPiecesText || item.convertedPackagesText || item.itemWeightText}}"
+          class="plan-stats"
+        >
+          <text wx:if="{{item.packageInfoText}}">{{item.packageInfoText}}</text>
+          <text wx:if="{{item.convertedPiecesText}}">{{item.convertedPiecesText}}</text>
+          <text wx:if="{{item.convertedPackagesText}}">{{item.convertedPackagesText}}</text>
+          <text wx:if="{{item.itemWeightText}}">重量{{item.itemWeightText}}</text>
+        </view>
+
+        <input
+          class="remark-input"
+          placeholder="可填装车顺序或客户要求"
+          value="{{item.remark}}"
+          data-id="{{item.id}}"
+          bindblur="onRemarkInput"
+        />
+      </view>
+    </view>
+  </block>
 
   <view wx:if="{{hasItems}}" class="bottom-actions safe-bottom">
-    <button class="secondary" bindtap="onBackHomeTap">继续选</button>
-    <button class="primary" bindtap="onCopyPlanTap">复制报货计划</button>
+    <button class="secondary" bindtap="onBackHomeTap">继续挑</button>
+    <button class="secondary" bindtap="onCopySimplePlanTap">简单复制</button>
+    <button class="primary" bindtap="onCopyPlanTap">完整复制</button>
   </view>
 </view>
