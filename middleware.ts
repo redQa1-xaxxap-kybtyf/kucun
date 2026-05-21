@@ -12,7 +12,9 @@ export async function middleware(request: NextRequest) {
   const url = request.nextUrl;
   const pathname = url.pathname;
   const configuredAuthOrigin =
-    process.env.NODE_ENV === 'production' ? process.env.NEXTAUTH_URL : undefined;
+    process.env.NODE_ENV === 'production'
+      ? process.env.NEXTAUTH_URL
+      : undefined;
   const hostname = (
     getRequestHost(request, {
       fallbackOrigin: configuredAuthOrigin,
@@ -23,6 +25,9 @@ export async function middleware(request: NextRequest) {
     hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
 
   const isAuthApi = pathname.startsWith('/api/auth');
+  const isProtectedAuthApi =
+    pathname === '/api/auth/update-password' ||
+    pathname.startsWith('/api/auth/update-password/');
   const isAuthPage = pathname.startsWith('/auth/');
 
   // 生产环境下，对认证相关路由强制要求 HTTPS
@@ -40,7 +45,7 @@ export async function middleware(request: NextRequest) {
   // 1. 执行身份验证中间件
   let response: Response;
 
-  if (isAuthApi) {
+  if (isAuthApi && !isProtectedAuthApi) {
     // 对 NextAuth API 不做登录检查，只追加安全头
     response = NextResponse.next();
   } else {

@@ -2,6 +2,11 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { decode, getToken } from 'next-auth/jwt';
 
 import { env } from './env';
+import {
+  AUTH_VERIFICATION_HEADER,
+  clearAuthHeaders,
+  getAuthVerificationHeaderValue,
+} from './auth/trusted-headers';
 
 // 内部调用密钥（与 verify-token API 保持一致）
 const INTERNAL_API_KEY = `internal_${env.NEXTAUTH_SECRET?.slice(0, 16)}`;
@@ -57,6 +62,12 @@ const protectedPaths = [
   '/api/miniprogram', // 小程序公开 GET + 管理端写入
   '/api/system', // 系统模式等全局配置 API
   '/api/data-management', // 数据管理（预览/执行/任务）
+  '/api/logs',
+  '/api/mobile',
+  '/api/column/favorites',
+  '/api/performance',
+  '/api/batches',
+  '/api/auth/update-password',
 ];
 
 // 需要管理员权限的路径
@@ -72,12 +83,25 @@ const adminOnlyPaths = [
 const publicPaths = [
   '/auth/signin',
   '/auth/error',
-  '/api/auth',
   '/api/captcha',
   '/api/address', // 地址数据 API（省市区）
   '/api/internal', // 内部API（仅供middleware使用）
   '/api/uploads', // 本地上传文件读取（供 Web/小程序图片展示）
 ];
+
+function isProtectedAuthApiPath(pathname: string): boolean {
+  return (
+    pathname === '/api/auth/update-password' ||
+    pathname.startsWith('/api/auth/update-password/')
+  );
+}
+
+function isPublicAuthApiPath(pathname: string): boolean {
+  return (
+    pathname === '/api/auth' ||
+    (pathname.startsWith('/api/auth/') && !isProtectedAuthApiPath(pathname))
+  );
+}
 
 // 检查路径是否需要认证
 function isProtectedPath(pathname: string): boolean {
@@ -91,6 +115,10 @@ function isAdminOnlyPath(pathname: string): boolean {
 
 // 检查路径是否为公开路径
 function isPublicPath(pathname: string): boolean {
+  if (isPublicAuthApiPath(pathname)) {
+    return true;
+  }
+
   // 其他路径使用 startsWith 匹配
   return publicPaths.some(path => pathname.startsWith(path));
 }
@@ -99,13 +127,19 @@ function isPublicPath(pathname: string): boolean {
 // 注意：仅放行 /api/miniprogram/* 受控聚合接口，避免带 x-client-from
 // 头的未登录请求直接读取后台 /api/products、/api/inventory 等内部数据。
 function isMiniProgramPublicApiPath(pathname: string, method: string): boolean {
+  if (
+    pathname === '/api/miniprogram/goods-requests' &&
+    ['GET', 'POST'].includes(method)
+  ) {
+    return true;
+  }
+
   if (method !== 'GET') {
     return false;
   }
 
   if (
     pathname === '/api/miniprogram/catalog' ||
-    pathname === '/api/miniprogram/catalog-settings' ||
     /^\/api\/miniprogram\/groups\/[^/]+$/.test(pathname) ||
     /^\/api\/miniprogram\/products\/[^/]+$/.test(pathname)
   ) {
@@ -158,7 +192,8 @@ export async function authMiddleware(request: NextRequest) {
   if (isApiRoute) {
     const clientFrom = request.headers.get('x-client-from');
     if (
-      (clientFrom === 'mini-program' || pathname.startsWith('/api/miniprogram')) &&
+      (clientFrom === 'mini-program' ||
+        pathname.startsWith('/api/miniprogram')) &&
       isMiniProgramPublicApiPath(pathname, method)
     ) {
       return NextResponse.next();
@@ -331,6 +366,7 @@ export async function authMiddleware(request: NextRequest) {
     // 创建新的请求头，包含完整的用户信息
     // 注意：HTTP Headers 只支持 ASCII 字符，中文等非 ASCII 字符需要进行 URL 编码
     const requestHeaders = new Headers(request.headers);
+    clearAuthHeaders(requestHeaders);
     requestHeaders.set('x-user-id', token.sub || '');
     requestHeaders.set('x-user-email', token.email || '');
     requestHeaders.set(
@@ -341,6 +377,10 @@ export async function authMiddleware(request: NextRequest) {
     requestHeaders.set('x-user-role', token.role || 'user');
     requestHeaders.set('x-user-status', token.status || 'active');
     requestHeaders.set('x-session-id', token.sessionId || '');
+    requestHeaders.set(
+      AUTH_VERIFICATION_HEADER,
+      getAuthVerificationHeaderValue()
+    );
 
     // 使用新的请求头创建响应，并确保设置 CSRF Token Cookie（双提交 Cookie 模式）
     const response = NextResponse.next({

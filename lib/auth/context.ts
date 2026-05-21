@@ -12,6 +12,7 @@
 import type { NextRequest } from 'next/server';
 
 import { safeAuth } from '@/lib/auth';
+import { hasTrustedAuthHeaders } from '@/lib/auth/trusted-headers';
 
 // ==================== 类型定义 ====================
 
@@ -66,6 +67,13 @@ export interface ApiAuthResult {
  * ```
  */
 export function getApiAuthContext(request: NextRequest): ApiAuthResult {
+  if (!hasTrustedAuthHeaders(request.headers)) {
+    return {
+      success: false,
+      error: '未授权访问：认证来源无效',
+    };
+  }
+
   const userId = request.headers.get('x-user-id');
   const username = request.headers.get('x-user-username');
   const userRole = request.headers.get('x-user-role');

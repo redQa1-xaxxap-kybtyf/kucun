@@ -378,6 +378,7 @@ export const authOptions: NextAuthOptions = {
           await registerUserSession({
             userId: token.id,
             sessionId,
+            sessionScope: 'web',
             expiresAtMs: expiresAtSeconds * 1000,
             maxSessions: getMaxConcurrentSessionsForRole(token.role),
           });

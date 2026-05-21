@@ -283,6 +283,7 @@ export async function POST(request: NextRequest) {
       await registerUserSession({
         userId: user.id,
         sessionId,
+        sessionScope: 'mini-program',
         expiresAtMs,
         maxSessions: getMaxConcurrentSessionsForRole(user.role),
       });
