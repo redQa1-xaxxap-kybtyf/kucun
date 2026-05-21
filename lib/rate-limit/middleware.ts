@@ -5,6 +5,7 @@
 
 import type { NextRequest } from 'next/server';
 
+import { hasTrustedAuthHeaders } from '@/lib/auth/trusted-headers';
 import { logger } from '@/lib/logger';
 
 import { RATE_LIMIT_ENABLED, RateLimitType } from './config';
@@ -31,7 +32,7 @@ export interface RateLimitResponse {
 export function getIdentifier(request: NextRequest): string {
   // 1. 优先使用用户ID（已认证用户）
   const userId = request.headers.get('x-user-id');
-  if (userId) {
+  if (userId && hasTrustedAuthHeaders(request.headers)) {
     return `user:${userId}`;
   }
 
