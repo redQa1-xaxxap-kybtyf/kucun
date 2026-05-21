@@ -45,6 +45,7 @@ const AddTemporaryProductDialog = dynamic(
 
 export function SmartProductSearch(props: SmartProductSearchProps) {
   const isMobile = useIsMobile();
+  const variant: 'mobile' | 'desktop' = isMobile ? 'mobile' : 'desktop';
   const {
     open,
     setOpen: setPopoverOpen,
@@ -94,9 +95,7 @@ export function SmartProductSearch(props: SmartProductSearchProps) {
     };
 
     try {
-      // ✅ 调用onBlur,可能返回void或Promise<void>
       const result = onBlur();
-      // ✅ 检查是否为Promise,如果是则添加错误处理
       if (
         result !== undefined &&
         typeof (result as Promise<unknown>).catch === 'function'
@@ -146,7 +145,7 @@ export function SmartProductSearch(props: SmartProductSearchProps) {
               placeholder={placeholder}
               simple={simple}
               disabled={disabled}
-              className={className}
+              className={cn('min-h-11', className)}
               onBlur={notifyBlur}
             />
           </SheetTrigger>
@@ -154,23 +153,40 @@ export function SmartProductSearch(props: SmartProductSearchProps) {
             side="bottom"
             className="flex h-[85vh] flex-col gap-0 rounded-t-3xl p-0"
           >
-            <SheetHeader className="border-b px-4 py-3 text-left">
-              <SheetTitle>选择产品</SheetTitle>
-            </SheetHeader>
-            <SmartProductSearchPanel
-              searchValue={searchValue}
-              onSearchValueChange={handleSearchValueChange}
-              isSearchingResults={isSearchingResults}
-              hasResults={hasResults}
-              filteredProducts={filteredProducts}
-              selectedValue={props.value}
-              searchQuery={displaySearchValue}
-              onSelectProduct={handleProductSelectWithBlur}
-              onSelectBatch={handleBatchSelectWithBlur}
-              allowTemporaryProducts={allowTemporaryProducts}
-              onAddTemporaryProduct={handleAddTemporaryProduct}
-              listClassName="max-h-none flex-1"
-            />
+            <Command shouldFilter={false} className="flex h-full flex-col">
+              <SheetHeader className="gap-2 border-b bg-background px-4 pb-3 pt-4 text-left">
+                <SheetTitle className="text-base">选择产品</SheetTitle>
+                <CommandInput
+                  placeholder="输入产品名称、编码或规格搜索..."
+                  value={searchValue}
+                  onValueChange={handleSearchValueChange}
+                  className="h-12"
+                />
+              </SheetHeader>
+              <CommandList className="max-h-none flex-1">
+                {isSearchingResults ? <ProductSearchLoadingIndicator /> : null}
+                {hasResults ? (
+                  <ProductSearchResults
+                    products={filteredProducts}
+                    selectedValue={props.value}
+                    searchQuery={displaySearchValue}
+                    onSelectProduct={handleProductSelectWithBlur}
+                    onSelectBatch={handleBatchSelectWithBlur}
+                    variant={variant}
+                  />
+                ) : (
+                  <CommandEmpty>
+                    <ProductSearchEmptyState
+                      searchValue={displaySearchValue}
+                      isSearching={isSearchingResults}
+                      allowTemporaryProducts={allowTemporaryProducts}
+                      onAddTemporaryProduct={handleAddTemporaryProduct}
+                      variant={variant}
+                    />
+                  </CommandEmpty>
+                )}
+              </CommandList>
+            </Command>
           </SheetContent>
         </Sheet>
       ) : (
@@ -200,6 +216,7 @@ export function SmartProductSearch(props: SmartProductSearchProps) {
               onSelectBatch={handleBatchSelectWithBlur}
               allowTemporaryProducts={allowTemporaryProducts}
               onAddTemporaryProduct={handleAddTemporaryProduct}
+              variant={variant}
             />
           </PopoverContent>
         </Popover>
@@ -282,6 +299,7 @@ interface SmartProductSearchPanelProps {
   allowTemporaryProducts: boolean;
   onAddTemporaryProduct: () => void;
   listClassName?: string;
+  variant: 'desktop' | 'mobile';
 }
 
 function SmartProductSearchPanel({
@@ -297,6 +315,7 @@ function SmartProductSearchPanel({
   allowTemporaryProducts,
   onAddTemporaryProduct,
   listClassName,
+  variant,
 }: SmartProductSearchPanelProps) {
   return (
     <Command shouldFilter={false} className="flex h-full flex-col">
@@ -315,6 +334,7 @@ function SmartProductSearchPanel({
             searchQuery={searchQuery}
             onSelectProduct={onSelectProduct}
             onSelectBatch={onSelectBatch}
+            variant={variant}
           />
         ) : (
           <CommandEmpty>
@@ -323,6 +343,7 @@ function SmartProductSearchPanel({
               isSearching={isSearchingResults}
               allowTemporaryProducts={allowTemporaryProducts}
               onAddTemporaryProduct={onAddTemporaryProduct}
+              variant={variant}
             />
           </CommandEmpty>
         )}

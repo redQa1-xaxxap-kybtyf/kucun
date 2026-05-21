@@ -23,6 +23,7 @@ interface ProductSearchResultsProps {
   searchQuery: string;
   onSelectProduct: (productId: string) => void;
   onSelectBatch: (productId: string, batchNumber: string) => void;
+  variant?: 'desktop' | 'mobile';
 }
 
 export function ProductSearchResults({
@@ -31,6 +32,7 @@ export function ProductSearchResults({
   searchQuery,
   onSelectProduct,
   onSelectBatch,
+  variant = 'desktop',
 }: ProductSearchResultsProps) {
   const highlightTokens = React.useMemo(
     () => buildHighlightTokens(searchQuery),
@@ -47,6 +49,7 @@ export function ProductSearchResults({
           onSelectProduct={onSelectProduct}
           onSelectBatch={onSelectBatch}
           highlightTokens={highlightTokens}
+          variant={variant}
         />
       ))}
     </CommandGroup>
@@ -59,10 +62,8 @@ interface ProductSearchResultItemProps {
   onSelectProduct: (productId: string) => void;
   onSelectBatch: (productId: string, batchNumber: string) => void;
   highlightTokens: string[];
+  variant: 'desktop' | 'mobile';
 }
-
-const productSearchResultItemClassName =
-  'flex items-start justify-between gap-4 p-4';
 
 const ProductSearchResultItem = React.memo<ProductSearchResultItemProps>(
   ({
@@ -71,14 +72,15 @@ const ProductSearchResultItem = React.memo<ProductSearchResultItemProps>(
     onSelectProduct,
     onSelectBatch,
     highlightTokens,
+    variant,
   }) => {
+    const isMobile = variant === 'mobile';
     const specification = React.useMemo(
       () => formatProductSpecification(product.specification),
       [product.specification]
     );
     const piecesPerUnit = product.piecesPerUnit ?? 0;
 
-    // 检查是否有多个批次
     const batches = React.useMemo(() => {
       const inventoryBatches = product.inventory?.batches ?? [];
       const batchSpecs = product.batchSpecs ?? [];
@@ -117,7 +119,6 @@ const ProductSearchResultItem = React.memo<ProductSearchResultItemProps>(
 
     const isMultipleBatches = batches.length > 1;
 
-    // 库存显示逻辑：多批次只显示片数，单批次或无批次显示件数+片数
     const availableDisplay = React.useMemo(() => {
       const availableQty = product.inventory?.availableInventory ?? 0;
       if (isMultipleBatches) {
@@ -157,12 +158,62 @@ const ProductSearchResultItem = React.memo<ProductSearchResultItemProps>(
       [product, specification]
     );
 
+    const showTotal =
+      product.inventory?.totalInventory !==
+      product.inventory?.availableInventory;
+
+    // 移动端 + 多批次：卡片本身不响应点击，仅批次按钮可点
+    const handleSelect =
+      isMobile && isMultipleBatches ? () => {} : () => onSelectProduct(product.id);
+
+    if (isMobile) {
+      return (
+        <CommandItem
+          value={renderedKeywords.join(' ')}
+          keywords={renderedKeywords}
+          onSelect={handleSelect}
+          className={cn(
+            'flex flex-col items-stretch gap-2 p-4',
+            isMultipleBatches && 'cursor-default data-[selected=true]:bg-transparent'
+          )}
+        >
+          <ProductMobileHeader
+            product={product}
+            highlightTokens={highlightTokens}
+          />
+          {specification && (
+            <div className="text-xs text-gray-600">
+              规格 {renderHighlightedText(specification, highlightTokens)}
+              {piecesPerUnit > 0 && (
+                <span className="text-gray-400"> · 每件 {piecesPerUnit} 片</span>
+              )}
+            </div>
+          )}
+          <ProductMobileInventoryRow
+            availableDisplay={availableDisplay}
+            totalDisplay={totalDisplay}
+            hasInventory={Boolean(product.inventory)}
+            showTotal={showTotal}
+          />
+          {batches.length > 0 && (
+            <ProductBatchList
+              productId={product.id}
+              batches={batches}
+              piecesPerUnit={piecesPerUnit}
+              onSelectBatch={onSelectBatch}
+              variant="mobile"
+            />
+          )}
+        </CommandItem>
+      );
+    }
+
     return (
       <CommandItem
         value={renderedKeywords.join(' ')}
         keywords={renderedKeywords}
-        onSelect={() => onSelectProduct(product.id)}
-        className={productSearchResultItemClassName}
+        onSelect={handleSelect}
+        className="flex items-start justify-between gap-4 p-4"
       >
         <ProductResultInfo
           product={product}
@@ -177,10 +228,7 @@ const ProductSearchResultItem = React.memo<ProductSearchResultItemProps>(
           availableDisplay={availableDisplay}
           totalDisplay={totalDisplay}
           hasInventory={Boolean(product.inventory)}
-          showTotal={
-            product.inventory?.totalInventory !==
-            product.inventory?.availableInventory
-          }
+          showTotal={showTotal}
         />
       </CommandItem>
     );
@@ -188,6 +236,81 @@ const ProductSearchResultItem = React.memo<ProductSearchResultItemProps>(
 );
 
 ProductSearchResultItem.displayName = 'ProductSearchResultItem';
+
+interface ProductMobileHeaderProps {
+  product: ProductWithInventory;
+  highlightTokens: string[];
+}
+
+function ProductMobileHeader({
+  product,
+  highlightTokens,
+}: ProductMobileHeaderProps) {
+  const highlightedCode = React.useMemo(
+    () => renderHighlightedText(product.code, highlightTokens),
+    [highlightTokens, product.code]
+  );
+  const highlightedName = React.useMemo(
+    () => renderHighlightedText(product.name, highlightTokens),
+    [highlightTokens, product.name]
+  );
+
+  return (
+    <div className="flex items-center gap-2">
+      {product.code && (
+        <Badge
+          variant="outline"
+          className="border-[hsl(var(--color-primary-light))] bg-[hsl(var(--color-primary-light))] shrink-0 px-2 py-0.5 font-mono text-xs font-bold text-[hsl(var(--color-primary))]"
+        >
+          {highlightedCode}
+        </Badge>
+      )}
+      <span className="min-w-0 flex-1 truncate text-sm font-semibold text-gray-900">
+        {highlightedName}
+      </span>
+      {product.status === 'inactive' && (
+        <Badge variant="secondary" className="shrink-0 text-[11px]">
+          停用
+        </Badge>
+      )}
+    </div>
+  );
+}
+
+interface ProductMobileInventoryRowProps {
+  availableDisplay: string;
+  totalDisplay: string;
+  hasInventory: boolean;
+  showTotal: boolean;
+}
+
+function ProductMobileInventoryRow({
+  availableDisplay,
+  totalDisplay,
+  hasInventory,
+  showTotal,
+}: ProductMobileInventoryRowProps) {
+  if (!hasInventory) {
+    return <div className="text-xs text-gray-400">无库存信息</div>;
+  }
+
+  return (
+    <div className="grid grid-cols-2 gap-2 border-t border-gray-100 pt-2 text-xs">
+      <div className="flex flex-col">
+        <span className="text-gray-500">可用</span>
+        <span className="font-semibold text-emerald-600 tabular-nums">
+          {availableDisplay}
+        </span>
+      </div>
+      <div className="flex flex-col text-right">
+        <span className="text-gray-500">{showTotal ? '总量' : ''}</span>
+        <span className="font-medium text-gray-700 tabular-nums">
+          {showTotal ? totalDisplay : ''}
+        </span>
+      </div>
+    </div>
+  );
+}
 
 interface ProductResultInfoProps {
   product: ProductWithInventory;

@@ -178,9 +178,6 @@ describe('sales order mobile pickers', () => {
 
     expect(screen.getByText('选择产品')).toBeInTheDocument();
     expect(
-      screen.getByText('支持按编码、名称、规格搜索，也可以直接补录临时产品。')
-    ).toBeInTheDocument();
-    expect(
       screen.getByPlaceholderText('输入产品名称、编码或规格搜索...')
     ).toBeInTheDocument();
   });
@@ -207,7 +204,7 @@ describe('sales order mobile pickers', () => {
     expect(sheetContent).toHaveTextContent('共 2 个可用批次');
     expect(screen.getByPlaceholderText('搜索批次号...')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('BATCH-002'));
+    fireEvent.click(screen.getByRole('option', { name: /BATCH\s*-002/ }));
 
     expect(onValueChange).toHaveBeenCalledWith('BATCH-002');
   });
