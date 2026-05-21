@@ -73,7 +73,8 @@ export function getInventorySortModeLabel(
   );
 }
 
-export const INVENTORY_SEARCH_HINT = '可直接搜索产品编码、名称、批次号或库位';
+export const INVENTORY_SEARCH_HINT =
+  '可直接搜索产品编码、名称、规格、批次号或库位';
 
 export const INVENTORY_FILTER_CONFIG = {
   filters: [
@@ -95,7 +96,7 @@ export const INVENTORY_FILTER_CONFIG = {
       width: 'w-[140px]' as const,
     },
   ],
-  searchPlaceholder: '搜索产品名称、编码、批次或库位...',
+  searchPlaceholder: '搜索产品名称、编码、规格、批次或库位...',
   dateRangeLabel: '更新时间',
   dateRangePlaceholder: '选择更新时间范围',
 };
