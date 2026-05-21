@@ -163,6 +163,7 @@ export interface BatchInboundCreateResponse {
 export interface UpdateInboundRequest {
   quantity?: number;
   unitCost?: number;
+  batchNumber?: string;
   reason?: InboundReason;
   remarks?: string;
 }

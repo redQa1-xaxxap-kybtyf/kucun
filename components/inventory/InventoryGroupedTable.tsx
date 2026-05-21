@@ -29,6 +29,8 @@ import { getInventoryStatus } from '@/lib/types/inventory-status';
 import { PRODUCT_UNIT_LABELS } from '@/lib/types/product';
 import { formatCostPrice } from '@/lib/utils/cost-price';
 import { formatCurrency, formatCurrencyCompact } from '@/lib/utils/format';
+import { shouldBypassImageOptimization } from '@/lib/utils/image';
+import { formatInventoryBatchBadgeLabel } from '@/lib/utils/inventory-group-display';
 import { groupInventoriesByProductCode } from '@/lib/utils/inventory-product-grouping';
 import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 
@@ -204,6 +206,9 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     zeroDisplay: '0',
                   });
                 })();
+                const batchBadgeLabel = formatInventoryBatchBadgeLabel(
+                  item.batchNumber
+                );
 
                 return (
                   <TableRow
@@ -224,6 +229,9 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                               fill
                               className="object-cover"
                               sizes="48px"
+                              unoptimized={shouldBypassImageOptimization(
+                                group.thumbnailUrl
+                              )}
                             />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center bg-slate-50">
@@ -267,11 +275,10 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                         <div className="flex items-center gap-1.5">
                           <Badge
                             variant="outline"
-                            className="h-4 border-amber-100 bg-amber-50 px-1.5 text-[9px] font-semibold text-amber-600"
+                            title={batchBadgeLabel}
+                            className="h-4 max-w-[88px] truncate border-amber-100 bg-amber-50 px-1.5 text-[9px] font-semibold text-amber-600"
                           >
-                            {item.batchNumber
-                              ? item.batchNumber.toUpperCase().slice(-8)
-                              : '常规'}
+                            {batchBadgeLabel}
                           </Badge>
                           {isFirstInGroup && group.items.length > 1 && (
                             <Badge className="h-4 bg-indigo-600 px-1.5 text-[9px] font-semibold text-white shadow-sm shadow-indigo-200">
@@ -349,9 +356,13 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                             </div>
                             <div
                               className="text-sm font-semibold text-slate-900"
-                              title={formatCurrency(item.quantity * item.unitCost)}
+                              title={formatCurrency(
+                                item.quantity * item.unitCost
+                              )}
                             >
-                              {formatCurrencyCompact(item.quantity * item.unitCost)}
+                              {formatCurrencyCompact(
+                                item.quantity * item.unitCost
+                              )}
                             </div>
                           </div>
                         ) : (

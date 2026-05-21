@@ -250,6 +250,7 @@ export function formatDetailedPieceSummary(
  * 支持格式：
  * - "100" -> 100片
  * - "10件" -> 10件
+ * - "10.5件" -> 10.5件
  * - "100片" -> 100片
  * - "10件+5片" -> 10件+5片
  *
@@ -280,11 +281,25 @@ export function parseQuantityInput(
     return units * piecesPerUnit + pieces;
   }
 
-  // 匹配 "数字件" 格式
-  const unitsMatch = trimmed.match(/^(\d+)件$/);
+  // 匹配 "数字件" 格式，允许小数件数，但换算后的片数必须是整数
+  const unitsMatch = trimmed.match(/^(\d+(?:\.\d+)?)件$/);
   if (unitsMatch) {
-    const units = parseInt(unitsMatch[1], 10);
-    return units * piecesPerUnit;
+    if (!Number.isInteger(piecesPerUnit) || piecesPerUnit <= 0) {
+      throw new Error('每件片数必须是正整数');
+    }
+
+    const units = Number(unitsMatch[1]);
+    const convertedPieces = units * piecesPerUnit;
+    const roundedPieces = Math.round(convertedPieces);
+
+    if (
+      !Number.isSafeInteger(roundedPieces) ||
+      Math.abs(convertedPieces - roundedPieces) > 1e-8
+    ) {
+      throw new Error('换算后的片数必须是整数，请检查件数和每件片数');
+    }
+
+    return roundedPieces;
   }
 
   // 匹配 "数字片" 格式
@@ -299,7 +314,9 @@ export function parseQuantityInput(
     return parseInt(trimmed, 10);
   }
 
-  throw new Error('数量格式不正确，支持格式：100、100片、10件、10件+5片');
+  throw new Error(
+    '数量格式不正确，支持格式：100、100片、10件、10.5件、10件+5片'
+  );
 }
 
 /**

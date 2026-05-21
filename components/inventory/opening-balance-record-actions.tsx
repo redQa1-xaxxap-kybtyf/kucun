@@ -1,6 +1,6 @@
 'use client';
 
-import { Loader2, PencilLine, RotateCcw, Trash2 } from 'lucide-react';
+import { Loader2, PencilLine, RotateCcw, Tag, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
@@ -35,6 +35,7 @@ import {
 import type { InboundRecord } from '@/lib/types/inbound';
 import { formatCostPrice, roundCostPrice } from '@/lib/utils/cost-price';
 import {
+  convertOpeningBalanceUnitCostInputMode,
   type OpeningBalanceUnitCostEntryMode,
   parseOpeningBalanceUnitCostInput,
 } from '@/lib/utils/opening-balance-correction';
@@ -65,6 +66,17 @@ type OpeningBalanceEditableRecord = Pick<
 interface OpeningBalanceRecordActionsProps {
   record: OpeningBalanceEditableRecord;
   compact?: boolean;
+}
+
+const BATCH_NUMBER_PATTERN = /^[A-Za-z0-9_\-./]+$/;
+
+function validateBatchNumberInput(input: string): string | null {
+  const trimmed = input.trim();
+  if (!trimmed) return '批次号不能为空';
+  if (trimmed.length > 50) return '批次号不能超过 50 个字符';
+  if (!BATCH_NUMBER_PATTERN.test(trimmed))
+    return '批次号仅支持字母、数字、_ - . / 字符';
+  return null;
 }
 
 function getPiecesPerUnit(record: OpeningBalanceEditableRecord) {
@@ -108,7 +120,9 @@ function getUnitCostInputPlaceholder(mode: OpeningBalanceUnitCostEntryMode) {
 }
 
 function getUnitCostInputHelperText(mode: OpeningBalanceUnitCostEntryMode) {
-  return mode === 'unit' ? '按件价填写。' : '按片价填写。';
+  return mode === 'unit'
+    ? '按件价填写，提交后保存为单片成本。'
+    : '按片价填写；也支持填写“96元/件”。';
 }
 
 function parseCorrectedQuantity(input: string, piecesPerUnit: number) {
@@ -151,6 +165,10 @@ export function OpeningBalanceRecordActions({
   );
   const [unitCostEntryMode, setUnitCostEntryMode] =
     React.useState<OpeningBalanceUnitCostEntryMode>('piece');
+  const [batchEditEnabled, setBatchEditEnabled] = React.useState(false);
+  const [batchNumberInput, setBatchNumberInput] = React.useState(
+    record.batchNumber ?? ''
+  );
 
   const piecesPerUnit = getPiecesPerUnit(record);
   const initialQuantityInput = formatEditableQuantityInput(
@@ -158,6 +176,7 @@ export function OpeningBalanceRecordActions({
     piecesPerUnit
   );
   const initialUnitCostInput = formatUnitCostInput(record.unitCost);
+  const initialBatchNumberInput = record.batchNumber ?? '';
   const currentQuantityDisplay = formatQuantityDisplay(
     record.quantity,
     piecesPerUnit
@@ -171,15 +190,32 @@ export function OpeningBalanceRecordActions({
       setQuantityInput(initialQuantityInput);
       setUnitCostInput(initialUnitCostInput);
       setUnitCostEntryMode('piece');
+      setBatchEditEnabled(false);
+      setBatchNumberInput(initialBatchNumberInput);
     }
-  }, [editOpen, initialQuantityInput, initialUnitCostInput]);
+  }, [
+    editOpen,
+    initialQuantityInput,
+    initialUnitCostInput,
+    initialBatchNumberInput,
+  ]);
+
+  const trimmedBatchInput = batchNumberInput.trim();
+  const batchValidationError = batchEditEnabled
+    ? validateBatchNumberInput(batchNumberInput)
+    : null;
+  const batchChanged =
+    batchEditEnabled &&
+    !batchValidationError &&
+    trimmedBatchInput !== initialBatchNumberInput;
 
   const hasUnsavedChanges =
     editOpen &&
     !updateMutation.isPending &&
     (quantityInput !== initialQuantityInput ||
       unitCostInput !== initialUnitCostInput ||
-      unitCostEntryMode !== 'piece');
+      unitCostEntryMode !== 'piece' ||
+      batchEditEnabled);
   const { confirmLeavePage } = useUnsavedChangesGuard({
     enabled: hasUnsavedChanges,
     message: '当前期初库存更正内容尚未保存，确定要关闭吗？',
@@ -199,6 +235,37 @@ export function OpeningBalanceRecordActions({
     }
 
     setEditOpen(false);
+  };
+
+  const handleUnitCostEntryModeChange = (
+    nextMode: OpeningBalanceUnitCostEntryMode
+  ) => {
+    if (nextMode === unitCostEntryMode) {
+      return;
+    }
+
+    const trimmedInput = unitCostInput.trim();
+    if (trimmedInput) {
+      try {
+        setUnitCostInput(
+          convertOpeningBalanceUnitCostInputMode(
+            trimmedInput,
+            piecesPerUnit,
+            unitCostEntryMode,
+            nextMode
+          )
+        );
+      } catch (error) {
+        showWarning('单价未自动换算', {
+          description:
+            error instanceof Error
+              ? error.message
+              : '请按当前填写方式重新输入单位成本',
+        });
+      }
+    }
+
+    setUnitCostEntryMode(nextMode);
   };
 
   const correctionPreview = React.useMemo(() => {
@@ -248,6 +315,11 @@ export function OpeningBalanceRecordActions({
       return;
     }
 
+    if (batchEditEnabled && batchValidationError) {
+      showError('更正失败', { description: batchValidationError });
+      return;
+    }
+
     const parsedQuantity = correctionPreview.parsedQuantity;
     const currentUnitCost =
       typeof record.unitCost === 'number' && Number.isFinite(record.unitCost)
@@ -260,9 +332,9 @@ export function OpeningBalanceRecordActions({
       (currentUnitCost === undefined ||
         Math.abs(parsedUnitCost - currentUnitCost) > 0.000001);
 
-    if (!quantityChanged && !unitCostChanged) {
+    if (!quantityChanged && !unitCostChanged && !batchChanged) {
       showWarning('没有检测到修改', {
-        description: '当前输入与原始期初数量、单位成本一致，无需重复提交',
+        description: '当前输入与原始期初数据一致，无需重复提交',
       });
       return;
     }
@@ -271,6 +343,7 @@ export function OpeningBalanceRecordActions({
       const payload: {
         quantity?: number;
         unitCost?: number;
+        batchNumber?: string;
       } = {};
 
       if (quantityChanged) {
@@ -278,6 +351,9 @@ export function OpeningBalanceRecordActions({
       }
       if (unitCostChanged) {
         payload.unitCost = parsedUnitCost;
+      }
+      if (batchChanged) {
+        payload.batchNumber = trimmedBatchInput;
       }
 
       await updateMutation.mutateAsync({
@@ -293,6 +369,9 @@ export function OpeningBalanceRecordActions({
         messageParts.push(
           `单片成本 ${formatCostPrice(parsedUnitCost, { fallback: '—' })}`
         );
+      }
+      if (batchChanged) {
+        messageParts.push(`批次 ${trimmedBatchInput}`);
       }
 
       showSuccess('期初库存已更正', {
@@ -429,6 +508,62 @@ export function OpeningBalanceRecordActions({
               </div>
             </div>
 
+            <div className="rounded-md border border-amber-200 bg-amber-50/70 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-sm font-medium text-amber-900">
+                  <Tag className="h-4 w-4" />
+                  调整批次号
+                </div>
+                <Button
+                  type="button"
+                  variant={batchEditEnabled ? 'secondary' : 'outline'}
+                  size="sm"
+                  className="h-7 px-3 text-xs"
+                  onClick={() => {
+                    setBatchEditEnabled(prev => {
+                      const next = !prev;
+                      if (!next) {
+                        setBatchNumberInput(initialBatchNumberInput);
+                      }
+                      return next;
+                    });
+                  }}
+                  disabled={updateMutation.isPending}
+                >
+                  {batchEditEnabled ? '不调整' : '我要调整批次号'}
+                </Button>
+              </div>
+              <div className="mt-2 text-xs leading-5 text-amber-800">
+                仅适用于尚未被任何业务使用的期初记录。
+                目标批次号已存在库存或已有出库流水时会被拒绝。
+              </div>
+              {batchEditEnabled ? (
+                <div className="mt-3 space-y-2">
+                  <Label htmlFor="corrected-opening-balance-batch">
+                    新批次号
+                  </Label>
+                  <Input
+                    id="corrected-opening-balance-batch"
+                    value={batchNumberInput}
+                    onChange={event => setBatchNumberInput(event.target.value)}
+                    placeholder="例：BATCH-2025-001"
+                    disabled={updateMutation.isPending}
+                    autoComplete="off"
+                  />
+                  {batchValidationError ? (
+                    <div className="text-xs text-rose-600">
+                      {batchValidationError}
+                    </div>
+                  ) : (
+                    <div className="text-xs text-slate-500">
+                      原批次：{initialBatchNumberInput || '—'}
+                      {batchChanged ? ` → 新批次：${trimmedBatchInput}` : ''}
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </div>
+
             <div className="rounded-md border border-slate-200 bg-slate-50/70 p-3">
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center gap-2">
@@ -443,7 +578,7 @@ export function OpeningBalanceRecordActions({
                       }
                       size="sm"
                       className="h-7 px-3 text-xs"
-                      onClick={() => setUnitCostEntryMode('piece')}
+                      onClick={() => handleUnitCostEntryModeChange('piece')}
                       disabled={updateMutation.isPending}
                     >
                       按片录入
@@ -455,7 +590,7 @@ export function OpeningBalanceRecordActions({
                       }
                       size="sm"
                       className="h-7 px-3 text-xs"
-                      onClick={() => setUnitCostEntryMode('unit')}
+                      onClick={() => handleUnitCostEntryModeChange('unit')}
                       disabled={updateMutation.isPending}
                     >
                       按件录入
@@ -545,7 +680,11 @@ export function OpeningBalanceRecordActions({
               type="button"
               className="bg-blue-600 text-white hover:bg-blue-700"
               onClick={handleCorrectQuantity}
-              disabled={updateMutation.isPending || !!correctionPreview.error}
+              disabled={
+                updateMutation.isPending ||
+                !!correctionPreview.error ||
+                !!batchValidationError
+              }
             >
               {updateMutation.isPending ? (
                 <>

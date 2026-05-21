@@ -1,5 +1,6 @@
 import {
   COST_PRICE_MAX,
+  formatCostPrice,
   hasAtMostCostPriceDecimals,
   roundCostPrice,
 } from '@/lib/utils/cost-price';
@@ -20,10 +21,13 @@ export type OpeningBalanceSavedQuantityMode = 'piece' | 'unit';
 
 export type OpeningBalanceUnitCostEntryMode = 'piece' | 'unit';
 
+const PIECE_QUANTITY_TOLERANCE = 1e-8;
+
 function normalizeUnitCostInput(input: string) {
   return input
     .trim()
     .replace(/\s+/gu, '')
+    .replace(/[，,]/gu, '')
     .replace(/[￥¥]/gu, '')
     .replace(/／/gu, '/')
     .replace(/元/gu, '');
@@ -43,7 +47,7 @@ function parseUnitCostEntry(
   }
 
   const unitMatch = normalized.match(
-    /^(\d+(?:\.\d+)?)(?:\/件|每件|件价|件单价)$/u
+    /^(\d+(?:\.\d*)?)(?:\/件|每件|件价|件单价)$/u
   );
   if (unitMatch) {
     return {
@@ -53,7 +57,7 @@ function parseUnitCostEntry(
   }
 
   const explicitPieceMatch = normalized.match(
-    /^(\d+(?:\.\d+)?)(?:\/片|每片|片价|片单价)$/u
+    /^(\d+(?:\.\d*)?)(?:\/片|每片|片价|片单价)$/u
   );
   if (explicitPieceMatch) {
     return {
@@ -62,7 +66,7 @@ function parseUnitCostEntry(
     };
   }
 
-  const plainNumericMatch = normalized.match(/^(\d+(?:\.\d+)?)$/u);
+  const plainNumericMatch = normalized.match(/^(\d+(?:\.\d*)?)$/u);
   if (plainNumericMatch) {
     return {
       value: Number(plainNumericMatch[1]),
@@ -73,24 +77,55 @@ function parseUnitCostEntry(
   throw new Error('单位成本格式不正确，支持格式：24、24片价、96元/件');
 }
 
-export function convertOpeningBalanceCurrentUnitEntryToPieceValues(
-  input: OpeningBalanceCurrentUnitEntryInput
-): OpeningBalanceCurrentUnitEntryConversionResult {
-  const piecesPerUnit = toNumber(input.piecesPerUnit, Number.NaN);
-  if (!Number.isInteger(piecesPerUnit) || piecesPerUnit <= 0) {
+function normalizePiecesPerUnit(piecesPerUnit: number) {
+  const normalizedPiecesPerUnit = toNumber(piecesPerUnit, Number.NaN);
+  if (
+    !Number.isInteger(normalizedPiecesPerUnit) ||
+    normalizedPiecesPerUnit <= 0
+  ) {
     throw new Error('当前记录缺少有效装箱数，不能按件口径自动换算');
   }
 
-  const quantity = toNumber(input.quantity, Number.NaN);
-  if (!Number.isInteger(quantity) || quantity <= 0) {
+  return normalizedPiecesPerUnit;
+}
+
+function normalizeSavedPieceQuantity(quantity: number) {
+  const normalizedQuantity = toNumber(quantity, Number.NaN);
+  if (!Number.isSafeInteger(normalizedQuantity) || normalizedQuantity <= 0) {
     throw new Error('当前记录缺少有效数量，不能按件口径自动换算');
   }
 
-  const convertedQuantity = quantity * piecesPerUnit;
+  return normalizedQuantity;
+}
 
+function convertUnitQuantityToPieces(quantity: number, piecesPerUnit: number) {
+  const normalizedQuantity = toNumber(quantity, Number.NaN);
+  if (!Number.isFinite(normalizedQuantity) || normalizedQuantity <= 0) {
+    throw new Error('当前记录缺少有效数量，不能按件口径自动换算');
+  }
+
+  const convertedQuantity = normalizedQuantity * piecesPerUnit;
+  const roundedQuantity = Math.round(convertedQuantity);
+
+  if (
+    !Number.isSafeInteger(roundedQuantity) ||
+    roundedQuantity <= 0 ||
+    Math.abs(convertedQuantity - roundedQuantity) > PIECE_QUANTITY_TOLERANCE
+  ) {
+    throw new Error('换算后的片数必须是整数，请检查件数和装箱数后重试');
+  }
+
+  return roundedQuantity;
+}
+
+export function convertOpeningBalanceCurrentUnitEntryToPieceValues(
+  input: OpeningBalanceCurrentUnitEntryInput
+): OpeningBalanceCurrentUnitEntryConversionResult {
+  const piecesPerUnit = normalizePiecesPerUnit(input.piecesPerUnit);
   const rawUnitCost = toNumber(input.unitCost, Number.NaN);
+
   return {
-    quantity: convertedQuantity,
+    quantity: convertUnitQuantityToPieces(input.quantity, piecesPerUnit),
     ...(Number.isFinite(rawUnitCost)
       ? {
           unitCost: roundCostPrice(rawUnitCost / piecesPerUnit),
@@ -103,21 +138,11 @@ export function buildOpeningBalanceSavedValuePreview(
   input: OpeningBalanceCurrentUnitEntryInput,
   savedQuantityMode: OpeningBalanceSavedQuantityMode
 ): OpeningBalanceCurrentUnitEntryConversionResult {
-  const piecesPerUnit = toNumber(input.piecesPerUnit, Number.NaN);
-  if (!Number.isInteger(piecesPerUnit) || piecesPerUnit <= 0) {
-    throw new Error('当前记录缺少有效装箱数，不能按件口径自动换算');
-  }
-
-  const quantity = toNumber(input.quantity, Number.NaN);
-  if (!Number.isInteger(quantity) || quantity <= 0) {
-    throw new Error('当前记录缺少有效数量，不能按件口径自动换算');
-  }
-
   const rawUnitCost = toNumber(input.unitCost, Number.NaN);
 
   if (savedQuantityMode === 'piece') {
     return {
-      quantity,
+      quantity: normalizeSavedPieceQuantity(input.quantity),
       ...(Number.isFinite(rawUnitCost)
         ? {
             unitCost: roundCostPrice(rawUnitCost),
@@ -167,4 +192,57 @@ export function parseOpeningBalanceUnitCostInput(
   }
 
   return converted;
+}
+
+export function formatOpeningBalanceUnitCostForEntryMode(
+  unitCost: number | null | undefined,
+  piecesPerUnit: number,
+  mode: OpeningBalanceUnitCostEntryMode
+): string {
+  const numeric = toNumber(unitCost, Number.NaN);
+
+  if (!Number.isFinite(numeric)) {
+    return '';
+  }
+
+  if (mode === 'piece') {
+    return formatCostPrice(roundCostPrice(numeric), { withSymbol: false });
+  }
+
+  const normalizedPiecesPerUnit = toNumber(piecesPerUnit, Number.NaN);
+  if (
+    !Number.isInteger(normalizedPiecesPerUnit) ||
+    normalizedPiecesPerUnit <= 0
+  ) {
+    throw new Error('按件录入的单位成本需要先维护每件片数后才能换算');
+  }
+
+  return formatCostPrice(roundCostPrice(numeric * normalizedPiecesPerUnit), {
+    withSymbol: false,
+  });
+}
+
+export function convertOpeningBalanceUnitCostInputMode(
+  input: string,
+  piecesPerUnit: number,
+  fromMode: OpeningBalanceUnitCostEntryMode,
+  toMode: OpeningBalanceUnitCostEntryMode
+): string {
+  const trimmed = input.trim();
+
+  if (!trimmed) {
+    return '';
+  }
+
+  const pieceUnitCost = parseOpeningBalanceUnitCostInput(
+    trimmed,
+    piecesPerUnit,
+    fromMode
+  );
+
+  return formatOpeningBalanceUnitCostForEntryMode(
+    pieceUnitCost,
+    piecesPerUnit,
+    toMode
+  );
 }

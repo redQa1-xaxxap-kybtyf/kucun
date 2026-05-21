@@ -54,6 +54,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { formatCostPrice, roundCostPrice } from '@/lib/utils/cost-price';
 import {
   buildOpeningBalanceSavedValuePreview,
+  convertOpeningBalanceUnitCostInputMode,
   type OpeningBalanceUnitCostEntryMode,
   type OpeningBalanceSavedQuantityMode,
   parseOpeningBalanceUnitCostInput,
@@ -119,14 +120,32 @@ function formatUnitCostInput(unitCost?: number) {
     : '';
 }
 
+function formatExplicitPieceUnitCostInput(unitCost?: number) {
+  const formatted = formatUnitCostInput(unitCost);
+  return formatted ? `${formatted}片价` : '';
+}
+
 function getUnitCostInputPlaceholder(mode: OpeningBalanceUnitCostEntryMode) {
-  return mode === 'unit' ? '例：96元/件 / 24片价' : '例：24 / 96元/件';
+  return mode === 'unit' ? '例：96 / 96元/件' : '例：24 / 24片价';
 }
 
 function getUnitCostInputHelperText(mode: OpeningBalanceUnitCostEntryMode) {
   return mode === 'unit'
     ? '按件价保存，系统自动换算单片成本。'
-    : '按片价保存；填写件价会自动换算。';
+    : '按片价保存；填写“96元/件”会自动换算。';
+}
+
+function buildCurrentUnitQuantityInputs(
+  detail: OpeningBalanceImportBatchDetail
+) {
+  return Object.fromEntries(
+    detail.records.map(record => [
+      record.id,
+      record.piecesPerUnit > 0
+        ? `${record.quantity}件`
+        : formatQuantityInput(record.quantity, record.piecesPerUnit),
+    ])
+  );
 }
 
 function buildQuantityInputs(detail: OpeningBalanceImportBatchDetail) {
@@ -324,9 +343,88 @@ export function OpeningBalanceImportBatchActions({
     setQuantityInputs(buildQuantityInputs(detailQuery.data));
     setUnitCostInputs(buildUnitCostInputs(detailQuery.data));
     setSavedQuantityMode('piece');
+    setUnitCostEntryMode('piece');
     setBulkUnitCostText('');
     setBulkPasteOpen(false);
   }, [detailQuery.data]);
+
+  const handleSavedQuantityModeChange = React.useCallback(
+    (nextMode: OpeningBalanceSavedQuantityMode) => {
+      if (nextMode === savedQuantityMode) {
+        return;
+      }
+
+      const detail = detailQuery.data;
+      setSavedQuantityMode(nextMode);
+      setBulkUnitCostText('');
+
+      if (!detail) {
+        return;
+      }
+
+      if (nextMode === 'unit') {
+        setQuantityInputs(buildCurrentUnitQuantityInputs(detail));
+        setUnitCostInputs(buildUnitCostInputs(detail));
+        setUnitCostEntryMode('unit');
+        return;
+      }
+
+      setQuantityInputs(buildQuantityInputs(detail));
+      setUnitCostInputs(buildUnitCostInputs(detail));
+      setUnitCostEntryMode('piece');
+    },
+    [detailQuery.data, savedQuantityMode]
+  );
+
+  const handleUnitCostEntryModeChange = React.useCallback(
+    (nextMode: OpeningBalanceUnitCostEntryMode) => {
+      if (nextMode === unitCostEntryMode) {
+        return;
+      }
+
+      const detail = detailQuery.data;
+      setUnitCostEntryMode(nextMode);
+
+      if (!detail) {
+        return;
+      }
+
+      const nextInputs: Record<string, string> = {};
+      let failedCount = 0;
+
+      for (const record of detail.records) {
+        const currentInput = (
+          unitCostInputs[record.id] ?? formatUnitCostInput(record.unitCost)
+        ).trim();
+
+        if (!currentInput) {
+          nextInputs[record.id] = '';
+          continue;
+        }
+
+        try {
+          nextInputs[record.id] = convertOpeningBalanceUnitCostInputMode(
+            currentInput,
+            record.piecesPerUnit,
+            unitCostEntryMode,
+            nextMode
+          );
+        } catch {
+          nextInputs[record.id] = currentInput;
+          failedCount += 1;
+        }
+      }
+
+      setUnitCostInputs(nextInputs);
+
+      if (failedCount > 0) {
+        showWarning('部分单价未自动换算', {
+          description: '有些行缺少装箱数或单价格式不完整，请手动确认后再提交。',
+        });
+      }
+    },
+    [detailQuery.data, unitCostEntryMode, unitCostInputs]
+  );
 
   const handleApplyBulkUnitCosts = React.useCallback(() => {
     const detail = detailQuery.data;
@@ -472,7 +570,7 @@ export function OpeningBalanceImportBatchActions({
       if (preview.unitCost !== undefined) {
         setUnitCostInputs(current => ({
           ...current,
-          [record.id]: formatUnitCostInput(preview.unitCost),
+          [record.id]: formatExplicitPieceUnitCostInput(preview.unitCost),
         }));
       }
 
@@ -516,6 +614,11 @@ export function OpeningBalanceImportBatchActions({
       description:
         '系统已经把当前的件数、件价预先换成片数和单片成本，请复核后再提交。',
     });
+
+    if (appliedCount === applicableRecords.length) {
+      setSavedQuantityMode('piece');
+      setUnitCostEntryMode('piece');
+    }
   }, [applyCurrentUnitConversion, detailQuery.data, savedQuantityMode]);
 
   const handleSubmitCorrections = async () => {
@@ -666,7 +769,7 @@ export function OpeningBalanceImportBatchActions({
                       }
                       size="sm"
                       className="h-7 px-3 text-xs"
-                      onClick={() => setSavedQuantityMode('piece')}
+                      onClick={() => handleSavedQuantityModeChange('piece')}
                       disabled={
                         correctMutation.isPending || deleteMutation.isPending
                       }
@@ -680,7 +783,7 @@ export function OpeningBalanceImportBatchActions({
                       }
                       size="sm"
                       className="h-7 px-3 text-xs"
-                      onClick={() => setSavedQuantityMode('unit')}
+                      onClick={() => handleSavedQuantityModeChange('unit')}
                       disabled={
                         correctMutation.isPending || deleteMutation.isPending
                       }
@@ -739,7 +842,7 @@ export function OpeningBalanceImportBatchActions({
                           }
                           size="sm"
                           className="h-7 px-3 text-xs"
-                          onClick={() => setUnitCostEntryMode('piece')}
+                          onClick={() => handleUnitCostEntryModeChange('piece')}
                           disabled={
                             correctMutation.isPending ||
                             deleteMutation.isPending
@@ -754,7 +857,7 @@ export function OpeningBalanceImportBatchActions({
                           }
                           size="sm"
                           className="h-7 px-3 text-xs"
-                          onClick={() => setUnitCostEntryMode('unit')}
+                          onClick={() => handleUnitCostEntryModeChange('unit')}
                           disabled={
                             correctMutation.isPending ||
                             deleteMutation.isPending

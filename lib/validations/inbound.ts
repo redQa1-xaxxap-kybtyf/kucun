@@ -408,6 +408,15 @@ export const updateInboundSchema = z.object({
     .transform(value => roundCostPrice(value))
     .optional(),
 
+  // 批次号：仅在期初纠错且数据未被消耗时允许调整，由服务层做业务校验
+  batchNumber: z
+    .string()
+    .min(1, '批次号不能为空')
+    .max(50, '批次号不能超过50个字符')
+    .transform(val => val.trim())
+    .refine(val => val.length > 0, '批次号不能为空')
+    .optional(),
+
   reason: inboundReasonSchema.optional(),
 
   remarks: z

@@ -255,6 +255,21 @@ function createInMemoryPurchaseInboundTx(seed?: {
         store.purchaseOrdersById.set(id, updated);
         return clone(updated);
       }),
+
+      updateMany: jest.fn(async (args: any) => {
+        const id = args?.where?.id as string | undefined;
+        if (!id) return { count: 0 };
+        const existing = store.purchaseOrdersById.get(id);
+        if (!existing) return { count: 0 };
+        const expectedStatus = args?.where?.status as string | undefined;
+        if (expectedStatus !== undefined && existing.status !== expectedStatus) {
+          return { count: 0 };
+        }
+        const data = args?.data ?? {};
+        const updated = { ...existing, ...data, updatedAt: new Date() };
+        store.purchaseOrdersById.set(id, updated);
+        return { count: 1 };
+      }),
     },
 
     purchaseOrderItem: {
@@ -823,5 +838,93 @@ describe('采购进货（到货入库）集成回归', () => {
       Number(r.quantity)
     );
     expect(quantities.sort((a, b) => a - b)).toEqual([4, 6]);
+  });
+
+  test('采购单到货：事务开始前状态已被推进时应拒绝旧请求且不重复入库', async () => {
+    const productId = 'prod-race';
+    const userId = 'user-race';
+    const supplierId = 'sup-race';
+    const orderId = 'po-race';
+    const itemId = 'poi-race';
+
+    const { tx, store } = resetPrisma({
+      products: [{ id: productId, name: '竞态产品', code: 'P-RACE', unit: '片' }],
+      users: [{ id: userId, name: '采购员' }],
+      purchaseOrders: [
+        {
+          id: orderId,
+          orderNumber: 'PO-RACE',
+          status: PURCHASE_ORDER_STATUS.IN_TRANSIT,
+          supplierId,
+          userId,
+          totalAmount: 10,
+          expenseAmount: 0,
+          costAmount: 0,
+          arrivalDate: null,
+          containerNumber: null,
+          shippingCompany: null,
+        },
+      ],
+      purchaseOrderItems: [
+        {
+          id: itemId,
+          purchaseOrderId: orderId,
+          supplierId,
+          productId,
+          quantity: 10,
+          unitPrice: 1,
+          totalPrice: 10,
+          batchNumber: 'B-RACE',
+          allocatedExpense: 0,
+          unitCostWithExpense: null,
+          unitCost: null,
+        },
+      ],
+    });
+
+    prisma.$transaction = jest.fn(async (fn: any) => {
+      const order = store.purchaseOrdersById.get(orderId)!;
+      store.purchaseOrdersById.set(orderId, {
+        ...order,
+        status: PURCHASE_ORDER_STATUS.ARRIVED,
+      });
+      return fn(tx);
+    });
+
+    const { PUT } = await import('@/app/api/purchase-orders/[id]/status/route');
+
+    const response = await PUT(
+      {
+        json: async () => ({
+          idempotencyKey: '00000000-0000-4000-8000-000000000003',
+          status: PURCHASE_ORDER_STATUS.ARRIVED,
+          containerNumber: 'CONT-RACE',
+          shippingCompany: 'MSC',
+          estimatedArrival: '',
+          remarks: '',
+          orderDate: '',
+          shipmentDate: '',
+          arrivalDate: '2026-01-10T00:00:00.000Z',
+        }),
+      } as any,
+      { user: { id: userId }, params: { id: orderId } } as any
+    );
+
+    expect((response as any).status).toBe(409);
+    await expect((response as any).json()).resolves.toEqual(
+      expect.objectContaining({
+        success: false,
+        error: '采购订单状态已变更，请刷新后重试',
+      })
+    );
+
+    expect(store.purchaseOrdersById.get(orderId)?.status).toBe(
+      PURCHASE_ORDER_STATUS.ARRIVED
+    );
+    expect(store.inboundRecordsById.size).toBe(0);
+    expect(store.fifoById.size).toBe(0);
+    expect(store.inventoryById.size).toBe(0);
+    expect(store.payableRecords).toHaveLength(0);
+    expect(recordPartnerTransaction).not.toHaveBeenCalled();
   });
 });

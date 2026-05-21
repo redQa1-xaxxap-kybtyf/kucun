@@ -14,6 +14,68 @@ import { logger } from '@/lib/logger';
 import { type InitialStockRowInput } from '@/lib/validations/initial-stock';
 
 const ACTUAL_BATCH_WEIGHT_HEADER = '本批次实际每件重量(kg)';
+const DATE_LIKE_TEXT_HEADERS = new Set(['色号', '批次号']);
+
+function padExcelDatePart(value: number): string {
+  return String(value).padStart(2, '0');
+}
+
+function formatExcelDateSerial(value: number): string | undefined {
+  const parsed = XLSX.SSF.parse_date_code(value);
+  if (!parsed || !parsed.y || !parsed.m || !parsed.d) {
+    return undefined;
+  }
+
+  return `${parsed.y}-${padExcelDatePart(parsed.m)}-${padExcelDatePart(parsed.d)}`;
+}
+
+function getHeaderText(cell: XLSX.CellObject | undefined): string {
+  const value = cell?.w ?? cell?.v;
+  return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+}
+
+function normalizeDateLikeTextCells(worksheet: XLSX.WorkSheet) {
+  const rangeRef = worksheet['!ref'];
+  if (!rangeRef) {
+    return;
+  }
+
+  const range = XLSX.utils.decode_range(rangeRef);
+  const headerRow = range.s.r;
+
+  for (let col = range.s.c; col <= range.e.c; col += 1) {
+    const headerAddress = XLSX.utils.encode_cell({ r: headerRow, c: col });
+    const header = getHeaderText(worksheet[headerAddress]);
+
+    if (!DATE_LIKE_TEXT_HEADERS.has(header)) {
+      continue;
+    }
+
+    for (let row = headerRow + 1; row <= range.e.r; row += 1) {
+      const address = XLSX.utils.encode_cell({ r: row, c: col });
+      const cell = worksheet[address];
+
+      if (
+        !cell ||
+        cell.t !== 'n' ||
+        typeof cell.v !== 'number' ||
+        typeof cell.z !== 'string' ||
+        !XLSX.SSF.is_date(cell.z)
+      ) {
+        continue;
+      }
+
+      const formatted = formatExcelDateSerial(cell.v);
+      if (!formatted) {
+        continue;
+      }
+
+      cell.t = 's';
+      cell.v = formatted;
+      cell.w = formatted;
+    }
+  }
+}
 
 function readImportMode(formData: FormData) {
   const mode = String(formData.get('mode') ?? 'dry-run')
@@ -124,13 +186,15 @@ function normalizeInitialStockImportRow(
 
 async function readRowsFromUpload(file: Blob): Promise<InitialStockRowInput[]> {
   const buffer = Buffer.from(await file.arrayBuffer());
-  const workbook = XLSX.read(buffer, { type: 'buffer' });
+  const workbook = XLSX.read(buffer, { type: 'buffer', cellNF: true });
   const sheetName = workbook.SheetNames[0];
   const worksheet = sheetName ? workbook.Sheets[sheetName] : undefined;
 
   if (!worksheet) {
     throw new Error('Excel 文件内容为空或格式不正确');
   }
+
+  normalizeDateLikeTextCells(worksheet);
 
   return XLSX.utils
     .sheet_to_json<Record<string, unknown>>(worksheet, {

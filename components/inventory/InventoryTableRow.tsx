@@ -27,6 +27,7 @@ import { PRODUCT_UNIT_LABELS } from '@/lib/types/product';
 import { formatCostPrice } from '@/lib/utils/cost-price';
 import { formatDateTime } from '@/lib/utils/datetime';
 import { formatCurrency, formatCurrencyCompact } from '@/lib/utils/format';
+import { shouldBypassImageOptimization } from '@/lib/utils/image';
 import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 
 interface InventoryTableRowProps {
@@ -213,6 +214,9 @@ function InventoryRowView({
               fill
               className="object-cover"
               sizes="40px"
+              unoptimized={shouldBypassImageOptimization(
+                item.product.thumbnailUrl
+              )}
             />
           </div>
         ) : (

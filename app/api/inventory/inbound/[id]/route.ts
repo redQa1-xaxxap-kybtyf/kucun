@@ -7,9 +7,11 @@ import { ApiError } from '@/lib/api/errors';
 import { resolveParams, withErrorHandling } from '@/lib/api/middleware';
 import { withAuth } from '@/lib/auth/api-helpers';
 import type { AuthUser } from '@/lib/auth/context';
+import { can } from '@/lib/auth/permissions';
 import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
 import { prisma } from '@/lib/db';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
+import { migrateOpeningBalanceBatch } from '@/lib/services/opening-balance-batch-migration';
 import { roundCostPrice } from '@/lib/utils/cost-price';
 import { toNumber } from '@/lib/utils/number';
 import {
@@ -157,6 +159,34 @@ const putInboundRecordHandler = withAuth(
         );
       }
 
+      const requestedBatchNumber =
+        validatedData.batchNumber !== undefined
+          ? validatedData.batchNumber.trim()
+          : undefined;
+      const batchChanged =
+        requestedBatchNumber !== undefined &&
+        requestedBatchNumber !== (existingRecord.batchNumber ?? '');
+
+      if (batchChanged && existingRecord.reason !== 'opening_balance') {
+        return NextResponse.json(
+          { success: false, error: '仅期初入库记录允许调整批次号' },
+          { status: 400 }
+        );
+      }
+
+      if (
+        batchChanged &&
+        !can(context.user, 'inventory:opening_balance')
+      ) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: '权限不足：需要 inventory:opening_balance 权限',
+          },
+          { status: 403 }
+        );
+      }
+
       let updatedRecord;
 
       try {
@@ -178,12 +208,76 @@ const putInboundRecordHandler = withAuth(
             validatedData.unitCost !== undefined &&
             (!Number.isFinite(currentUnitCost) ||
               Math.abs(nextUnitCost - currentUnitCost) > 0.000001);
+          const nextBatchNumber =
+            requestedBatchNumber ?? (existingRecord.batchNumber ?? '');
 
           if (validatedData.reason !== undefined) {
             updateData.reason = validatedData.reason;
           }
           if (validatedData.remarks !== undefined) {
             updateData.remarks = cleanRemarks(validatedData.remarks);
+          }
+
+          if (batchChanged) {
+            const inventories = await tx.inventory.findMany({
+              where: {
+                productId: existingRecord.productId,
+                variantId: existingRecord.variantId,
+                batchNumber: existingRecord.batchNumber,
+              },
+              select: { id: true, quantity: true, reservedQuantity: true },
+              take: 2,
+            });
+
+            if (inventories.length === 0) {
+              throw ApiError.badRequest(
+                '未找到该入库记录对应的库存记录，无法调整批次'
+              );
+            }
+            if (inventories.length > 1) {
+              throw ApiError.badRequest(
+                '发现重复库存记录，请先合并/清理重复数据后再调整批次'
+              );
+            }
+
+            const costEntries = await tx.inventoryCostQueue.findMany({
+              where: { inboundRecordId: existingRecord.id },
+              select: { id: true, remainingQty: true },
+              take: 2,
+            });
+            if (costEntries.length > 1) {
+              throw ApiError.badRequest(
+                '该入库记录对应多条 FIFO 队列记录，无法调整批次'
+              );
+            }
+
+            const costEntry = costEntries[0] ?? null;
+            const consumedQty = costEntry
+              ? existingRecord.quantity - costEntry.remainingQty
+              : 0;
+            if (consumedQty < 0) {
+              throw ApiError.badRequest(
+                'FIFO 队列数据异常：remainingQty 大于入库数量'
+              );
+            }
+
+            const migration = await migrateOpeningBalanceBatch(tx, {
+              record: {
+                id: existingRecord.id,
+                productId: existingRecord.productId,
+                variantId: existingRecord.variantId,
+                batchNumber: existingRecord.batchNumber,
+                quantity: existingRecord.quantity,
+                unitCost: existingRecord.unitCost,
+              },
+              inventory: inventories[0],
+              costEntry,
+              consumedQty,
+              toBatchNumber: nextBatchNumber,
+            });
+
+            updateData.batchNumber = nextBatchNumber;
+            updateData.batchSpecificationId = migration.newBatchSpecificationId;
           }
 
           if (quantityChanged || unitCostChanged) {
@@ -195,7 +289,7 @@ const putInboundRecordHandler = withAuth(
               where: {
                 productId: existingRecord.productId,
                 variantId: existingRecord.variantId,
-                batchNumber: existingRecord.batchNumber,
+                batchNumber: nextBatchNumber,
               },
               select: { id: true, quantity: true, reservedQuantity: true },
               take: 2,

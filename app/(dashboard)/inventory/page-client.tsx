@@ -16,6 +16,7 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { useUrlSearchParams } from '@/hooks/url-search-params';
 import { useInventoryStatistics } from '@/hooks/use-inventory-statistics';
+import { useListSearchController } from '@/hooks/use-list-search-controller';
 import { useOptimizedInventoryQuery } from '@/hooks/use-optimized-inventory-query';
 import { can } from '@/lib/auth/permissions';
 import { paginationConfig } from '@/lib/config/pagination';
@@ -227,15 +228,37 @@ function useInventoryController(initialParams: Partial<InventoryQueryParams>) {
     initialParams,
   });
 
-  // ✅ 本地搜索输入状态,用于即时UI反馈
-  const [searchInput, setSearchInput] = React.useState(params.search || '');
-  const searchTimerRef = React.useRef<NodeJS.Timeout | null>(null);
-  const [isPending, startTransition] = React.useTransition();
+  const normalizeSearch = React.useCallback((value: string) => {
+    const trimmed = value.trim();
+    return trimmed ? trimmed : undefined;
+  }, []);
 
-  // ✅ 同步URL参数到本地输入框(浏览器前进/后退、清空筛选等)
-  React.useEffect(() => {
-    setSearchInput(params.search || '');
-  }, [params.search]);
+  const handleSearchCommit = React.useCallback(
+    (search: string | undefined) => {
+      updateParams({ search, page: 1 });
+    },
+    [updateParams]
+  );
+
+  const {
+    searchInput,
+    isSearching,
+    handleSearchChange,
+    cancelPendingCommit,
+    setSearchInput,
+  } = useListSearchController({
+    committedValue: params.search,
+    onCommit: handleSearchCommit,
+    debounceMs: 300,
+    normalize: normalizeSearch,
+  });
+
+  const syncPendingSearch = React.useCallback(() => {
+    cancelPendingCommit();
+    const search = normalizeSearch(searchInput);
+    setSearchInput(search ?? '');
+    return search;
+  }, [cancelPendingCommit, normalizeSearch, searchInput, setSearchInput]);
 
   const {
     isLoading,
@@ -246,59 +269,46 @@ function useInventoryController(initialParams: Partial<InventoryQueryParams>) {
     handlePrevPageHover,
   } = useInventoryData(params, !!params.search); // ✅ 搜索模式：当有搜索词时启用
 
-  // 搜索输入只反映本地提交状态，列表刷新由列表区统一展示。
-  const shouldShowSearchingIndicator = isPending;
   const {
-    handleFilter,
-    handleFilterPatch,
-    handleClearFilters,
-    handlePageChange,
-  } = useInventoryFilters(updateParams, params.page ?? 1);
+    handleFilterPatch: applyFilterPatch,
+    handleClearFilters: applyClearFilters,
+  } = useInventoryFilters(updateParams);
 
-  // ✅ 优化：简化防抖逻辑，固定300ms延迟
-  // 移除复杂的自适应算法，提升性能和可维护性
-  const SEARCH_DEBOUNCE_DELAY = 300; // 固定防抖延迟
-
-  const handleSearch = React.useCallback(
-    (value: string) => {
-      const trimmed = value.trimStart();
-
-      // 1. 立即更新输入框显示（0ms延迟）
-      setSearchInput(trimmed);
-
-      // 2. 清除之前的定时器
-      if (searchTimerRef.current) {
-        clearTimeout(searchTimerRef.current);
-      }
-
-      // 3. 处理清空搜索
-      if (trimmed === '') {
-        // 使用 startTransition 包裹状态更新，避免阻塞UI
-        startTransition(() => {
-          updateParams({ search: undefined, page: 1 });
-        });
-        return;
-      }
-
-      // 4. 使用固定延迟更新URL和触发查询
-      searchTimerRef.current = setTimeout(() => {
-        // 使用 startTransition 包裹状态更新，避免阻塞UI
-        startTransition(() => {
-          updateParams({ search: trimmed, page: 1 });
-        });
-      }, SEARCH_DEBOUNCE_DELAY);
+  const handleFilterPatch = React.useCallback(
+    (updates: Partial<InventoryQueryParams>) => {
+      const search = syncPendingSearch();
+      applyFilterPatch({ search, ...updates });
     },
-    [updateParams, startTransition]
+    [applyFilterPatch, syncPendingSearch]
   );
 
-  // 清理定时器
-  React.useEffect(
-    () => () => {
-      if (searchTimerRef.current) {
-        clearTimeout(searchTimerRef.current);
-      }
+  const handleFilter = React.useCallback(
+    (
+      key: keyof InventoryQueryParams,
+      value: string | number | boolean | undefined
+    ) => {
+      const search = syncPendingSearch();
+      applyFilterPatch({
+        search,
+        [key]: value,
+      } as Partial<InventoryQueryParams>);
     },
-    []
+    [applyFilterPatch, syncPendingSearch]
+  );
+
+  const handleClearFilters = React.useCallback(() => {
+    cancelPendingCommit();
+    setSearchInput('');
+    applyClearFilters();
+  }, [applyClearFilters, cancelPendingCommit, setSearchInput]);
+
+  const handlePageChange = React.useCallback(
+    (page: number) => {
+      if (page === (params.page ?? 1)) return;
+      const search = syncPendingSearch();
+      updateParams({ search, page });
+    },
+    [params.page, syncPendingSearch, updateParams]
   );
 
   // ✅ 优化 useMemo 依赖：使用原始值而非对象引用
@@ -332,13 +342,13 @@ function useInventoryController(initialParams: Partial<InventoryQueryParams>) {
   return {
     params,
     searchInput, // ✅ 使用本地searchInput,即时UI反馈
-    isSearching: shouldShowSearchingIndicator, // ✅ 优化后的搜索状态指示
+    isSearching,
     isLoading,
     isFetching,
     error,
     listData,
     currentQueryParams,
-    handleSearch,
+    handleSearch: handleSearchChange,
     handleFilter,
     handleFilterPatch,
     handleClearFilters,
@@ -434,8 +444,7 @@ function useInventoryData(params: InventoryQueryParams, searchMode = false) {
 }
 
 function useInventoryFilters(
-  updateParams: (updates: Partial<InventoryQueryParams>) => void,
-  currentPage: number
+  updateParams: (updates: Partial<InventoryQueryParams>) => void
 ) {
   const handleFilterPatch = React.useCallback(
     (updates: Partial<InventoryQueryParams>) => {
@@ -454,19 +463,6 @@ function useInventoryFilters(
     [updateParams]
   );
 
-  const handleFilter = React.useCallback(
-    (
-      key: keyof InventoryQueryParams,
-      value: string | number | boolean | undefined
-    ) => {
-      const patch = {
-        [key]: value,
-      } as unknown as Partial<InventoryQueryParams>;
-      handleFilterPatch(patch);
-    },
-    [handleFilterPatch]
-  );
-
   // ✅ Bug修复：清空筛选时也要清空搜索词
   const handleClearFilters = React.useCallback(() => {
     updateParams({
@@ -482,19 +478,9 @@ function useInventoryFilters(
     });
   }, [updateParams]);
 
-  const handlePageChange = React.useCallback(
-    (page: number) => {
-      if (page === currentPage) return;
-      updateParams({ page });
-    },
-    [updateParams, currentPage]
-  );
-
   return {
-    handleFilter,
     handleFilterPatch,
     handleClearFilters,
-    handlePageChange,
   } as const;
 }
 

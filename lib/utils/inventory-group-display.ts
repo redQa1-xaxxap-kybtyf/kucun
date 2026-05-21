@@ -11,6 +11,49 @@ interface InventoryGroupDisplayItemLike {
   product?: InventoryGroupDisplayProductLike | null;
 }
 
+function padDatePart(value: number): string {
+  return String(value).padStart(2, '0');
+}
+
+function isValidDateParts(year: number, month: number, day: number): boolean {
+  const date = new Date(year, month - 1, day);
+
+  return (
+    date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day
+  );
+}
+
+function normalizeShortSlashDateCode(value: string): string | undefined {
+  const match = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/);
+  if (!match) {
+    return undefined;
+  }
+
+  const month = Number(match[1]);
+  const day = Number(match[2]);
+  const inputYear = Number(match[3]);
+  const year = match[3].length === 2 ? 2000 + inputYear : inputYear;
+
+  if (!isValidDateParts(year, month, day)) {
+    return undefined;
+  }
+
+  return `${year}-${padDatePart(month)}-${padDatePart(day)}`;
+}
+
+export function formatInventoryBatchBadgeLabel(
+  batchNumber?: string | null
+): string {
+  const normalized = (batchNumber ?? '').trim();
+  if (!normalized) {
+    return '常规';
+  }
+
+  return normalizeShortSlashDateCode(normalized) ?? normalized.toUpperCase();
+}
+
 function normalizeInteger(value: number | null | undefined): number {
   const numeric = Number(value ?? 0);
 

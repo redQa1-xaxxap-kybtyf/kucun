@@ -10,6 +10,7 @@ import {
   stripSensitiveKeysDeep,
 } from '@/lib/api/mini-program-sanitize';
 import { withAuth } from '@/lib/auth/api-helpers';
+import { hasTrustedAuthHeaders } from '@/lib/auth/trusted-headers';
 import { prisma } from '@/lib/db';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import {
@@ -80,7 +81,10 @@ async function handleGetInventory(request: NextRequest) {
 
 function isMiniProgramAdmin(request: NextRequest): boolean {
   // x-user-role 由 auth middleware 在已认证请求上注入
-  return request.headers.get('x-user-role') === 'admin';
+  return (
+    hasTrustedAuthHeaders(request.headers) &&
+    request.headers.get('x-user-role') === 'admin'
+  );
 }
 
 function attachStockStatusToInventoryListBody(body: any): any {
