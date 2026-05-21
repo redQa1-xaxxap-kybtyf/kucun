@@ -10,6 +10,8 @@
 
 import type { NextRequest } from 'next/server';
 
+import { getAuthVerificationHeaderValue } from '@/lib/auth/trusted-headers';
+
 jest.mock('@/lib/cache', () => ({
   revalidateFinance: jest.fn().mockResolvedValue(undefined),
   revalidateReturnOrders: jest.fn().mockResolvedValue(undefined),
@@ -484,6 +486,7 @@ describe('data-management regression', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-auth-verified': getAuthVerificationHeaderValue(),
           'x-user-id': 'u-001',
           'x-user-username': 'sales-user',
           'x-user-role': 'sales',
@@ -541,6 +544,7 @@ describe('data-management regression', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-auth-verified': getAuthVerificationHeaderValue(),
           'x-user-id': 'admin-001',
           'x-user-username': 'admin',
           'x-user-role': 'admin',
@@ -597,6 +601,7 @@ describe('data-management regression', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-auth-verified': getAuthVerificationHeaderValue(),
           'x-user-id': 'admin-001',
           'x-user-username': 'admin',
           'x-user-role': 'admin',
