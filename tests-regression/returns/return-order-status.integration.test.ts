@@ -270,6 +270,41 @@ function createInMemoryReturnPrisma(seed?: {
         store.returnOrdersById.set(id, clone(updated));
         return pickSelected(updated, args?.select);
       },
+
+      updateMany: async (args: any) => {
+        const id = String(args?.where?.id ?? '');
+        const expectedStatus = args?.where?.status as string | undefined;
+        const row = store.returnOrdersById.get(id);
+        if (!row) {
+          return { count: 0 };
+        }
+        if (expectedStatus !== undefined && row.status !== expectedStatus) {
+          return { count: 0 };
+        }
+
+        const data = args?.data ?? {};
+        const updated: ReturnOrderRow = {
+          ...clone(row),
+          status: data.status ?? row.status,
+          remarks: data.remarks ?? row.remarks,
+          refundAmount:
+            data.refundAmount === undefined
+              ? row.refundAmount
+              : data.refundAmount,
+          submittedAt:
+            data.submittedAt === undefined ? row.submittedAt : data.submittedAt,
+          approvedAt:
+            data.approvedAt === undefined ? row.approvedAt : data.approvedAt,
+          processedAt:
+            data.processedAt === undefined ? row.processedAt : data.processedAt,
+          completedAt:
+            data.completedAt === undefined ? row.completedAt : data.completedAt,
+          updatedAt: data.updatedAt ?? new Date(),
+        };
+
+        store.returnOrdersById.set(id, clone(updated));
+        return { count: 1 };
+      },
     },
 
     salesOrderItem: {
@@ -1097,5 +1132,57 @@ describe('退货状态流转（集成回归）', () => {
         'user-6'
       )
     ).rejects.toThrow('订单状态不能从 draft 变更为 completed');
+  });
+
+  test('退货完成遇到状态已被其他请求推进：应拒绝旧状态请求且不重复执行完成副作用', async () => {
+    const { store } = resetPrisma({
+      returnOrders: [
+        {
+          id: 'ro-race-1',
+          returnNumber: 'RT-RACE-001',
+          status: 'completed',
+          remarks: null,
+          refundAmount: 10,
+          totalAmount: 10,
+          salesOrderId: 'so-race-1',
+          customerId: 'cust-race-1',
+          processType: 'refund',
+          completedAt: new Date('2026-01-02T00:00:00.000Z'),
+          updatedAt: new Date('2026-01-02T00:00:00.000Z'),
+        },
+      ],
+      returnOrderItems: [
+        {
+          id: 'roi-race-1',
+          returnOrderId: 'ro-race-1',
+          salesOrderItemId: 'soi-race-1',
+          subtotal: 10,
+        },
+      ],
+      salesOrders: [
+        {
+          id: 'so-race-1',
+          itemsAmount: 100,
+          costAmount: 60,
+          profitAmount: 40,
+        },
+      ],
+    });
+
+    await expect(
+      updateReturnOrderStatus(
+        'ro-race-1',
+        'completed',
+        'approved',
+        'refund',
+        { refundAmount: 10 },
+        'user-race-1'
+      )
+    ).rejects.toThrow('退货订单状态已变更，请刷新后重试');
+
+    expect(store.returnOrdersById.get('ro-race-1')?.status).toBe('completed');
+    expect(store.refundRecordsById.size).toBe(0);
+    expect(store.salesOrdersById.get('so-race-1')?.profitAmount).toBe(40);
+    expect(recordPartnerTransaction).not.toHaveBeenCalled();
   });
 });

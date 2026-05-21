@@ -142,7 +142,7 @@ export function getFinanceWorkbenchSummary(userRole: UserRole) {
     case 'finance':
       return '财务员今天优先确认到账、确认付款、处理退款，再补齐费用审核。';
     case 'sales':
-      return '销售今天优先跟进应收和到账进度，避免订单推进和回款脱节。';
+      return '销售今天优先跟进客户待收和到账进度，避免订单推进和回款脱节。';
     case 'admin':
       return '管理员今天优先关注逾期、待确认和异常金额，先把高风险事项压下去。';
     default:

@@ -628,7 +628,7 @@ describe('财务 × 销售：关键链路（集成回归）', () => {
         referenceId: result.id,
         referenceNumber: 'SO-0001',
       }),
-      undefined
+      expect.any(Object)
     );
   });
 
@@ -691,7 +691,7 @@ describe('财务 × 销售：关键链路（集成回归）', () => {
     );
     expect(receivable?.paymentAmount).toBe(100);
     expect(receivable?.roundingAmount).toBe(-0.5);
-    expect(receivable?.status).toBe('pending');
+    expect(receivable?.status).toBe('completed');
 
     // 2) paidAmount 回写：按应收上限（含抹零）冲抵，不应超额
     const persistedOrder = store.salesOrdersById.get(result.id);
@@ -716,7 +716,7 @@ describe('财务 × 销售：关键链路（集成回归）', () => {
         referenceId: result.id,
         referenceNumber: 'SO-0004',
       }),
-      undefined
+      expect.any(Object)
     );
   });
 
@@ -789,7 +789,7 @@ describe('财务 × 销售：关键链路（集成回归）', () => {
         referenceId: result.id,
         referenceNumber: 'SO-0005',
       }),
-      undefined
+      expect.any(Object)
     );
   });
 

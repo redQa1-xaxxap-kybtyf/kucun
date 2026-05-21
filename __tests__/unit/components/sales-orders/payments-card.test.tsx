@@ -75,11 +75,10 @@ describe('PaymentsCard', () => {
   test('已收清订单的系统建账记录不应再显示为待确认收款', () => {
     render(<PaymentsCard order={createOrder()} />);
 
-    expect(screen.getByText('系统建账记录')).toBeInTheDocument();
+    expect(screen.getByText('应收已登记')).toBeInTheDocument();
+    expect(screen.getByText('应收记录')).toBeInTheDocument();
     expect(
-      screen.getByText(
-        '订单已收清，这条仅保留作应收建账历史，不代表还有待确认收款。'
-      )
+      screen.getByText('订单已结清，仅保留应收记录。')
     ).toBeInTheDocument();
     expect(screen.queryByText('待确认')).not.toBeInTheDocument();
     expect(screen.getByText('已确认')).toBeInTheDocument();

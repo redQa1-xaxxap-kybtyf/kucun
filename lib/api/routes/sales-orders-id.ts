@@ -11,7 +11,6 @@ import type { ApiHandler } from '@/lib/auth/api-helpers';
 import { invalidateSalesOrderAndReceivables } from '@/lib/cache/finance-cache';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
-import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 import {
   createTransferPayableRecord,
   validateStatusTransition,
@@ -197,48 +196,6 @@ export const putSalesOrderRoute: ApiHandler = async (
 
   // 统一响应：返回最新详情
   const data = await getSalesOrderDetailWithPayments(id);
-
-  // 草稿->确认：补齐往来账台账（与“创建即确认”保持一致）
-  if (existingOrder.status === 'draft' && status === 'confirmed' && data) {
-    const totalAmount = toNumber(
-      (data as { totalAmount?: unknown }).totalAmount,
-      0
-    );
-    const roundingAdjustment = toNumber(
-      (data as { roundingAdjustment?: unknown }).roundingAdjustment,
-      0
-    );
-    const due = getSalesOrderReceivableTotal({
-      isSampleOrder: data.isSampleOrder,
-      sampleSettlementType: data.sampleSettlementType,
-      totalAmount,
-      roundingAdjustment,
-    });
-
-    if (due > 0) {
-      recordPartnerTransaction({
-        partnerId: data.customerId,
-        partnerRole: 'customer',
-        entityType: 'customer',
-        transactionType: 'sale',
-        amount: due,
-        referenceId: data.id,
-        referenceNumber: data.orderNumber,
-        description: `销售订单 ${data.orderNumber} 确认应收`,
-        userId,
-        occurredAt: data.orderDate ? new Date(data.orderDate) : new Date(),
-        metadata: {
-          status: data.status,
-          triggeredBy: 'order:confirm',
-        },
-      }).catch(error => {
-        logger.error('sales-orders', '记录往来账失败', error, {
-          orderId: data.id,
-          orderNumber: data.orderNumber,
-        });
-      });
-    }
-  }
 
   const message =
     existingOrder.status === 'confirmed' && status === 'draft'

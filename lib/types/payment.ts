@@ -2,7 +2,6 @@
 // 定义收款记录、应收账款等相关数据结构
 
 import { STATUS_PALETTE } from '@/lib/config/status-palette';
-
 import type {
   AccountsReceivableQueryInput,
   BatchPaymentOperationInput,

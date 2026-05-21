@@ -7,6 +7,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import type { ZodType } from 'zod';
 
+import { hasTrustedAuthHeaders } from '@/lib/auth/trusted-headers';
 import { logger } from '@/lib/logger';
 
 /**
@@ -22,6 +23,14 @@ export function verifyApiAuth(request: NextRequest): {
   role?: string;
   error?: string;
 } {
+  if (!hasTrustedAuthHeaders(request.headers)) {
+    return {
+      success: false,
+      authenticated: false,
+      error: '未授权访问',
+    };
+  }
+
   const userId = request.headers.get('x-user-id');
   const username = request.headers.get('x-user-name');
   const role = request.headers.get('x-user-role');

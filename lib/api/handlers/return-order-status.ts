@@ -87,9 +87,14 @@ export async function updateReturnOrderStatus(
       const currentOrder = await tx.returnOrder.findUnique({
         where: { id: orderId },
         select: {
+          status: true,
           remarks: true,
         },
       });
+
+      if (!currentOrder) {
+        throw new Error('退货订单不存在');
+      }
 
       // 准备更新数据
       const updateData: {
@@ -132,10 +137,18 @@ export async function updateReturnOrderStatus(
           break;
       }
 
-      // 更新订单状态
-      const order = await tx.returnOrder.update({
-        where: { id: orderId },
+      // 状态必须在事务内再次校验，避免并发旧请求重复执行完成副作用。
+      const updateResult = await tx.returnOrder.updateMany({
+        where: { id: orderId, status: currentStatus },
         data: updateData,
+      });
+
+      if (updateResult.count === 0) {
+        throw new Error('退货订单状态已变更，请刷新后重试');
+      }
+
+      const order = await tx.returnOrder.findUnique({
+        where: { id: orderId },
         select: {
           id: true,
           returnNumber: true,
@@ -148,6 +161,10 @@ export async function updateReturnOrderStatus(
           processType: true,
         },
       });
+
+      if (!order) {
+        throw new Error('退货订单不存在');
+      }
 
       let affectedProductIds: string[] = [];
       let refundCreated = false;

@@ -135,7 +135,7 @@ describe('/api/finance/payments-out/export（导出口径回归）', () => {
           付款编号: 'FK-001',
           供应商名称: '供应商A',
           付款方式: '银行转账',
-          付款状态: '已确认',
+          付款状态: '已完成付款',
         }),
       ],
       expect.objectContaining({
@@ -149,7 +149,7 @@ describe('/api/finance/payments-out/export（导出口径回归）', () => {
     ];
 
     expect(exportRows[0]?.付款方式).toBe('银行转账');
-    expect(exportRows[0]?.付款状态).toBe('已确认');
+    expect(exportRows[0]?.付款状态).toBe('已完成付款');
     expect(exportRows[0]?.付款方式).not.toBe('bank_transfer');
     expect(exportRows[0]?.付款状态).not.toBe('confirmed');
 

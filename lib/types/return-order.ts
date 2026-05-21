@@ -1,9 +1,8 @@
 // 退货管理类型定义
 // 严格遵循命名约定：数据库 snake_case → API camelCase → 前端 camelCase
 
-import { formatCurrency } from '@/lib/utils';
-
 import { STATUS_PALETTE } from '@/lib/config/status-palette';
+import { formatCurrency } from '@/lib/utils';
 
 import type { Customer } from './customer';
 import type { Product } from './product';

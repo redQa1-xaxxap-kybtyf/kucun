@@ -187,10 +187,22 @@ export const PUT = withAuth(async (request: NextRequest, context) => {
             updateData.arrivalDate = normalizedPayload.arrivalDate ?? now;
           }
 
-          const savedOrder = await tx.purchaseOrder.update({
-            where: { id: orderId },
+          const statusUpdateResult = await tx.purchaseOrder.updateMany({
+            where: { id: orderId, status: order.status },
             data: updateData,
           });
+
+          if (statusUpdateResult.count === 0) {
+            throw new Error('采购订单状态已变更，请刷新后重试');
+          }
+
+          const savedOrder = await tx.purchaseOrder.findUnique({
+            where: { id: orderId },
+          });
+
+          if (!savedOrder) {
+            throw new Error('采购订单不存在');
+          }
 
           const createdInboundRecords: MinimalInboundTransactionResult[] = [];
           let payableExpenseAmount: number | null | undefined =
@@ -330,6 +342,15 @@ export const PUT = withAuth(async (request: NextRequest, context) => {
       return NextResponse.json(
         { success: false, error: error.message },
         { status: 400 }
+      );
+    }
+    if (
+      error instanceof Error &&
+      error.message === '采购订单状态已变更，请刷新后重试'
+    ) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 409 }
       );
     }
     return NextResponse.json(

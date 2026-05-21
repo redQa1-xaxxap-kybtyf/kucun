@@ -7,8 +7,6 @@
  */
 
 import { STATUS_PALETTE } from '@/lib/config/status-palette';
-
-// 从 Zod Schema 导入基础类型（单一真理源）
 import type {
   CreatePayableRecordData,
   CreatePaymentOutRecordData,

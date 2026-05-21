@@ -638,6 +638,7 @@ async function executeOrderConfirmation(
     });
 
     if (actualOrderDue > 0) {
+      const finalOperatorId = operatorId || existingOrder.userId;
       const paymentExists = await tx.paymentRecord.findFirst({
         where: {
           salesOrderId: orderId,
@@ -649,7 +650,6 @@ async function executeOrderConfirmation(
 
       if (!paymentExists) {
         const paymentNumber = await generatePaymentNumber(tx);
-        const finalOperatorId = operatorId || existingOrder.userId;
         await tx.paymentRecord.create({
           data: {
             paymentNumber,
@@ -668,6 +668,26 @@ async function executeOrderConfirmation(
           },
         });
       }
+
+      await recordPartnerTransaction(
+        {
+          partnerId: existingOrder.customerId,
+          partnerRole: 'customer',
+          entityType: 'customer',
+          transactionType: 'sale',
+          amount: actualOrderDue,
+          referenceId: order.id,
+          referenceNumber: order.orderNumber,
+          description: `销售订单 ${order.orderNumber} 确认应收`,
+          userId: finalOperatorId,
+          occurredAt: existingOrder.orderDate ?? new Date(),
+          metadata: {
+            status: order.status,
+            triggeredBy: 'order:confirm',
+          },
+        },
+        tx
+      );
     }
 
     return {

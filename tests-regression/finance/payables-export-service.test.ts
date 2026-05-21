@@ -70,7 +70,7 @@ describe('payables-export-service（字段口径回归）', () => {
         应付金额: 100,
         已付金额: 88,
         剩余金额: 12,
-        结算状态: '部分结清',
+        结算状态: '部分付款',
       })
     );
     expect('已核销金额' in row).toBe(false);

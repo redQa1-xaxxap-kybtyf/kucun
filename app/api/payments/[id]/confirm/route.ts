@@ -13,11 +13,6 @@ import {
 } from '@/lib/services/receivables-helpers';
 import { getSalesOrderReceivableTotal } from '@/lib/utils/sample-order';
 
-const serializeError = (error: unknown) =>
-  error instanceof Error
-    ? { name: error.name, message: error.message, stack: error.stack }
-    : { value: String(error) };
-
 function appendRemark(existing: string | null, note?: string): string | null {
   if (!note?.trim()) {
     return existing;
@@ -97,12 +92,20 @@ export const POST = withAuth(
       }
 
       const updated = await prisma.$transaction(async tx => {
-        const updatedPayment = await tx.paymentRecord.update({
-          where: { id },
+        const updateResult = await tx.paymentRecord.updateMany({
+          where: { id, status: payment.status },
           data: {
             status: 'confirmed',
             remarks: appendRemark(payment.remarks, notes),
           },
+        });
+
+        if (updateResult.count === 0) {
+          throw new Error('收款记录状态已变更，请刷新后重试');
+        }
+
+        const updatedPayment = await tx.paymentRecord.findUnique({
+          where: { id },
           include: {
             customer: {
               select: { id: true, name: true, phone: true },
@@ -120,6 +123,10 @@ export const POST = withAuth(
             },
           },
         });
+
+        if (!updatedPayment) {
+          throw new Error('收款记录不存在');
+        }
 
         if (updatedPayment.salesOrderId) {
           const salesOrder = await tx.salesOrder.findUnique({
@@ -176,50 +183,43 @@ export const POST = withAuth(
           }
         }
 
+        if (
+          updatedPayment.customerId &&
+          Number(updatedPayment.actualPaymentAmount) > 0 &&
+          updatedPayment.status === 'confirmed'
+        ) {
+          await recordPartnerTransaction(
+            {
+              partnerId: updatedPayment.customerId,
+              partnerRole: 'customer',
+              entityType: 'customer',
+              transactionType: 'payment_in',
+              amount: Number(updatedPayment.actualPaymentAmount),
+              referenceId: updatedPayment.id,
+              referenceNumber: updatedPayment.paymentNumber,
+              description: `收款 ${updatedPayment.paymentNumber} 确认到账`,
+              userId: user.id,
+              occurredAt: updatedPayment.paymentDate ?? new Date(),
+              metadata: {
+                paymentMethod: updatedPayment.paymentMethod,
+                paymentType: updatedPayment.paymentType,
+                salesOrderId: updatedPayment.salesOrderId ?? undefined,
+                paymentAmount: Number(updatedPayment.paymentAmount),
+                actualPaymentAmount: Number(
+                  updatedPayment.actualPaymentAmount
+                ),
+                roundingAmount: Number(updatedPayment.roundingAmount),
+                triggeredBy: 'payment:confirm',
+              },
+            },
+            tx
+          );
+        }
+
         return updatedPayment;
       });
 
       await clearCacheAfterPayment();
-
-      if (
-        updated.customerId &&
-        Number(updated.actualPaymentAmount) > 0 &&
-        updated.status === 'confirmed'
-      ) {
-        try {
-          await recordPartnerTransaction({
-            partnerId: updated.customerId,
-            partnerRole: 'customer',
-            entityType: 'customer',
-            transactionType: 'payment_in',
-            amount: Number(updated.actualPaymentAmount),
-            referenceId: updated.id,
-            referenceNumber: updated.paymentNumber,
-            description: `收款 ${updated.paymentNumber} 确认到账`,
-            userId: user.id,
-            occurredAt: updated.paymentDate ?? new Date(),
-            metadata: {
-              paymentMethod: updated.paymentMethod,
-              paymentType: updated.paymentType,
-              salesOrderId: updated.salesOrderId ?? undefined,
-              paymentAmount: Number(updated.paymentAmount),
-              actualPaymentAmount: Number(updated.actualPaymentAmount),
-              roundingAmount: Number(updated.roundingAmount),
-              triggeredBy: 'payment:confirm',
-            },
-          });
-        } catch (error) {
-          logger.warn(
-            'payments',
-            '确认收款后同步往来账失败',
-            {
-              paymentId: updated.id,
-              paymentNumber: updated.paymentNumber,
-            },
-            { error: serializeError(error) }
-          );
-        }
-      }
 
       await publishFinanceEvent({
         action: 'confirmed',
@@ -246,6 +246,15 @@ export const POST = withAuth(
         message: '收款记录已确认',
       });
     } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message === '收款记录状态已变更，请刷新后重试'
+      ) {
+        return NextResponse.json(
+          { success: false, error: error.message },
+          { status: 409 }
+        );
+      }
       logger.error(
         'payments',
         '确认收款记录失败',
