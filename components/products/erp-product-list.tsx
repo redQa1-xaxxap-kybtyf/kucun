@@ -1,12 +1,14 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
+import * as React from 'react';
 
 import { CategorySelector } from '@/components/categories/category-selector';
 import { SearchFilterCard } from '@/components/common/search-filter-card';
 import { ProductDeleteDialog } from '@/components/products/product-delete-dialogs';
 import { ProductTable } from '@/components/products/product-table';
+import { Button } from '@/components/ui/button';
 import { Pagination, type PaginationInfo } from '@/components/ui/pagination';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProductDelete } from '@/hooks/use-product-delete';
@@ -16,7 +18,11 @@ import {
   getCategories,
   type Category,
 } from '@/lib/api/categories';
-import { getProducts, productQueryKeys } from '@/lib/api/products';
+import {
+  getProducts,
+  productQueryKeys,
+  type ProductListQueryParams,
+} from '@/lib/api/products';
 import { PRODUCT_STATUS_OPTIONS } from '@/lib/config/product';
 import type {
   Product,
@@ -32,9 +38,13 @@ const CATEGORY_OPTIONS_QUERY = {
   sortOrder: 'asc',
 } as const;
 
+const EMPTY_CATEGORIES: Category[] = [];
+const PRODUCT_SEARCH_HINT = '支持按编码、名称、规格、分类、花色快速查找';
+
 interface ERPProductListProps {
   onProductSelect?: (product: Product) => void;
   initialParams?: ProductQueryParams;
+  onQueryParamsChange?: (params: ProductListQueryParams) => void;
 }
 
 type ProductListState = ReturnType<typeof useProductListState>;
@@ -42,9 +52,13 @@ type ConfirmDeleteProduct = ReturnType<
   typeof useProductDelete
 >['confirmDeleteProduct'];
 
+const PRODUCT_LIST_IMAGE_QUERY = {
+  includeImages: false,
+} as const;
+
 interface ERPProductListFiltersProps {
   categories: Category[];
-  initialParams?: ProductQueryParams;
+  queryParams: ProductQueryParams;
   searchValue: string;
   isSearching: boolean;
   handleSearch: ProductListState['handleSearch'];
@@ -54,7 +68,7 @@ interface ERPProductListFiltersProps {
 
 function ERPProductListFilters({
   categories,
-  initialParams,
+  queryParams,
   searchValue,
   isSearching,
   handleSearch,
@@ -65,7 +79,7 @@ function ERPProductListFilters({
     <SearchFilterCard
       searchValue={searchValue}
       onSearchChange={handleSearch}
-      searchPlaceholder="搜索编码、名称、规格"
+      searchPlaceholder="搜索编码、名称、规格、分类、花色"
       isSearching={isSearching}
       filters={[
         {
@@ -79,13 +93,13 @@ function ERPProductListFilters({
         },
       ]}
       filterValues={{
-        categoryId: initialParams?.categoryId || 'all',
-        status: initialParams?.status || 'all',
+        categoryId: queryParams.categoryId || 'all',
+        status: queryParams.status || 'all',
       }}
       onFilterChange={(key, value) => {
         if (key === 'status') {
           handleFilter({
-            categoryId: initialParams?.categoryId,
+            categoryId: queryParams.categoryId,
             status: value as ProductStatus | undefined,
           });
         }
@@ -96,17 +110,122 @@ function ERPProductListFilters({
       customFilters={
         <CategorySelector
           categories={categories}
-          value={initialParams?.categoryId || undefined}
+          value={queryParams.categoryId || undefined}
           onValueChange={nextCategoryId => {
             handleFilter({
               categoryId: nextCategoryId,
-              status: initialParams?.status,
+              status: queryParams.status,
             });
           }}
           className="h-11 w-full rounded-lg border-slate-200 bg-white font-medium shadow-none hover:bg-white sm:w-36"
         />
       }
     />
+  );
+}
+
+interface ERPProductQuerySummaryProps {
+  categories: Category[];
+  pagination?: PaginationInfo;
+  queryParams: ProductQueryParams;
+  productCount: number;
+  isLoading: boolean;
+  onClearFilters: ProductListState['handleClearFilters'];
+}
+
+function getProductStatusLabel(status?: ProductStatus) {
+  return PRODUCT_STATUS_OPTIONS.find(option => option.value === status)?.label;
+}
+
+function ERPProductQuerySummary({
+  categories,
+  pagination,
+  queryParams,
+  productCount,
+  isLoading,
+  onClearFilters,
+}: ERPProductQuerySummaryProps) {
+  const keyword = queryParams.search?.trim();
+  const category = categories.find(item => item.id === queryParams.categoryId);
+  const statusLabel = getProductStatusLabel(queryParams.status);
+  const totalProducts = pagination?.total ?? productCount;
+  const totalPages = pagination?.totalPages ?? 1;
+  const currentPage = pagination?.page ?? queryParams.page ?? 1;
+  const hasActiveFilters = Boolean(keyword || category || statusLabel);
+
+  const summaryItems = React.useMemo(() => {
+    const items: Array<{ key: string; label: string; value: string }> = [];
+
+    if (keyword) {
+      items.push({ key: 'keyword', label: '关键词', value: keyword });
+    }
+
+    if (category) {
+      items.push({
+        key: 'category',
+        label: '分类',
+        value: category.fullPath ?? category.name,
+      });
+    }
+
+    if (statusLabel) {
+      items.push({ key: 'status', label: '状态', value: statusLabel });
+    }
+
+    return items;
+  }, [category, keyword, statusLabel]);
+
+  const resultHeadline = isLoading
+    ? '正在加载产品资料'
+    : hasActiveFilters
+      ? `当前匹配 ${totalProducts} 款产品`
+      : `当前共 ${totalProducts} 款产品`;
+  const resultDescription =
+    !isLoading && totalPages > 1
+      ? `第 ${currentPage} / ${totalPages} 页，${PRODUCT_SEARCH_HINT}`
+      : PRODUCT_SEARCH_HINT;
+
+  return (
+    <div className="rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-4 py-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-1">
+          <p className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
+            {resultHeadline}
+          </p>
+          <p className="text-xs text-[hsl(var(--color-text-secondary))]">
+            {resultDescription}
+          </p>
+        </div>
+
+        {hasActiveFilters && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 justify-start rounded-full px-3 text-[hsl(var(--color-text-secondary))] sm:justify-center"
+            onClick={onClearFilters}
+          >
+            清空条件
+          </Button>
+        )}
+      </div>
+
+      {summaryItems.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {summaryItems.map(item => (
+            <span
+              key={item.key}
+              className="inline-flex max-w-full items-center rounded-full bg-white px-3 py-1 text-xs text-[hsl(var(--color-text-secondary))] shadow-sm"
+            >
+              <span className="mr-1 shrink-0 font-medium text-[hsl(var(--color-text-primary))]">
+                {item.label}:
+              </span>
+              <span className="truncate">{item.value}</span>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -217,6 +336,7 @@ function ERPProductListDeleteDialog({
 export function ERPProductList({
   onProductSelect,
   initialParams,
+  onQueryParamsChange,
 }: ERPProductListProps) {
   // 状态管理
   const {
@@ -230,6 +350,7 @@ export function ERPProductList({
     handleClearFilters,
     handlePageChange,
     handleDeleteProduct,
+    currentQueryParams,
   } = useProductListState(initialParams);
 
   // 删除操作
@@ -245,22 +366,39 @@ export function ERPProductList({
     queryFn: () => getCategories(CATEGORY_OPTIONS_QUERY),
   });
 
-  const categories = categoriesResponse?.data ?? [];
-  const categoryPathById = new Map(
-    categories.map(category => [
-      category.id,
-      category.fullPath ?? category.name,
-    ])
+  const categories = categoriesResponse?.data ?? EMPTY_CATEGORIES;
+  const categoryPathById = React.useMemo(
+    () =>
+      new Map(
+        categories.map(category => [
+          category.id,
+          category.fullPath ?? category.name,
+        ])
+      ),
+    [categories]
   );
 
-  // ✅ 直接使用 initialParams，避免状态不同步（参考销售订单模块）
+  React.useEffect(() => {
+    onQueryParamsChange?.(currentQueryParams);
+  }, [currentQueryParams, onQueryParamsChange]);
+
   // 获取产品列表数据
   const { data, isLoading, isFetching, error } = useQuery({
-    queryKey: productQueryKeys.list(initialParams),
-    queryFn: () => getProducts(initialParams),
+    queryKey: productQueryKeys.list({
+      ...currentQueryParams,
+      ...PRODUCT_LIST_IMAGE_QUERY,
+    }),
+    queryFn: ({ signal }) =>
+      getProducts(
+        {
+          ...currentQueryParams,
+          ...PRODUCT_LIST_IMAGE_QUERY,
+        },
+        signal
+      ),
     staleTime: 30 * 1000,
     refetchOnWindowFocus: false,
-    placeholderData: previousData => previousData,
+    placeholderData: keepPreviousData,
     refetchOnMount: false,
   });
   const isInitialLoading = isLoading && !data;
@@ -282,12 +420,21 @@ export function ERPProductList({
     <div className="space-y-4">
       <ERPProductListFilters
         categories={categories}
-        initialParams={initialParams}
+        queryParams={currentQueryParams}
         searchValue={searchInput}
         isSearching={isSearching || isListRefreshing}
         handleSearch={handleSearch}
         handleFilter={handleFilter}
         handleClearFilters={handleClearFilters}
+      />
+
+      <ERPProductQuerySummary
+        categories={categories}
+        pagination={pagination}
+        queryParams={currentQueryParams}
+        productCount={products.length}
+        isLoading={isInitialLoading}
+        onClearFilters={handleClearFilters}
       />
 
       <ERPProductListTableCard

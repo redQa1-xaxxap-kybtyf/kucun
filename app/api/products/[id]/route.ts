@@ -13,12 +13,16 @@ import {
 } from '@/lib/api/mini-program-sanitize';
 import { successResponse } from '@/lib/api/response';
 import { withAuth } from '@/lib/auth/api-helpers';
+import { hasTrustedAuthHeaders } from '@/lib/auth/trusted-headers';
 import { getCachedProductInventorySummary } from '@/lib/cache/inventory-cache';
 import { productUpdateSchema } from '@/lib/validations/product';
 
 function isMiniProgramAdmin(request: NextRequest): boolean {
   // x-user-role 由 auth middleware 在已认证请求上注入
-  return request.headers.get('x-user-role') === 'admin';
+  return (
+    hasTrustedAuthHeaders(request.headers) &&
+    request.headers.get('x-user-role') === 'admin'
+  );
 }
 
 /**

@@ -26,7 +26,7 @@ const nextConfig: NextConfig = {
       },
     ],
     formats: ['image/avif', 'image/webp'],
-    minimumCacheTTL: 60,
+    minimumCacheTTL: 86400,
     // SVG 安全配置
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',

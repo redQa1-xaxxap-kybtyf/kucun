@@ -8,6 +8,7 @@ import { useMemo, useState } from 'react';
 import type { ProductImage } from '@/lib/types/product';
 import { cn } from '@/lib/utils';
 import { shouldBypassImageOptimization } from '@/lib/utils/image';
+import { dedupeProductImages } from '@/lib/utils/product-image-dedupe';
 
 import 'react-photo-view/dist/react-photo-view.css';
 
@@ -77,10 +78,14 @@ export function ProductImageGallery({
   // 按类型分组图片
   const groupedImages: GroupedImages = useMemo(() => {
     const result: GroupedImages = { thumbnail: [], main: [], effect: [] };
+    const normalizedThumbnailUrl = thumbnailUrl?.trim() || '';
 
     // 添加缩略图
-    if (thumbnailUrl) {
-      result.thumbnail.push({ url: thumbnailUrl, type: 'thumbnail' });
+    if (normalizedThumbnailUrl) {
+      result.thumbnail.push({
+        url: normalizedThumbnailUrl,
+        type: 'thumbnail',
+      });
     }
 
     // 解析 images 字段
@@ -99,8 +104,11 @@ export function ProductImageGallery({
     }
 
     // 按类型分组
-    parsedImages.forEach(img => {
-      if (img.url && img.url !== thumbnailUrl) {
+    dedupeProductImages(
+      parsedImages,
+      normalizedThumbnailUrl ? [normalizedThumbnailUrl] : []
+    ).forEach(img => {
+      if (img.url) {
         const type = (img.type === 'effect' ? 'effect' : 'main') as ImageType;
         result[type].push({ url: img.url, type });
       }

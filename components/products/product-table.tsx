@@ -7,9 +7,13 @@ import {
   MoreHorizontal,
   Route,
   Trash2,
+  ZoomIn,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { PhotoProvider, PhotoView } from 'react-photo-view';
+
+import 'react-photo-view/dist/react-photo-view.css';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -97,24 +101,10 @@ export function ProductTable({
               className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3 shadow-[var(--shadow-light)]"
             >
               <div className="flex items-start gap-3">
-                {product.thumbnailUrl ? (
-                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-[hsl(var(--color-border-secondary))] bg-white">
-                    <Image
-                      src={product.thumbnailUrl}
-                      alt={product.name}
-                      fill
-                      className="object-cover"
-                      sizes="64px"
-                      unoptimized={shouldBypassImageOptimization(
-                        product.thumbnailUrl
-                      )}
-                    />
-                  </div>
-                ) : (
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-dashed border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))]">
-                    <ImageIcon className="h-5 w-5 text-[hsl(var(--color-text-tertiary))]" />
-                  </div>
-                )}
+                <ProductThumbnailPreview
+                  product={product}
+                  size="mobile"
+                />
 
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-2">
@@ -243,24 +233,10 @@ export function ProductTable({
                   className="transition-colors hover:bg-[hsl(var(--color-primary-light))]"
                 >
                   <TableCell>
-                    {product.thumbnailUrl ? (
-                      <div className="relative h-10 w-10 overflow-hidden rounded border border-[hsl(var(--color-border-secondary))] bg-white">
-                        <Image
-                          src={product.thumbnailUrl}
-                          alt={product.name}
-                          fill
-                          className="object-cover"
-                          sizes="40px"
-                          unoptimized={shouldBypassImageOptimization(
-                            product.thumbnailUrl
-                          )}
-                        />
-                      </div>
-                    ) : (
-                      <div className="flex h-10 w-10 items-center justify-center rounded border border-dashed border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))]">
-                        <ImageIcon className="h-4 w-4 text-[hsl(var(--color-text-tertiary))]" />
-                      </div>
-                    )}
+                    <ProductThumbnailPreview
+                      product={product}
+                      size="desktop"
+                    />
                   </TableCell>
                   <TableCell className="font-medium text-[hsl(var(--color-primary))]">
                     {product.code}
@@ -345,5 +321,63 @@ export function ProductTable({
         </Table>
       </div>
     </>
+  );
+}
+
+interface ProductThumbnailPreviewProps {
+  product: Product;
+  size: 'mobile' | 'desktop';
+}
+
+function ProductThumbnailPreview({
+  product,
+  size,
+}: ProductThumbnailPreviewProps) {
+  const boxClass =
+    size === 'mobile' ? 'h-16 w-16 rounded-lg' : 'h-10 w-10 rounded';
+  const iconClass = size === 'mobile' ? 'h-5 w-5' : 'h-4 w-4';
+  const imageSize = size === 'mobile' ? '64px' : '40px';
+  const fallbackImageUrl =
+    product.images?.find(image => image.url)?.url?.trim() || '';
+  const displayImageUrl = product.thumbnailUrl || fallbackImageUrl;
+
+  if (!displayImageUrl) {
+    return (
+      <div
+        className={`flex shrink-0 items-center justify-center border border-dashed border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] ${boxClass}`}
+        aria-label={`${product.name} 暂无缩略图`}
+      >
+        <ImageIcon
+          className={`${iconClass} text-[hsl(var(--color-text-tertiary))]`}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className={`relative shrink-0 ${boxClass}`}>
+      <PhotoProvider maskOpacity={0.85}>
+        <PhotoView src={displayImageUrl}>
+          <button
+            type="button"
+            title="点击预览"
+            aria-label={`预览 ${product.name} 的缩略图`}
+            className={`group relative overflow-hidden border border-[hsl(var(--color-border-secondary))] bg-white transition focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-primary))] focus-visible:ring-offset-2 focus-visible:outline-none ${boxClass}`}
+          >
+            <Image
+              src={displayImageUrl}
+              alt={product.name}
+              fill
+              className="object-cover"
+              sizes={imageSize}
+              unoptimized={shouldBypassImageOptimization(displayImageUrl)}
+            />
+            <span className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition group-hover:bg-black/35 group-hover:opacity-100 group-focus-visible:bg-black/35 group-focus-visible:opacity-100">
+              <ZoomIn className={`${iconClass} text-white`} />
+            </span>
+          </button>
+        </PhotoView>
+      </PhotoProvider>
+    </div>
   );
 }

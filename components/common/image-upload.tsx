@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
+import { shouldBypassImageOptimization } from '@/lib/utils/image';
 
 interface ImageUploadProps {
   value?: string[];
@@ -187,6 +188,8 @@ export function ImageUpload({
                     alt={`产品图片 ${index + 1}`}
                     fill
                     className="object-cover"
+                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                    unoptimized={shouldBypassImageOptimization(url)}
                   />
                   <Button
                     type="button"

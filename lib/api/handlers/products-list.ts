@@ -34,6 +34,46 @@ type ProductBatchSpecEntry = {
   weight?: number | null;
 };
 
+function buildProductSearchConditions(
+  search: string
+): Prisma.ProductWhereInput[] {
+  return [
+    { code: { contains: search } },
+    { name: { contains: search } },
+    { specification: { contains: search } },
+    {
+      category: {
+        is: {
+          OR: [
+            { name: { contains: search } },
+            { code: { contains: search } },
+            { parent: { is: { name: { contains: search } } } },
+            { parent: { is: { code: { contains: search } } } },
+            {
+              parent: {
+                is: {
+                  parent: { is: { name: { contains: search } } },
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    {
+      variants: {
+        some: {
+          OR: [
+            { colorCode: { contains: search } },
+            { colorName: { contains: search } },
+            { sku: { contains: search } },
+          ],
+        },
+      },
+    },
+  ];
+}
+
 /**
  * 解析产品列表查询参数
  */
@@ -95,14 +135,12 @@ export function buildProductWhereClause(params: {
 }): Prisma.ProductWhereInput {
   const where: Prisma.ProductWhereInput = {};
 
-  // 搜索条件 - 使用模糊匹配提升用户体验
-  // 支持在产品编码、名称、规格的任意位置搜索
+  // 搜索条件：贴合库存总览的宽松搜索，覆盖用户常搜的编码、名称、规格、分类和花色字段。
   if (params.search) {
-    where.OR = [
-      { code: { contains: params.search } }, // 编码模糊匹配
-      { name: { contains: params.search } }, // 名称模糊匹配
-      { specification: { contains: params.search } }, // 规格模糊匹配
-    ];
+    const search = params.search.trim();
+    if (search) {
+      where.OR = buildProductSearchConditions(search);
+    }
   }
 
   if (params.status) {
@@ -515,6 +553,7 @@ export function formatProductList(params: {
   >;
   includeInventory: boolean;
   includeStatistics: boolean;
+  includeImages?: boolean;
   batchSpecsMap?: Map<
     string,
     Array<{
@@ -533,6 +572,7 @@ export function formatProductList(params: {
     inventoryMap,
     includeInventory,
     includeStatistics,
+    includeImages = true,
     batchSpecsMap,
   } = params;
 
@@ -606,6 +646,12 @@ export function formatProductList(params: {
       }),
     };
 
+    const images = includeImages
+      ? parseProductImages(product.images ?? null, product.id)
+      : product.thumbnailUrl
+        ? []
+        : parseProductImages(product.images ?? null, product.id).slice(0, 1);
+
     return {
       id: product.id,
       code: product.code,
@@ -621,7 +667,7 @@ export function formatProductList(params: {
       category: formatProductCategory(product.category),
       description: product.description ?? undefined,
       thumbnailUrl: product.thumbnailUrl ?? undefined,
-      images: parseProductImages(product.images ?? null, product.id),
+      images,
       inventory,
       statistics,
       batchSpecs: batchSpecs.length > 0 ? batchSpecs : undefined,

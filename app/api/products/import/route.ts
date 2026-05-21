@@ -10,6 +10,7 @@ import {
 import { withAuth } from '@/lib/auth/api-helpers';
 import { revalidateProducts } from '@/lib/cache';
 import { logger } from '@/lib/logger';
+import { invalidateMiniProgramCatalogCache } from '@/lib/services/miniprogram-catalog-service';
 import { type ProductImportRowInput } from '@/lib/validations/product-import';
 
 function readImportMode(formData: FormData) {
@@ -131,6 +132,7 @@ export const POST = withAuth(
         const { revalidatePath } = await import('next/cache');
         revalidatePath('/products', 'page');
         await revalidateProducts();
+        invalidateMiniProgramCatalogCache();
       }
 
       return NextResponse.json({

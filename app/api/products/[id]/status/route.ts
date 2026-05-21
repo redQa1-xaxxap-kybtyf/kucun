@@ -7,6 +7,7 @@ import { successResponse } from '@/lib/api/response';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { invalidateProductCache } from '@/lib/cache/product-cache';
 import { prisma } from '@/lib/db';
+import { invalidateMiniProgramCatalogCache } from '@/lib/services/miniprogram-catalog-service';
 
 const productStatusSchema = z.object({
   status: z.enum(['active', 'inactive']),
@@ -39,6 +40,7 @@ export const PATCH = withAuth(
     revalidatePath(`/products/${id}`, 'page');
 
     await invalidateProductCache(id);
+    invalidateMiniProgramCatalogCache();
 
     return successResponse({ id, status }, 200, '产品状态已更新');
   },

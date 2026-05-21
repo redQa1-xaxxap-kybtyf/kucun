@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import { promises as fs } from 'fs';
 import path from 'path';
 
@@ -31,6 +31,7 @@ const SUPPORTED_IMAGE_TYPES = [
 ] as const;
 
 type ProductImageKind = 'thumbnail' | 'main' | 'effect';
+const PRODUCT_IMAGE_KINDS = new Set<string>(['thumbnail', 'main', 'effect']);
 
 // 根据图片用途返回最大允许大小（字节）
 function getMaxSizeForKind(type: string, kind?: string | null): number {
@@ -55,6 +56,7 @@ interface LocalUploadResult {
   url?: string;
   key?: string;
   error?: string;
+  reused?: boolean;
 }
 
 function resolveFileExtension(fileName: string, mimeType: string): string {
@@ -78,7 +80,8 @@ async function saveFileLocally(
   buffer: Buffer,
   fileName: string,
   mimeType: string,
-  type: string
+  type: string,
+  options?: { contentHash?: string }
 ): Promise<LocalUploadResult> {
   try {
     const safeType = type || 'product';
@@ -91,24 +94,45 @@ async function saveFileLocally(
     await fs.mkdir(targetDir, { recursive: true });
 
     const ext = resolveFileExtension(fileName, mimeType);
-    const safeFileName = `${Date.now()}-${randomUUID()}${ext}`;
+    const safeFileName = options?.contentHash
+      ? `${options.contentHash}${ext}`
+      : `${Date.now()}-${randomUUID()}${ext}`;
     const absolutePath = path.join(targetDir, safeFileName);
+    let reused = false;
 
-    await fs.writeFile(absolutePath, buffer);
+    if (options?.contentHash) {
+      try {
+        await fs.writeFile(absolutePath, buffer, { flag: 'wx' });
+      } catch (error) {
+        const errno = error as NodeJS.ErrnoException;
+        if (errno?.code !== 'EEXIST') {
+          throw error;
+        }
+        reused = true;
+      }
+    } else {
+      await fs.writeFile(absolutePath, buffer);
+    }
 
     const urlPath = `/api/uploads/${encodeURIComponent(safeType)}/${encodeURIComponent(
       safeFileName
     )}`;
 
-    logger.info('upload', '文件已保存到本地目录', undefined, {
-      path: absolutePath,
-      url: urlPath,
-    });
+    logger.info(
+      'upload',
+      reused ? '复用本地已存在文件' : '文件已保存到本地目录',
+      undefined,
+      {
+        path: absolutePath,
+        url: urlPath,
+      }
+    );
 
     return {
       success: true,
       url: urlPath,
       key: `local://${safeType}/${safeFileName}`,
+      reused,
     };
   } catch (error) {
     const errno = error as NodeJS.ErrnoException;
@@ -127,8 +151,12 @@ async function saveFileLocally(
   }
 }
 
+function getContentHash(buffer: Buffer) {
+  return createHash('sha256').update(buffer).digest('hex');
+}
+
 type UploadPayloadResult =
-  | { ok: true; file: File; type: string }
+  | { ok: true; file: File; type: string; kind?: ProductImageKind }
   | { ok: false; response: NextResponse };
 
 async function extractUploadPayload(
@@ -140,7 +168,7 @@ async function extractUploadPayload(
   const kindRaw = formData.get('kind');
   const kind =
     typeof kindRaw === 'string' && kindRaw.trim().length > 0
-      ? (kindRaw as ProductImageKind)
+      ? kindRaw.trim()
       : undefined;
 
   const validationResult = uploadValidation.safeParse({ type });
@@ -153,6 +181,16 @@ async function extractUploadPayload(
           error: '上传类型不正确',
           details: validationResult.error.issues,
         },
+        { status: 400 }
+      ),
+    };
+  }
+
+  if (kind && !PRODUCT_IMAGE_KINDS.has(kind)) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { success: false, error: '图片用途不正确' },
         { status: 400 }
       ),
     };
@@ -214,10 +252,22 @@ async function extractUploadPayload(
     };
   }
 
-  return { ok: true, file, type };
+  return { ok: true, file, type, kind: kind as ProductImageKind | undefined };
 }
 
-async function prepareUploadBuffer(file: File, type: string): Promise<Buffer> {
+function getProductResizeLimit(kind?: ProductImageKind) {
+  if (kind === 'thumbnail') {
+    return { width: 480, height: 480 };
+  }
+
+  return { width: 1200, height: 1200 };
+}
+
+async function prepareUploadBuffer(
+  file: File,
+  type: string,
+  kind?: ProductImageKind
+): Promise<Buffer> {
   const bytes = await file.arrayBuffer();
   let buffer = Buffer.from(bytes);
 
@@ -232,10 +282,15 @@ async function prepareUploadBuffer(file: File, type: string): Promise<Buffer> {
 
     switch (type) {
       case 'product':
-        sharpInstance = sharpInstance.resize(1200, 1200, {
-          fit: 'inside',
-          withoutEnlargement: true,
-        });
+        const productLimit = getProductResizeLimit(kind);
+        sharpInstance = sharpInstance.resize(
+          productLimit.width,
+          productLimit.height,
+          {
+            fit: 'inside',
+            withoutEnlargement: true,
+          }
+        );
         break;
       case 'avatar':
         sharpInstance = sharpInstance.resize(400, 400, {
@@ -257,6 +312,7 @@ async function prepareUploadBuffer(file: File, type: string): Promise<Buffer> {
 
     logger.info('upload', '图片优化完成', undefined, {
       fileName: file.name,
+      kind,
       originalSize: bytes.byteLength,
       optimizedSize: buffer.length,
     });
@@ -274,6 +330,7 @@ interface UploadSuccessOptions {
   storage: 'qiniu' | 'local';
   userId: string;
   message: string;
+  reused?: boolean;
 }
 
 function respondWithSuccess({
@@ -283,6 +340,7 @@ function respondWithSuccess({
   storage,
   userId,
   message,
+  reused = false,
 }: UploadSuccessOptions) {
   const fileName = key?.split('/').pop() || file.name;
 
@@ -295,6 +353,7 @@ function respondWithSuccess({
       type: file.type,
       url,
       key,
+      reused,
       uploadedAt: new Date().toISOString(),
       uploadedBy: userId,
       storage,
@@ -312,8 +371,11 @@ async function handleUploadWithFallback(
 ) {
   // 统一以 WebP 作为目标格式存储到七牛
   const targetFileName = `${file.name.replace(/\.[^.]+$/, '')}.webp`;
+  const contentHash = getContentHash(buffer);
 
-  const uploadResult = await uploadToQiniu(buffer, targetFileName, type);
+  const uploadResult = await uploadToQiniu(buffer, targetFileName, type, {
+    contentHash,
+  });
 
   if (uploadResult.success) {
     return respondWithSuccess({
@@ -322,7 +384,8 @@ async function handleUploadWithFallback(
       url: uploadResult.url,
       storage: 'qiniu',
       userId,
-      message: '文件上传成功',
+      message: uploadResult.reused ? '文件已存在，已复用' : '文件上传成功',
+      reused: uploadResult.reused,
     });
   }
 
@@ -349,7 +412,8 @@ async function handleUploadWithFallback(
     // 本地兜底也使用 webp 扩展名
     targetFileName,
     'image/webp',
-    type
+    type,
+    { contentHash }
   );
 
   if (!fallbackResult.success || !fallbackResult.url) {
@@ -420,7 +484,10 @@ async function handleUploadWithFallback(
     url: absoluteUrl,
     storage: 'local',
     userId,
-    message: '文件已保存到本地存储，建议尽快修复云存储配置（七牛云上传失败）',
+    message: fallbackResult.reused
+      ? '文件已复用本地存储，建议尽快修复云存储配置（七牛云上传失败）'
+      : '文件已保存到本地存储，建议尽快修复云存储配置（七牛云上传失败）',
+    reused: fallbackResult.reused,
   });
 }
 
@@ -434,8 +501,8 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
       return payload.response;
     }
 
-    const { file, type } = payload;
-    const buffer = await prepareUploadBuffer(file, type);
+    const { file, type, kind } = payload;
+    const buffer = await prepareUploadBuffer(file, type, kind);
 
     const publicBaseOrigin = getRequestOrigin(request, {
       fallbackOrigin: process.env.NEXTAUTH_URL || request.nextUrl.origin,

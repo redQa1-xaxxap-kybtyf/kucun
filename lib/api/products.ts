@@ -5,10 +5,15 @@
 
 import { queryKeys } from '@/lib/queryKeys';
 import type { ApiResponse, PaginatedResponse } from '@/lib/types/api';
-import type { Product, ProductQueryParams } from '@/lib/types/product';
+import type {
+  Product,
+  ProductImage,
+  ProductQueryParams,
+} from '@/lib/types/product';
 import { csrfFetch } from '@/lib/utils/csrf';
 import { createFriendlyApiError } from '@/lib/utils/user-friendly-error';
 import type {
+  ProductImageImportKind,
   ProductCreateFormData,
   ProductUpdateFormData,
 } from '@/lib/validations/product';
@@ -17,6 +22,7 @@ export type ProductListQueryParams = ProductQueryParams & {
   includeInventory?: boolean;
   includeStatistics?: boolean;
   includeBatchSpecs?: boolean;
+  includeImages?: boolean;
 };
 
 export interface ProductImportPreviewRow {
@@ -62,6 +68,49 @@ export interface ProductImportResult {
   }>;
 }
 
+export interface ProductImageImportMatchInput {
+  clientId: string;
+  fileName: string;
+  inferredCode: string;
+  kind: ProductImageImportKind;
+}
+
+export interface ProductImageImportMatchItem
+  extends ProductImageImportMatchInput {
+  status: 'matched' | 'not_found';
+  product: {
+    id: string;
+    code: string;
+    name: string;
+    specification: string | null;
+    thumbnailUrl: string | null;
+  } | null;
+}
+
+export interface ProductImageImportMatchResult {
+  totalCount: number;
+  matchedCount: number;
+  unmatchedCount: number;
+  items: ProductImageImportMatchItem[];
+}
+
+export interface ProductImageImportSaveInput {
+  productId: string;
+  thumbnailUrl?: string | null;
+  appendImages?: ProductImage[];
+}
+
+export interface ProductImageImportSaveResult {
+  totalCount: number;
+  successCount: number;
+  failedCount: number;
+  results: Array<{
+    productId: string;
+    status: 'success' | 'error';
+    error?: string;
+  }>;
+}
+
 const API_BASE = '/api/products';
 
 /**
@@ -73,7 +122,8 @@ export const productQueryKeys = queryKeys.products;
  * 获取产品列表
  */
 export async function getProducts(
-  params: ProductListQueryParams = {}
+  params: ProductListQueryParams = {},
+  signal?: AbortSignal
 ): Promise<PaginatedResponse<Product>> {
   const searchParams = new URLSearchParams();
 
@@ -90,6 +140,7 @@ export async function getProducts(
       'Content-Type': 'application/json',
     },
     credentials: 'include', // 包含cookies以传递会话信息
+    signal,
   });
 
   if (!response.ok) {
@@ -273,6 +324,125 @@ export async function updateProduct(
 }
 
 /**
+ * 快速更新产品缩略图
+ */
+export async function updateProductThumbnail(
+  id: string,
+  thumbnailUrl: string | null
+): Promise<Product> {
+  const response = await csrfFetch(`${API_BASE}/${id}/thumbnail`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify({ thumbnailUrl }),
+  });
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error('产品不存在');
+    }
+    throw await createFriendlyApiError(response, '更新缩略图失败');
+  }
+
+  const data: ApiResponse<Product> = await response.json();
+
+  if (!data.success) {
+    throw new Error(data.error || '更新缩略图失败');
+  }
+
+  if (!data.data) {
+    throw new Error('服务器返回数据为空');
+  }
+
+  return data.data;
+}
+
+export async function matchProductImagesForImport(
+  items: ProductImageImportMatchInput[]
+): Promise<ProductImageImportMatchResult> {
+  const response = await csrfFetch(`${API_BASE}/image-import/match`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify({ items }),
+  });
+
+  if (!response.ok) {
+    throw await createFriendlyApiError(response, '图片匹配失败');
+  }
+
+  const data: ApiResponse<ProductImageImportMatchResult> =
+    await response.json();
+
+  if (!data.success || !data.data) {
+    throw new Error(data.error || '图片匹配失败');
+  }
+
+  return data.data;
+}
+
+export async function updateProductMedia(
+  id: string,
+  data: {
+    thumbnailUrl?: string | null;
+    appendImages?: ProductImage[];
+  }
+): Promise<Product> {
+  const response = await csrfFetch(`${API_BASE}/${id}/images`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error('产品不存在');
+    }
+    throw await createFriendlyApiError(response, '保存产品图片失败');
+  }
+
+  const body: ApiResponse<Product> = await response.json();
+
+  if (!body.success || !body.data) {
+    throw new Error(body.error || '保存产品图片失败');
+  }
+
+  return body.data;
+}
+
+export async function saveProductImagesForImport(
+  items: ProductImageImportSaveInput[]
+): Promise<ProductImageImportSaveResult> {
+  const response = await csrfFetch(`${API_BASE}/image-import/save`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify({ items }),
+  });
+
+  if (!response.ok) {
+    throw await createFriendlyApiError(response, '批量保存产品图片失败');
+  }
+
+  const body: ApiResponse<ProductImageImportSaveResult> = await response.json();
+
+  if (!body.success || !body.data) {
+    throw new Error(body.error || '批量保存产品图片失败');
+  }
+
+  return body.data;
+}
+
+/**
  * 删除产品
  */
 export async function deleteProduct(id: string): Promise<void> {
@@ -300,6 +470,7 @@ export async function deleteProduct(id: string): Promise<void> {
 
 // 导出类型以供其他模块使用
 export type {
+  ProductImageImportKind,
   ProductCreateFormData,
   ProductUpdateFormData,
 } from '@/lib/validations/product';

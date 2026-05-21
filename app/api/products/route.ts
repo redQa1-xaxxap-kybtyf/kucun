@@ -13,10 +13,12 @@ import { parseOffsetPagination } from '@/lib/api/pagination';
 import type { ProductListQueryParams } from '@/lib/api/products';
 import { getProductsForServer } from '@/lib/api/products-server';
 import { successResponse, withAuth } from '@/lib/auth/api-helpers';
+import { hasTrustedAuthHeaders } from '@/lib/auth/trusted-headers';
 import { publishDataUpdate, revalidateProducts } from '@/lib/cache';
 import { PRODUCT_DEFAULT_SORT } from '@/lib/config/product';
 import { productConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
+import { invalidateMiniProgramCatalogCache } from '@/lib/services/miniprogram-catalog-service';
 import { productCreateSchema } from '@/lib/validations/product';
 
 /**
@@ -35,6 +37,7 @@ function parseProductQueryParams(
     : productConfig.defaultIncludeStatistics;
 
   const includeBatchSpecs = searchParams.get('includeBatchSpecs') === 'true';
+  const includeImages = searchParams.get('includeImages') !== 'false';
 
   const { page, limit } = parseOffsetPagination(searchParams, {
     strict: true,
@@ -59,12 +62,16 @@ function parseProductQueryParams(
     includeInventory,
     includeStatistics,
     includeBatchSpecs,
+    includeImages,
   };
 }
 
 function isMiniProgramAdmin(request: NextRequest): boolean {
   // x-user-role 由 auth middleware 在已认证请求上注入
-  return request.headers.get('x-user-role') === 'admin';
+  return (
+    hasTrustedAuthHeaders(request.headers) &&
+    request.headers.get('x-user-role') === 'admin'
+  );
 }
 
 function attachStockStatusToProductListPayload(payload: unknown): unknown {
@@ -186,6 +193,7 @@ export const POST = withAuth(
 
     // 使用新的统一缓存失效系统（处理React Query和Redis缓存）
     await revalidateProducts(); // 自动级联失效相关缓存
+    invalidateMiniProgramCatalogCache();
 
     // 发布实时更新事件
     await publishDataUpdate('products', formattedProduct.id, 'create');

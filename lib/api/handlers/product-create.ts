@@ -3,6 +3,7 @@ import type { z } from 'zod';
 
 import { ApiError, handlePrismaError } from '@/lib/api/errors';
 import { prisma } from '@/lib/db';
+import { dedupeProductImages } from '@/lib/utils/product-image-dedupe';
 import { toProductResponse } from '@/lib/utils/product-transforms';
 import type { productCreateSchema } from '@/lib/validations/product';
 
@@ -99,6 +100,11 @@ export async function createProductRecordInTransaction(
   data: ProductCreateData
 ): Promise<ProductCreateRecord> {
   const processedCategoryId = normalizeProductCategoryId(data.categoryId);
+  const thumbnailUrl = data.thumbnailUrl?.trim() || null;
+  const images = dedupeProductImages(
+    data.images ?? [],
+    thumbnailUrl ? [thumbnailUrl] : []
+  );
 
   await validateCategoryForCreate(tx, processedCategoryId);
 
@@ -112,8 +118,8 @@ export async function createProductRecordInTransaction(
         unit: 'sheet',
         thickness: data.thickness ?? null,
         categoryId: processedCategoryId,
-        thumbnailUrl: data.thumbnailUrl || null,
-        images: data.images?.length ? JSON.stringify(data.images) : null,
+        thumbnailUrl,
+        images: images.length ? JSON.stringify(images) : null,
         status: data.status ?? 'active',
       },
       select: PRODUCT_CREATE_RESULT_SELECT,

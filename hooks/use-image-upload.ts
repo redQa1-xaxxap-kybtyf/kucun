@@ -5,6 +5,7 @@ import { useState } from 'react';
 import type { ProductImage } from '@/lib/types/product';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { getErrorMessage } from '@/lib/utils/error-handler';
+import { dedupeProductImages } from '@/lib/utils/product-image-dedupe';
 
 interface UseImageUploadProps {
   maxFiles?: number;
@@ -217,7 +218,7 @@ export function useImageUpload({
           order: currentImages.length + index,
         }));
 
-        onImagesChange([...currentImages, ...newImages]);
+        onImagesChange(dedupeProductImages([...currentImages, ...newImages]));
       }
     } catch (error) {
       const errorMessage = getErrorMessage(error);
@@ -244,7 +245,7 @@ export function useImageUpload({
 
     // 从完整列表中移除该图片
     const filteredImages = images.filter(img => img !== targetImage);
-    onImagesChange(filteredImages);
+    onImagesChange(dedupeProductImages(filteredImages));
   };
 
   const updateImageAlt = (
@@ -266,7 +267,7 @@ export function useImageUpload({
     const updatedImages = images.map(img =>
       img === targetImage ? { ...img, alt } : img
     );
-    onImagesChange(updatedImages);
+    onImagesChange(dedupeProductImages(updatedImages));
   };
 
   return {

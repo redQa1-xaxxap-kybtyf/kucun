@@ -88,12 +88,20 @@ export async function getCachedProduct(
 export async function invalidateProductCache(
   productId?: string
 ): Promise<void> {
-  if (productId) {
-    // 清除特定产品缓存
-    await invalidateNamespace(`products:detail:${productId}`);
-  }
-  // 清除产品列表缓存
-  await invalidateNamespace('products:list:*');
+  await invalidateProductCaches(productId ? [productId] : []);
+}
+
+/**
+ * 批量清除产品缓存
+ */
+export async function invalidateProductCaches(
+  productIds: string[] = []
+): Promise<void> {
+  const uniqueProductIds = Array.from(new Set(productIds.filter(Boolean)));
+  await Promise.all([
+    ...uniqueProductIds.map(id => invalidateNamespace(`products:detail:${id}`)),
+    invalidateNamespace('products:list:*'),
+  ]);
 }
 
 /**

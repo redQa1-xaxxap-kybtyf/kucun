@@ -159,6 +159,65 @@ export const productUpdateSchema = z.object({
   images: baseValidations.images,
 });
 
+// 产品缩略图快速更新验证
+export const productThumbnailUpdateSchema = z.object({
+  thumbnailUrl: baseValidations.thumbnailUrl.nullable().optional(),
+});
+
+export const productImageImportKindSchema = z.enum([
+  'thumbnail',
+  'main',
+  'effect',
+]);
+
+export const productImageImportMatchSchema = z.object({
+  items: z
+    .array(
+      z.object({
+        clientId: z.string().min(1).max(100),
+        fileName: z.string().trim().min(1).max(255),
+        inferredCode: z.string().trim().min(1).max(80),
+        kind: productImageImportKindSchema,
+      })
+    )
+    .min(1, '请先选择图片')
+    .max(2000, '单次最多匹配 2000 张图片'),
+});
+
+const productAppendImagesSchema = z
+  .array(
+    z.object({
+      url: z
+        .string()
+        .trim()
+        .refine(isUrlOrPath, { message: '图片URL格式不正确' }),
+      type: z.enum(['main', 'effect'], {
+        message: '图片类型必须是主图或效果图',
+      }),
+      alt: z.string().max(200, '图片描述不能超过200个字符').optional(),
+      order: z.number().int().min(0).optional(),
+    })
+  )
+  .max(50, '单个产品一次最多追加 50 张图片');
+
+export const productMediaUpdateSchema = z.object({
+  thumbnailUrl: baseValidations.thumbnailUrl.nullable().optional(),
+  appendImages: productAppendImagesSchema.optional(),
+});
+
+export const productImageImportSaveSchema = z.object({
+  items: z
+    .array(
+      z.object({
+        productId: z.string().trim().min(1, '产品ID不能为空').max(64),
+        thumbnailUrl: baseValidations.thumbnailUrl.nullable().optional(),
+        appendImages: productAppendImagesSchema.optional(),
+      })
+    )
+    .min(1, '没有可保存的图片')
+    .max(500, '单次最多保存 500 个产品的图片资料'),
+});
+
 // 产品搜索表单验证
 export const productSearchSchema = z.object({
   search: z.string().max(100, '搜索关键词不能超过100个字符').optional(),
@@ -319,6 +378,21 @@ export const productVariantBatchGenerateSkuSchema = z.object({
 // 导出类型推断
 export type ProductCreateFormData = z.infer<typeof productCreateSchema>;
 export type ProductUpdateFormData = z.infer<typeof productUpdateSchema>;
+export type ProductThumbnailUpdateFormData = z.infer<
+  typeof productThumbnailUpdateSchema
+>;
+export type ProductImageImportKind = z.infer<
+  typeof productImageImportKindSchema
+>;
+export type ProductImageImportMatchFormData = z.infer<
+  typeof productImageImportMatchSchema
+>;
+export type ProductMediaUpdateFormData = z.infer<
+  typeof productMediaUpdateSchema
+>;
+export type ProductImageImportSaveFormData = z.infer<
+  typeof productImageImportSaveSchema
+>;
 export type ProductSearchFormData = z.infer<typeof productSearchSchema>;
 export type ProductQueryParams = z.infer<typeof productQuerySchema>;
 export type ProductVariantQueryParams = z.infer<

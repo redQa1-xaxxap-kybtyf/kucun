@@ -12,6 +12,14 @@ const bodySchema = z.object({
   fileName: z.string().min(1).max(200),
 });
 
+function getMaxSizeForDirectUpload(type: string, kind?: string) {
+  if (type === 'product') {
+    return kind === 'effect' ? 2 * 1024 * 1024 : 1024 * 1024;
+  }
+
+  return 5 * 1024 * 1024;
+}
+
 function safeFileName(raw: string): string {
   // 只保留最后一段文件名，去掉路径
   const name = raw.split('/').pop()?.split('\\').pop() || 'image.jpg';
@@ -38,7 +46,12 @@ export const POST = withAuth(async (request: NextRequest) => {
   const prefix = type === 'product' && kind ? `${type}/${kind}` : type;
   const params = await createQiniuDirectUploadParams(
     normalizedFileName,
-    prefix
+    prefix,
+    {
+      fsizeLimit: getMaxSizeForDirectUpload(type, kind),
+      mimeLimit: 'image/jpeg;image/png;image/webp;image/gif',
+      detectMime: 1,
+    }
   );
 
   if (!params.success) {
@@ -60,4 +73,3 @@ export const POST = withAuth(async (request: NextRequest) => {
     },
   });
 });
-

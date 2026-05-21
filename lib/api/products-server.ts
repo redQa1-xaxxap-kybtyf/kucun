@@ -43,6 +43,7 @@ export const getProductsForServer = cache(
     const includeStatistics =
       params.includeStatistics ?? productConfig.defaultIncludeStatistics;
     const includeBatchSpecs = params.includeBatchSpecs ?? false;
+    const includeImages = params.includeImages ?? true;
     const requestLimit = params.limit ?? paginationConfig.defaultPageSize;
 
     // 性能优化：超过20条记录时限制聚合查询
@@ -83,8 +84,10 @@ export const getProductsForServer = cache(
       includeInventory,
       includeStatistics: finalIncludeStatistics,
       includeBatchSpecs,
+      includeImages,
       uncategorized: filterUncategorized,
       categoryPathVersion: 1,
+      searchVersion: 2,
     });
 
     // 性能监控：记录查询开始时间
@@ -122,6 +125,7 @@ export const getProductsForServer = cache(
           inventoryMap,
           includeInventory,
           includeStatistics: finalIncludeStatistics,
+          includeImages,
           batchSpecsMap,
         });
 
@@ -149,6 +153,7 @@ export const getProductsForServer = cache(
         includeInventory,
         includeStatistics: finalIncludeStatistics,
         includeBatchSpecs,
+        includeImages,
         search,
         page,
         limit,

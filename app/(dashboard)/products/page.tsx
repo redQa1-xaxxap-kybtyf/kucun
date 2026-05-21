@@ -81,6 +81,7 @@ export default async function ProductsPage({
       sortOrder,
       includeInventory,
       includeStatistics,
+      includeImages: false,
     }),
     getCategoriesServer({
       status: 'active',
@@ -124,6 +125,7 @@ export default async function ProductsPage({
       status,
       sortBy,
       sortOrder,
+      includeImages: false,
     }),
     normalizedData
   );

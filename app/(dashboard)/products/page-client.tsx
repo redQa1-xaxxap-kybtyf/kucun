@@ -1,11 +1,12 @@
 'use client';
 
-import { Download, Loader2, Package, Plus, Upload } from 'lucide-react';
+import { Download, Images, Loader2, Package, Plus, Upload } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import * as React from 'react';
 
 import { PageHeader } from '@/components/common/page-header';
+import { ProductImageBatchImportDialog } from '@/components/products/product-image-batch-import-dialog';
 import { ProductImportDialog } from '@/components/products/product-import-dialog';
 import { Button } from '@/components/ui/button';
 import { ProductsSkeleton } from '@/components/ui/skeleton-compositions';
@@ -36,6 +37,25 @@ interface ProductsPageClientProps {
   initialParams: ProductQueryParams;
 }
 
+const PRODUCT_QUERY_COMPARE_KEYS: Array<keyof ProductListQueryParams> = [
+  'search',
+  'categoryId',
+  'status',
+  'sortBy',
+  'sortOrder',
+  'page',
+  'limit',
+];
+
+function areProductQueryParamsEqual(
+  current: ProductListQueryParams,
+  next: ProductListQueryParams
+) {
+  return PRODUCT_QUERY_COMPARE_KEYS.every(
+    key => (current[key] ?? '') === (next[key] ?? '')
+  );
+}
+
 async function fetchProductsForExport(
   queryParams: ProductListQueryParams
 ): Promise<Product[]> {
@@ -51,6 +71,7 @@ async function fetchProductsForExport(
       includeInventory: false,
       includeStatistics: false,
       includeBatchSpecs: false,
+      includeImages: false,
     });
 
     products.push(...response.data);
@@ -86,7 +107,22 @@ async function fetchCategoryPathMapForExport(): Promise<Map<string, string>> {
  */
 export function ProductsPageClient({ initialParams }: ProductsPageClientProps) {
   const [isImportDialogOpen, setIsImportDialogOpen] = React.useState(false);
+  const [isImageImportDialogOpen, setIsImageImportDialogOpen] =
+    React.useState(false);
   const [isExporting, setIsExporting] = React.useState(false);
+  const [currentQueryParams, setCurrentQueryParams] =
+    React.useState<ProductListQueryParams>(initialParams);
+
+  const handleQueryParamsChange = React.useCallback(
+    (nextParams: ProductListQueryParams) => {
+      setCurrentQueryParams(prevParams =>
+        areProductQueryParamsEqual(prevParams, nextParams)
+          ? prevParams
+          : nextParams
+      );
+    },
+    []
+  );
 
   const handleExportProducts = React.useCallback(() => {
     if (isExporting) {
@@ -98,7 +134,7 @@ export function ProductsPageClient({ initialParams }: ProductsPageClientProps) {
 
       try {
         const [products, categoryPathById] = await Promise.all([
-          fetchProductsForExport(initialParams),
+          fetchProductsForExport(currentQueryParams),
           fetchCategoryPathMapForExport(),
         ]);
 
@@ -129,7 +165,7 @@ export function ProductsPageClient({ initialParams }: ProductsPageClientProps) {
         setIsExporting(false);
       }
     })();
-  }, [initialParams, isExporting]);
+  }, [currentQueryParams, isExporting]);
 
   return (
     <>
@@ -168,6 +204,15 @@ export function ProductsPageClient({ initialParams }: ProductsPageClientProps) {
                 </Button>
                 <Button
                   size="lg"
+                  variant="outline"
+                  className="h-11 w-full justify-center sm:w-auto"
+                  onClick={() => setIsImageImportDialogOpen(true)}
+                >
+                  <Images className="mr-2 h-4 w-4" />
+                  批量图片
+                </Button>
+                <Button
+                  size="lg"
                   asChild
                   className="h-11 w-full justify-center sm:w-auto"
                 >
@@ -181,12 +226,19 @@ export function ProductsPageClient({ initialParams }: ProductsPageClientProps) {
           />
 
           {/* 产品列表 */}
-          <ERPProductList initialParams={initialParams} />
+          <ERPProductList
+            initialParams={initialParams}
+            onQueryParamsChange={handleQueryParamsChange}
+          />
         </div>
       </div>
       <ProductImportDialog
         open={isImportDialogOpen}
         onOpenChange={setIsImportDialogOpen}
+      />
+      <ProductImageBatchImportDialog
+        open={isImageImportDialogOpen}
+        onOpenChange={setIsImageImportDialogOpen}
       />
     </>
   );

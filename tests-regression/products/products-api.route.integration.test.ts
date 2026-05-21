@@ -7,6 +7,8 @@ jest.mock('@/lib/logger', () => ({
   },
 }));
 
+import { getAuthVerificationHeaderValue } from '@/lib/auth/trusted-headers';
+
 jest.mock('@/lib/api/products-server', () => ({
   getProductsForServer: jest.fn(),
 }));
@@ -21,8 +23,14 @@ jest.mock('@/lib/cache/inventory-cache', () => ({
   getCachedProductInventorySummary: jest.fn(),
 }));
 
+jest.mock('@/lib/services/miniprogram-catalog-service', () => ({
+  invalidateMiniProgramCatalogCache: jest.fn(),
+}));
+
 jest.mock('@/lib/auth/api-helpers', () => ({
-  withAuth: (handler: any, _options?: { permissions?: string[] }) => async (request: any, context?: any) => {
+  withAuth:
+    (handler: any, _options?: { permissions?: string[] }) =>
+    async (request: any, context?: any) => {
       const user = {
         id: 'test-user',
         role: 'admin',
@@ -35,14 +43,15 @@ jest.mock('@/lib/auth/api-helpers', () => ({
       };
       return handler(request, { ...(context ?? {}), user });
     },
-  successResponse: (data: any, status: number = 200, message?: string) => ({
+  successResponse: (data: any, status: number = 200, message?: string) =>
+    ({
       status,
       json: async () => ({
         success: true,
         data,
         ...(message ? { message } : {}),
       }),
-    } as any),
+    }) as any,
 }));
 
 describe('/api/products（集成回归）', () => {
@@ -186,6 +195,7 @@ describe('/api/products/[id]（集成回归）', () => {
         ),
         headers: new Headers({
           'x-client-from': 'mini-program',
+          'x-auth-verified': getAuthVerificationHeaderValue(),
           'x-user-role': 'admin',
         }),
       } as any,

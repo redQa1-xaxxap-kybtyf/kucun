@@ -38,6 +38,7 @@ export interface UploadResult {
   url?: string;
   key?: string;
   error?: string;
+  reused?: boolean;
 }
 
 export interface DirectUploadParamsResult {
@@ -50,6 +51,12 @@ export interface DirectUploadParamsResult {
   domain?: string;
   error?: string;
 }
+
+type QiniuUploadPolicyOptions = {
+  fsizeLimit?: number;
+  mimeLimit?: string;
+  detectMime?: number;
+};
 
 /**
  * 获取七牛云配置（带缓存）
@@ -280,15 +287,87 @@ function generateFilePath(
   return `${directory}/${timestamp}_${randomString}.${fileExtension}`;
 }
 
+function renderPathFormatDirectory(pathFormat?: string): string {
+  if (!pathFormat || pathFormat.trim() === '') {
+    return '';
+  }
+
+  const now = new Date();
+  return pathFormat
+    .replace(/{y}/g, now.getFullYear().toString())
+    .replace(/{m}/g, (now.getMonth() + 1).toString().padStart(2, '0'))
+    .replace(/{d}/g, now.getDate().toString().padStart(2, '0'))
+    .replace(/^\/+|\/+$/g, '');
+}
+
+function normalizeKeySegment(value: string) {
+  return value
+    .replace(/[^A-Za-z0-9/_-]+/g, '_')
+    .replace(/\/+/g, '/')
+    .replace(/^\/+|\/+$/g, '');
+}
+
+function generateContentAddressedFilePath(
+  fileName: string,
+  type: string,
+  pathFormat: string | undefined,
+  contentHash: string
+): string {
+  const fileExtension = fileName.split('.').pop()?.toLowerCase() || 'webp';
+  const directory = renderPathFormatDirectory(pathFormat);
+  const safeType = normalizeKeySegment(type || 'product');
+  const hashPrefix = contentHash.slice(0, 2);
+  const pathParts = [directory, safeType, hashPrefix].filter(Boolean);
+
+  return `${pathParts.join('/')}/${contentHash}.${fileExtension}`;
+}
+
+function buildQiniuPublicUrl(config: QiniuConfig, key: string) {
+  const domain = config.domain.replace(/\/+$/, '');
+  return `${domain}/${key}`;
+}
+
+async function qiniuObjectExists(config: QiniuConfig, key: string) {
+  const mac = new qiniu.auth.digest.Mac(config.accessKey, config.secretKey);
+  const qiniuConfig = new qiniu.conf.Config({
+    zone: getQiniuZone(config.region),
+  });
+  const bucketManager = new qiniu.rs.BucketManager(mac, qiniuConfig);
+
+  return new Promise<boolean>(resolve => {
+    bucketManager.stat(config.bucket, key, (err, _respBody, respInfo) => {
+      if (!err && respInfo?.statusCode === 200) {
+        resolve(true);
+        return;
+      }
+
+      if (respInfo?.statusCode && respInfo.statusCode !== 612) {
+        logger.warn('qiniu', '检查文件是否存在失败，将继续上传', undefined, {
+          key,
+          statusCode: respInfo.statusCode,
+          error: err instanceof Error ? err.message : String(err || ''),
+        });
+      }
+
+      resolve(false);
+    });
+  });
+}
+
 /**
  * 生成上传凭证
  */
-function generateUploadToken(config: QiniuConfig, key: string): string {
+function generateUploadToken(
+  config: QiniuConfig,
+  key: string,
+  policyOptions?: QiniuUploadPolicyOptions
+): string {
   const mac = new qiniu.auth.digest.Mac(config.accessKey, config.secretKey);
 
   const putPolicy = new qiniu.rs.PutPolicy({
     scope: `${config.bucket}:${key}`,
     expires: 3600, // 1小时过期
+    ...policyOptions,
   });
 
   return putPolicy.uploadToken(mac);
@@ -301,7 +380,8 @@ function generateUploadToken(config: QiniuConfig, key: string): string {
  */
 export async function createQiniuDirectUploadParams(
   fileName: string,
-  type: string = 'product'
+  type: string = 'product',
+  policyOptions?: QiniuUploadPolicyOptions
 ): Promise<DirectUploadParamsResult> {
   try {
     const config = await getQiniuConfig();
@@ -313,7 +393,7 @@ export async function createQiniuDirectUploadParams(
     }
 
     const key = generateFilePath(fileName, type, config.pathFormat);
-    const uploadToken = generateUploadToken(config, key);
+    const uploadToken = generateUploadToken(config, key, policyOptions);
     const domain = config.domain.replace(/\/+$/, '');
     const url = `${domain}/${key}`;
 
@@ -343,7 +423,8 @@ export async function createQiniuDirectUploadParams(
 export async function uploadToQiniu(
   buffer: Buffer,
   fileName: string,
-  type: string = 'product'
+  type: string = 'product',
+  options?: { contentHash?: string }
 ): Promise<UploadResult> {
   try {
     // 获取七牛云配置
@@ -355,8 +436,26 @@ export async function uploadToQiniu(
       };
     }
 
-    // 使用配置的目录格式生成文件key
-    const key = generateFilePath(fileName, type, config.pathFormat);
+    // 有内容哈希时使用稳定 key，重复上传同一张图会复用同一个存储对象。
+    const key = options?.contentHash
+      ? generateContentAddressedFilePath(
+          fileName,
+          type,
+          config.pathFormat,
+          options.contentHash
+        )
+      : generateFilePath(fileName, type, config.pathFormat);
+    const url = buildQiniuPublicUrl(config, key);
+
+    if (options?.contentHash && (await qiniuObjectExists(config, key))) {
+      logger.info('qiniu', 'Reusing existing Qiniu object', { key, url });
+      return {
+        success: true,
+        url,
+        key,
+        reused: true,
+      };
+    }
 
     logger.info('qiniu', 'Uploading file to Qiniu', {
       fileName,
@@ -395,14 +494,12 @@ export async function uploadToQiniu(
           }
 
           if (respInfo.statusCode === 200) {
-            // 确保domain末尾没有斜杠，避免双斜杠问题
-            const domain = config.domain.replace(/\/+$/, '');
-            const url = `${domain}/${key}`;
             logger.info('qiniu', 'Upload successful', { key, url });
             resolve({
               success: true,
               url,
               key,
+              reused: false,
             });
           } else {
             const bodyError =

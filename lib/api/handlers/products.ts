@@ -2,15 +2,26 @@ import type { Category, Prisma, Product } from '@prisma/client';
 import type { z } from 'zod';
 
 import { ApiError } from '@/lib/api/errors';
-import { invalidateProductCache } from '@/lib/cache/product-cache';
+import {
+  invalidateProductCache,
+  invalidateProductCaches,
+} from '@/lib/cache/product-cache';
 import type { ProductStatus, ProductUnit } from '@/lib/config/product';
 import { prisma } from '@/lib/db';
+import { invalidateMiniProgramCatalogCache } from '@/lib/services/miniprogram-catalog-service';
 import {
   deleteFromQiniu,
   extractQiniuKeysFromUrls,
 } from '@/lib/services/qiniu-upload';
+import type { ProductImage } from '@/lib/types/product';
+import { dedupeProductImages } from '@/lib/utils/product-image-dedupe';
 import { parseProductImages } from '@/lib/utils/product-transforms';
-import { productUpdateSchema } from '@/lib/validations/product';
+import {
+  productImageImportSaveSchema,
+  productMediaUpdateSchema,
+  productUpdateSchema,
+  type ProductImageImportKind,
+} from '@/lib/validations/product';
 
 const PRODUCT_WITH_RELATIONS_SELECT = {
   id: true,
@@ -116,7 +127,10 @@ export async function updateProduct(
   validateCategoryChange(validatedData, existingProduct, context.category);
   validateCodeChange(validatedData, existingProduct, context.codeOwner);
 
-  const updateData = buildProductUpdateData(validatedData);
+  const updateData = buildProductUpdateData(
+    validatedData,
+    existingProduct.thumbnailUrl
+  );
 
   const updatedProduct = await prisma.product.update({
     where: { id },
@@ -130,8 +144,237 @@ export async function updateProduct(
   revalidatePath(`/products/${id}`, 'page'); // 失效产品详情页面缓存
 
   await invalidateProductCache(id);
+  invalidateMiniProgramCatalogCache();
 
   return formatProduct(updatedProduct);
+}
+
+/**
+ * 快速更新产品缩略图
+ */
+export async function updateProductThumbnail(
+  id: string,
+  thumbnailUrl: string | null | undefined
+) {
+  const existingProduct = await prisma.product.findUnique({
+    where: { id },
+    select: { id: true, images: true },
+  });
+
+  if (!existingProduct) {
+    throw ApiError.notFound('产品');
+  }
+
+  const normalizedThumbnailUrl = normalizeNullableString(thumbnailUrl);
+  const nextImages = dedupeProductImages(
+    parseProductImages(existingProduct.images, id),
+    normalizedThumbnailUrl ? [normalizedThumbnailUrl] : []
+  );
+
+  const updatedProduct = await prisma.product.update({
+    where: { id },
+    data: {
+      thumbnailUrl: normalizedThumbnailUrl,
+      images: serializeProductImages(nextImages),
+    },
+    select: PRODUCT_WITH_RELATIONS_SELECT,
+  });
+
+  const { revalidatePath } = await import('next/cache');
+  revalidatePath('/products', 'page');
+  revalidatePath(`/products/${id}`, 'page');
+
+  await invalidateProductCache(id);
+  invalidateMiniProgramCatalogCache();
+
+  return formatProduct(updatedProduct);
+}
+
+export async function matchProductImageImportItems(
+  items: Array<{
+    clientId: string;
+    fileName: string;
+    inferredCode: string;
+    kind: ProductImageImportKind;
+  }>
+) {
+  const codes = Array.from(
+    new Set(
+      items
+        .map(item => item.inferredCode.trim())
+        .filter(code => code.length > 0)
+    )
+  );
+
+  const products = await prisma.product.findMany({
+    where: {
+      code: { in: codes },
+    },
+    select: {
+      id: true,
+      code: true,
+      name: true,
+      specification: true,
+      thumbnailUrl: true,
+    },
+  });
+
+  const productByCode = new Map(
+    products.map(product => [normalizeMatchCode(product.code), product])
+  );
+
+  const matchedItems = items.map(item => {
+    const product = productByCode.get(normalizeMatchCode(item.inferredCode));
+
+    return {
+      ...item,
+      status: product ? ('matched' as const) : ('not_found' as const),
+      product: product
+        ? {
+            id: product.id,
+            code: product.code,
+            name: product.name,
+            specification: product.specification,
+            thumbnailUrl: product.thumbnailUrl,
+          }
+        : null,
+    };
+  });
+
+  return {
+    totalCount: items.length,
+    matchedCount: matchedItems.filter(item => item.status === 'matched').length,
+    unmatchedCount: matchedItems.filter(item => item.status === 'not_found')
+      .length,
+    items: matchedItems,
+  };
+}
+
+export async function updateProductMedia(
+  id: string,
+  data: z.infer<typeof productMediaUpdateSchema>
+) {
+  const validatedData = productMediaUpdateSchema.parse(data);
+  const existingProduct = await prisma.product.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      images: true,
+      thumbnailUrl: true,
+    },
+  });
+
+  if (!existingProduct) {
+    throw ApiError.notFound('产品');
+  }
+
+  const updateData = buildProductMediaUpdateData(
+    id,
+    existingProduct.images,
+    validatedData,
+    existingProduct.thumbnailUrl
+  );
+
+  const updatedProduct = await prisma.product.update({
+    where: { id },
+    data: updateData,
+    select: PRODUCT_WITH_RELATIONS_SELECT,
+  });
+
+  const { revalidatePath } = await import('next/cache');
+  revalidatePath('/products', 'page');
+  revalidatePath(`/products/${id}`, 'page');
+
+  await invalidateProductCache(id);
+  invalidateMiniProgramCatalogCache();
+
+  return formatProduct(updatedProduct);
+}
+
+type ProductImageImportSaveItem = z.infer<
+  typeof productImageImportSaveSchema
+>['items'][number];
+
+/**
+ * 批量保存图片导入结果，减少大量产品图片导入时的 HTTP 往返和重复缓存失效。
+ */
+export async function saveProductImageImportItems(
+  items: ProductImageImportSaveItem[]
+) {
+  const validatedData = productImageImportSaveSchema.parse({ items });
+  const mergedItems = mergeProductImageImportSaveItems(validatedData.items);
+  const productIds = mergedItems.map(item => item.productId);
+
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds } },
+    select: {
+      id: true,
+      images: true,
+      thumbnailUrl: true,
+    },
+  });
+  const productById = new Map(products.map(product => [product.id, product]));
+
+  const results = await runWithConcurrency(mergedItems, 6, async item => {
+    const product = productById.get(item.productId);
+    if (!product) {
+      return {
+        productId: item.productId,
+        status: 'error' as const,
+        error: '产品不存在',
+      };
+    }
+
+    try {
+      const updateData = buildProductMediaUpdateData(
+        item.productId,
+        product.images,
+        {
+          thumbnailUrl: item.thumbnailUrl,
+          appendImages: item.appendImages,
+        },
+        product.thumbnailUrl
+      );
+
+      if (Object.keys(updateData).length > 0) {
+        await prisma.product.update({
+          where: { id: item.productId },
+          data: updateData,
+          select: { id: true },
+        });
+      }
+
+      return {
+        productId: item.productId,
+        status: 'success' as const,
+      };
+    } catch (error) {
+      return {
+        productId: item.productId,
+        status: 'error' as const,
+        error: getProductImageImportErrorMessage(error),
+      };
+    }
+  });
+
+  const successIds = results
+    .filter(result => result.status === 'success')
+    .map(result => result.productId);
+
+  if (successIds.length > 0) {
+    const { revalidatePath } = await import('next/cache');
+    revalidatePath('/products', 'page');
+    successIds.forEach(id => revalidatePath(`/products/${id}`, 'page'));
+    await invalidateProductCaches(successIds);
+    invalidateMiniProgramCatalogCache();
+  }
+
+  return {
+    totalCount: results.length,
+    successCount: results.filter(result => result.status === 'success').length,
+    failedCount: results.filter(result => result.status === 'error').length,
+    results,
+  };
 }
 
 type ProductUpdateContext = {
@@ -207,9 +450,14 @@ function validateCodeChange(
 }
 
 function buildProductUpdateData(
-  data: z.infer<typeof productUpdateSchema>
+  data: z.infer<typeof productUpdateSchema>,
+  currentThumbnailUrl?: string | null
 ): Prisma.ProductUpdateInput {
   const updateData: Prisma.ProductUpdateInput = {};
+  const normalizedThumbnailUrl =
+    data.thumbnailUrl !== undefined
+      ? normalizeNullableString(data.thumbnailUrl)
+      : normalizeNullableString(currentThumbnailUrl);
 
   if (data.code !== undefined) {
     updateData.code = data.code;
@@ -233,13 +481,15 @@ function buildProductUpdateData(
     updateData.description = normalizeNullableString(data.description);
   }
   if (data.thumbnailUrl !== undefined) {
-    updateData.thumbnailUrl = normalizeNullableString(data.thumbnailUrl);
+    updateData.thumbnailUrl = normalizedThumbnailUrl;
   }
   if (data.images !== undefined) {
-    updateData.images =
-      Array.isArray(data.images) && data.images.length > 0
-        ? JSON.stringify(data.images)
-        : null;
+    updateData.images = serializeProductImages(
+      normalizeProductImagesForStorage(
+        data.images,
+        normalizedThumbnailUrl ? [normalizedThumbnailUrl] : []
+      )
+    );
   }
   if (data.categoryId !== undefined) {
     const normalizedCategoryId = normalizeCategoryIdInput(data.categoryId);
@@ -252,6 +502,122 @@ function buildProductUpdateData(
   }
 
   return updateData;
+}
+
+function buildProductMediaUpdateData(
+  productId: string,
+  currentImagesJson: string | null,
+  data: z.infer<typeof productMediaUpdateSchema>,
+  currentThumbnailUrl?: string | null
+): Prisma.ProductUpdateInput {
+  const updateData: Prisma.ProductUpdateInput = {};
+  const normalizedThumbnailUrl =
+    data.thumbnailUrl !== undefined
+      ? normalizeNullableString(data.thumbnailUrl)
+      : normalizeNullableString(currentThumbnailUrl);
+
+  if (data.thumbnailUrl !== undefined) {
+    updateData.thumbnailUrl = normalizedThumbnailUrl;
+  }
+
+  if (data.appendImages !== undefined) {
+    const currentImages = parseProductImages(currentImagesJson, productId);
+    const nextImages = normalizeProductImagesForStorage(
+      [
+        ...currentImages,
+        ...data.appendImages.map((image, index) => ({
+          ...image,
+          alt: image.alt?.trim() || undefined,
+          order: currentImages.length + index,
+        })),
+      ],
+      normalizedThumbnailUrl ? [normalizedThumbnailUrl] : []
+    );
+
+    if (nextImages.length > 10) {
+      throw ApiError.badRequest('单个产品最多保留 10 张主图/效果图');
+    }
+
+    updateData.images = serializeProductImages(nextImages);
+  }
+
+  return updateData;
+}
+
+function normalizeProductImagesForStorage(
+  images: ProductImage[] | undefined,
+  excludedUrls: Array<string | null | undefined> = []
+) {
+  return dedupeProductImages(Array.isArray(images) ? images : [], excludedUrls);
+}
+
+function serializeProductImages(images: ProductImage[]) {
+  return images.length > 0 ? JSON.stringify(images) : null;
+}
+
+function mergeProductImageImportSaveItems(items: ProductImageImportSaveItem[]) {
+  const itemByProductId = new Map<string, ProductImageImportSaveItem>();
+
+  items.forEach(item => {
+    const existing = itemByProductId.get(item.productId);
+    if (!existing) {
+      itemByProductId.set(item.productId, {
+        ...item,
+        appendImages: item.appendImages ? [...item.appendImages] : undefined,
+      });
+      return;
+    }
+
+    const appendImages = [
+      ...(existing.appendImages ?? []),
+      ...(item.appendImages ?? []),
+    ];
+
+    itemByProductId.set(item.productId, {
+      productId: item.productId,
+      thumbnailUrl:
+        item.thumbnailUrl !== undefined
+          ? item.thumbnailUrl
+          : existing.thumbnailUrl,
+      appendImages: appendImages.length > 0 ? appendImages : undefined,
+    });
+  });
+
+  return Array.from(itemByProductId.values());
+}
+
+async function runWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  worker: (item: T) => Promise<R>
+) {
+  const results: R[] = new Array(items.length);
+  let nextIndex = 0;
+
+  const runners = Array.from(
+    { length: Math.min(limit, items.length) },
+    async () => {
+      while (nextIndex < items.length) {
+        const currentIndex = nextIndex;
+        nextIndex += 1;
+        results[currentIndex] = await worker(items[currentIndex]);
+      }
+    }
+  );
+
+  await Promise.all(runners);
+  return results;
+}
+
+function getProductImageImportErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  return '图片资料保存失败';
+}
+
+function normalizeMatchCode(value: string): string {
+  return value.trim().toLowerCase();
 }
 
 function normalizeNullableString(
@@ -362,6 +728,7 @@ export async function deleteProduct(id: string) {
   revalidatePath(`/products/${id}`, 'page'); // 失效产品详情页面缓存
 
   await invalidateProductCache(id);
+  invalidateMiniProgramCatalogCache();
 
   if (qiniuKeys.length > 0) {
     await Promise.all(qiniuKeys.map(key => deleteFromQiniu(key)));
@@ -413,9 +780,7 @@ function formatProduct(product: ProductWithRelations) {
   };
 }
 
-function formatProductCategory(
-  category: ProductWithRelations['category']
-) {
+function formatProductCategory(category: ProductWithRelations['category']) {
   if (!category) return null;
 
   const parent = category.parent;
