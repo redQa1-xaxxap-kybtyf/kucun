@@ -144,15 +144,18 @@ deployment-output/
 
 # 本地部署包解压目录（仅用于上传，不参与版本控制）
 bushu/
+release/
 
 # 临时脚本和补丁
 temp-*.py
 temp_*.diff
 
 # AI工具配置和记忆
+.codex/
 .gemini/
 .serena/memories/
 .mcp.json
+.ace-tool/
 
 # Augment 自动生成的报告文件
 .augment/reports/
