@@ -1,6 +1,6 @@
 {
   "name": "kucun",
-  "version": "1.0.117",
+  "version": "1.0.127",
   "description": "瓷砖行业库存管理工具",
   "private": true,
   "scripts": {
@@ -22,6 +22,7 @@
     "test:coverage": "jest --coverage",
     "test:inventory": "jest __tests__/unit/inventory --coverage",
     "test:ci": "jest --ci --coverage --maxWorkers=2",
+    "test:business-fullchain": "jest --runInBand __tests__/integration/purchase-orders/purchase-order-status-route-arrival.integration.test.ts __tests__/integration/purchase-orders/purchase-order-expense-payable.integration.test.ts __tests__/integration/sales-orders/sales-finance-fullchain.integration.test.ts __tests__/integration/return-orders/return-refund-fullchain.integration.test.ts __tests__/integration/factory-shipments/factory-shipment-finance.integration.test.ts",
     "test:e2e": "cross-env NODE_ENV=test playwright test",
     "test:e2e:ui": "cross-env NODE_ENV=test playwright test --ui",
     "test:e2e:debug": "cross-env NODE_ENV=test playwright test --debug",
@@ -150,6 +151,7 @@
     "@faker-js/faker": "^10.0.0",
     "@playwright/test": "^1.56.0",
     "@tailwindcss/postcss": "^4.1.14",
+    "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
