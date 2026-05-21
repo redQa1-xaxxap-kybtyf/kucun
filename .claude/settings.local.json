@@ -214,9 +214,21 @@
       "Bash(npx next *)",
       "Bash(npx jest *)",
       "Bash(git stash *)",
-      "Bash(git rev-list *)"
+      "Bash(git rev-list *)",
+      "Bash(cross-env NODE_OPTIONS=\"--max-old-space-size=8192\" next build)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=8192\" ./node_modules/.bin/next build)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=8192\" ./node_modules/.bin/next build --no-lint)",
+      "Bash(tar czf *)",
+      "Bash(git *)",
+      "mcp__ace-tool__search_context",
+      "Bash(find . -type f \\\\\\( -name '*.wxss' -o -name '*.wxml' -o -name '*.js' -o -name '*.json' \\\\\\) -not -path './node_modules/*' -not -name '*.bak')",
+      "Read(//tmp/**)"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "ace-tool"
+  ]
 }
