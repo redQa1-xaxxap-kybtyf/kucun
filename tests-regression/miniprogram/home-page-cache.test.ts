@@ -1,4 +1,6 @@
 const mockGetCatalog = jest.fn();
+import { readFileSync } from 'fs';
+import path from 'path';
 
 jest.mock('../../erpxcx/utils/catalog', () => ({
   getCatalog: mockGetCatalog,
@@ -70,5 +72,19 @@ describe('小程序首页目录页级缓存', () => {
     ).resolves.toEqual({ groups: [{ id: 'new-group' }] });
 
     expect(mockGetCatalog).toHaveBeenCalledTimes(2);
+  });
+
+  test('首页网络错误独占内容区并提供重试入口', () => {
+    const wxml = readFileSync(
+      path.join(process.cwd(), 'erpxcx', 'pages', 'index', 'index.wxml'),
+      'utf8'
+    );
+
+    expect(wxml).not.toContain(
+      '<view wx:if="{{error}}" class="notice">{{error}}</view>'
+    );
+    expect(wxml).toContain('wx:elif="{{error}}"');
+    expect(wxml).toContain('bindtap="onRetryTap"');
+    expect(wxml).toContain('<block wx:elif="{{isSearching}}">');
   });
 });

@@ -175,16 +175,9 @@ function normalizeGroups(groups, selectedSeriesId) {
   }));
 }
 
-function buildViewState(data, selectedSeriesId, selectedComponentType, search) {
+function buildViewState(data, selectedSeriesId, search) {
   const visibleSeries = getVisibleSeries(data.series);
   const selectedSeries = getSelectedSeries(visibleSeries, selectedSeriesId);
-  const visibleComponents = (data.components || []).filter(
-    item => item.id === 'all' || item.productCount > 0
-  );
-  const selectedComponent =
-    visibleComponents.find(item => item.id === selectedComponentType) ||
-    visibleComponents[0] ||
-    null;
   const groups = normalizeGroups(data.groups, selectedSeriesId);
   const products = data.products || [];
   const pagination = data.pagination || getDefaultPagination();
@@ -203,14 +196,11 @@ function buildViewState(data, selectedSeriesId, selectedComponentType, search) {
     bannerCoverUrl,
     groups,
     visibleSeries,
-    visibleComponents,
     selectedSeriesName: selectedSeries ? selectedSeries.name : '',
-    selectedComponentLabel: selectedComponent ? selectedComponent.label : '',
     selectedSeriesProductCount: selectedSeries
       ? selectedSeries.productCount || 0
       : 0,
     hasSeries: visibleSeries.length > 0,
-    hasComponents: visibleComponents.length > 1,
     hasGroups: groups.length > 0,
     hasProducts: products.length > 0,
     isSearching: Boolean(search),
@@ -269,17 +259,14 @@ Page({
     selectedSeriesId: HOT_SERIES_ID,
     selectedComponentType: 'all',
     selectedSeriesName: '',
-    selectedComponentLabel: '',
     selectedSeriesProductCount: 0,
     bannerCoverUrl: '',
     search: '',
     searchKeyword: '',
     visibleSeries: [],
-    visibleComponents: [],
     groups: [],
     products: [],
     hasSeries: false,
-    hasComponents: false,
     hasGroups: false,
     hasProducts: false,
     hasAdminSession: false,
@@ -353,6 +340,10 @@ Page({
     this.loadCatalog({ skipCache: true }).finally(() =>
       wx.stopPullDownRefresh()
     );
+  },
+
+  onRetryTap() {
+    this.loadCatalog({ skipCache: true });
   },
 
   onReachBottom() {
@@ -499,7 +490,6 @@ Page({
         ...buildViewState(
           { ...data, series: data.series || visibleSeries },
           selectedSeriesId,
-          selectedComponentType,
           searchKeyword
         ),
         loading: false,
@@ -603,24 +593,6 @@ Page({
     this.setData({
       selectedSeriesId: seriesId,
       selectedComponentType: 'all',
-      search: '',
-      searchKeyword: '',
-    });
-    this.loadCatalog({ keepShelf: true });
-  },
-
-  onComponentTap(event) {
-    const componentType = event.currentTarget.dataset.id || 'all';
-    if (componentType === this.data.selectedComponentType) {
-      return;
-    }
-
-    if (wx.vibrateShort) {
-      wx.vibrateShort({ type: 'light' });
-    }
-
-    this.setData({
-      selectedComponentType: componentType,
       search: '',
       searchKeyword: '',
     });

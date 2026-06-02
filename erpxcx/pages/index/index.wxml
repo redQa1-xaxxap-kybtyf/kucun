@@ -15,11 +15,15 @@
     <button wx:if="{{hasAdminSession}}" class="admin-entry" bindtap="onAdminTap">工作台</button>
   </view>
 
-  <view wx:if="{{error}}" class="notice">{{error}}</view>
-
   <view wx:if="{{loading}}" class="page-loading home-loading">
     <view class="loading-spinner"></view>
     <view class="loading-text">加载中</view>
+  </view>
+
+  <view wx:elif="{{error}}" class="notice error-state">
+    <view class="notice-title">加载失败</view>
+    <view class="notice-text">{{error}}</view>
+    <button class="retry-btn" bindtap="onRetryTap">重新加载</button>
   </view>
 
   <block wx:elif="{{isSearching}}">
@@ -163,25 +167,10 @@
           </view>
         </view>
 
-        <scroll-view wx:if="{{hasComponents}}" class="component-scroll" scroll-x enhanced>
-          <view class="component-row">
-            <view
-              wx:for="{{visibleComponents}}"
-              wx:key="id"
-              class="component-chip {{selectedComponentType == item.id ? 'active' : ''}}"
-              data-id="{{item.id}}"
-              bindtap="onComponentTap"
-            >
-              <text>{{item.label}}</text>
-              <text wx:if="{{item.productCount > 0}}" class="component-count">{{item.productCount}}</text>
-            </view>
-          </view>
-        </scroll-view>
-
         <view class="shelf-content {{shelfLoading ? 'muted' : ''}}">
           <view wx:if="{{!hasGroups}}" class="state-card slim">
             <view class="state-title">暂无产品</view>
-            <view class="state-text">{{selectedComponentLabel || selectedSeriesName}}</view>
+            <view class="state-text">{{selectedSeriesName}}</view>
           </view>
 
           <view wx:else class="group-list">

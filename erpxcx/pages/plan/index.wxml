@@ -16,21 +16,6 @@
   </view>
 
   <block wx:else>
-    <view class="contact-card">
-      <view class="contact-head">
-        <view>
-          <view class="contact-title">提交报货单</view>
-          <view class="contact-desc">后台收到后会按联系电话回访确认。</view>
-        </view>
-        <view wx:if="{{lastRequestNumber}}" class="request-number">{{lastRequestNumber}}</view>
-      </view>
-      <input class="contact-input" placeholder="客户名称（选填）" value="{{customerName}}" data-field="customerName" bindinput="onContactInput" />
-      <input class="contact-input" type="tel" placeholder="联系电话（必填）" value="{{customerPhone}}" data-field="customerPhone" bindinput="onContactInput" />
-      <input class="contact-input" placeholder="送货地址（选填）" value="{{contactAddress}}" data-field="contactAddress" bindinput="onContactInput" />
-      <textarea class="contact-textarea" placeholder="整单备注（选填）" value="{{submitRemarks}}" data-field="submitRemarks" bindinput="onContactInput" maxlength="1000"></textarea>
-      <button class="submit-btn" loading="{{submitting}}" disabled="{{submitting}}" bindtap="onSubmitGoodsRequestTap">{{submitting ? '提交中' : '提交报货单'}}</button>
-    </view>
-
     <view class="plan-list">
       <view
         wx:for="{{planItems}}"

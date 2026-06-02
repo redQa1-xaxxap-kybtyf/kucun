@@ -25,6 +25,10 @@ function flattenMiniProgramPages(appJson: Record<string, unknown>) {
 }
 
 describe('微信小程序配置', () => {
+  afterEach(() => {
+    delete (global as any).wx;
+  });
+
   test('客户首屏留在主包，管理端页面移入分包且路径不重复', () => {
     const appJson = readJson(path.join(miniProgramRoot, 'app.json'));
     const pages = Array.isArray(appJson.pages)
@@ -88,5 +92,19 @@ describe('微信小程序配置', () => {
         'project.private.config.json',
       ])
     );
+  });
+
+  test('开发者工具开发版默认请求本机 ERP 服务', () => {
+    (global as any).wx = {
+      getAccountInfoSync: jest.fn(() => ({
+        miniProgram: { envVersion: 'develop' },
+      })),
+      getSystemInfoSync: jest.fn(() => ({ platform: 'devtools' })),
+    };
+    jest.resetModules();
+
+    const config = require('../../erpxcx/utils/config');
+
+    expect(config.apiBaseUrl).toBe('http://127.0.0.1:3000');
   });
 });
