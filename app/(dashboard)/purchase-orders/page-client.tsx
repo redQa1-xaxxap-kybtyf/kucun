@@ -112,15 +112,28 @@ export function PurchaseOrdersPageClient({
   ]);
 
   const buildSnapshot = React.useCallback(
-    (overrides: Partial<FilterSnapshot> = {}): FilterSnapshot => ({
-      search: overrides.search ?? normalizeSearch(committedSearch),
-      status: overrides.status ?? statusFilter,
-      supplierId: overrides.supplierId ?? supplierFilter,
-      startDate: overrides.startDate ?? dateRange.startDate,
-      endDate: overrides.endDate ?? dateRange.endDate,
-      page: overrides.page,
-    }),
-    [committedSearch, statusFilter, supplierFilter, dateRange]
+    (overrides: Partial<FilterSnapshot> = {}): FilterSnapshot => {
+      const hasOverride = (key: keyof FilterSnapshot) =>
+        Object.prototype.hasOwnProperty.call(overrides, key);
+
+      return {
+        search: hasOverride('search')
+          ? normalizeSearch(overrides.search)
+          : normalizeSearch(committedSearch),
+        status: hasOverride('status')
+          ? (overrides.status ?? 'all')
+          : statusFilter,
+        supplierId: hasOverride('supplierId')
+          ? overrides.supplierId
+          : supplierFilter,
+        startDate: hasOverride('startDate')
+          ? overrides.startDate
+          : dateRange.startDate,
+        endDate: hasOverride('endDate') ? overrides.endDate : dateRange.endDate,
+        page: overrides.page,
+      };
+    },
+    [committedSearch, dateRange, statusFilter, supplierFilter]
   );
 
   const syncFiltersToURL = React.useCallback(

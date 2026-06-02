@@ -430,32 +430,36 @@ export function ExpenseList({
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                            <Link href={`/finance/expenses/${expense.id}`}>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-slate-400 hover:text-slate-900"
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              asChild
+                              className="h-8 w-8 text-slate-400 hover:text-slate-900"
+                              title="查看详情"
+                            >
+                              <Link
+                                href={`/finance/expenses/${expense.id}`}
                                 aria-label={`查看费用 ${expense.expenseNumber}`}
-                                title="查看详情"
                               >
                                 <Eye className="h-4 w-4" />
-                              </Button>
-                            </Link>
+                              </Link>
+                            </Button>
                             {hasManagePermission && (
                               <>
-                                <Link
-                                  href={`/finance/expenses/${expense.id}/edit`}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  asChild
+                                  className="h-8 w-8 text-slate-400 hover:text-slate-900"
+                                  title="编辑费用"
                                 >
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-slate-400 hover:text-slate-900"
+                                  <Link
+                                    href={`/finance/expenses/${expense.id}/edit`}
                                     aria-label={`编辑费用 ${expense.expenseNumber}`}
-                                    title="编辑费用"
                                   >
                                     <Pencil className="h-4 w-4" />
-                                  </Button>
-                                </Link>
+                                  </Link>
+                                </Button>
                                 {expense.status === 'draft' && (
                                   <Button
                                     variant="ghost"
@@ -703,27 +707,33 @@ function ExpenseCard({
           )}
 
           <div className="flex gap-1">
-            <Link href={`/finance/expenses/${expense.id}`}>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 text-slate-400"
+            <Button
+              variant="ghost"
+              size="icon"
+              asChild
+              className="h-9 w-9 text-slate-400"
+            >
+              <Link
+                href={`/finance/expenses/${expense.id}`}
                 aria-label={`查看费用 ${expense.expenseNumber}`}
               >
                 <Eye className="h-4 w-4" />
-              </Button>
-            </Link>
+              </Link>
+            </Button>
             {hasManagePermission && expense.status !== 'cancelled' && (
-              <Link href={`/finance/expenses/${expense.id}/edit`}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 text-slate-400"
+              <Button
+                variant="ghost"
+                size="icon"
+                asChild
+                className="h-9 w-9 text-slate-400"
+              >
+                <Link
+                  href={`/finance/expenses/${expense.id}/edit`}
                   aria-label={`编辑费用 ${expense.expenseNumber}`}
                 >
                   <Pencil className="h-4 w-4" />
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             )}
           </div>
         </div>

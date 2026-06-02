@@ -102,6 +102,13 @@ function normalizeSearch(value?: string) {
   return trimmed ? trimmed : undefined;
 }
 
+function hasFilterOverride<T extends object>(
+  overrides: T,
+  key: keyof T
+): boolean {
+  return Object.prototype.hasOwnProperty.call(overrides, key);
+}
+
 /**
  * 收款记录页面客户端组件
  * 负责用户交互和状态管理
@@ -238,17 +245,31 @@ export function PaymentsPageClient({
   const buildFilters = React.useCallback(
     (overrides: Partial<PaymentsQueryParams> = {}): PaymentsQueryParams => ({
       ...initialParams,
-      search: overrides.search ?? normalizeSearch(committedSearch),
-      status: overrides.status ?? status,
-      paymentMethod: overrides.paymentMethod ?? paymentMethod,
+      search: hasFilterOverride(overrides, 'search')
+        ? normalizeSearch(overrides.search)
+        : normalizeSearch(committedSearch),
+      status: hasFilterOverride(overrides, 'status')
+        ? overrides.status
+        : status,
+      paymentMethod: hasFilterOverride(overrides, 'paymentMethod')
+        ? overrides.paymentMethod
+        : paymentMethod,
       sortBy: overrides.sortBy ?? sortBy,
       sortOrder: overrides.sortOrder ?? sortOrder,
       page: overrides.page ?? page,
       limit: overrides.limit ?? limit,
-      startDate: overrides.startDate ?? startDate,
-      endDate: overrides.endDate ?? endDate,
-      includeTest: overrides.includeTest ?? (includeTest || undefined),
-      includeVoided: overrides.includeVoided ?? (includeVoided || undefined),
+      startDate: hasFilterOverride(overrides, 'startDate')
+        ? overrides.startDate
+        : startDate,
+      endDate: hasFilterOverride(overrides, 'endDate')
+        ? overrides.endDate
+        : endDate,
+      includeTest: hasFilterOverride(overrides, 'includeTest')
+        ? overrides.includeTest
+        : includeTest || undefined,
+      includeVoided: hasFilterOverride(overrides, 'includeVoided')
+        ? overrides.includeVoided
+        : includeVoided || undefined,
     }),
     [
       committedSearch,

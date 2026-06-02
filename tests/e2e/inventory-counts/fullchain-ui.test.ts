@@ -4,6 +4,8 @@ import { loadEnvConfig } from '@next/env';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { PrismaClient } from '@prisma/client';
 
+import { loginAsAdminViaApi } from '../utils/auth';
+
 loadEnvConfig(process.cwd());
 
 const prisma = new PrismaClient();
@@ -18,66 +20,21 @@ interface CountFixture {
   countLocation: string;
   countName: string;
   initialQuantity: number;
+  piecesPerUnit: number;
   productCode: string;
   productId: string;
   runId: string;
-}
-
-function parseCaptchaText(captchaDataUri: string): string {
-  const encodedSvg = captchaDataUri.replace(/^data:image\/svg\+xml;utf8,/, '');
-  const svg = decodeURIComponent(encodedSvg);
-  const matches = [...svg.matchAll(/>\s*([A-Z0-9])\s*<\/text>/g)];
-  const captcha = matches.map(match => match[1]).join('');
-
-  if (!captcha || captcha.length < 4) {
-    throw new Error('未能从登录页验证码图片中解析出验证码文本');
-  }
-
-  return captcha;
 }
 
 async function loginAsAdmin(
   page: Page,
   destinationPath = '/dashboard'
 ) {
-  const captchaResponse = await page.request.get(`${BASE_URL}/api/captcha`);
-  expect(captchaResponse.ok()).toBeTruthy();
-  const captchaBody = (await captchaResponse.json()) as {
-    captchaImage: string;
-    sessionId: string;
-    success: boolean;
-  };
-
-  expect(captchaBody.success).toBeTruthy();
-
-  const csrfResponse = await page.request.get(`${BASE_URL}/api/auth/csrf`);
-  expect(csrfResponse.ok()).toBeTruthy();
-  const csrfBody = (await csrfResponse.json()) as {
-    csrfToken: string;
-  };
-
-  const loginResponse = await page.request.post(
-    `${BASE_URL}/api/auth/callback/credentials`,
-    {
-      form: {
-        csrfToken: csrfBody.csrfToken,
-        username: ADMIN_USERNAME,
-        password: ADMIN_PASSWORD,
-        captcha: parseCaptchaText(captchaBody.captchaImage),
-        captchaSessionId: captchaBody.sessionId,
-        rememberMe: 'false',
-        callbackUrl: `${BASE_URL}/dashboard`,
-        json: 'true',
-      },
-    }
-  );
-
-  expect(loginResponse.ok()).toBeTruthy();
-
-  const destinationUrl = `${BASE_URL}${destinationPath}`;
-  await page.goto(destinationUrl, { waitUntil: 'domcontentloaded' });
-  await page.waitForURL(destinationUrl, { timeout: 20_000 });
-  await expect(page).toHaveURL(new RegExp(`${destinationPath.replace(/\//g, '\\/')}$`));
+  await loginAsAdminViaApi(page, BASE_URL, {
+    username: ADMIN_USERNAME,
+    password: ADMIN_PASSWORD,
+    destinationPath,
+  });
 }
 
 async function waitForRecord<T>(
@@ -130,6 +87,7 @@ async function createCountFixture(): Promise<CountFixture> {
   const countName = `E2E盘点-${runId}`;
   const initialQuantity = 30;
   const actualQuantity = 24;
+  const piecesPerUnit = 4;
 
   const product = await prisma.product.create({
     data: {
@@ -137,7 +95,7 @@ async function createCountFixture(): Promise<CountFixture> {
       name: `E2E盘点砖-${runId}`,
       specification: '800x800',
       unit: 'sheet',
-      piecesPerUnit: 4,
+      piecesPerUnit,
       status: 'active',
     },
   });
@@ -159,6 +117,7 @@ async function createCountFixture(): Promise<CountFixture> {
     countLocation,
     countName,
     initialQuantity,
+    piecesPerUnit,
     productCode,
     productId: product.id,
     runId,
@@ -224,11 +183,11 @@ test.describe('库存盘点页面级全链路回归', () => {
         });
         await ensurePageReady(
           page,
-          page.getByRole('heading', { name: '创建盘点计划' })
+          page.getByRole('heading', { name: /创建盘点计划|新建盘点单/ })
         );
 
-        await page.getByLabel('盘点名称 *').fill(fixture.countName);
-        await page.getByLabel('盘点位置').fill(fixture.countLocation);
+        await page.getByLabel(/盘点(?:单)?名称 \*/).fill(fixture.countName);
+        await page.getByLabel(/盘点位置|库位\/存放区域/).fill(fixture.countLocation);
         await page.getByRole('button', { name: '提交' }).click();
 
         await page.waitForURL(
@@ -249,12 +208,15 @@ test.describe('库存盘点页面级全链路回归', () => {
       });
 
       await test.step('整仓生成明细并开始盘点', async () => {
+        const generateDetailsButton = page.getByRole('button', {
+          name: /整仓生成明细|按当前范围生成明细/,
+        });
         await ensurePageReady(
           page,
-          page.getByRole('button', { name: '整仓生成明细' })
+          generateDetailsButton
         );
 
-        await page.getByRole('button', { name: '整仓生成明细' }).click();
+        await generateDetailsButton.click();
         await expect(
           page.getByText(fixture.productCode, { exact: false }).first()
         ).toBeVisible({
@@ -278,11 +240,23 @@ test.describe('库存盘点页面级全链路回归', () => {
           .first();
         await expect(itemRow).toBeVisible({ timeout: 20_000 });
 
-        const actualQuantityInput = itemRow.locator('input[type="number"]');
-        await actualQuantityInput.fill(String(fixture.actualQuantity));
+        const actualUnits = Math.floor(
+          fixture.actualQuantity / fixture.piecesPerUnit
+        );
+        const actualPieces = fixture.actualQuantity % fixture.piecesPerUnit;
+
+        await itemRow
+          .getByRole('spinbutton', { name: '件' })
+          .fill(String(actualUnits));
+        const actualQuantityInput = itemRow.getByRole('spinbutton', {
+          name: '片',
+        });
+        await actualQuantityInput.fill(String(actualPieces));
         await actualQuantityInput.blur();
 
-        await page.getByRole('button', { name: '保存数据' }).click();
+        await page
+          .getByRole('button', { name: /保存数据|保存盘点数据/ })
+          .click();
 
         await waitForRecord(
           () =>

@@ -106,7 +106,10 @@ export function StatementCardItem({ statement }: StatementCardItemProps) {
           </div>
 
           <Button size="icon" variant="outline" asChild>
-            <Link href={`/finance/statements/${statement.id}`}>
+            <Link
+              href={`/finance/statements/${statement.id}`}
+              aria-label="查看对账详情"
+            >
               <ChevronRight className="h-4 w-4" />
             </Link>
           </Button>

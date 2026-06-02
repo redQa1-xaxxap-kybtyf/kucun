@@ -26,6 +26,13 @@ function normalizeSearch(value?: string) {
   return trimmed ? trimmed : undefined;
 }
 
+function hasFilterOverride<T extends object>(
+  overrides: T,
+  key: keyof T
+): boolean {
+  return Object.prototype.hasOwnProperty.call(overrides, key);
+}
+
 const RefundsClient = dynamic(
   () =>
     import('@/components/finance/refunds-client').then(
@@ -206,14 +213,26 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
   const buildFilters = React.useCallback(
     (overrides: Partial<RefundsQueryParams> = {}): RefundsQueryParams => ({
       ...initialParams,
-      search: overrides.search ?? normalizeSearch(committedSearch),
-      status: overrides.status ?? status,
-      includeTest: overrides.includeTest ?? (includeTest || undefined),
-      includeVoided: overrides.includeVoided ?? (includeVoided || undefined),
+      search: hasFilterOverride(overrides, 'search')
+        ? normalizeSearch(overrides.search)
+        : normalizeSearch(committedSearch),
+      status: hasFilterOverride(overrides, 'status')
+        ? overrides.status
+        : status,
+      includeTest: hasFilterOverride(overrides, 'includeTest')
+        ? overrides.includeTest
+        : includeTest || undefined,
+      includeVoided: hasFilterOverride(overrides, 'includeVoided')
+        ? overrides.includeVoided
+        : includeVoided || undefined,
       sortBy: overrides.sortBy ?? sortBy,
       sortOrder: overrides.sortOrder ?? sortOrder,
-      startDate: overrides.startDate ?? startDate,
-      endDate: overrides.endDate ?? endDate,
+      startDate: hasFilterOverride(overrides, 'startDate')
+        ? overrides.startDate
+        : startDate,
+      endDate: hasFilterOverride(overrides, 'endDate')
+        ? overrides.endDate
+        : endDate,
       page: overrides.page ?? page,
       limit: overrides.limit ?? limit,
     }),

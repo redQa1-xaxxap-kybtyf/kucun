@@ -279,6 +279,7 @@ function ReceivableTableRow({
                   variant="ghost"
                   size="sm"
                   onClick={() => onViewOrder(receivable.id)}
+                  aria-label="查看订单"
                   className="h-8 w-8 p-0"
                 >
                   <Eye className="h-4 w-4" />
