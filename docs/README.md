@@ -14,6 +14,18 @@
 
 ---
 
+## 🛡️ 生产运营
+
+| 文档 | 描述 |
+| --- | --- |
+| [生产就绪检查清单](operations/production-readiness-checklist.md) | 生产开关、危险接口、发版前检查 |
+| [备份与恢复演练](operations/backup-restore-drill.md) | 数据库备份、恢复演练、记录模板 |
+| [权限全链路审计](operations/access-control-audit.md) | API 认证授权矩阵与人工审计方法 |
+| [关键业务 E2E 验收](operations/e2e-acceptance.md) | 商业交付前必须验收的业务链路 |
+| [错误监控与日志告警](operations/monitoring-alerting.md) | 日志、监控、告警和巡检动作 |
+
+---
+
 ## 🏗️ 架构设计
 
 | 文档                                                    | 描述         |
